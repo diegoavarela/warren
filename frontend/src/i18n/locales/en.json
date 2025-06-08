@@ -1,0 +1,56 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "upload": "Upload Data"
+  },
+  "auth": {
+    "welcome": "Welcome to Warren",
+    "subtitle": "Vortex Cashflow Management Dashboard",
+    "email": "Email address",
+    "emailPlaceholder": "Enter your email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign in",
+    "logout": "Logout",
+    "loginError": "Invalid credentials",
+    "demoCredentials": "Demo Credentials:"
+  },
+  "dashboard": {
+    "title": "Financial Dashboard",
+    "subtitle": "Overview of your cashflow metrics",
+    "metrics": {
+      "lowestCash": "Lowest Cash (6M)",
+      "highestCash": "Highest Cash (6M)",
+      "biggestGain": "Biggest Gain (6M)",
+      "lowestGain": "Lowest Gain (6M)",
+      "revenueYTD": "Revenue YTD",
+      "costsYTD": "Costs YTD"
+    },
+    "highlights": {
+      "title": "Key Highlights",
+      "pastThreeMonths": "Past 3 Months",
+      "nextSixMonths": "Next 6 Months"
+    },
+    "chart": {
+      "title": "Cashflow Trends",
+      "revenue": "Revenue",
+      "costs": "Costs",
+      "cashflow": "Net Cashflow"
+    }
+  },
+  "upload": {
+    "title": "Upload Cashflow Data",
+    "subtitle": "Upload your Excel file to update the dashboard",
+    "dragDrop": "Drag and drop your Excel file here, or click to select",
+    "fileTypes": "Only .xlsx files are supported",
+    "uploading": "Uploading...",
+    "uploadSuccess": "File uploaded successfully!",
+    "uploadError": "Error uploading file. Please try again."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "language": "Language",
+    "currency": "$"
+  }
+}

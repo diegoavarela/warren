@@ -1,0 +1,56 @@
+{
+  "navigation": {
+    "dashboard": "Panel",
+    "upload": "Subir Datos"
+  },
+  "auth": {
+    "welcome": "Bienvenido a Warren",
+    "subtitle": "Panel de Flujo de Efectivo de Vortex",
+    "email": "Correo electrónico",
+    "emailPlaceholder": "Ingresa tu correo",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Ingresa tu contraseña",
+    "signIn": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "loginError": "Credenciales inválidas",
+    "demoCredentials": "Credenciales de Demo:"
+  },
+  "dashboard": {
+    "title": "Panel Financiero",
+    "subtitle": "Resumen de tus métricas de flujo de efectivo",
+    "metrics": {
+      "lowestCash": "Efectivo Mínimo (6M)",
+      "highestCash": "Efectivo Máximo (6M)",
+      "biggestGain": "Mayor Ganancia (6M)",
+      "lowestGain": "Menor Ganancia (6M)",
+      "revenueYTD": "Ingresos Anuales",
+      "costsYTD": "Costos Anuales"
+    },
+    "highlights": {
+      "title": "Puntos Clave",
+      "pastThreeMonths": "Últimos 3 Meses",
+      "nextSixMonths": "Próximos 6 Meses"
+    },
+    "chart": {
+      "title": "Tendencias de Flujo de Efectivo",
+      "revenue": "Ingresos",
+      "costs": "Costos",
+      "cashflow": "Flujo Neto"
+    }
+  },
+  "upload": {
+    "title": "Subir Datos de Flujo de Efectivo",
+    "subtitle": "Sube tu archivo Excel para actualizar el panel",
+    "dragDrop": "Arrastra y suelta tu archivo Excel aquí, o haz clic para seleccionar",
+    "fileTypes": "Solo se admiten archivos .xlsx",
+    "uploading": "Subiendo...",
+    "uploadSuccess": "¡Archivo subido exitosamente!",
+    "uploadError": "Error al subir archivo. Inténtalo de nuevo."
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "language": "Idioma",
+    "currency": "$"
+  }
+}
