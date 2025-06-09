@@ -4,10 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { 
   ArrowRightOnRectangleIcon,
   GlobeAltIcon,
-  CogIcon
+  CogIcon,
+  HomeIcon,
+  BanknotesIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline'
 import { Footer } from './Footer'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 interface LayoutProps {
   children: ReactNode
@@ -16,10 +19,15 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth()
   const { t, i18n } = useTranslation()
+  const location = useLocation()
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'es' : 'en'
     i18n.changeLanguage(newLang)
+  }
+
+  const isActive = (path: string) => {
+    return location.pathname.startsWith(path)
   }
 
   return (
@@ -35,8 +43,49 @@ export function Layout({ children }: LayoutProps) {
               <span className="text-xl font-semibold text-gray-900">Warren</span>
             </Link>
 
+            {/* Navigation Links */}
+            <nav className="flex items-center space-x-1">
+              <Link
+                to="/"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                  location.pathname === '/' 
+                    ? 'bg-gray-100 text-gray-900' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <HomeIcon className="w-4 h-4" />
+                <span>Home</span>
+              </Link>
+              
+              <Link
+                to="/cashflow"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                  isActive('/cashflow') 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <BanknotesIcon className="w-4 h-4" />
+                <span>Cash Flow</span>
+              </Link>
+              
+              <Link
+                to="/pnl"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                  isActive('/pnl') 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <ChartBarIcon className="w-4 h-4" />
+                <span>P&L</span>
+              </Link>
+            </nav>
+
             {/* Right Section */}
             <div className="flex items-center space-x-4">
+              <div className="h-6 w-px bg-gray-300 mx-2"></div>
+              
               {/* Language Switcher */}
               <button
                 onClick={toggleLanguage}

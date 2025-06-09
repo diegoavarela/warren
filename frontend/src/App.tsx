@@ -3,7 +3,9 @@ import { AuthProvider } from './hooks/useAuth'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
+import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
+import { PnLDashboardPage } from './pages/PnLDashboardPage'
 import { AdminPage } from './pages/AdminPage'
 import { TermsPage } from './pages/TermsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
@@ -17,8 +19,20 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={
           <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/cashflow" element={
+          <ProtectedRoute>
             <Layout>
               <DashboardPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/pnl" element={
+          <ProtectedRoute>
+            <Layout>
+              <PnLDashboardPage />
             </Layout>
           </ProtectedRoute>
         } />
