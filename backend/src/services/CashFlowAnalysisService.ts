@@ -36,6 +36,42 @@ interface BurnRateAnalysis {
   }>;
 }
 
+interface ScenarioParameters {
+  revenueChange: number; // percentage change (-100 to +100)
+  expenseChange: number; // percentage change (-100 to +100)
+  startingMonth: number; // month index to start applying changes
+  duration: number; // how many months to apply changes
+}
+
+interface ScenarioResult {
+  monthlyProjections: Array<{
+    month: string;
+    revenue: number;
+    expenses: number;
+    netCashFlow: number;
+    endingBalance: number;
+  }>;
+  summary: {
+    endingCash: number;
+    totalRevenue: number;
+    totalExpenses: number;
+    netCashFlow: number;
+    monthsOfRunway: number | null;
+    runOutDate: Date | null;
+  };
+}
+
+interface WaterfallData {
+  categories: Array<{
+    name: string;
+    value: number;
+    color: string;
+    isTotal?: boolean;
+  }>;
+  startValue: number;
+  endValue: number;
+}
+
 export class CashFlowAnalysisService {
   /**
    * Calculate cash runway based on current balance and burn rate
@@ -216,6 +252,229 @@ export class CashFlowAnalysisService {
       burnRateChange: 0,
       trend: 'stable',
       monthlyData: []
+    };
+  }
+
+  /**
+   * Run scenario planning analysis
+   */
+  runScenarioAnalysis(
+    metrics: MonthlyMetrics[], 
+    currentMonthIndex: number,
+    scenarios: { base: ScenarioParameters; best: ScenarioParameters; worst: ScenarioParameters }
+  ): { base: ScenarioResult; best: ScenarioResult; worst: ScenarioResult } {
+    return {
+      base: this.calculateScenario(metrics, currentMonthIndex, scenarios.base),
+      best: this.calculateScenario(metrics, currentMonthIndex, scenarios.best),
+      worst: this.calculateScenario(metrics, currentMonthIndex, scenarios.worst)
+    };
+  }
+
+  /**
+   * Calculate a single scenario
+   */
+  private calculateScenario(
+    metrics: MonthlyMetrics[], 
+    currentMonthIndex: number,
+    params: ScenarioParameters
+  ): ScenarioResult {
+    const projections = [];
+    let runningBalance = currentMonthIndex >= 0 ? metrics[currentMonthIndex].finalBalance : 0;
+    let totalRevenue = 0;
+    let totalExpenses = 0;
+    let monthsOfRunway = null;
+    let runOutDate = null;
+    
+    // Project 12 months forward
+    const monthsToProject = 12;
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    for (let i = 0; i < monthsToProject; i++) {
+      const projectionIndex = currentMonthIndex + i + 1;
+      const shouldApplyChange = i >= params.startingMonth && i < params.startingMonth + params.duration;
+      
+      // Get base values (from Excel if available, otherwise use averages)
+      let baseRevenue: number;
+      let baseExpenses: number;
+      
+      if (projectionIndex < metrics.length) {
+        // Use actual Excel data
+        baseRevenue = metrics[projectionIndex].totalIncome;
+        baseExpenses = Math.abs(metrics[projectionIndex].totalExpense);
+      } else {
+        // Use average of last 3 months
+        const avgMonths = Math.min(3, currentMonthIndex + 1);
+        const startIdx = Math.max(0, currentMonthIndex - avgMonths + 1);
+        const recentData = metrics.slice(startIdx, currentMonthIndex + 1);
+        
+        baseRevenue = recentData.reduce((sum, m) => sum + m.totalIncome, 0) / recentData.length;
+        baseExpenses = recentData.reduce((sum, m) => sum + Math.abs(m.totalExpense), 0) / recentData.length;
+      }
+      
+      // Apply scenario changes
+      const revenue = shouldApplyChange 
+        ? baseRevenue * (1 + params.revenueChange / 100)
+        : baseRevenue;
+      
+      const expenses = shouldApplyChange
+        ? baseExpenses * (1 + params.expenseChange / 100)
+        : baseExpenses;
+      
+      const netCashFlow = revenue - expenses;
+      runningBalance += netCashFlow;
+      
+      // Track totals
+      totalRevenue += revenue;
+      totalExpenses += expenses;
+      
+      // Check for cash depletion
+      if (runningBalance < 0 && monthsOfRunway === null) {
+        monthsOfRunway = i;
+        const today = new Date();
+        runOutDate = new Date(today.setMonth(today.getMonth() + i));
+      }
+      
+      // Determine month name
+      const currentDate = new Date();
+      const projectionDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i + 1, 1);
+      const monthName = monthNames[projectionDate.getMonth()];
+      
+      projections.push({
+        month: monthName,
+        revenue,
+        expenses,
+        netCashFlow,
+        endingBalance: runningBalance
+      });
+    }
+    
+    // If cash never runs out in 12 months
+    if (monthsOfRunway === null && runningBalance > 0) {
+      const avgMonthlyBurn = (totalRevenue - totalExpenses) / monthsToProject;
+      if (avgMonthlyBurn < 0) {
+        monthsOfRunway = Math.floor(runningBalance / Math.abs(avgMonthlyBurn));
+      }
+    }
+    
+    return {
+      monthlyProjections: projections,
+      summary: {
+        endingCash: runningBalance,
+        totalRevenue,
+        totalExpenses,
+        netCashFlow: totalRevenue - totalExpenses,
+        monthsOfRunway,
+        runOutDate
+      }
+    };
+  }
+
+  /**
+   * Generate waterfall chart data
+   */
+  generateWaterfallData(
+    metrics: MonthlyMetrics[], 
+    startIndex: number, 
+    endIndex: number
+  ): WaterfallData {
+    if (metrics.length === 0 || startIndex < 0 || endIndex >= metrics.length) {
+      return {
+        categories: [],
+        startValue: 0,
+        endValue: 0
+      };
+    }
+    
+    const startBalance = startIndex > 0 ? metrics[startIndex - 1].finalBalance : 0;
+    const endBalance = metrics[endIndex].finalBalance;
+    
+    // Aggregate data between start and end
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    const incomeByMonth: { [key: string]: number } = {};
+    const expenseByMonth: { [key: string]: number } = {};
+    
+    for (let i = startIndex; i <= endIndex; i++) {
+      totalIncome += metrics[i].totalIncome;
+      totalExpenses += metrics[i].totalExpense; // This is already negative
+      
+      if (!incomeByMonth[metrics[i].month]) {
+        incomeByMonth[metrics[i].month] = 0;
+        expenseByMonth[metrics[i].month] = 0;
+      }
+      
+      incomeByMonth[metrics[i].month] += metrics[i].totalIncome;
+      expenseByMonth[metrics[i].month] += metrics[i].totalExpense;
+    }
+    
+    const categories = [
+      {
+        name: 'Starting Balance',
+        value: startBalance,
+        color: '#4B5563', // gray
+        isTotal: true
+      }
+    ];
+    
+    // Add income categories (positive values)
+    if (Object.keys(incomeByMonth).length <= 3) {
+      // Show individual months if 3 or fewer
+      Object.entries(incomeByMonth).forEach(([month, value]) => {
+        if (value > 0) {
+          categories.push({
+            name: `${month} Income`,
+            value: value,
+            color: '#10B981', // green
+            isTotal: false
+          });
+        }
+      });
+    } else {
+      // Aggregate if more than 3 months
+      categories.push({
+        name: 'Total Income',
+        value: totalIncome,
+        color: '#10B981', // green
+        isTotal: true
+      });
+    }
+    
+    // Add expense categories (negative values)
+    if (Object.keys(expenseByMonth).length <= 3) {
+      // Show individual months if 3 or fewer
+      Object.entries(expenseByMonth).forEach(([month, value]) => {
+        if (value < 0) {
+          categories.push({
+            name: `${month} Expenses`,
+            value: value,
+            color: '#EF4444', // red
+            isTotal: false
+          });
+        }
+      });
+    } else {
+      // Aggregate if more than 3 months
+      categories.push({
+        name: 'Total Expenses',
+        value: totalExpenses,
+        color: '#EF4444', // red
+        isTotal: true
+      });
+    }
+    
+    // Add ending balance
+    categories.push({
+      name: 'Ending Balance',
+      value: endBalance,
+      color: endBalance >= 0 ? '#4B5563' : '#DC2626', // gray or dark red
+      isTotal: true
+    });
+    
+    return {
+      categories,
+      startValue: startBalance,
+      endValue: endBalance
     };
   }
 }

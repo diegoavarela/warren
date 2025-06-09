@@ -20,6 +20,8 @@ import { CashflowChart } from '../components/CashflowChart'
 import { MetricCard } from '../components/MetricCard'
 import { CashRunwayWidget } from '../components/CashRunwayWidget'
 import { BurnRateTrend } from '../components/BurnRateTrend'
+import { ScenarioPlanning } from '../components/ScenarioPlanning'
+import { CashFlowWaterfall } from '../components/CashFlowWaterfall'
 
 interface DashboardData {
   currentMonth: {
@@ -392,7 +394,7 @@ export const DashboardPage: React.FC = () => {
               <CalendarIcon className="h-8 w-8" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {data.currentMonth.month} 2025 Overview
+              {data.currentMonth.month} Cashflow Overview
             </h2>
           </div>
           
@@ -522,6 +524,15 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
             <CashflowChart data={data.chartData} />
+          </div>
+        </div>
+
+        {/* Advanced Analytics Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Advanced Analytics</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ScenarioPlanning />
+            <CashFlowWaterfall />
           </div>
         </div>
 

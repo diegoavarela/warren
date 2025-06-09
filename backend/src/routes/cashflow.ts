@@ -29,10 +29,12 @@ const upload = multer({
 // All routes require authentication
 router.use(authMiddleware);
 
-router.post('/upload', upload.single('file'), (req, res, next) => cashflowController.uploadFile(req, res, next));
-router.get('/dashboard', (req, res, next) => cashflowController.getDashboard(req, res, next));
-router.get('/metrics', (req, res, next) => cashflowController.getMetrics(req, res, next));
-router.get('/analysis/runway', (req, res, next) => cashflowController.getRunwayAnalysis(req, res, next));
-router.get('/analysis/burn-rate', (req, res, next) => cashflowController.getBurnRateAnalysis(req, res, next));
+router.post('/upload', upload.single('file'), cashflowController.uploadFile.bind(cashflowController));
+router.get('/dashboard', cashflowController.getDashboard.bind(cashflowController));
+router.get('/metrics', cashflowController.getMetrics.bind(cashflowController));
+router.get('/analysis/runway', cashflowController.getRunwayAnalysis.bind(cashflowController));
+router.get('/analysis/burn-rate', cashflowController.getBurnRateAnalysis.bind(cashflowController));
+router.post('/analysis/scenario', cashflowController.getScenarioAnalysis.bind(cashflowController));
+router.get('/analysis/waterfall', cashflowController.getWaterfallData.bind(cashflowController));
 
 export { router as cashflowRouter };

@@ -32,4 +32,8 @@ export const cashflowService = {
   getRunwayAnalysis: () => api.get('/cashflow/analysis/runway'),
   
   getBurnRateAnalysis: () => api.get('/cashflow/analysis/burn-rate'),
+  
+  getScenarioAnalysis: (scenarios: any) => api.post('/cashflow/analysis/scenario', scenarios),
+  
+  getWaterfallData: (period?: number) => api.get('/cashflow/analysis/waterfall', { params: { period } }),
 }

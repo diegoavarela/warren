@@ -151,4 +151,74 @@ export class CashflowController {
       next(error);
     }
   }
+
+  async getScenarioAnalysis(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const storedMetrics = this.cashflowService.getStoredMetrics();
+      
+      // Get scenario parameters from request body
+      const { base, best, worst } = req.body;
+      
+      // Default scenarios if not provided
+      const scenarios = {
+        base: base || { revenueChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
+        best: best || { revenueChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
+        worst: worst || { revenueChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
+      };
+
+      const now = new Date();
+      const currentMonthName = now.toLocaleString('en-US', { month: 'long' });
+      let currentIndex = storedMetrics.findIndex(m => m.month === currentMonthName);
+      
+      if (currentIndex === -1) {
+        currentIndex = storedMetrics.length - 1;
+      }
+
+      const scenarioResults = this.analysisService.runScenarioAnalysis(storedMetrics, currentIndex, scenarios);
+
+      res.json({
+        success: true,
+        data: scenarioResults
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getWaterfallData(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const storedMetrics = this.cashflowService.getStoredMetrics();
+      
+      if (storedMetrics.length === 0) {
+        return res.json({
+          success: true,
+          data: { categories: [], startValue: 0, endValue: 0 }
+        });
+      }
+
+      // Get period from query params (default to last 6 months)
+      const period = parseInt(req.query.period as string) || 6;
+      
+      const now = new Date();
+      const currentMonthName = now.toLocaleString('en-US', { month: 'long' });
+      let currentIndex = storedMetrics.findIndex(m => m.month === currentMonthName);
+      
+      if (currentIndex === -1) {
+        currentIndex = storedMetrics.length - 1;
+      }
+
+      // Calculate start and end indices
+      const endIndex = currentIndex;
+      const startIndex = Math.max(0, currentIndex - period + 1);
+
+      const waterfallData = this.analysisService.generateWaterfallData(storedMetrics, startIndex, endIndex);
+
+      res.json({
+        success: true,
+        data: waterfallData
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
