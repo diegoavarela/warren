@@ -57,90 +57,121 @@ export class PnLService {
       const workbook = new ExcelJS.Workbook()
       await workbook.xlsx.load(buffer)
       
-      const worksheet = workbook.worksheets[0]
+      // Look for "Combined Pesos" worksheet
+      let worksheet = workbook.worksheets.find(ws => 
+        ws.name.toLowerCase().includes('combined') && ws.name.toLowerCase().includes('pesos')
+      )
+      
       if (!worksheet) {
-        throw new Error('No worksheet found in the Excel file')
+        worksheet = workbook.worksheets[0]
+        logger.info(`Using worksheet: ${worksheet.name}`)
       }
 
-      const rows: PnLRow[] = []
-      const monthColumns: string[] = []
+      // Based on the structure:
+      // Row 4 has date headers in even columns (B=2, D=4, F=6, etc.)
+      // Row 8: Total Revenue
+      // Row 18: Total Cost of Goods Sold  
+      // Row 19: Gross Profit (absolute value)
+      // Row 20: Gross Margin (percentage)
+      // Row 52: Total Operating Expenses
+      // Row 65: EBITDA
+      // Row 81: Net Income
+      // Row 82: Net Income Margin %
+
+      const keyRows = {
+        revenue: 8,
+        costOfRevenue: 18,
+        grossProfit: 19,
+        grossMargin: 20,
+        operatingExpenses: 52,
+        ebitda: 65,
+        netIncome: 81,
+        netIncomeMargin: 82
+      }
+
+      // Extract month columns from row 4
+      const monthColumns: { [key: string]: number } = {}
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December']
       
-      // First pass: identify structure
-      let headerRow: any = null
-      let dataStartRow = 0
+      const headerRow = worksheet.getRow(4)
+      let monthIndex = 0
       
-      worksheet.eachRow((row, rowNumber) => {
-        const firstCell = row.getCell(1).value?.toString()?.trim() || ''
+      // Even columns contain values (2, 4, 6, 8, etc.)
+      for (let col = 2; col <= 24; col += 2) {
+        const cellValue = headerRow.getCell(col).value
         
-        // Look for header row with months
-        if (!headerRow && rowNumber <= 10) {
-          const cellValues = []
-          for (let i = 1; i <= row.cellCount; i++) {
-            cellValues.push(row.getCell(i).value?.toString()?.trim() || '')
-          }
-          
-          // Check if this row contains month names
-          const hasMonths = cellValues.some(val => 
-            /^(January|February|March|April|May|June|July|August|September|October|November|December)/i.test(val)
-          )
-          
-          if (hasMonths) {
-            headerRow = row
-            dataStartRow = rowNumber + 1
-            
-            // Extract month columns
-            for (let i = 2; i <= row.cellCount; i++) {
-              const cellValue = row.getCell(i).value?.toString()?.trim() || ''
-              if (/^(January|February|March|April|May|June|July|August|September|October|November|December)/i.test(cellValue)) {
-                monthColumns.push(cellValue)
-              }
-            }
-          }
+        if (cellValue && monthIndex < monthNames.length) {
+          monthColumns[monthNames[monthIndex]] = col
+          monthIndex++
         }
-      })
-
-      if (!headerRow || monthColumns.length === 0) {
-        throw new Error('Could not identify P&L structure. Please ensure the file has month columns.')
       }
 
-      // Second pass: extract data
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber >= dataStartRow) {
-          const lineItem = row.getCell(1).value?.toString()?.trim() || ''
+      logger.info(`Found ${Object.keys(monthColumns).length} months`)
+
+      // Extract metrics for each month
+      const metrics: PnLMetrics[] = []
+      
+      Object.entries(monthColumns).forEach(([month, col]) => {
+        const getValue = (rowNum: number): number => {
+          const cell = worksheet!.getRow(rowNum).getCell(col)
+          const value = cell.value
           
-          if (lineItem && !this.isHeaderOrTotal(lineItem)) {
-            const pnlRow: PnLRow = {
-              lineItem,
-              category: this.categorizeLineItem(lineItem)
-            }
-            
-            // Extract values for each month
-            monthColumns.forEach((month, index) => {
-              const cellValue = row.getCell(index + 2).value
-              pnlRow[month] = this.parseNumericValue(cellValue)
-            })
-            
-            rows.push(pnlRow)
+          if (typeof value === 'number') {
+            return value
+          } else if (value && typeof value === 'object' && 'result' in value) {
+            // Handle formula cells
+            return typeof value.result === 'number' ? value.result : 0
           }
+          return 0
+        }
+
+        const revenue = getValue(keyRows.revenue)
+        const cogs = getValue(keyRows.costOfRevenue)
+        const grossProfit = getValue(keyRows.grossProfit)
+        const operatingExpenses = getValue(keyRows.operatingExpenses)
+        const ebitda = getValue(keyRows.ebitda)
+        const netIncome = getValue(keyRows.netIncome)
+        
+        // Get the gross margin percentage directly from row 20
+        const grossMarginPercent = getValue(keyRows.grossMargin) * 100 // Convert to percentage
+        
+        // Get net income margin percentage from row 82
+        const netIncomeMarginPercent = getValue(keyRows.netIncomeMargin) * 100 // Convert to percentage
+        
+        // Only add month if it has data
+        if (revenue > 0) {
+          const operatingIncome = grossProfit - Math.abs(operatingExpenses)
+          const operatingMarginPercent = revenue > 0 ? (operatingIncome / revenue) * 100 : 0
+          
+          metrics.push({
+            month,
+            revenue,
+            cogs: Math.abs(cogs), // Ensure positive
+            grossProfit,
+            grossMargin: grossMarginPercent,
+            operatingExpenses: Math.abs(operatingExpenses),
+            operatingIncome,
+            operatingMargin: operatingMarginPercent,
+            otherIncomeExpenses: 0, // Not extracting this for now
+            netIncome,
+            netMargin: netIncomeMarginPercent,
+            ebitda
+          })
         }
       })
 
-      // Calculate metrics
-      const metrics = this.calculateMetrics(rows, monthColumns)
-      
-      // Store data
-      this.storedData = rows
+      // Store metrics
       this.storedMetrics = metrics
       this.lastUploadDate = new Date()
 
-      logger.info(`P&L processing complete. Processed ${rows.length} line items for ${monthColumns.length} months`)
+      logger.info(`P&L processing complete. Processed ${metrics.length} months of data`)
 
       return {
         success: true,
         data: {
-          lineItems: rows.length,
-          months: monthColumns.length,
-          metrics: metrics.length
+          months: metrics.length,
+          lastMonth: metrics[metrics.length - 1]?.month || 'N/A'
         }
       }
     } catch (error) {
@@ -152,118 +183,6 @@ export class PnLService {
     }
   }
 
-  private categorizeLineItem(lineItem: string): string {
-    const item = lineItem.toLowerCase()
-    
-    // Revenue items
-    if (item.includes('revenue') || item.includes('sales') || item.includes('income')) {
-      return 'revenue'
-    }
-    
-    // Cost of Goods Sold
-    if (item.includes('cost of goods') || item.includes('cogs') || item.includes('cost of sales')) {
-      return 'cogs'
-    }
-    
-    // Operating Expenses
-    if (item.includes('marketing') || item.includes('sales expense') || 
-        item.includes('r&d') || item.includes('research') ||
-        item.includes('administrative') || item.includes('g&a') ||
-        item.includes('payroll') || item.includes('salary') ||
-        item.includes('rent') || item.includes('utilities')) {
-      return 'operating_expense'
-    }
-    
-    // Other Income/Expenses
-    if (item.includes('interest') || item.includes('tax') || item.includes('other')) {
-      return 'other'
-    }
-    
-    return 'uncategorized'
-  }
-
-  private isHeaderOrTotal(text: string): boolean {
-    const lower = text.toLowerCase()
-    return lower.includes('total') || lower.includes('subtotal') || 
-           lower.includes('gross profit') || lower.includes('operating income') ||
-           lower.includes('net income') || lower === ''
-  }
-
-  private parseNumericValue(value: any): number {
-    if (typeof value === 'number') {
-      return value
-    }
-    
-    if (typeof value === 'string') {
-      // Remove currency symbols, commas, and parentheses
-      const cleaned = value.replace(/[$,()]/g, '').trim()
-      
-      // Handle negative numbers in parentheses
-      if (value.includes('(') && value.includes(')')) {
-        return -Math.abs(parseFloat(cleaned))
-      }
-      
-      const parsed = parseFloat(cleaned)
-      return isNaN(parsed) ? 0 : parsed
-    }
-    
-    return 0
-  }
-
-  private calculateMetrics(data: PnLRow[], months: string[]): PnLMetrics[] {
-    return months.map(month => {
-      let revenue = 0
-      let cogs = 0
-      let operatingExpenses = 0
-      let otherIncomeExpenses = 0
-      
-      data.forEach(row => {
-        const amount = row[month] as number || 0
-        
-        switch (row.category) {
-          case 'revenue':
-            revenue += Math.abs(amount) // Revenue should be positive
-            break
-          case 'cogs':
-            cogs += Math.abs(amount) // COGS is an expense (positive value)
-            break
-          case 'operating_expense':
-            operatingExpenses += Math.abs(amount)
-            break
-          case 'other':
-            otherIncomeExpenses += amount // Can be positive or negative
-            break
-        }
-      })
-      
-      const grossProfit = revenue - cogs
-      const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0
-      
-      const operatingIncome = grossProfit - operatingExpenses
-      const operatingMargin = revenue > 0 ? (operatingIncome / revenue) * 100 : 0
-      
-      const netIncome = operatingIncome + otherIncomeExpenses
-      const netMargin = revenue > 0 ? (netIncome / revenue) * 100 : 0
-      
-      // Simplified EBITDA (excluding D&A for now)
-      const ebitda = operatingIncome
-      
-      return {
-        month,
-        revenue,
-        cogs,
-        grossProfit,
-        grossMargin,
-        operatingExpenses,
-        operatingIncome,
-        operatingMargin,
-        otherIncomeExpenses,
-        netIncome,
-        netMargin,
-        ebitda
-      }
-    })
-  }
 
   getStoredData(): PnLRow[] {
     return this.storedData
