@@ -7,7 +7,6 @@ import {
   CogIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline'
-import { VortexLogo } from './VortexLogo'
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate()
@@ -38,7 +37,6 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-4">
-            <VortexLogo className="h-8 w-8" />
             <div className="flex items-center space-x-3">
               <div className="text-green-600 font-mono text-lg leading-tight">
                 <div className="text-xs">╭─╮╭─╮╭─╮╭─╮╭─╮╭─╮</div>

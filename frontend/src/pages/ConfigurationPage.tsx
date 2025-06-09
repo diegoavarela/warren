@@ -14,11 +14,9 @@ import {
   GlobeAltIcon,
   EnvelopeIcon,
   PhoneIcon,
-  MapPinIcon,
-  DocumentArrowDownIcon
+  MapPinIcon
 } from '@heroicons/react/24/outline'
 import { configurationService, CompanyConfig, StructureDetectionResult } from '../services/configurationService'
-import { PDFExportService } from '../services/pdfExportService'
 
 
 export const ConfigurationPage: React.FC = () => {
@@ -179,49 +177,6 @@ export const ConfigurationPage: React.FC = () => {
     }
   }
 
-  const exportToPDF = async () => {
-    if (!selectedCompany) return
-
-    try {
-      setLoading(true)
-      
-      // Mock data for demo - in real implementation, this would fetch actual dashboard data
-      const mockData = {
-        currentMonth: {
-          month: 'December',
-          revenue: 150000,
-          grossProfit: 90000,
-          grossMargin: 60,
-          operatingIncome: 45000,
-          operatingMargin: 30,
-          ebitda: 50000,
-          ebitdaMargin: 33.3,
-          netIncome: 35000,
-          netMargin: 23.3,
-          currency: selectedCompany.currency
-        },
-        summary: {
-          totalRevenue: 1200000,
-          totalGrossProfit: 720000,
-          totalOperatingIncome: 360000,
-          totalNetIncome: 280000
-        }
-      }
-
-      await PDFExportService.exportDashboard({
-        company: selectedCompany,
-        title: 'Financial Dashboard Report',
-        data: mockData,
-        type: 'pnl'
-      })
-
-      setError('')
-    } catch (err: any) {
-      setError('Failed to export PDF. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -458,13 +413,6 @@ export const ConfigurationPage: React.FC = () => {
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Configure Excel Structure
-                    </button>
-                    <button
-                      onClick={exportToPDF}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-                    >
-                      <DocumentArrowDownIcon className="h-4 w-4" />
-                      <span>Export PDF</span>
                     </button>
                   </div>
                 </div>

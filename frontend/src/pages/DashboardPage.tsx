@@ -1,23 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   CalendarIcon,
   BanknotesIcon,
   ChartBarIcon,
-  CloudArrowUpIcon,
-  ArrowUpTrayIcon,
-  DocumentIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   ExclamationTriangleIcon,
-  SparklesIcon
+  SparklesIcon,
+  DocumentArrowDownIcon,
+  XCircleIcon
 } from '@heroicons/react/24/outline'
 import { cashflowService } from '../services/cashflowService'
+import { configurationService } from '../services/configurationService'
+import { ProfessionalPDFService } from '../services/professionalPdfService'
+import { FileUploadSection } from '../components/FileUploadSection'
 import { CashflowChart } from '../components/CashflowChart'
-import { MetricCard } from '../components/MetricCard'
 import { CashRunwayWidget } from '../components/CashRunwayWidget'
 import { BurnRateTrend } from '../components/BurnRateTrend'
 import { ScenarioPlanning } from '../components/ScenarioPlanning'
@@ -50,21 +47,14 @@ interface DashboardData {
     nextSixMonths: string[]
   }
   isRealData: boolean
+  uploadedFileName?: string
 }
 
 export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  
-  // File upload state
-  const [file, setFile] = useState<File | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadSuccess, setUploadSuccess] = useState(false)
-  const [uploadError, setUploadError] = useState('')
-  const [dragActive, setDragActive] = useState(false)
-  const [uploadCollapsed, setUploadCollapsed] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     loadDashboard()
@@ -100,82 +90,35 @@ export const DashboardPage: React.FC = () => {
     return value >= 0 ? 'from-emerald-50 to-green-50' : 'from-red-50 to-pink-50'
   }
 
-  // Upload handlers
-  const handleFile = (selectedFile: File) => {
-    if (selectedFile && (selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || selectedFile.name.endsWith('.xlsx'))) {
-      setFile(selectedFile)
-      setUploadError('')
-      setUploadSuccess(false)
-    } else {
-      setUploadError('Please select a valid .xlsx file')
-      setFile(null)
-    }
-  }
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true)
-    } else if (e.type === "dragleave") {
-      setDragActive(false)
-    }
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0])
-    }
-  }
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0])
-    }
-  }
-
-  const handleUpload = async () => {
-    if (!file) return
+  const exportToPDF = async () => {
+    if (!data) return
 
     try {
-      setUploading(true)
-      setUploadError('')
-      await cashflowService.uploadFile(file)
+      setExporting(true)
       
-      setUploadSuccess(true)
-      setFile(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+      // Get active company information
+      const activeCompany = await configurationService.getActiveCompany()
       
-      // Reload dashboard data
-      await loadDashboard()
-      
-      // Collapse upload section after successful upload
-      setTimeout(() => {
-        setUploadCollapsed(true)
-      }, 2000)
-      
+      await ProfessionalPDFService.exportDashboard({
+        company: activeCompany.data,
+        title: 'Cash Flow Financial Report',
+        data: data,
+        type: 'cashflow'
+      })
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Upload failed'
-      setUploadError(`Error: ${errorMessage}`)
-      setUploadSuccess(false)
+      setError('Failed to export PDF. Please try again.')
     } finally {
-      setUploading(false)
+      setExporting(false)
     }
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+
+  const handleUpload = async (uploadedFile: File) => {
+    await cashflowService.uploadFile(uploadedFile)
+    // Reload dashboard data
+    await loadDashboard()
   }
+
 
   if (loading) {
     return (
@@ -218,152 +161,38 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Upload Section - Collapsible */}
+        {/* Header */}
         <div className="mb-8">
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            {/* Header - Always visible */}
-            <div 
-              className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
-              onClick={() => setUploadCollapsed(!uploadCollapsed)}
-            >
-              <div className="flex items-center space-x-4">
-                <div className={`p-3 rounded-xl ${data.isRealData ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gradient-to-br from-amber-400 to-orange-500'}`}>
-                  <CloudArrowUpIcon className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Excel File Upload
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    {data.isRealData ? 'Using uploaded data' : 'Upload a file to see your cashflow data'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                {uploadSuccess && (
-                  <span className="text-green-600 text-sm flex items-center bg-green-50 px-3 py-1 rounded-full">
-                    <CheckCircleIcon className="h-5 w-5 mr-1" />
-                    Uploaded successfully
-                  </span>
-                )}
-                {uploadCollapsed ? (
-                  <ChevronDownIcon className="h-6 w-6 text-gray-400" />
-                ) : (
-                  <ChevronUpIcon className="h-6 w-6 text-gray-400" />
-                )}
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <BanknotesIcon className="h-8 w-8 mr-3 text-green-600" />
+                Cash Flow Dashboard
+              </h1>
+              <p className="text-gray-600 mt-2">Monitor cash movements and financial health</p>
             </div>
-
-            {/* Content - Collapsible */}
-            {!uploadCollapsed && (
-              <div className="px-6 pb-6 border-t border-gray-100">
-                <div className="mt-6">
-                  {/* Drag & Drop Zone */}
-                  <div
-                    className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
-                      dragActive
-                        ? 'border-indigo-500 bg-indigo-50 scale-[1.02]'
-                        : 'border-gray-300 hover:border-gray-400 bg-gray-50'
-                    } ${file ? 'bg-green-50 border-green-300' : ''}`}
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".xlsx"
-                      onChange={handleFileInput}
-                      className="hidden"
-                    />
-
-                    <div className="space-y-4">
-                      <div className="mx-auto w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
-                        <ArrowUpTrayIcon className="h-10 w-10 text-indigo-600" />
-                      </div>
-                      
-                      <div>
-                        <p className="text-xl font-semibold text-gray-700 mb-2">
-                          Drop your Excel file here
-                        </p>
-                        <p className="text-gray-500">
-                          or click to browse • Supports .xlsx files
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* File Info */}
-                  {file && (
-                    <div className="mt-6 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="p-3 bg-white rounded-xl shadow-sm">
-                            <DocumentIcon className="h-8 w-8 text-indigo-600" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{file.name}</p>
-                            <p className="text-sm text-gray-600">{formatFileSize(file.size)}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setFile(null)
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = ''
-                            }
-                          }}
-                          className="text-gray-400 hover:text-red-600 transition-colors p-2"
-                        >
-                          <XCircleIcon className="h-6 w-6" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Status Messages */}
-                  {uploadError && (
-                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3">
-                      <XCircleIcon className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-red-700">{uploadError}</p>
-                    </div>
-                  )}
-
-                  {/* Upload Button */}
-                  {file && (
-                    <button
-                      onClick={handleUpload}
-                      disabled={uploading}
-                      className={`mt-6 w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300 ${
-                        uploading
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                      }`}
-                    >
-                      {uploading ? (
-                        <div className="flex items-center justify-center space-x-3">
-                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span>Processing...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center space-x-2">
-                          <CloudArrowUpIcon className="h-6 w-6" />
-                          <span>Upload Cashflow Data</span>
-                        </div>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
+            {data && (
+              <button
+                onClick={exportToPDF}
+                disabled={exporting}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5" />
+                <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
+              </button>
             )}
           </div>
         </div>
+
+        {/* File Upload Section */}
+        <FileUploadSection
+          onFileUpload={handleUpload}
+          title="Upload Cash Flow Data"
+          description="Import your Excel file to analyze cash movements and financial health"
+          uploadedFileName={data?.uploadedFileName}
+          isRealData={data?.isRealData}
+          variant="cashflow"
+        />
 
         {/* Data Warning for Demo Mode */}
         {!data.isRealData && (

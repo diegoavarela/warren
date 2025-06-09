@@ -1,12 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   ChartBarIcon,
   ArrowTrendingUpIcon,
   CurrencyDollarIcon,
-  ArrowUpTrayIcon,
-  DocumentIcon,
-  CheckCircleIcon,
-  XCircleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CalculatorIcon,
@@ -14,8 +10,9 @@ import {
   DocumentArrowDownIcon
 } from '@heroicons/react/24/outline'
 import { pnlService } from '../services/pnlService'
-import { PDFExportService } from '../services/pdfExportService'
+import { ProfessionalPDFService } from '../services/professionalPdfService'
 import { configurationService } from '../services/configurationService'
+import { FileUploadSection } from '../components/FileUploadSection'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -44,6 +41,7 @@ ChartJS.register(
 
 interface PnLDashboardData {
   hasData: boolean
+  uploadedFileName?: string
   currentMonth?: {
     month: string
     revenue: number
@@ -119,16 +117,7 @@ export const PnLDashboardPage: React.FC = () => {
   const [data, setData] = useState<PnLDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  
-  // File upload state
-  const [file, setFile] = useState<File | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadSuccess, setUploadSuccess] = useState(false)
-  const [uploadError, setUploadError] = useState('')
-  const [dragActive, setDragActive] = useState(false)
-  const [uploadCollapsed, setUploadCollapsed] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadDashboard()
@@ -140,10 +129,6 @@ export const PnLDashboardPage: React.FC = () => {
       setError('')
       const response = await pnlService.getDashboard()
       setData(response.data.data)
-      
-      if (response.data.data.hasData) {
-        setUploadCollapsed(true)
-      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load P&L data')
     } finally {
@@ -174,56 +159,11 @@ export const PnLDashboardPage: React.FC = () => {
     }
   }
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
-    }
-  }
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0])
-    }
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-    }
-  }
-
-  const handleUpload = async () => {
-    if (!file) return
-
-    setUploading(true)
-    setUploadError('')
-    setUploadSuccess(false)
-
-    try {
-      await pnlService.uploadFile(file)
-      setUploadSuccess(true)
-      setFile(null)
-      
-      // Reload dashboard data
-      await loadDashboard()
-      
-      // Collapse upload section after successful upload
-      setTimeout(() => {
-        setUploadCollapsed(true)
-      }, 1500)
-    } catch (err: any) {
-      setUploadError(err.response?.data?.message || 'Failed to upload file')
-    } finally {
-      setUploading(false)
-    }
+  const handleUpload = async (uploadedFile: File) => {
+    await pnlService.uploadFile(uploadedFile)
+    // Reload dashboard data
+    await loadDashboard()
   }
 
   const getMarginChartData = () => {
@@ -286,7 +226,7 @@ export const PnLDashboardPage: React.FC = () => {
       // Get active company information
       const activeCompany = await configurationService.getActiveCompany()
       
-      await PDFExportService.exportDashboard({
+      await ProfessionalPDFService.exportDashboard({
         company: activeCompany.data,
         title: 'P&L Financial Report',
         data: data,
@@ -350,7 +290,7 @@ export const PnLDashboardPage: React.FC = () => {
     )
   }
 
-  if (!data?.hasData || !uploadCollapsed) {
+  if (!data?.hasData) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -361,94 +301,15 @@ export const PnLDashboardPage: React.FC = () => {
           <p className="text-gray-600 mt-2">Upload your P&L statement to view financial insights</p>
         </div>
 
-        {/* Upload Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="max-w-2xl mx-auto">
-            <div
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                dragActive 
-                  ? 'border-green-500 bg-green-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              
-              <ArrowUpTrayIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              
-              <p className="text-lg font-medium text-gray-700 mb-2">
-                Drag and drop your P&L Excel file here
-              </p>
-              <p className="text-sm text-gray-500 mb-4">
-                or click to browse
-              </p>
-              
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Select File
-              </button>
-            </div>
-
-            {file && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <DocumentIcon className="h-8 w-8 text-gray-400 mr-3" />
-                    <div>
-                      <p className="font-medium text-gray-700">{file.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setFile(null)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <XCircleIcon className="h-6 w-6" />
-                  </button>
-                </div>
-                
-                <button
-                  onClick={handleUpload}
-                  disabled={uploading}
-                  className={`mt-4 w-full py-3 rounded-lg font-medium transition-colors ${
-                    uploading
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {uploading ? 'Processing...' : 'Upload and Analyze'}
-                </button>
-              </div>
-            )}
-
-            {uploadSuccess && (
-              <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-lg flex items-center">
-                <CheckCircleIcon className="h-6 w-6 mr-2" />
-                P&L file processed successfully!
-              </div>
-            )}
-
-            {uploadError && (
-              <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg flex items-center">
-                <XCircleIcon className="h-6 w-6 mr-2" />
-                {uploadError}
-              </div>
-            )}
-          </div>
-        </div>
+        {/* File Upload Section */}
+        <FileUploadSection
+          onFileUpload={handleUpload}
+          title="Upload P&L Statement"
+          description="Import your Profit & Loss Excel file to analyze financial performance"
+          uploadedFileName={data?.uploadedFileName}
+          isRealData={false}
+          variant="pnl"
+        />
       </div>
     )
   }
@@ -478,110 +339,15 @@ export const PnLDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Collapsible Upload Section */}
-      <div className="mb-8">
-        <button
-          onClick={() => setUploadCollapsed(!uploadCollapsed)}
-          className="flex items-center text-sm text-gray-600 hover:text-gray-900"
-        >
-          {uploadCollapsed ? (
-            <ChevronDownIcon className="h-4 w-4 mr-1" />
-          ) : (
-            <ChevronUpIcon className="h-4 w-4 mr-1" />
-          )}
-          Upload New P&L File
-        </button>
-        
-        {!uploadCollapsed && (
-          <div className="mt-4 bg-white rounded-xl shadow p-6">
-            <div className="max-w-2xl mx-auto">
-              <div
-                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                
-                <ArrowUpTrayIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                
-                <p className="text-lg font-medium text-gray-700 mb-2">
-                  Drag and drop your P&L Excel file here
-                </p>
-                <p className="text-sm text-gray-500 mb-4">
-                  or click to browse
-                </p>
-                
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Select File
-                </button>
-              </div>
-
-              {file && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <DocumentIcon className="h-8 w-8 text-gray-400 mr-3" />
-                      <div>
-                        <p className="font-medium text-gray-700">{file.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setFile(null)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <XCircleIcon className="h-6 w-6" />
-                    </button>
-                  </div>
-                  
-                  <button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className={`mt-4 w-full py-3 rounded-lg font-medium transition-colors ${
-                      uploading
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {uploading ? 'Processing...' : 'Upload and Analyze'}
-                  </button>
-                </div>
-              )}
-
-              {uploadSuccess && (
-                <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-lg flex items-center">
-                  <CheckCircleIcon className="h-6 w-6 mr-2" />
-                  P&L file processed successfully!
-                </div>
-              )}
-
-              {uploadError && (
-                <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg flex items-center">
-                  <XCircleIcon className="h-6 w-6 mr-2" />
-                  {uploadError}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      {/* File Upload Section */}
+      <FileUploadSection
+        onFileUpload={handleUpload}
+        title="Upload P&L Statement"
+        description="Import your Profit & Loss Excel file to analyze financial performance"
+        uploadedFileName={data?.uploadedFileName}
+        isRealData={data?.hasData}
+        variant="pnl"
+      />
 
       {/* Current Month Overview */}
       {data.currentMonth && (
