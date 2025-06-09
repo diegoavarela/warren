@@ -3,13 +3,16 @@ import ExcelJS from 'exceljs';
 import { AuthRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { CashflowServiceV2 } from '../services/CashflowServiceV2';
+import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
 import { logger } from '../utils/logger';
 
-// Create a singleton instance of CashflowServiceV2
+// Create singleton instances
 const cashflowServiceInstance = new CashflowServiceV2();
+const analysisServiceInstance = new CashFlowAnalysisService();
 
 export class CashflowController {
   private cashflowService = cashflowServiceInstance;
+  private analysisService = analysisServiceInstance;
 
   async uploadFile(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -79,6 +82,70 @@ export class CashflowController {
             monthlyGeneration: m.monthlyGeneration
           }))
         }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getRunwayAnalysis(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const storedMetrics = this.cashflowService.getStoredMetrics();
+      
+      if (storedMetrics.length === 0) {
+        return res.json({
+          success: true,
+          data: this.analysisService.calculateRunway([], -1)
+        });
+      }
+
+      // Find current month index
+      const now = new Date();
+      const currentMonthName = now.toLocaleString('en-US', { month: 'long' });
+      let currentIndex = storedMetrics.findIndex(m => m.month === currentMonthName);
+      
+      // If current month not found, use the last available month
+      if (currentIndex === -1) {
+        currentIndex = storedMetrics.length - 1;
+      }
+
+      const runwayAnalysis = this.analysisService.calculateRunway(storedMetrics, currentIndex);
+
+      res.json({
+        success: true,
+        data: runwayAnalysis
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getBurnRateAnalysis(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const storedMetrics = this.cashflowService.getStoredMetrics();
+      
+      if (storedMetrics.length === 0) {
+        return res.json({
+          success: true,
+          data: this.analysisService.analyzeBurnRate([], -1)
+        });
+      }
+
+      // Find current month index
+      const now = new Date();
+      const currentMonthName = now.toLocaleString('en-US', { month: 'long' });
+      let currentIndex = storedMetrics.findIndex(m => m.month === currentMonthName);
+      
+      // If current month not found, use the last available month
+      if (currentIndex === -1) {
+        currentIndex = storedMetrics.length - 1;
+      }
+
+      const burnRateAnalysis = this.analysisService.analyzeBurnRate(storedMetrics, currentIndex);
+
+      res.json({
+        success: true,
+        data: burnRateAnalysis
       });
     } catch (error) {
       next(error);

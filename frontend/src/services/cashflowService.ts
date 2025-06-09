@@ -28,4 +28,8 @@ export const cashflowService = {
   getDashboard: () => api.get('/cashflow/dashboard'),
   
   getMetrics: () => api.get('/cashflow/metrics'),
+  
+  getRunwayAnalysis: () => api.get('/cashflow/analysis/runway'),
+  
+  getBurnRateAnalysis: () => api.get('/cashflow/analysis/burn-rate'),
 }

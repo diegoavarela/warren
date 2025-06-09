@@ -18,6 +18,8 @@ import {
 import { cashflowService } from '../services/cashflowService'
 import { CashflowChart } from '../components/CashflowChart'
 import { MetricCard } from '../components/MetricCard'
+import { CashRunwayWidget } from '../components/CashRunwayWidget'
+import { BurnRateTrend } from '../components/BurnRateTrend'
 
 interface DashboardData {
   currentMonth: {
@@ -373,6 +375,15 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Cash Flow Analysis Section - NEW */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Cash Flow Analysis</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CashRunwayWidget />
+            <BurnRateTrend />
+          </div>
+        </div>
 
         {/* Current Month Metrics */}
         <div className="mb-8">
