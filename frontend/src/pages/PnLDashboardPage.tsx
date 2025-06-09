@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import {
   ChartBarIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
   CurrencyDollarIcon,
   ArrowUpTrayIcon,
   DocumentIcon,
@@ -53,6 +52,7 @@ interface PnLDashboardData {
     operatingMargin: number
     netIncome: number
     netMargin: number
+    ebitda: number
   }
   yearToDate?: {
     revenue: number
@@ -415,7 +415,91 @@ export const PnLDashboardPage: React.FC = () => {
         
         {!uploadCollapsed && (
           <div className="mt-4 bg-white rounded-xl shadow p-6">
-            {/* Upload UI (same as above) */}
+            <div className="max-w-2xl mx-auto">
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                  dragActive 
+                    ? 'border-green-500 bg-green-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                
+                <ArrowUpTrayIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                
+                <p className="text-lg font-medium text-gray-700 mb-2">
+                  Drag and drop your P&L Excel file here
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  or click to browse
+                </p>
+                
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Select File
+                </button>
+              </div>
+
+              {file && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <DocumentIcon className="h-8 w-8 text-gray-400 mr-3" />
+                      <div>
+                        <p className="font-medium text-gray-700">{file.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setFile(null)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <XCircleIcon className="h-6 w-6" />
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className={`mt-4 w-full py-3 rounded-lg font-medium transition-colors ${
+                      uploading
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    {uploading ? 'Processing...' : 'Upload and Analyze'}
+                  </button>
+                </div>
+              )}
+
+              {uploadSuccess && (
+                <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-lg flex items-center">
+                  <CheckCircleIcon className="h-6 w-6 mr-2" />
+                  P&L file processed successfully!
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg flex items-center">
+                  <XCircleIcon className="h-6 w-6 mr-2" />
+                  {uploadError}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -427,7 +511,7 @@ export const PnLDashboardPage: React.FC = () => {
             {data.currentMonth.month} P&L Overview
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {/* Revenue */}
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
               <div className="flex items-center justify-between mb-4">
@@ -470,6 +554,19 @@ export const PnLDashboardPage: React.FC = () => {
               <h3 className="text-sm font-medium text-gray-600 mb-1">Operating Income</h3>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.currentMonth.operatingIncome)}
+              </p>
+            </div>
+
+            {/* EBITDA */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-100 rounded-xl">
+                  <ChartBarIcon className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+              <h3 className="text-sm font-medium text-gray-600 mb-1">EBITDA</h3>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatCurrency(data.currentMonth.ebitda)}
               </p>
             </div>
 

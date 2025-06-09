@@ -7,6 +7,7 @@ import {
   BanknotesIcon
 } from '@heroicons/react/24/outline'
 import { VortexLogo } from '../components/VortexLogo'
+import { Footer } from '../components/Footer'
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate()
@@ -163,6 +164,8 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   )
 }
