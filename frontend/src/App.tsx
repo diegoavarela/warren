@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage'
 import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { PnLDashboardPage } from './pages/PnLDashboardPage'
+import { ConfigurationPage } from './pages/ConfigurationPage'
 import { AdminPage } from './pages/AdminPage'
 import { TermsPage } from './pages/TermsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
@@ -33,6 +34,13 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <PnLDashboardPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/configuration" element={
+          <ProtectedRoute>
+            <Layout>
+              <ConfigurationPage />
             </Layout>
           </ProtectedRoute>
         } />

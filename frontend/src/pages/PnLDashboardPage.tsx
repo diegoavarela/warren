@@ -69,6 +69,20 @@ interface PnLDashboardData {
     salesMarketing?: number
     facilitiesAdmin?: number
   }
+  previousMonth?: {
+    month: string
+    revenue: number
+    cogs: number
+    grossProfit: number
+    grossMargin: number
+    operatingExpenses: number
+    operatingIncome: number
+    operatingMargin: number
+    netIncome: number
+    netMargin: number
+    ebitda: number
+    ebitdaMargin: number
+  }
   yearToDate?: {
     revenue: number
     cogs: number
@@ -144,6 +158,16 @@ export const PnLDashboardPage: React.FC = () => {
 
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`
+  }
+
+  const calculateChange = (current: number, previous: number) => {
+    if (!previous || previous === 0) return null
+    const change = ((current - previous) / previous) * 100
+    return {
+      value: current - previous,
+      percentage: change,
+      isPositive: change >= 0
+    }
   }
 
   const handleDrag = (e: React.DragEvent) => {
@@ -522,9 +546,16 @@ export const PnLDashboardPage: React.FC = () => {
       {/* Current Month Overview */}
       {data.currentMonth && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            {data.currentMonth.month} P&L Overview
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {data.currentMonth.month} P&L Overview
+            </h2>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span className="px-3 py-1 bg-gray-100 rounded-lg font-medium">
+                ARS (in thousands)
+              </span>
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {/* Revenue */}
@@ -533,6 +564,21 @@ export const PnLDashboardPage: React.FC = () => {
                 <div className="p-3 bg-green-100 rounded-xl">
                   <ArrowTrendingUpIcon className="h-6 w-6 text-green-600" />
                 </div>
+                {data.previousMonth && (() => {
+                  const change = calculateChange(data.currentMonth.revenue, data.previousMonth.revenue)
+                  return change && (
+                    <div className={`flex items-center space-x-1 text-sm font-medium ${
+                      change.isPositive ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {change.isPositive ? (
+                        <ChevronUpIcon className="h-4 w-4" />
+                      ) : (
+                        <ChevronDownIcon className="h-4 w-4" />
+                      )}
+                      <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                    </div>
+                  )
+                })()}
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">Revenue</h3>
               <p className="text-2xl font-bold text-gray-900">
@@ -546,9 +592,26 @@ export const PnLDashboardPage: React.FC = () => {
                 <div className="p-3 bg-blue-100 rounded-xl">
                   <CurrencyDollarIcon className="h-6 w-6 text-blue-600" />
                 </div>
-                <span className="text-sm font-medium text-blue-600">
-                  {formatPercentage(data.currentMonth.grossMargin)}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-blue-600">
+                    {formatPercentage(data.currentMonth.grossMargin)}
+                  </span>
+                  {data.previousMonth && (() => {
+                    const change = calculateChange(data.currentMonth.grossProfit, data.previousMonth.grossProfit)
+                    return change && (
+                      <div className={`flex items-center space-x-1 text-sm font-medium ${
+                        change.isPositive ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {change.isPositive ? (
+                          <ChevronUpIcon className="h-4 w-4" />
+                        ) : (
+                          <ChevronDownIcon className="h-4 w-4" />
+                        )}
+                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                      </div>
+                    )
+                  })()}
+                </div>
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">Gross Profit</h3>
               <p className="text-2xl font-bold text-gray-900">
@@ -562,9 +625,26 @@ export const PnLDashboardPage: React.FC = () => {
                 <div className="p-3 bg-indigo-100 rounded-xl">
                   <CalculatorIcon className="h-6 w-6 text-indigo-600" />
                 </div>
-                <span className="text-sm font-medium text-indigo-600">
-                  {formatPercentage(data.currentMonth.operatingMargin)}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-indigo-600">
+                    {formatPercentage(data.currentMonth.operatingMargin)}
+                  </span>
+                  {data.previousMonth && (() => {
+                    const change = calculateChange(data.currentMonth.operatingIncome, data.previousMonth.operatingIncome)
+                    return change && (
+                      <div className={`flex items-center space-x-1 text-sm font-medium ${
+                        change.isPositive ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {change.isPositive ? (
+                          <ChevronUpIcon className="h-4 w-4" />
+                        ) : (
+                          <ChevronDownIcon className="h-4 w-4" />
+                        )}
+                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                      </div>
+                    )
+                  })()}
+                </div>
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">Operating Income</h3>
               <p className="text-2xl font-bold text-gray-900">
@@ -578,9 +658,26 @@ export const PnLDashboardPage: React.FC = () => {
                 <div className="p-3 bg-purple-100 rounded-xl">
                   <ChartBarIcon className="h-6 w-6 text-purple-600" />
                 </div>
-                <span className="text-sm font-medium text-purple-600">
-                  {formatPercentage(data.currentMonth.ebitdaMargin)}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-purple-600">
+                    {formatPercentage(data.currentMonth.ebitdaMargin)}
+                  </span>
+                  {data.previousMonth && (() => {
+                    const change = calculateChange(data.currentMonth.ebitda, data.previousMonth.ebitda)
+                    return change && (
+                      <div className={`flex items-center space-x-1 text-sm font-medium ${
+                        change.isPositive ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {change.isPositive ? (
+                          <ChevronUpIcon className="h-4 w-4" />
+                        ) : (
+                          <ChevronDownIcon className="h-4 w-4" />
+                        )}
+                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                      </div>
+                    )
+                  })()}
+                </div>
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">EBITDA</h3>
               <p className="text-2xl font-bold text-gray-900">
@@ -598,11 +695,28 @@ export const PnLDashboardPage: React.FC = () => {
                     data.currentMonth.netIncome >= 0 ? 'text-green-600' : 'text-red-600'
                   }`} />
                 </div>
-                <span className={`text-sm font-medium ${
-                  data.currentMonth.netMargin >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {formatPercentage(data.currentMonth.netMargin)}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`text-sm font-medium ${
+                    data.currentMonth.netMargin >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {formatPercentage(data.currentMonth.netMargin)}
+                  </span>
+                  {data.previousMonth && (() => {
+                    const change = calculateChange(data.currentMonth.netIncome, data.previousMonth.netIncome)
+                    return change && (
+                      <div className={`flex items-center space-x-1 text-sm font-medium ${
+                        change.isPositive ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {change.isPositive ? (
+                          <ChevronUpIcon className="h-4 w-4" />
+                        ) : (
+                          <ChevronDownIcon className="h-4 w-4" />
+                        )}
+                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                      </div>
+                    )
+                  })()}
+                </div>
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">Net Income</h3>
               <p className={`text-2xl font-bold ${

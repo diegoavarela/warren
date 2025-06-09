@@ -64,6 +64,9 @@ export class PnLController {
       const currentMonthIndex = metrics.length - 1
       const currentMonth = metrics[currentMonthIndex]
       
+      // Get previous month data for comparison
+      const previousMonth = currentMonthIndex > 0 ? metrics[currentMonthIndex - 1] : null
+      
       // Calculate YTD metrics
       const yearToDate = metrics.reduce((acc, metric) => ({
         revenue: acc.revenue + metric.revenue,
@@ -95,6 +98,7 @@ export class PnLController {
         data: {
           hasData: true,
           currentMonth,
+          previousMonth,
           yearToDate,
           summary,
           chartData,

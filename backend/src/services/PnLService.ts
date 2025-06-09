@@ -1,6 +1,7 @@
 import { Buffer } from 'buffer'
 import * as ExcelJS from 'exceljs'
 import { logger } from '../utils/logger'
+import { ConfigurationService } from './ConfigurationService'
 
 interface PnLRow {
   lineItem: string
@@ -55,8 +56,11 @@ export class PnLService {
   private storedData: PnLRow[] = []
   private storedMetrics: PnLMetrics[] = []
   private lastUploadDate: Date | null = null
+  private configService: ConfigurationService
 
-  private constructor() {}
+  private constructor() {
+    this.configService = ConfigurationService.getInstance()
+  }
 
   static getInstance(): PnLService {
     if (!PnLService.instance) {
@@ -69,6 +73,138 @@ export class PnLService {
     try {
       logger.info('Starting P&L Excel file processing')
       
+      // Get active company configuration
+      const activeCompany = this.configService.getActiveCompany()
+      if (!activeCompany?.excelStructure) {
+        logger.info('No active company configuration found, using default structure')
+        return this.processWithDefaultStructure(buffer)
+      }
+
+      logger.info(`Using configuration for company: ${activeCompany.name}`)
+      return this.processWithConfiguration(buffer, activeCompany.excelStructure)
+    } catch (error) {
+      logger.error('Error processing P&L Excel file:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
+    }
+  }
+
+  private async processWithConfiguration(buffer: Buffer, config: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(buffer)
+      
+      // Find worksheet by name from configuration
+      let worksheet = workbook.worksheets.find(ws => 
+        ws.name.toLowerCase() === config.worksheetName.toLowerCase()
+      )
+      
+      if (!worksheet) {
+        // Fallback to first worksheet
+        worksheet = workbook.worksheets[0]
+        logger.warn(`Configured worksheet '${config.worksheetName}' not found, using: ${worksheet.name}`)
+      }
+
+      // Use configured structure
+      const metrics: PnLMetrics[] = []
+      
+      Object.entries(config.monthColumns).forEach(([month, col]: [string, any]) => {
+        const getValue = (rowNum: number): number => {
+          const cell = worksheet!.getRow(rowNum).getCell(col)
+          const value = cell.value
+          
+          if (typeof value === 'number') {
+            return value
+          } else if (value && typeof value === 'object' && 'result' in value) {
+            return typeof value.result === 'number' ? value.result : 0
+          }
+          return 0
+        }
+
+        const revenue = getValue(config.metricRows.revenue || 8)
+        if (revenue > 0) {
+          const cogs = getValue(config.metricRows.costOfRevenue || 18)
+          const grossProfit = getValue(config.metricRows.grossProfit || 19)
+          const operatingExpenses = getValue(config.metricRows.operatingExpenses || 52)
+          const ebitda = getValue(config.metricRows.ebitda || 65)
+          const netIncome = getValue(config.metricRows.netIncome || 81)
+          
+          const grossMarginPercent = getValue(config.metricRows.grossMargin || 20) * 100
+          const ebitdaMarginPercent = getValue(config.metricRows.ebitdaMargin || 66) * 100
+          const netIncomeMarginPercent = getValue(config.metricRows.netIncomeMargin || 82) * 100
+          
+          const operatingIncome = grossProfit - Math.abs(operatingExpenses)
+          const operatingMarginPercent = revenue > 0 ? (operatingIncome / revenue) * 100 : 0
+          
+          // Extract personnel costs if configured
+          const personnelSalariesCoR = config.metricRows.personnelSalariesCoR ? Math.abs(getValue(config.metricRows.personnelSalariesCoR)) : 0
+          const payrollTaxesCoR = config.metricRows.payrollTaxesCoR ? Math.abs(getValue(config.metricRows.payrollTaxesCoR)) : 0
+          const personnelSalariesOp = config.metricRows.personnelSalariesOp ? Math.abs(getValue(config.metricRows.personnelSalariesOp)) : 0
+          const payrollTaxesOp = config.metricRows.payrollTaxesOp ? Math.abs(getValue(config.metricRows.payrollTaxesOp)) : 0
+          const healthCoverageCoR = config.metricRows.healthCoverageCoR ? Math.abs(getValue(config.metricRows.healthCoverageCoR)) : 0
+          const healthCoverageOp = config.metricRows.healthCoverageOp ? Math.abs(getValue(config.metricRows.healthCoverageOp)) : 0
+          const personnelBenefits = config.metricRows.personnelBenefits ? Math.abs(getValue(config.metricRows.personnelBenefits)) : 0
+          
+          const totalPersonnelCost = personnelSalariesCoR + payrollTaxesCoR + 
+                                    personnelSalariesOp + payrollTaxesOp + 
+                                    healthCoverageCoR + healthCoverageOp + 
+                                    personnelBenefits
+          
+          // Extract other cost categories if configured
+          const contractServicesCoR = config.metricRows.contractServicesCoR ? Math.abs(getValue(config.metricRows.contractServicesCoR)) : 0
+          const contractServicesOp = config.metricRows.contractServicesOp ? Math.abs(getValue(config.metricRows.contractServicesOp)) : 0
+          
+          metrics.push({
+            month,
+            revenue,
+            cogs: Math.abs(cogs),
+            grossProfit,
+            grossMargin: grossMarginPercent,
+            operatingExpenses: Math.abs(operatingExpenses),
+            operatingIncome,
+            operatingMargin: operatingMarginPercent,
+            otherIncomeExpenses: 0,
+            netIncome,
+            netMargin: netIncomeMarginPercent,
+            ebitda,
+            ebitdaMargin: ebitdaMarginPercent,
+            personnelSalariesCoR,
+            payrollTaxesCoR,
+            personnelSalariesOp,
+            payrollTaxesOp,
+            healthCoverage: healthCoverageCoR + healthCoverageOp,
+            personnelBenefits,
+            totalPersonnelCost: totalPersonnelCost > 0 ? totalPersonnelCost : undefined,
+            contractServicesCoR,
+            contractServicesOp
+          })
+        }
+      })
+
+      this.storedMetrics = metrics
+      this.lastUploadDate = new Date()
+
+      logger.info(`P&L processing complete using configuration. Processed ${metrics.length} months of data`)
+
+      const activeCompany = this.configService.getActiveCompany()
+      return {
+        success: true,
+        data: {
+          months: metrics.length,
+          lastMonth: metrics[metrics.length - 1]?.month || 'N/A',
+          configuration: activeCompany?.name
+        }
+      }
+    } catch (error) {
+      logger.error('Error processing with configuration:', error)
+      throw error
+    }
+  }
+
+  private async processWithDefaultStructure(buffer: Buffer): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
       const workbook = new ExcelJS.Workbook()
       await workbook.xlsx.load(buffer)
       
@@ -248,11 +384,8 @@ export class PnLService {
         }
       }
     } catch (error) {
-      logger.error('Error processing P&L Excel file:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      }
+      logger.error('Error processing with default structure:', error)
+      throw error
     }
   }
 
