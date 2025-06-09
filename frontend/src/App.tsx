@@ -4,7 +4,11 @@ import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
-import { UploadPage } from './pages/UploadPage'
+import { AdminPage } from './pages/AdminPage'
+import { TermsPage } from './pages/TermsPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { CookiesPage } from './pages/CookiesPage'
+import { DebugPage } from './pages/DebugPage'
 
 function App() {
   return (
@@ -18,11 +22,19 @@ function App() {
             </Layout>
           </ProtectedRoute>
         } />
-        <Route path="/upload" element={
+        <Route path="/admin" element={
           <ProtectedRoute>
             <Layout>
-              <UploadPage />
+              <AdminPage />
             </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/cookies" element={<CookiesPage />} />
+        <Route path="/debug" element={
+          <ProtectedRoute>
+            <DebugPage />
           </ProtectedRoute>
         } />
       </Routes>

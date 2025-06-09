@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from 'react-i18next'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
+import { VortexLogo } from '../components/VortexLogo'
 
 export function LoginPage() {
   const { user, login } = useAuth()
@@ -35,15 +36,17 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-vortex-green rounded-full flex items-center justify-center mb-4">
-            <div className="w-10 h-10 border-4 border-white rounded-full border-l-transparent"
-                 style={{ borderRadius: '50% 50% 50% 0', transform: 'rotate(45deg)' }}></div>
+          <div className="flex justify-center mb-6">
+            <VortexLogo variant="iso" size="xl" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            {t('auth.welcome')}
+          <div className="flex justify-center mb-4">
+            <VortexLogo variant="horizontal" size="lg" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Warren Financial Dashboard
           </h2>
-          <p className="text-gray-600">
-            {t('auth.subtitle')}
+          <p className="text-sm text-gray-500">
+            Sign in to access your financial insights
           </p>
         </div>
 
@@ -113,11 +116,14 @@ export function LoginPage() {
             </button>
           </div>
 
-          <div className="text-center text-sm text-gray-600">
-            <p>{t('auth.demoCredentials')}</p>
-            <p className="mt-1">
-              <strong>Email:</strong> admin@vortex.com<br />
-              <strong>Password:</strong> vortex123
+          <div className="text-center text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="font-medium text-blue-800 mb-2">Demo Credentials</p>
+            <div className="space-y-1 text-blue-700">
+              <p><strong>Email:</strong> admin@vort-ex.com</p>
+              <p><strong>Password:</strong> vortex123</p>
+            </div>
+            <p className="text-xs text-blue-600 mt-2">
+              Use these credentials to access the admin dashboard
             </p>
           </div>
         </form>

@@ -5,6 +5,9 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { authRouter } from './routes/auth';
 import { cashflowRouter } from './routes/cashflow';
+import { teamRouter } from './routes/team';
+import { adminRouter } from './routes/admin';
+import { legalRouter } from './routes/legal';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
@@ -49,6 +52,9 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/cashflow', cashflowRouter);
+app.use('/api/team', teamRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/legal', legalRouter);
 
 // Health check
 app.get('/health', (req, res) => {

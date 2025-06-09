@@ -21,8 +21,8 @@ interface MonthlyMetrics {
 }
 
 // Global data store for the cashflow data (in production, this would be a database)
-let globalCashflowData: CashflowEntry[] = [];
-let globalMetricsData: MonthlyMetrics[] = [];
+export let globalCashflowData: CashflowEntry[] = [];
+export let globalMetricsData: MonthlyMetrics[] = [];
 
 export class CashflowService {
   private currentData: CashflowEntry[] = [];
@@ -32,6 +32,9 @@ export class CashflowService {
     this.currentData = data;
     globalCashflowData = data; // Store globally
     console.log(`Stored ${data.length} entries globally`);
+    console.log('First entry:', data[0]);
+    console.log('Global metrics length:', globalMetricsData.length);
+    console.log('First metric:', globalMetricsData[0]);
   }
 
   getCurrentData(): CashflowEntry[] {
@@ -52,11 +55,27 @@ export class CashflowService {
       
       console.log('Extracting dates from row 3 (Peso section)...');
       
-      // Extract dates from columns 2-16 (B-P) which is the Peso section
+      // Extract dates from columns 2-16 (B-P) which is the Peso section ONLY
+      // IMPORTANT: Do not read past column 16 to avoid USD section
+      const monthCounts: {[key: string]: number} = {};
+      
+      console.log('IMPORTANT: Reading ONLY Peso section (columns 2-16)');
+      
       for (let i = 2; i <= 16; i++) {
         const dateCell = dateRow.getCell(i).value;
+        
+        // CRITICAL: Stop if we hit "Dollars" or any non-date value
+        if (dateCell === 'Dollars' || (typeof dateCell === 'string' && dateCell.includes('Dollar'))) {
+          console.log(`STOPPING at column ${i} - found USD section marker: "${dateCell}"`);
+          break;
+        }
+        
         if (dateCell instanceof Date) {
           const monthName = format(dateCell, 'MMMM');
+          
+          // Track how many times we see each month
+          monthCounts[monthName] = (monthCounts[monthName] || 0) + 1;
+          
           pesoDates.push({
             columnIndex: i,
             date: dateCell,
@@ -65,6 +84,16 @@ export class CashflowService {
           console.log(`Column ${i} (${String.fromCharCode(64 + i)}): ${monthName} ${format(dateCell, 'yyyy')}`);
         }
       }
+      
+      console.log('Month counts:', monthCounts);
+      console.log(`Total peso dates found: ${pesoDates.length}`);
+      
+      // CRITICAL: If we have duplicate months, something is wrong
+      Object.entries(monthCounts).forEach(([month, count]) => {
+        if (count > 1) {
+          console.error(`ERROR: Found ${count} instances of ${month}! There should only be 1.`);
+        }
+      });
       
       // Define the exact rows based on your Excel file
       const rowNumbers = {
@@ -102,15 +131,26 @@ export class CashflowService {
         const incomeValue = incomeRow.getCell(dateInfo.columnIndex).value;
         if (typeof incomeValue === 'number') {
           metrics.totalIncome = incomeValue;
-          console.log(`${dateInfo.monthName} - Total Income: ${incomeValue.toFixed(2)}`);
+          console.log(`${dateInfo.monthName} (Col ${dateInfo.columnIndex}) - Total Income: ${incomeValue.toFixed(2)}`);
+          if (dateInfo.monthName === 'June') {
+            console.log('=== JUNE DEBUG ===');
+            console.log(`  Column index: ${dateInfo.columnIndex} (${String.fromCharCode(64 + dateInfo.columnIndex)})`);
+            console.log(`  Raw value from Excel: ${incomeValue}`);
+            console.log(`  Expected value: 61715728.02`);
+            console.log(`  Difference: ${incomeValue - 61715728.02}`);
+            if (Math.abs(incomeValue - 61715728.02) > 1) {
+              console.error('  ERROR: June value is WRONG!');
+            }
+          }
         }
         
         // Get Total Expense from row 100
         const expenseRow = worksheet.getRow(rowNumbers.totalExpense);
         const expenseValue = expenseRow.getCell(dateInfo.columnIndex).value;
         if (typeof expenseValue === 'number') {
-          metrics.totalExpense = Math.abs(expenseValue); // Store as positive
-          console.log(`${dateInfo.monthName} - Total Expense: ${Math.abs(expenseValue).toFixed(2)}`);
+          // Keep the expense as is (negative value from Excel)
+          metrics.totalExpense = expenseValue;
+          console.log(`${dateInfo.monthName} - Total Expense: ${expenseValue.toFixed(2)}`);
         }
         
         // Get Final Balance from row 104
@@ -149,14 +189,15 @@ export class CashflowService {
       let cumulativeCash = 0;
       
       for (const metrics of monthlyMetrics) {
-        const cashflow = metrics.totalIncome - metrics.totalExpense;
+        // Since totalExpense is negative, adding it gives us the net cashflow
+        const cashflow = metrics.totalIncome + metrics.totalExpense;
         cumulativeCash += cashflow;
         
         data.push({
           date: metrics.date,
           description: `Cashflow for ${format(metrics.date, 'MMM yyyy')}`,
           revenue: metrics.totalIncome,
-          costs: metrics.totalExpense,
+          costs: Math.abs(metrics.totalExpense), // Store as positive for display
           cashflow: cashflow,
           cumulativeCash
         });
@@ -175,6 +216,12 @@ export class CashflowService {
     // Always check for global data first
     this.getCurrentData();
     const metrics = globalMetricsData.length > 0 ? globalMetricsData : this.metricsData;
+    
+    console.log('=== DASHBOARD GENERATION DEBUG ===');
+    console.log(`Current data length: ${this.currentData.length}`);
+    console.log(`Global data length: ${globalCashflowData.length}`);
+    console.log(`Metrics length: ${metrics.length}`);
+    console.log(`Global metrics length: ${globalMetricsData.length}`);
     
     if (this.currentData.length === 0 || metrics.length === 0) {
       console.log('No real data available, using mock data');
@@ -202,10 +249,36 @@ export class CashflowService {
       };
     }
 
-    // Get current month (for now, let's use June as it's month 5 in 0-based index)
+    // Get current month based on actual date
     const now = new Date();
-    const currentMonthIndex = 5; // June (0-based, so Jan=0, Jun=5)
+    console.log('=== DATE DEBUG ===');
+    console.log('Raw date:', now);
+    console.log('ISO date:', now.toISOString());
+    console.log('Local date:', now.toLocaleDateString());
+    const currentMonth = now.getMonth(); // 0-based (0=Jan, 11=Dec)
+    const currentYear = now.getFullYear();
+    
+    // Use the actual current month
+    let currentMonthIndex = currentMonth; // This should be 5 for June
+    
+    // Make sure we don't go beyond available data
+    if (currentMonthIndex >= metrics.length) {
+      currentMonthIndex = metrics.length - 1;
+    }
+    
+    console.log(`Current date: ${now.toLocaleDateString()}`);
+    console.log(`Current month (0-based): ${currentMonth}`);
+    console.log(`Current year: ${currentYear}`);
+    console.log(`Metrics available: ${metrics.length}`);
+    console.log(`Selected month index: ${currentMonthIndex}`);
+    console.log(`Showing data for: ${metrics[currentMonthIndex]?.month}`);
+    
     const currentMonthData = metrics[currentMonthIndex];
+    console.log('Current month data:', currentMonthData);
+    console.log('All metrics for debugging:');
+    metrics.forEach((m, idx) => {
+      console.log(`  Index ${idx}: ${m.month} - Income: ${m.totalIncome}`);
+    });
     
     // Calculate YTD values (January to current month)
     let ytdIncome = 0;
@@ -214,9 +287,10 @@ export class CashflowService {
     
     for (let i = 0; i <= currentMonthIndex; i++) {
       ytdIncome += metrics[i].totalIncome;
-      ytdExpense += metrics[i].totalExpense;
+      ytdExpense += metrics[i].totalExpense; // This is already negative
     }
-    ytdBalance = ytdIncome - ytdExpense;
+    // Since expense is negative, we add them to get the balance
+    ytdBalance = ytdIncome + ytdExpense;
     
     // Generate dashboard data
     const dashboardData = {
@@ -248,7 +322,7 @@ export class CashflowService {
     const totalIncomeJanMay = janToMay.reduce((sum, m) => sum + m.totalIncome, 0);
     const totalExpenseJanMay = janToMay.reduce((sum, m) => sum + m.totalExpense, 0);
     const avgIncome = totalIncomeJanMay / janToMay.length;
-    const avgExpense = totalExpenseJanMay / janToMay.length;
+    const avgExpense = Math.abs(totalExpenseJanMay / janToMay.length); // Convert to positive for display
     
     console.log('Average calculations (Jan-May):');
     console.log(`  Total Income: ${totalIncomeJanMay.toFixed(2)}, Average: ${avgIncome.toFixed(2)}`);
@@ -298,7 +372,7 @@ export class CashflowService {
       date: format(entry.date, 'yyyy-MM'),
       month: entry.month,
       revenue: entry.totalIncome,
-      costs: entry.totalExpense,
+      costs: Math.abs(entry.totalExpense), // Convert to positive for display
       cashflow: entry.monthlyGeneration
     }));
   }

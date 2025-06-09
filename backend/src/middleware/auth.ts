@@ -6,6 +6,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
+    role?: string;
   };
 }
 
@@ -24,3 +25,6 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     next(createError('Invalid token.', 401));
   }
 };
+
+// Export as 'auth' for backward compatibility
+export const auth = authMiddleware;

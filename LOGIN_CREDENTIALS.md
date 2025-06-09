@@ -2,7 +2,7 @@
 
 ## Default Admin Credentials
 
-**Email:** admin@vortex.com
+**Email:** admin@vort-ex.com
 **Password:** vortex123
 
 ## How to Change Credentials

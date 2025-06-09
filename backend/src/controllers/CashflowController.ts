@@ -2,11 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import ExcelJS from 'exceljs';
 import { AuthRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
-import { CashflowService } from '../services/CashflowService';
+import { CashflowServiceV2 } from '../services/CashflowServiceV2';
 import { logger } from '../utils/logger';
 
+// Create a singleton instance of CashflowServiceV2
+const cashflowServiceInstance = new CashflowServiceV2();
+
 export class CashflowController {
-  private cashflowService = new CashflowService();
+  private cashflowService = cashflowServiceInstance;
 
   async uploadFile(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -24,22 +27,18 @@ export class CashflowController {
         return next(createError('No worksheet found in Excel file', 400));
       }
 
-      const cashflowData = this.cashflowService.parseWorksheet(worksheet);
-      
-      // Store the data in the service for dashboard use
-      this.cashflowService.setCurrentData(cashflowData);
-      
-      logger.info(`Cashflow file uploaded by user ${req.user?.email}, ${cashflowData.length} rows processed`);
+      const metrics = this.cashflowService.parseWorksheet(worksheet);
+      logger.info(`Cashflow file uploaded by user ${req.user?.email}, ${metrics.length} months processed`);
 
       res.json({
         success: true,
         message: 'File uploaded and processed successfully',
         data: {
           filename: req.file.originalname,
-          rowsProcessed: cashflowData.length,
-          dateRange: cashflowData.length > 0 ? {
-            from: cashflowData[0].date,
-            to: cashflowData[cashflowData.length - 1].date
+          monthsProcessed: metrics.length,
+          dateRange: metrics.length > 0 ? {
+            from: metrics[0].date,
+            to: metrics[metrics.length - 1].date
           } : null
         }
       });
@@ -52,7 +51,6 @@ export class CashflowController {
 
   async getDashboard(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      // In production, this would fetch from database
       const dashboardData = this.cashflowService.generateDashboard();
 
       res.json({
@@ -66,11 +64,21 @@ export class CashflowController {
 
   async getMetrics(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const metrics = this.cashflowService.calculateMetrics();
+      // Return the stored metrics for debugging
+      const storedMetrics = this.cashflowService.getStoredMetrics();
 
       res.json({
         success: true,
-        data: metrics
+        data: {
+          monthsAvailable: storedMetrics.length,
+          metrics: storedMetrics.map(m => ({
+            month: m.month,
+            column: m.columnLetter,
+            totalIncome: m.totalIncome,
+            totalExpense: m.totalExpense,
+            monthlyGeneration: m.monthlyGeneration
+          }))
+        }
       });
     } catch (error) {
       next(error);

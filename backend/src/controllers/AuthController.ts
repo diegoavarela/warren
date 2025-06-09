@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
+import { UserService } from '../services/UserService';
 import { logger } from '../utils/logger';
 
 export class AuthController {
@@ -10,27 +11,37 @@ export class AuthController {
     try {
       const { email, password } = req.body;
 
-      // For demo purposes, using hardcoded admin credentials
-      // In production, this would check against a database
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@vortex.com';
-      const adminPassword = process.env.ADMIN_PASSWORD || 'vortex123';
+      // Validate input
+      if (!email || !password) {
+        return next(createError('Email and password are required', 400));
+      }
 
-      if (email !== adminEmail || password !== adminPassword) {
+      // Authenticate user using UserService
+      const user = await UserService.authenticateUser(email, password);
+      if (!user) {
         return next(createError('Invalid credentials', 401));
       }
 
+      // Generate JWT token
       const token = jwt.sign(
-        { id: '1', email: adminEmail },
+        { 
+          id: user.id, 
+          email: user.email,
+          role: user.role 
+        },
         process.env.JWT_SECRET!,
         { expiresIn: '24h' }
       );
 
       logger.info(`User logged in: ${email}`);
 
+      // Remove sensitive data from response
+      const { encryptedData, ...safeUser } = user;
+
       res.json({
         success: true,
         token,
-        user: { id: '1', email: adminEmail }
+        user: safeUser
       });
     } catch (error) {
       next(error);
