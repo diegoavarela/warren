@@ -11,6 +11,16 @@ interface CompanyConfig {
   createdAt: string
   lastUpdated?: string
   excelStructure?: ExcelStructure
+  // Enhanced company information
+  logo?: string // Base64 encoded logo
+  website?: string
+  address?: string
+  phone?: string
+  email?: string
+  industry?: string
+  description?: string
+  primaryColor?: string
+  secondaryColor?: string
 }
 
 interface ExcelStructure {
@@ -55,6 +65,12 @@ export class ConfigurationService {
       scale: 'thousands',
       isActive: true,
       createdAt: '2025-01-01',
+      website: 'https://vortex.com',
+      email: 'contact@vortex.com',
+      industry: 'Technology',
+      description: 'Innovative technology solutions for modern businesses',
+      primaryColor: '#7CB342',
+      secondaryColor: '#2E7D32',
       excelStructure: {
         worksheetName: 'Combined Pesos',
         headerRow: 4,

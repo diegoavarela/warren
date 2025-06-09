@@ -40,6 +40,16 @@ export interface CompanyConfig {
   createdAt: string
   lastUpdated?: string
   excelStructure?: ExcelStructure
+  // Enhanced company information
+  logo?: string // Base64 encoded logo
+  website?: string
+  address?: string
+  phone?: string
+  email?: string
+  industry?: string
+  description?: string
+  primaryColor?: string
+  secondaryColor?: string
 }
 
 export interface ExcelStructure {

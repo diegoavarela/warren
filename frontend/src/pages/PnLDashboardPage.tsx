@@ -10,9 +10,12 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CalculatorIcon,
-  ScaleIcon
+  ScaleIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline'
 import { pnlService } from '../services/pnlService'
+import { PDFExportService } from '../services/pdfExportService'
+import { configurationService } from '../services/configurationService'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -124,6 +127,7 @@ export const PnLDashboardPage: React.FC = () => {
   const [uploadError, setUploadError] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [uploadCollapsed, setUploadCollapsed] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -270,6 +274,28 @@ export const PnLDashboardPage: React.FC = () => {
           backgroundColor: '#6366F1'
         }
       ]
+    }
+  }
+
+  const exportToPDF = async () => {
+    if (!data?.currentMonth) return
+
+    try {
+      setExporting(true)
+      
+      // Get active company information
+      const activeCompany = await configurationService.getActiveCompany()
+      
+      await PDFExportService.exportDashboard({
+        company: activeCompany.data,
+        title: 'P&L Financial Report',
+        data: data,
+        type: 'pnl'
+      })
+    } catch (err: any) {
+      setError('Failed to export PDF. Please try again.')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -431,11 +457,25 @@ export const PnLDashboardPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <ChartBarIcon className="h-8 w-8 mr-3 text-green-600" />
-          Profit & Loss Dashboard
-        </h1>
-        <p className="text-gray-600 mt-2">Financial performance analysis and insights</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+              <ChartBarIcon className="h-8 w-8 mr-3 text-green-600" />
+              Profit & Loss Dashboard
+            </h1>
+            <p className="text-gray-600 mt-2">Financial performance analysis and insights</p>
+          </div>
+          {data?.hasData && (
+            <button
+              onClick={exportToPDF}
+              disabled={exporting}
+              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+            >
+              <DocumentArrowDownIcon className="h-5 w-5" />
+              <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Collapsible Upload Section */}
