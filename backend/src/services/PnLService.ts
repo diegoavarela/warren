@@ -22,6 +22,20 @@ interface PnLMetrics {
   netMargin: number
   ebitda: number
   ebitdaMargin: number
+  // Personnel Cost Details
+  personnelSalariesCoR?: number
+  payrollTaxesCoR?: number
+  personnelSalariesOp?: number
+  payrollTaxesOp?: number
+  healthCoverage?: number
+  personnelBenefits?: number
+  totalPersonnelCost?: number
+  // Cost Structure
+  contractServicesCoR?: number
+  contractServicesOp?: number
+  professionalServices?: number
+  salesMarketing?: number
+  facilitiesAdmin?: number
 }
 
 interface PnLSummary {
@@ -88,7 +102,23 @@ export class PnLService {
         ebitda: 65,
         ebitdaMargin: 66,
         netIncome: 81,
-        netIncomeMargin: 82
+        netIncomeMargin: 82,
+        // Personnel Cost Details
+        personnelSalariesCoR: 11,
+        payrollTaxesCoR: 12,
+        personnelSalariesOp: 23,
+        payrollTaxesOp: 24,
+        healthCoverageCoR: 14,
+        healthCoverageOp: 25,
+        personnelBenefits: 26,
+        // Other Cost Categories
+        contractServicesCoR: 13,
+        contractServicesOp: 27,
+        businessDevelopment: 29,
+        marketingPromotion: 30,
+        accountingServices: 43,
+        legalServices: 46,
+        officeRent: 38
       }
 
       // Extract month columns from row 4
@@ -144,6 +174,29 @@ export class PnLService {
         // Get net income margin percentage from row 82
         const netIncomeMarginPercent = getValue(keyRows.netIncomeMargin) * 100 // Convert to percentage
         
+        // Extract Personnel Cost Details
+        const personnelSalariesCoR = Math.abs(getValue(keyRows.personnelSalariesCoR))
+        const payrollTaxesCoR = Math.abs(getValue(keyRows.payrollTaxesCoR))
+        const personnelSalariesOp = Math.abs(getValue(keyRows.personnelSalariesOp))
+        const payrollTaxesOp = Math.abs(getValue(keyRows.payrollTaxesOp))
+        const healthCoverageCoR = Math.abs(getValue(keyRows.healthCoverageCoR))
+        const healthCoverageOp = Math.abs(getValue(keyRows.healthCoverageOp))
+        const personnelBenefits = Math.abs(getValue(keyRows.personnelBenefits))
+        
+        const totalPersonnelCost = personnelSalariesCoR + payrollTaxesCoR + 
+                                  personnelSalariesOp + payrollTaxesOp + 
+                                  healthCoverageCoR + healthCoverageOp + 
+                                  personnelBenefits
+        
+        // Extract Other Cost Categories
+        const contractServicesCoR = Math.abs(getValue(keyRows.contractServicesCoR))
+        const contractServicesOp = Math.abs(getValue(keyRows.contractServicesOp))
+        const salesMarketing = Math.abs(getValue(keyRows.businessDevelopment)) + 
+                              Math.abs(getValue(keyRows.marketingPromotion))
+        const professionalServices = Math.abs(getValue(keyRows.accountingServices)) + 
+                                   Math.abs(getValue(keyRows.legalServices))
+        const facilitiesAdmin = Math.abs(getValue(keyRows.officeRent))
+        
         // Only add month if it has data
         if (revenue > 0) {
           const operatingIncome = grossProfit - Math.abs(operatingExpenses)
@@ -162,7 +215,21 @@ export class PnLService {
             netIncome,
             netMargin: netIncomeMarginPercent,
             ebitda,
-            ebitdaMargin: ebitdaMarginPercent
+            ebitdaMargin: ebitdaMarginPercent,
+            // Personnel Cost Details
+            personnelSalariesCoR,
+            payrollTaxesCoR,
+            personnelSalariesOp,
+            payrollTaxesOp,
+            healthCoverage: healthCoverageCoR + healthCoverageOp,
+            personnelBenefits,
+            totalPersonnelCost,
+            // Cost Structure
+            contractServicesCoR,
+            contractServicesOp,
+            professionalServices,
+            salesMarketing,
+            facilitiesAdmin
           })
         }
       })

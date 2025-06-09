@@ -54,6 +54,20 @@ interface PnLDashboardData {
     netMargin: number
     ebitda: number
     ebitdaMargin: number
+    // Personnel Cost Details
+    totalPersonnelCost?: number
+    personnelSalariesCoR?: number
+    payrollTaxesCoR?: number
+    personnelSalariesOp?: number
+    payrollTaxesOp?: number
+    healthCoverage?: number
+    personnelBenefits?: number
+    // Cost Structure
+    contractServicesCoR?: number
+    contractServicesOp?: number
+    professionalServices?: number
+    salesMarketing?: number
+    facilitiesAdmin?: number
   }
   yearToDate?: {
     revenue: number
@@ -639,6 +653,235 @@ export const PnLDashboardPage: React.FC = () => {
                 {data.chartData[data.chartData.length - 1].revenue > data.chartData[0].revenue
                   ? '↑ Growing' : '↓ Declining'}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Personnel Cost Analysis */}
+      {data.currentMonth && data.currentMonth.totalPersonnelCost && (
+        <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Personnel Cost Analysis</h3>
+          
+          {/* Summary Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2">Total Personnel Cost</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatCurrency(data.currentMonth.totalPersonnelCost)}
+              </p>
+              <p className="text-sm text-indigo-600 mt-1">
+                {((data.currentMonth.totalPersonnelCost / data.currentMonth.revenue) * 100).toFixed(1)}% of Revenue
+              </p>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2">Personnel Efficiency</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {formatCurrency(data.currentMonth.revenue / (data.currentMonth.totalPersonnelCost / 1000))}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">Revenue per Personnel ARS</p>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2">Personnel vs OpEx</p>
+              <p className="text-2xl font-bold text-green-600">
+                {((data.currentMonth.totalPersonnelCost / data.currentMonth.operatingExpenses) * 100).toFixed(1)}%
+              </p>
+              <p className="text-sm text-gray-500 mt-1">of Operating Expenses</p>
+            </div>
+          </div>
+          
+          {/* Detailed Breakdown */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-700">Cost Breakdown</h4>
+            
+            <div className="space-y-2">
+              {/* Salaries */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Total Salaries</span>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {formatCurrency((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.personnelSalariesOp || 0))}
+                  </span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({(((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.personnelSalariesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+              
+              {/* Payroll Taxes */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Payroll Taxes</span>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {formatCurrency((data.currentMonth.payrollTaxesCoR || 0) + (data.currentMonth.payrollTaxesOp || 0))}
+                  </span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({(((data.currentMonth.payrollTaxesCoR || 0) + (data.currentMonth.payrollTaxesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+              
+              {/* Health & Benefits */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Health Coverage & Benefits</span>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {formatCurrency((data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0))}
+                  </span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({(((data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* CoR vs Operating Split */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Personnel Allocation</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <p className="text-xs text-gray-600">Cost of Revenue</p>
+                  <p className="text-lg font-semibold text-blue-600">
+                    {(((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.payrollTaxesCoR || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <p className="text-xs text-gray-600">Operating Expenses</p>
+                  <p className="text-lg font-semibold text-purple-600">
+                    {(((data.currentMonth.personnelSalariesOp || 0) + (data.currentMonth.payrollTaxesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cost Structure Visualization */}
+      {data.currentMonth && (
+        <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Cost Structure Analysis</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Cost Categories Breakdown */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-4">Major Cost Categories</h4>
+              <div className="space-y-3">
+                {/* Personnel Costs */}
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-gray-600">Personnel Costs</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {formatCurrency(data.currentMonth.totalPersonnelCost || 0)}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-6">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-6 rounded-full flex items-center justify-end pr-2"
+                      style={{ width: `${((data.currentMonth.totalPersonnelCost || 0) / (data.currentMonth.cogs + data.currentMonth.operatingExpenses)) * 100}%` }}
+                    >
+                      <span className="text-xs text-white font-medium">
+                        {(((data.currentMonth.totalPersonnelCost || 0) / (data.currentMonth.cogs + data.currentMonth.operatingExpenses)) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Contract Services */}
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-gray-600">Contract Services</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {formatCurrency((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0))}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-6">
+                    <div 
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-6 rounded-full flex items-center justify-end pr-2"
+                      style={{ width: `${(((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0)) / (data.currentMonth.cogs + data.currentMonth.operatingExpenses)) * 100}%` }}
+                    >
+                      <span className="text-xs text-white font-medium">
+                        {((((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0)) / (data.currentMonth.cogs + data.currentMonth.operatingExpenses)) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Other Costs */}
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-gray-600">Other Costs</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {formatCurrency(
+                        data.currentMonth.cogs + data.currentMonth.operatingExpenses - 
+                        (data.currentMonth.totalPersonnelCost || 0) - 
+                        ((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0))
+                      )}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-6">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-6 rounded-full flex items-center justify-end pr-2"
+                      style={{ 
+                        width: `${((data.currentMonth.cogs + data.currentMonth.operatingExpenses - 
+                                   (data.currentMonth.totalPersonnelCost || 0) - 
+                                   ((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0))) / 
+                                   (data.currentMonth.cogs + data.currentMonth.operatingExpenses)) * 100}%` 
+                      }}
+                    >
+                      <span className="text-xs text-white font-medium">
+                        {(((data.currentMonth.cogs + data.currentMonth.operatingExpenses - 
+                           (data.currentMonth.totalPersonnelCost || 0) - 
+                           ((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0))) / 
+                           (data.currentMonth.cogs + data.currentMonth.operatingExpenses)) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Cost Efficiency Metrics */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-4">Cost Efficiency Metrics</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Cost of Revenue %</p>
+                  <p className="text-xl font-bold text-orange-600">
+                    {((data.currentMonth.cogs / data.currentMonth.revenue) * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">OpEx %</p>
+                  <p className="text-xl font-bold text-yellow-600">
+                    {((data.currentMonth.operatingExpenses / data.currentMonth.revenue) * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Total Cost %</p>
+                  <p className="text-xl font-bold text-teal-600">
+                    {(((data.currentMonth.cogs + data.currentMonth.operatingExpenses) / data.currentMonth.revenue) * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-gradient-to-br from-pink-50 to-rose-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Cost per Revenue ARS</p>
+                  <p className="text-xl font-bold text-pink-600">
+                    {(((data.currentMonth.cogs + data.currentMonth.operatingExpenses) / data.currentMonth.revenue)).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Additional Insights */}
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h5 className="text-xs font-medium text-gray-700 mb-2">Key Insights</h5>
+                <ul className="space-y-1 text-xs text-gray-600">
+                  <li>• Personnel costs represent {(((data.currentMonth.totalPersonnelCost || 0) / data.currentMonth.revenue) * 100).toFixed(1)}% of revenue</li>
+                  <li>• Contract services account for {((((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0)) / data.currentMonth.revenue) * 100).toFixed(1)}% of revenue</li>
+                  <li>• Total cost structure is {((data.currentMonth.cogs + data.currentMonth.operatingExpenses) / data.currentMonth.revenue * 100).toFixed(1)}% of revenue</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
