@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { addMonths, format, parseISO } from 'date-fns';
+import { addMonths, format, parseISO, startOfMonth, subMonths } from 'date-fns';
 
 interface CashflowEntry {
   date: Date;
@@ -10,11 +10,23 @@ interface CashflowEntry {
   cumulativeCash: number;
 }
 
+interface MonthlyMetrics {
+  date: Date;
+  month: string;
+  totalIncome: number;
+  totalExpense: number;
+  finalBalance: number;
+  lowestBalance: number;
+  monthlyGeneration: number;
+}
+
 // Global data store for the cashflow data (in production, this would be a database)
 let globalCashflowData: CashflowEntry[] = [];
+let globalMetricsData: MonthlyMetrics[] = [];
 
 export class CashflowService {
   private currentData: CashflowEntry[] = [];
+  private metricsData: MonthlyMetrics[] = [];
 
   setCurrentData(data: CashflowEntry[]) {
     this.currentData = data;
@@ -29,109 +41,128 @@ export class CashflowService {
     }
     return this.currentData;
   }
+
   parseWorksheet(worksheet: ExcelJS.Worksheet): CashflowEntry[] {
-    console.log('Parsing Vortex cashflow format...');
+    console.log('Parsing Vortex cashflow format with specific row labels...');
     
     try {
-      // This is specifically designed for the Vortex Excel format
-      // Row 3 contains dates, starting from column 19 for USD section
+      // Row 3 contains dates, starting from column 2 (B) for Peso section
       const dateRow = worksheet.getRow(3);
-      const dollarDates: Array<{columnIndex: number, date: Date}> = [];
+      const pesoDates: Array<{columnIndex: number, date: Date, monthName: string}> = [];
       
-      console.log('Checking for dates in row 3...');
+      console.log('Extracting dates from row 3 (Peso section)...');
       
-      // Extract dates from columns 19-33 (Dollar section)
-      for (let i = 19; i <= 33; i++) {
+      // Extract dates from columns 2-16 (B-P) which is the Peso section
+      for (let i = 2; i <= 16; i++) {
         const dateCell = dateRow.getCell(i).value;
-        console.log(`Column ${i}: ${dateCell} (${typeof dateCell})`);
         if (dateCell instanceof Date) {
-          dollarDates.push({
+          const monthName = format(dateCell, 'MMMM');
+          pesoDates.push({
             columnIndex: i,
-            date: dateCell
+            date: dateCell,
+            monthName: monthName
           });
-          console.log(`  -> Added date: ${dateCell.toISOString().split('T')[0]}`);
+          console.log(`Column ${i} (${String.fromCharCode(64 + i)}): ${monthName} ${format(dateCell, 'yyyy')}`);
         }
       }
       
-      console.log(`Found ${dollarDates.length} dates in USD section`);
+      // Define the exact rows based on your Excel file
+      const rowNumbers = {
+        totalCollections: 20,    // Row 20: Total Collections (what you call Total Income)
+        totalIncome: 24,         // Row 24: TOTAL INCOME
+        totalExpense: 100,       // Row 100: TOTAL EXPENSE
+        finalBalance: 104,       // Row 104: Final Balance
+        lowestBalance: 112,      // Row 112: Lowest Balance of the month
+        monthlyGeneration: 113   // Row 113: Monthly Cash Generation
+      };
       
-      // Group data by month to create monthly summaries
-      const monthlySummary = new Map<string, {
-        date: Date,
-        description: string,
-        revenue: number,
-        costs: number,
-        cashflow: number
-      }>();
+      console.log('Using rows from Excel:');
+      console.log(`  Total Collections (Total Income): row ${rowNumbers.totalCollections}`);
+      console.log(`  Total Expense: row ${rowNumbers.totalExpense}`);
+      console.log(`  Final Balance: row ${rowNumbers.finalBalance}`);
+      console.log(`  Lowest Balance: row ${rowNumbers.lowestBalance}`);
+      console.log(`  Monthly Generation: row ${rowNumbers.monthlyGeneration}`);
       
-      // Process each account row (starting from row 5, skipping headers)
-      console.log(`Processing rows 5 to ${worksheet.rowCount}...`);
-      for (let rowNum = 5; rowNum <= worksheet.rowCount; rowNum++) {
-        const row = worksheet.getRow(rowNum);
-        const accountName = row.getCell(1).value as string;
+      // Extract metrics for each month
+      const monthlyMetrics: MonthlyMetrics[] = [];
+      
+      for (const dateInfo of pesoDates) {
+        const metrics: MonthlyMetrics = {
+          date: dateInfo.date,
+          month: dateInfo.monthName,
+          totalIncome: 0,
+          totalExpense: 0,
+          finalBalance: 0,
+          lowestBalance: 0,
+          monthlyGeneration: 0
+        };
         
-        if (!accountName || accountName.trim() === '') {
-          console.log(`Skipping row ${rowNum}: empty account name`);
-          continue;
+        // Get Total Income from row 24 (TOTAL INCOME)
+        const incomeRow = worksheet.getRow(rowNumbers.totalIncome);
+        const incomeValue = incomeRow.getCell(dateInfo.columnIndex).value;
+        if (typeof incomeValue === 'number') {
+          metrics.totalIncome = incomeValue;
+          console.log(`${dateInfo.monthName} - Total Income: ${incomeValue.toFixed(2)}`);
         }
         
-        console.log(`Processing row ${rowNum}: ${accountName}`);
-        
-        // Extract values for each date in the dollar section
-        for (const dateInfo of dollarDates) {
-          const cellValue = row.getCell(dateInfo.columnIndex).value;
-          
-          if (cellValue && typeof cellValue === 'number' && cellValue !== 0) {
-            console.log(`  Column ${dateInfo.columnIndex}: ${cellValue} for ${format(dateInfo.date, 'MMM yyyy')}`);
-            
-            const monthKey = format(dateInfo.date, 'yyyy-MM');
-            
-            if (!monthlySummary.has(monthKey)) {
-              monthlySummary.set(monthKey, {
-                date: dateInfo.date,
-                description: `Cashflow for ${format(dateInfo.date, 'MMM yyyy')}`,
-                revenue: 0,
-                costs: 0,
-                cashflow: 0
-              });
-            }
-            
-            const monthEntry = monthlySummary.get(monthKey)!;
-            
-            if (cellValue > 0) {
-              monthEntry.revenue += cellValue;
-            } else {
-              monthEntry.costs += Math.abs(cellValue);
-            }
-            monthEntry.cashflow += cellValue;
-          }
+        // Get Total Expense from row 100
+        const expenseRow = worksheet.getRow(rowNumbers.totalExpense);
+        const expenseValue = expenseRow.getCell(dateInfo.columnIndex).value;
+        if (typeof expenseValue === 'number') {
+          metrics.totalExpense = Math.abs(expenseValue); // Store as positive
+          console.log(`${dateInfo.monthName} - Total Expense: ${Math.abs(expenseValue).toFixed(2)}`);
         }
+        
+        // Get Final Balance from row 104
+        const balanceRow = worksheet.getRow(rowNumbers.finalBalance);
+        const balanceValue = balanceRow.getCell(dateInfo.columnIndex).value;
+        if (typeof balanceValue === 'number') {
+          metrics.finalBalance = balanceValue;
+          console.log(`${dateInfo.monthName} - Final Balance: ${balanceValue.toFixed(2)}`);
+        }
+        
+        // Get Lowest Balance from row 112
+        const lowestRow = worksheet.getRow(rowNumbers.lowestBalance);
+        const lowestValue = lowestRow.getCell(dateInfo.columnIndex).value;
+        if (typeof lowestValue === 'number') {
+          metrics.lowestBalance = lowestValue;
+          console.log(`${dateInfo.monthName} - Lowest Balance: ${lowestValue.toFixed(2)}`);
+        }
+        
+        // Get Monthly Generation from row 113
+        const generationRow = worksheet.getRow(rowNumbers.monthlyGeneration);
+        const generationValue = generationRow.getCell(dateInfo.columnIndex).value;
+        if (typeof generationValue === 'number') {
+          metrics.monthlyGeneration = generationValue;
+          console.log(`${dateInfo.monthName} - Monthly Generation: ${generationValue.toFixed(2)}`);
+        }
+        
+        monthlyMetrics.push(metrics);
       }
       
-      // Convert to CashflowEntry format with cumulative cash
+      // Store metrics globally
+      globalMetricsData = monthlyMetrics;
+      this.metricsData = monthlyMetrics;
+      
+      // Convert to CashflowEntry format
       const data: CashflowEntry[] = [];
       let cumulativeCash = 0;
       
-      // Sort by date
-      const sortedEntries = Array.from(monthlySummary.values())
-        .sort((a, b) => a.date.getTime() - b.date.getTime());
-      
-      for (const entry of sortedEntries) {
-        cumulativeCash += entry.cashflow;
+      for (const metrics of monthlyMetrics) {
+        const cashflow = metrics.totalIncome - metrics.totalExpense;
+        cumulativeCash += cashflow;
         
         data.push({
-          date: entry.date,
-          description: entry.description,
-          revenue: entry.revenue,
-          costs: entry.costs,
-          cashflow: entry.cashflow,
+          date: metrics.date,
+          description: `Cashflow for ${format(metrics.date, 'MMM yyyy')}`,
+          revenue: metrics.totalIncome,
+          costs: metrics.totalExpense,
+          cashflow: cashflow,
           cumulativeCash
         });
-        
-        console.log(`${format(entry.date, 'MMM yyyy')}: Revenue=$${entry.revenue.toFixed(0)}, Costs=$${entry.costs.toFixed(0)}, Net=$${entry.cashflow.toFixed(0)}`);
       }
       
-      console.log(`Successfully parsed ${data.length} monthly entries`);
+      console.log(`Successfully parsed ${data.length} monthly entries with specific metrics`);
       return data;
       
     } catch (error: any) {
@@ -140,139 +171,159 @@ export class CashflowService {
     }
   }
 
-  private detectColumnMapping(headers: string[]): { date?: number, description?: number, revenue?: number, costs?: number } {
-    const mapping: { date?: number, description?: number, revenue?: number, costs?: number } = {};
-
-    headers.forEach((header, index) => {
-      const columnNumber = index + 1;
-      
-      // Date column detection
-      if (header.includes('date') || header.includes('fecha') || header.includes('time') || header.includes('periodo')) {
-        mapping.date = columnNumber;
-      }
-      
-      // Description column detection
-      if (header.includes('description') || header.includes('descripcion') || header.includes('concept') || header.includes('item') || header.includes('detail')) {
-        mapping.description = columnNumber;
-      }
-      
-      // Revenue column detection
-      if (header.includes('revenue') || header.includes('income') || header.includes('ingreso') || header.includes('venta') || header.includes('sales')) {
-        mapping.revenue = columnNumber;
-      }
-      
-      // Costs column detection
-      if (header.includes('cost') || header.includes('expense') || header.includes('gasto') || header.includes('egreso') || header.includes('spend')) {
-        mapping.costs = columnNumber;
-      }
-    });
-
-    return mapping;
-  }
-
-  private parseNumber(value: any): number {
-    if (typeof value === 'number') {
-      return value;
-    }
-    if (typeof value === 'string') {
-      // Remove currency symbols and commas
-      const cleaned = value.replace(/[$,€£]/g, '').trim();
-      const parsed = parseFloat(cleaned);
-      return isNaN(parsed) ? 0 : parsed;
-    }
-    return 0;
-  }
-
   generateDashboard() {
     // Always check for global data first
     this.getCurrentData();
+    const metrics = globalMetricsData.length > 0 ? globalMetricsData : this.metricsData;
     
-    if (this.currentData.length === 0) {
+    if (this.currentData.length === 0 || metrics.length === 0) {
       console.log('No real data available, using mock data');
       // Return mock data if no real data available
-      const now = new Date();
-      
       return {
-        metrics: {
-          lowestCashNext6Months: -50000,
-          highestCashNext6Months: 250000,
-          biggestGainNext6Months: 75000,
-          lowestGainNext6Months: -25000,
-          revenueYTD: 850000,
-          costsYTD: 620000
+        currentMonth: {
+          month: 'June',
+          totalIncome: 61715728.02,
+          totalExpense: 69286881.42,
+          finalBalance: 26924011.97,
+          lowestBalance: 17129280.86,
+          monthlyGeneration: -7571153.41
         },
-        highlights: {
-          pastThreeMonths: [
-            "Q4 revenue exceeded targets by 15%",
-            "Cost reduction initiatives saved $30K",
-            "New client contracts worth $120K secured"
-          ],
-          nextSixMonths: [
-            "Expected cash shortage in March due to equipment purchase",
-            "Major client payment of $100K expected in April",
-            "Seasonal revenue increase projected for Q2"
-          ]
+        yearToDate: {
+          totalIncome: 400616487.75,
+          totalExpense: 388691108.59,
+          totalBalance: 11925379.16
         },
         chartData: this.generateMockChartData(),
+        highlights: {
+          pastThreeMonths: ["No data available"],
+          nextSixMonths: ["No data available"]
+        },
         isRealData: false
       };
     }
 
-    // Calculate real metrics from uploaded data
-    console.log(`Using real data with ${this.currentData.length} entries`);
+    // Get current month (for now, let's use June as it's month 5 in 0-based index)
     const now = new Date();
-    const sixMonthsFromNow = addMonths(now, 6);
-    const yearStart = new Date(now.getFullYear(), 0, 1);
-
-    // Filter data for projections (next 6 months)
-    const futureData = this.currentData.filter(entry => 
-      entry.date >= now && entry.date <= sixMonthsFromNow
-    );
-
-    // Filter data for YTD calculations
-    const ytdData = this.currentData.filter(entry => 
-      entry.date >= yearStart && entry.date <= now
-    );
-
-    // Calculate metrics
-    const futureCashflows = futureData.map(entry => entry.cumulativeCash);
-    const futureGains = futureData.map(entry => entry.cashflow);
+    const currentMonthIndex = 5; // June (0-based, so Jan=0, Jun=5)
+    const currentMonthData = metrics[currentMonthIndex];
     
-    const metrics = {
-      lowestCashNext6Months: futureCashflows.length > 0 ? Math.min(...futureCashflows) : 0,
-      highestCashNext6Months: futureCashflows.length > 0 ? Math.max(...futureCashflows) : 0,
-      biggestGainNext6Months: futureGains.length > 0 ? Math.max(...futureGains) : 0,
-      lowestGainNext6Months: futureGains.length > 0 ? Math.min(...futureGains) : 0,
-      revenueYTD: ytdData.reduce((sum, entry) => sum + entry.revenue, 0),
-      costsYTD: ytdData.reduce((sum, entry) => sum + entry.costs, 0)
-    };
-
-    return {
-      metrics,
-      highlights: {
-        pastThreeMonths: [
-          `Processed ${this.currentData.length} cashflow entries`,
-          `Total YTD revenue: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(metrics.revenueYTD)}`,
-          `Data range: ${format(this.currentData[0]?.date || now, 'MMM yyyy')} to ${format(this.currentData[this.currentData.length - 1]?.date || now, 'MMM yyyy')}`
-        ],
-        nextSixMonths: [
-          `${futureData.length} projected entries in next 6 months`,
-          `Peak cash expected: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(metrics.highestCashNext6Months)}`,
-          `Largest gain projected: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(metrics.biggestGainNext6Months)}`
-        ]
+    // Calculate YTD values (January to current month)
+    let ytdIncome = 0;
+    let ytdExpense = 0;
+    let ytdBalance = 0;
+    
+    for (let i = 0; i <= currentMonthIndex; i++) {
+      ytdIncome += metrics[i].totalIncome;
+      ytdExpense += metrics[i].totalExpense;
+    }
+    ytdBalance = ytdIncome - ytdExpense;
+    
+    // Generate dashboard data
+    const dashboardData = {
+      currentMonth: {
+        month: currentMonthData.month,
+        totalIncome: currentMonthData.totalIncome,
+        totalExpense: currentMonthData.totalExpense,
+        finalBalance: currentMonthData.finalBalance,
+        lowestBalance: currentMonthData.lowestBalance,
+        monthlyGeneration: currentMonthData.monthlyGeneration
+      },
+      yearToDate: {
+        totalIncome: ytdIncome,
+        totalExpense: ytdExpense,
+        totalBalance: ytdBalance
       },
       chartData: this.generateChartFromRealData(),
+      highlights: this.generateHighlights(metrics),
       isRealData: true
     };
+    
+    console.log('Dashboard data generated:', dashboardData);
+    return dashboardData;
+  }
+
+  private generateHighlights(metrics: MonthlyMetrics[]) {
+    // Get January to May data (first 5 months) for averages
+    const janToMay = metrics.slice(0, 5);
+    const totalIncomeJanMay = janToMay.reduce((sum, m) => sum + m.totalIncome, 0);
+    const totalExpenseJanMay = janToMay.reduce((sum, m) => sum + m.totalExpense, 0);
+    const avgIncome = totalIncomeJanMay / janToMay.length;
+    const avgExpense = totalExpenseJanMay / janToMay.length;
+    
+    console.log('Average calculations (Jan-May):');
+    console.log(`  Total Income: ${totalIncomeJanMay.toFixed(2)}, Average: ${avgIncome.toFixed(2)}`);
+    console.log(`  Total Expense: ${totalExpenseJanMay.toFixed(2)}, Average: ${avgExpense.toFixed(2)}`);
+    
+    // Find best and worst months
+    const bestMonth = metrics.reduce((best, current) => 
+      current.monthlyGeneration > best.monthlyGeneration ? current : best
+    );
+    const worstMonth = metrics.reduce((worst, current) => 
+      current.monthlyGeneration < worst.monthlyGeneration ? current : worst
+    );
+    
+    return {
+      pastThreeMonths: [
+        `Average monthly income (Jan-May): ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(avgIncome)}`,
+        `Average monthly expenses (Jan-May): ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(avgExpense)}`,
+        `Best performing month: ${bestMonth.month} with ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(bestMonth.monthlyGeneration)}`
+      ],
+      nextSixMonths: [
+        `Worst performing month: ${worstMonth.month} with ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(worstMonth.monthlyGeneration)}`,
+        `Current balance trend: ${metrics[metrics.length - 1].finalBalance > metrics[0].finalBalance ? 'Positive' : 'Negative'}`,
+        `Monthly average cash generation: ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(
+          metrics.reduce((sum, m) => sum + m.monthlyGeneration, 0) / metrics.length
+        )}`
+      ]
+    };
+  }
+
+  private generateChartFromRealData() {
+    const metrics = globalMetricsData.length > 0 ? globalMetricsData : this.metricsData;
+    
+    if (metrics.length === 0) {
+      return this.generateMockChartData();
+    }
+
+    // Get data starting from July (next month after current June)
+    // June is index 5, so we start from index 6
+    const futureData = metrics.slice(6, 12); // July to December
+    
+    console.log('Chart data generation:');
+    futureData.forEach((entry, idx) => {
+      console.log(`  ${entry.month} ${format(entry.date, 'yyyy')}: Income=${entry.totalIncome.toFixed(2)}`);
+    });
+
+    return futureData.map(entry => ({
+      date: format(entry.date, 'yyyy-MM'),
+      month: entry.month,
+      revenue: entry.totalIncome,
+      costs: entry.totalExpense,
+      cashflow: entry.monthlyGeneration
+    }));
+  }
+
+  private generateMockChartData() {
+    const data = [];
+    const now = new Date();
+    
+    for (let i = -6; i < 0; i++) {
+      const date = addMonths(now, i);
+      data.push({
+        date: format(date, 'yyyy-MM'),
+        revenue: Math.random() * 100000 + 50000,
+        costs: Math.random() * 80000 + 40000,
+        cashflow: Math.random() * 50000 - 10000
+      });
+    }
+    
+    return data;
   }
 
   calculateMetrics() {
     this.getCurrentData();
     
     if (this.currentData.length === 0) {
-      // Mock calculations - in production would use real data
-      const now = new Date();
-      
       return {
         cashflowTrend: this.generateMockTrendData(),
         monthlyBreakdown: this.generateMonthlyBreakdown(),
@@ -280,7 +331,6 @@ export class CashflowService {
       };
     }
     
-    // Use real data for calculations
     return {
       cashflowTrend: this.generateTrendFromRealData(),
       monthlyBreakdown: this.generateRealMonthlyBreakdown(),
@@ -333,53 +383,6 @@ export class CashflowService {
     };
   }
 
-  private generateChartFromRealData() {
-    if (this.currentData.length === 0) {
-      return this.generateMockChartData();
-    }
-
-    // Group data by month
-    const monthlyData = new Map();
-    
-    this.currentData.forEach(entry => {
-      const monthKey = format(entry.date, 'yyyy-MM');
-      if (!monthlyData.has(monthKey)) {
-        monthlyData.set(monthKey, {
-          date: monthKey,
-          revenue: 0,
-          costs: 0,
-          cashflow: 0,
-          count: 0
-        });
-      }
-      
-      const monthEntry = monthlyData.get(monthKey);
-      monthEntry.revenue += entry.revenue;
-      monthEntry.costs += entry.costs;
-      monthEntry.cashflow += entry.cashflow;
-      monthEntry.count += 1;
-    });
-
-    return Array.from(monthlyData.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }
-
-  private generateMockChartData() {
-    const data = [];
-    const now = new Date();
-    
-    for (let i = -6; i <= 6; i++) {
-      const date = addMonths(now, i);
-      data.push({
-        date: format(date, 'yyyy-MM'),
-        revenue: Math.random() * 100000 + 50000,
-        costs: Math.random() * 80000 + 40000,
-        cashflow: Math.random() * 50000 - 10000
-      });
-    }
-    
-    return data;
-  }
-
   private generateMockTrendData() {
     return {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
@@ -416,5 +419,43 @@ export class CashflowService {
         confidence: 75
       }
     };
+  }
+
+  private detectColumnMapping(headers: string[]): { date?: number, description?: number, revenue?: number, costs?: number } {
+    const mapping: { date?: number, description?: number, revenue?: number, costs?: number } = {};
+
+    headers.forEach((header, index) => {
+      const columnNumber = index + 1;
+      
+      if (header.includes('date') || header.includes('fecha') || header.includes('time') || header.includes('periodo')) {
+        mapping.date = columnNumber;
+      }
+      
+      if (header.includes('description') || header.includes('descripcion') || header.includes('concept') || header.includes('item') || header.includes('detail')) {
+        mapping.description = columnNumber;
+      }
+      
+      if (header.includes('revenue') || header.includes('income') || header.includes('ingreso') || header.includes('venta') || header.includes('sales')) {
+        mapping.revenue = columnNumber;
+      }
+      
+      if (header.includes('cost') || header.includes('expense') || header.includes('gasto') || header.includes('egreso') || header.includes('spend')) {
+        mapping.costs = columnNumber;
+      }
+    });
+
+    return mapping;
+  }
+
+  private parseNumber(value: any): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[$,€£]/g, '').trim();
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
   }
 }
