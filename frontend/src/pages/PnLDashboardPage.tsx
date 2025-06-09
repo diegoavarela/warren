@@ -53,6 +53,7 @@ interface PnLDashboardData {
     netIncome: number
     netMargin: number
     ebitda: number
+    ebitdaMargin: number
   }
   yearToDate?: {
     revenue: number
@@ -563,6 +564,9 @@ export const PnLDashboardPage: React.FC = () => {
                 <div className="p-3 bg-purple-100 rounded-xl">
                   <ChartBarIcon className="h-6 w-6 text-purple-600" />
                 </div>
+                <span className="text-sm font-medium text-purple-600">
+                  {formatPercentage(data.currentMonth.ebitdaMargin)}
+                </span>
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">EBITDA</h3>
               <p className="text-2xl font-bold text-gray-900">
@@ -597,6 +601,49 @@ export const PnLDashboardPage: React.FC = () => {
         </div>
       )}
 
+      {/* Revenue Growth Analysis */}
+      {data.chartData && data.chartData.length > 1 && (
+        <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Growth Analysis</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Month over Month Growth */}
+            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2">Month-over-Month Growth</p>
+              <p className={`text-2xl font-bold ${
+                data.chartData[data.chartData.length - 1].revenue > data.chartData[data.chartData.length - 2].revenue
+                  ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {(() => {
+                  const current = data.chartData[data.chartData.length - 1].revenue;
+                  const previous = data.chartData[data.chartData.length - 2].revenue;
+                  const growth = ((current - previous) / previous) * 100;
+                  return `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
+                })()}
+              </p>
+            </div>
+            
+            {/* Average Monthly Revenue */}
+            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2">Average Monthly Revenue</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatCurrency(
+                  data.chartData.reduce((sum, d) => sum + d.revenue, 0) / data.chartData.length
+                )}
+              </p>
+            </div>
+            
+            {/* Revenue Trend */}
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2">Revenue Trend</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {data.chartData[data.chartData.length - 1].revenue > data.chartData[0].revenue
+                  ? '↑ Growing' : '↓ Declining'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Margins Chart */}
@@ -622,33 +669,77 @@ export const PnLDashboardPage: React.FC = () => {
 
       {/* Year to Date Summary */}
       {data.summary && (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Year to Date Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-8">Year to Date Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Revenue */}
+            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+              <p className="text-sm font-medium text-green-600 mb-2">Total Revenue</p>
+              <p className="text-3xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalRevenue)}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Total Operating Income</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(data.summary.totalOperatingIncome)}
+            
+            {/* Gross Profit */}
+            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+              <p className="text-sm font-medium text-blue-600 mb-2">Gross Profit</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {formatCurrency(data.summary.totalGrossProfit)}
               </p>
-              <p className="text-sm text-gray-500">
-                Avg Margin: {formatPercentage(data.summary.avgOperatingMargin)}
+              <p className="text-sm text-gray-600 mt-1">
+                {formatPercentage(data.summary.avgGrossMargin)} margin
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Total Net Income</p>
-              <p className={`text-2xl font-bold ${
+            
+            {/* Operating Income */}
+            <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+              <p className="text-sm font-medium text-purple-600 mb-2">Operating Income</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {formatCurrency(data.summary.totalOperatingIncome)}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                {formatPercentage(data.summary.avgOperatingMargin)} margin
+              </p>
+            </div>
+            
+            {/* Net Income */}
+            <div className={`text-center p-6 rounded-xl ${
+              data.summary.totalNetIncome >= 0 
+                ? 'bg-gradient-to-br from-emerald-50 to-green-50' 
+                : 'bg-gradient-to-br from-red-50 to-pink-50'
+            }`}>
+              <p className={`text-sm font-medium mb-2 ${
+                data.summary.totalNetIncome >= 0 ? 'text-emerald-600' : 'text-red-600'
+              }`}>Net Income</p>
+              <p className={`text-3xl font-bold ${
                 data.summary.totalNetIncome >= 0 ? 'text-gray-900' : 'text-red-600'
               }`}>
                 {formatCurrency(data.summary.totalNetIncome)}
               </p>
-              <p className="text-sm text-gray-500">
-                Avg Margin: {formatPercentage(data.summary.avgNetMargin)}
+              <p className="text-sm text-gray-600 mt-1">
+                {formatPercentage(data.summary.avgNetMargin)} margin
+              </p>
+            </div>
+          </div>
+          
+          {/* Additional Metrics Row */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-600">Total COGS</p>
+              <p className="text-xl font-semibold text-gray-900">
+                {formatCurrency(data.summary.totalCOGS)}
+              </p>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-600">Total Operating Expenses</p>
+              <p className="text-xl font-semibold text-gray-900">
+                {formatCurrency(data.summary.totalOperatingExpenses)}
+              </p>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-600">Expense Ratio</p>
+              <p className="text-xl font-semibold text-gray-900">
+                {formatPercentage((data.summary.totalOperatingExpenses / data.summary.totalRevenue) * 100)}
               </p>
             </div>
           </div>

@@ -21,6 +21,7 @@ interface PnLMetrics {
   netIncome: number
   netMargin: number
   ebitda: number
+  ebitdaMargin: number
 }
 
 interface PnLSummary {
@@ -85,6 +86,7 @@ export class PnLService {
         grossMargin: 20,
         operatingExpenses: 52,
         ebitda: 65,
+        ebitdaMargin: 66,
         netIncome: 81,
         netIncomeMargin: 82
       }
@@ -136,6 +138,9 @@ export class PnLService {
         // Get the gross margin percentage directly from row 20
         const grossMarginPercent = getValue(keyRows.grossMargin) * 100 // Convert to percentage
         
+        // Get EBITDA margin percentage from row 66
+        const ebitdaMarginPercent = getValue(keyRows.ebitdaMargin) * 100 // Convert to percentage
+        
         // Get net income margin percentage from row 82
         const netIncomeMarginPercent = getValue(keyRows.netIncomeMargin) * 100 // Convert to percentage
         
@@ -156,7 +161,8 @@ export class PnLService {
             otherIncomeExpenses: 0, // Not extracting this for now
             netIncome,
             netMargin: netIncomeMarginPercent,
-            ebitda
+            ebitda,
+            ebitdaMargin: ebitdaMarginPercent
           })
         }
       })
