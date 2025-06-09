@@ -39,6 +39,7 @@ interface DashboardData {
     revenue: number
     costs: number
     cashflow: number
+    isActual?: boolean
   }>
   highlights: {
     pastThreeMonths: string[]
@@ -495,8 +496,20 @@ export const DashboardPage: React.FC = () => {
 
         {/* Chart Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Future Outlook</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">2025 Full Year Overview</h2>
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center space-x-6 text-sm">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-500 opacity-60 rounded mr-2"></div>
+                  <span className="text-gray-600">Actual Data</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-500 opacity-20 rounded mr-2"></div>
+                  <span className="text-gray-600">Forecast</span>
+                </div>
+              </div>
+            </div>
             <CashflowChart data={data.chartData} />
           </div>
         </div>

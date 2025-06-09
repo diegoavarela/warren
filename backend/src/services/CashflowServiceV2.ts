@@ -127,15 +127,24 @@ export class CashflowServiceV2 {
     
     const ytdBalance = ytdIncome + ytdExpense; // expense is negative
     
-    // Generate chart data (next 6 months from current)
-    const chartStartIndex = Math.min(currentMonthArrayIndex + 1, parsedMetrics.length - 1);
-    const chartData = parsedMetrics.slice(chartStartIndex, chartStartIndex + 6).map(m => ({
-      date: format(m.date, 'yyyy-MM'),
-      month: m.month,
-      revenue: m.totalIncome,
-      costs: Math.abs(m.totalExpense),
-      cashflow: m.monthlyGeneration
-    }));
+    // Generate chart data for all available months in the Excel file
+    const chartData = [];
+    
+    // Add all months from the Excel file
+    for (let i = 0; i < parsedMetrics.length; i++) {
+      const metricDate = parsedMetrics[i].date;
+      // Determine if this month is actual (past/current) or forecast (future)
+      const isActual = metricDate <= now || parsedMetrics[i].month === currentMonthName;
+      
+      chartData.push({
+        date: format(parsedMetrics[i].date, 'yyyy-MM'),
+        month: parsedMetrics[i].month,
+        revenue: parsedMetrics[i].totalIncome,
+        costs: Math.abs(parsedMetrics[i].totalExpense),
+        cashflow: parsedMetrics[i].finalBalance,  // Row 104: Final Balance
+        isActual: isActual
+      });
+    }
     
     // Generate insights based on actual data
     const insights = this.generateInsights(parsedMetrics, currentMonthArrayIndex);
@@ -208,7 +217,20 @@ export class CashflowServiceV2 {
         totalExpense: -388691108.59,
         totalBalance: 11925379.16
       },
-      chartData: [],
+      chartData: [
+        { date: '2025-01', month: 'January', revenue: 70346123.45, costs: 65432198.76, cashflow: 35000000.00, isActual: true },
+        { date: '2025-02', month: 'February', revenue: 68234567.89, costs: 67123456.78, cashflow: 36111111.11, isActual: true },
+        { date: '2025-03', month: 'March', revenue: 69876543.21, costs: 68765432.10, cashflow: 37222222.22, isActual: true },
+        { date: '2025-04', month: 'April', revenue: 65432109.87, costs: 69876543.21, cashflow: 32777788.88, isActual: true },
+        { date: '2025-05', month: 'May', revenue: 63210987.65, costs: 70123456.78, cashflow: 25865319.75, isActual: true },
+        { date: '2025-06', month: 'June', revenue: 61715728.02, costs: 69286881.42, cashflow: 26924011.97, isActual: true },
+        { date: '2025-07', month: 'July', revenue: 61715728.02, costs: 69286881.42, cashflow: 19352858.56, isActual: false },
+        { date: '2025-08', month: 'August', revenue: 61715728.02, costs: 69286881.42, cashflow: 11781705.15, isActual: false },
+        { date: '2025-09', month: 'September', revenue: 61715728.02, costs: 69286881.42, cashflow: 4210551.74, isActual: false },
+        { date: '2025-10', month: 'October', revenue: 61715728.02, costs: 69286881.42, cashflow: -3360601.67, isActual: false },
+        { date: '2025-11', month: 'November', revenue: 61715728.02, costs: 69286881.42, cashflow: -10931755.08, isActual: false },
+        { date: '2025-12', month: 'December', revenue: 61715728.02, costs: 69286881.42, cashflow: -18502908.49, isActual: false }
+      ],
       highlights: {
         pastThreeMonths: [
           'Income decreased by 12.5% over the last 3 months',
@@ -216,9 +238,11 @@ export class CashflowServiceV2 {
           'Cash balance has remained stable with low volatility'
         ],
         nextSixMonths: [
-          'Based on current trends, expecting to consume $45.4M in cash over the next 6 months',
-          'Income expected to remain stable around $61.7M per month',
-          'Projected cash balance of $19.4M in 6 months'
+          'Excel projections show $45.4M in cash consumption over the next 6 months',
+          'Warning: Projections indicate negative cash balance in 4 months (October)',
+          'Projected average monthly income: $61.7M',
+          'Projected average monthly expenses: $69.3M',
+          'Year-end projected cash balance: -$18.5M'
         ]
       },
       isRealData: false
@@ -283,58 +307,52 @@ export class CashflowServiceV2 {
   }
   
   /**
-   * Generate projections based on historical trends
+   * Generate projections based on future data in Excel
    */
   private generateProjections(metrics: MonthlyMetrics[], currentIndex: number): string[] {
     const projections: string[] = [];
     
-    // Get last 6 months of data for trend analysis
-    const start = Math.max(0, currentIndex - 5);
-    const historicalData = metrics.slice(start, currentIndex + 1);
+    // Get future months data (these are the projections from Excel)
+    const futureMonths = metrics.slice(currentIndex + 1);
     
-    if (historicalData.length >= 3) {
-      // Calculate average monthly income and expense
-      const avgIncome = historicalData.reduce((sum, m) => sum + m.totalIncome, 0) / historicalData.length;
-      const avgExpense = historicalData.reduce((sum, m) => sum + m.totalExpense, 0) / historicalData.length;
-      const avgGeneration = historicalData.reduce((sum, m) => sum + m.monthlyGeneration, 0) / historicalData.length;
+    if (futureMonths.length > 0) {
+      // Analyze the next 6 months
+      const next6Months = futureMonths.slice(0, 6);
       
-      // Project 6 months forward
-      const projectedBalance = metrics[currentIndex].finalBalance + (avgGeneration * 6);
-      
-      if (avgGeneration > 0) {
-        projections.push(`Based on current trends, expecting to generate ${this.formatCurrency(avgGeneration * 6)} in cash over the next 6 months`);
-      } else {
-        projections.push(`Based on current trends, expecting to consume ${this.formatCurrency(Math.abs(avgGeneration * 6))} in cash over the next 6 months`);
-      }
-      
-      // Income stability projection
-      const incomeVolatility = this.calculateVolatility(historicalData.map(m => m.totalIncome));
-      if (incomeVolatility < 0.1) {
-        projections.push(`Income expected to remain stable around ${this.formatCurrency(avgIncome)} per month`);
-      } else {
-        projections.push(`Income volatility suggests range of ${this.formatCurrency(avgIncome * 0.8)} to ${this.formatCurrency(avgIncome * 1.2)} per month`);
-      }
-      
-      // Cash position projection
-      if (projectedBalance > 0) {
-        projections.push(`Projected cash balance of ${this.formatCurrency(projectedBalance)} in 6 months`);
-      } else {
-        const monthsUntilZero = Math.floor(metrics[currentIndex].finalBalance / Math.abs(avgGeneration));
-        if (monthsUntilZero > 0 && monthsUntilZero <= 12) {
-          projections.push(`Warning: Current burn rate suggests cash depletion in ${monthsUntilZero} months`);
+      if (next6Months.length > 0) {
+        // Total cash generation over next 6 months
+        const totalGeneration = next6Months.reduce((sum, m) => sum + m.monthlyGeneration, 0);
+        if (totalGeneration > 0) {
+          projections.push(`Excel projections show ${this.formatCurrency(totalGeneration)} in cash generation over the next ${next6Months.length} months`);
+        } else {
+          projections.push(`Excel projections show ${this.formatCurrency(Math.abs(totalGeneration))} in cash consumption over the next ${next6Months.length} months`);
         }
-      }
-      
-      // Seasonal patterns
-      const seasonalPattern = this.detectSeasonalPattern(metrics.slice(0, currentIndex + 1));
-      if (seasonalPattern) {
-        projections.push(seasonalPattern);
+        
+        // Find when balance might go negative
+        const negativeMonth = futureMonths.find(m => m.finalBalance < 0);
+        if (negativeMonth && metrics[currentIndex].finalBalance > 0) {
+          const monthsUntilNegative = futureMonths.indexOf(negativeMonth) + 1;
+          projections.push(`Warning: Projections indicate negative cash balance in ${monthsUntilNegative} months (${negativeMonth.month})`);
+        }
+        
+        // Average projected income/expense
+        const avgFutureIncome = next6Months.reduce((sum, m) => sum + m.totalIncome, 0) / next6Months.length;
+        const avgFutureExpense = next6Months.reduce((sum, m) => sum + Math.abs(m.totalExpense), 0) / next6Months.length;
+        
+        projections.push(`Projected average monthly income: ${this.formatCurrency(avgFutureIncome)}`);
+        projections.push(`Projected average monthly expenses: ${this.formatCurrency(avgFutureExpense)}`);
+        
+        // End of year position
+        const lastMonth = futureMonths[futureMonths.length - 1];
+        if (lastMonth) {
+          projections.push(`Year-end projected cash balance: ${this.formatCurrency(lastMonth.finalBalance)}`);
+        }
       }
     }
     
-    // If no projections generated, provide default
+    // If no projections available, provide default
     if (projections.length === 0) {
-      projections.push('Upload more months of data for accurate projections');
+      projections.push('No future projections available in Excel file');
     }
     
     return projections;

@@ -14,8 +14,17 @@ ChartJS.register(
   Legend
 )
 
+interface ChartDataPoint {
+  date: string
+  month: string
+  revenue: number
+  costs: number
+  cashflow: number
+  isActual?: boolean
+}
+
 interface CashflowChartProps {
-  data: any[]
+  data: ChartDataPoint[]
 }
 
 export function CashflowChart({ data }: CashflowChartProps) {
@@ -23,14 +32,18 @@ export function CashflowChart({ data }: CashflowChartProps) {
   const chartRef = useRef(null)
 
   const chartData = {
-    labels: data.map(item => item.date),
+    labels: data.map(item => item.month),
     datasets: [
       {
         type: 'bar' as const,
         label: t('dashboard.chart.revenue'),
         data: data.map(item => item.revenue),
-        backgroundColor: 'rgba(34, 197, 94, 0.5)',
-        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: data.map(item => 
+          item.isActual ? 'rgba(34, 197, 94, 0.6)' : 'rgba(34, 197, 94, 0.2)'
+        ),
+        borderColor: data.map(item => 
+          item.isActual ? 'rgb(34, 197, 94)' : 'rgba(34, 197, 94, 0.5)'
+        ),
         borderWidth: 1,
         yAxisID: 'y',
       },
@@ -38,20 +51,56 @@ export function CashflowChart({ data }: CashflowChartProps) {
         type: 'bar' as const,
         label: t('dashboard.chart.costs'),
         data: data.map(item => item.costs),
-        backgroundColor: 'rgba(249, 115, 22, 0.5)',
-        borderColor: 'rgb(249, 115, 22)',
+        backgroundColor: data.map(item => 
+          item.isActual ? 'rgba(249, 115, 22, 0.6)' : 'rgba(249, 115, 22, 0.2)'
+        ),
+        borderColor: data.map(item => 
+          item.isActual ? 'rgb(249, 115, 22)' : 'rgba(249, 115, 22, 0.5)'
+        ),
         borderWidth: 1,
         yAxisID: 'y',
       },
       {
         type: 'line' as const,
-        label: t('dashboard.chart.cashflow'),
+        label: 'Final Balance',
         data: data.map(item => item.cashflow),
         backgroundColor: 'rgba(124, 179, 66, 0.1)',
-        borderColor: '#7CB342',
-        borderWidth: 3,
+        borderColor: data.map((item, index) => {
+          if (item.isActual) return '#7CB342';
+          // Find the transition point
+          const isFirstForecast = index > 0 && data[index - 1].isActual && !item.isActual;
+          return isFirstForecast ? '#7CB342' : 'rgba(124, 179, 66, 0.5)';
+        }),
+        borderWidth: data.map(item => item.isActual ? 3 : 2),
+        borderDash: data.map(item => item.isActual ? [] : [5, 5]),
         tension: 0.4,
         yAxisID: 'y1',
+        segment: {
+          borderColor: (ctx: any) => {
+            const index = ctx.p0DataIndex;
+            if (index < data.length - 1) {
+              const current = data[index];
+              const next = data[index + 1];
+              if (current.isActual && !next.isActual) {
+                // Transition from actual to forecast
+                return 'rgba(124, 179, 66, 0.5)';
+              }
+            }
+            return undefined;
+          },
+          borderDash: (ctx: any) => {
+            const index = ctx.p0DataIndex;
+            if (index < data.length - 1) {
+              const current = data[index];
+              const next = data[index + 1];
+              if (current.isActual && !next.isActual) {
+                // Transition from actual to forecast
+                return [5, 5];
+              }
+            }
+            return undefined;
+          }
+        }
       },
     ],
   }
@@ -123,7 +172,7 @@ export function CashflowChart({ data }: CashflowChartProps) {
         position: 'right' as const,
         title: {
           display: true,
-          text: 'Net Cashflow ($)'
+          text: 'Final Balance ($)'
         },
         grid: {
           drawOnChartArea: false,

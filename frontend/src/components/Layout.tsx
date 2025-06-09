@@ -6,7 +6,6 @@ import {
   GlobeAltIcon,
   CogIcon
 } from '@heroicons/react/24/outline'
-import { VortexLogo } from './VortexLogo'
 import { Footer } from './Footer'
 import { Link } from 'react-router-dom'
 
@@ -24,64 +23,53 @@ export function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Beautiful Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+      {/* Modern Navbar */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16">
             {/* Logo Section */}
-            <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <VortexLogo variant="horizontal" size="lg" />
-              <div className="ml-4">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  Warren
-                </h1>
-                <p className="text-sm text-gray-500">Financial Dashboard</p>
-              </div>
+            <Link to="/" className="flex items-center space-x-3 group">
+              <img src="/vortex-horizontal.png" alt="Vortex" className="h-8 group-hover:scale-105 transition-transform" />
+              <div className="h-6 w-px bg-gray-300"></div>
+              <span className="text-xl font-semibold text-gray-900">Warren</span>
             </Link>
 
             {/* Right Section */}
-            <div className="flex items-center space-x-6">
-              {/* Language Toggle */}
-              <div className="flex items-center bg-gray-100 rounded-xl p-1">
-                <button
-                  onClick={toggleLanguage}
-                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white hover:shadow-sm"
-                  title={t('common.language')}
+            <div className="flex items-center space-x-4">
+              {/* Language Switcher */}
+              <button
+                onClick={toggleLanguage}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title={t('common.language')}
+              >
+                <GlobeAltIcon className="w-5 h-5" />
+              </button>
+
+              {/* Admin Link */}
+              {user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Admin Panel"
                 >
-                  <GlobeAltIcon className="w-4 h-4 mr-2 text-gray-600" />
-                  <span className="text-gray-700">
-                    {i18n.language === 'en' ? 'English' : 'Español'}
-                  </span>
-                </button>
-              </div>
+                  <CogIcon className="w-5 h-5" />
+                </Link>
+              )}
 
-              {/* User Info */}
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-                  <p className="text-xs text-gray-500">
-                    {user?.role === 'admin' ? 'Administrator' : 'Financial Dashboard'}
-                  </p>
+              {/* User Menu */}
+              <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
+                <div className="hidden sm:block text-right">
+                  <p className="text-sm font-medium text-gray-700">{user?.email?.split('@')[0]}</p>
+                  <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'Admin' : 'User'}</p>
                 </div>
-
-                {/* Admin Panel Link */}
-                {user?.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="flex items-center px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-all duration-200 hover:shadow-sm"
-                  >
-                    <CogIcon className="w-4 h-4 mr-2" />
-                    <span className="text-sm font-medium">Admin</span>
-                  </Link>
-                )}
                 
                 <button
                   onClick={logout}
-                  className="flex items-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all duration-200 hover:shadow-sm"
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <ArrowRightOnRectangleIcon className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">{t('auth.logout')}</span>
+                  <ArrowRightOnRectangleIcon className="w-4 h-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">{t('auth.logout')}</span>
                 </button>
               </div>
             </div>
