@@ -147,7 +147,9 @@ export const CashRunwayWidget: React.FC = () => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs font-medium text-gray-600">Scenario</span>
               <span className="text-xs text-gray-500">
-                Burn: {formatCurrency(runwayData.averageBurnRate)}/mo
+                {runwayData.averageBurnRate === 0 
+                  ? 'Cash Positive' 
+                  : `Burn: ${formatCurrency(runwayData.averageBurnRate)}/mo`}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">

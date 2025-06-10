@@ -202,8 +202,8 @@ export function UploadPage() {
           <div className="text-sm text-blue-800">
             <p>• Column A: Date</p>
             <p>• Column B: Description</p>
-            <p>• Column C: Revenue</p>
-            <p>• Column D: Costs</p>
+            <p>• Column C: Income</p>
+            <p>• Column D: Expenses</p>
           </div>
         </div>
       </div>

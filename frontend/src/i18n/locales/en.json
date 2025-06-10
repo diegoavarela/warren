@@ -23,8 +23,8 @@
       "highestCash": "Highest Cash (6M)",
       "biggestGain": "Biggest Gain (6M)",
       "lowestGain": "Lowest Gain (6M)",
-      "revenueYTD": "Revenue YTD",
-      "costsYTD": "Costs YTD"
+      "incomeYTD": "Income YTD",
+      "expensesYTD": "Expenses YTD"
     },
     "highlights": {
       "title": "Key Highlights",
@@ -33,8 +33,8 @@
     },
     "chart": {
       "title": "Cashflow Trends",
-      "revenue": "Revenue",
-      "costs": "Costs",
+      "income": "Income",
+      "expenses": "Expenses",
       "cashflow": "Net Cashflow"
     }
   },

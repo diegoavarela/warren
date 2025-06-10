@@ -39,8 +39,8 @@ interface DashboardData {
   chartData?: Array<{
     date: string
     month: string
-    revenue: number
-    costs: number
+    income: number
+    expenses: number
     cashflow: number
     isActual?: boolean
   }>

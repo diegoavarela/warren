@@ -11,7 +11,7 @@ import { Line } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
 
 interface ScenarioParameters {
-  revenueChange: number
+  incomeChange: number
   expenseChange: number
   startingMonth: number
   duration: number
@@ -20,14 +20,14 @@ interface ScenarioParameters {
 interface ScenarioResult {
   monthlyProjections: Array<{
     month: string
-    revenue: number
+    income: number
     expenses: number
     netCashFlow: number
     endingBalance: number
   }>
   summary: {
     endingCash: number
-    totalRevenue: number
+    totalIncome: number
     totalExpenses: number
     netCashFlow: number
     monthsOfRunway: number | null
@@ -38,9 +38,9 @@ interface ScenarioResult {
 export const ScenarioPlanning: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [scenarios, setScenarios] = useState({
-    base: { revenueChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
-    best: { revenueChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
-    worst: { revenueChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
+    base: { incomeChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
+    best: { incomeChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
+    worst: { incomeChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
   })
   const [results, setResults] = useState<{
     base: ScenarioResult
@@ -149,9 +149,9 @@ export const ScenarioPlanning: React.FC = () => {
 
   const resetScenarios = () => {
     setScenarios({
-      base: { revenueChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
-      best: { revenueChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
-      worst: { revenueChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
+      base: { incomeChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
+      best: { incomeChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
+      worst: { incomeChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
     })
     setShowResults(false)
   }
@@ -212,13 +212,13 @@ export const ScenarioPlanning: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-gray-600">Revenue Change (%)</label>
+                    <label className="text-sm text-gray-600">Income Change (%)</label>
                     <input
                       type="number"
                       min="-100"
                       max="100"
-                      value={scenarios[scenario].revenueChange}
-                      onChange={(e) => updateScenario(scenario, 'revenueChange', parseFloat(e.target.value) || 0)}
+                      value={scenarios[scenario].incomeChange}
+                      onChange={(e) => updateScenario(scenario, 'incomeChange', parseFloat(e.target.value) || 0)}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>

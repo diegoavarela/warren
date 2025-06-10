@@ -4,8 +4,8 @@ import { addMonths, format, parseISO, startOfMonth, subMonths } from 'date-fns';
 interface CashflowEntry {
   date: Date;
   description: string;
-  revenue: number;
-  costs: number;
+  income: number;
+  expenses: number;
   cashflow: number;
   cumulativeCash: number;
 }
@@ -196,8 +196,8 @@ export class CashflowService {
         data.push({
           date: metrics.date,
           description: `Cashflow for ${format(metrics.date, 'MMM yyyy')}`,
-          revenue: metrics.totalIncome,
-          costs: Math.abs(metrics.totalExpense), // Store as positive for display
+          income: metrics.totalIncome,
+          expenses: Math.abs(metrics.totalExpense), // Store as positive for display
           cashflow: cashflow,
           cumulativeCash
         });
@@ -371,8 +371,8 @@ export class CashflowService {
     return futureData.map(entry => ({
       date: format(entry.date, 'yyyy-MM'),
       month: entry.month,
-      revenue: entry.totalIncome,
-      costs: Math.abs(entry.totalExpense), // Convert to positive for display
+      income: entry.totalIncome,
+      expenses: Math.abs(entry.totalExpense), // Convert to positive for display
       cashflow: entry.monthlyGeneration
     }));
   }
@@ -385,8 +385,8 @@ export class CashflowService {
       const date = addMonths(now, i);
       data.push({
         date: format(date, 'yyyy-MM'),
-        revenue: Math.random() * 100000 + 50000,
-        costs: Math.random() * 80000 + 40000,
+        income: Math.random() * 100000 + 50000,
+        expenses: Math.random() * 80000 + 40000,
         cashflow: Math.random() * 50000 - 10000
       });
     }
@@ -430,28 +430,28 @@ export class CashflowService {
   private generateRealMonthlyBreakdown() {
     return this.currentData.map(entry => ({
       month: format(entry.date, 'MMM yyyy'),
-      revenue: entry.revenue,
-      costs: entry.costs,
+      income: entry.income,
+      expenses: entry.expenses,
       netCashflow: entry.cashflow
     }));
   }
   
   private generateRealProjections() {
     const futureEntries = this.currentData.filter(entry => entry.date > new Date());
-    const totalRevenue = futureEntries.reduce((sum, entry) => sum + entry.revenue, 0);
-    const totalCosts = futureEntries.reduce((sum, entry) => sum + entry.costs, 0);
+    const totalIncome = futureEntries.reduce((sum, entry) => sum + entry.income, 0);
+    const totalExpenses = futureEntries.reduce((sum, entry) => sum + entry.expenses, 0);
     
     return {
       nextQuarter: {
-        projectedRevenue: totalRevenue / 2,
-        projectedCosts: totalCosts / 2,
-        netCashflow: (totalRevenue - totalCosts) / 2,
+        projectedIncome: totalIncome / 2,
+        projectedExpenses: totalExpenses / 2,
+        netCashflow: (totalIncome - totalExpenses) / 2,
         confidence: 90
       },
       nextSixMonths: {
-        projectedRevenue: totalRevenue,
-        projectedCosts: totalCosts,
-        netCashflow: totalRevenue - totalCosts,
+        projectedIncome: totalIncome,
+        projectedExpenses: totalExpenses,
+        netCashflow: totalIncome - totalExpenses,
         confidence: 85
       }
     };
@@ -472,8 +472,8 @@ export class CashflowService {
   private generateMonthlyBreakdown() {
     return Array.from({ length: 12 }, (_, i) => ({
       month: format(addMonths(new Date(), i - 6), 'MMM yyyy'),
-      revenue: Math.random() * 100000 + 50000,
-      costs: Math.random() * 80000 + 40000,
+      income: Math.random() * 100000 + 50000,
+      expenses: Math.random() * 80000 + 40000,
       netCashflow: Math.random() * 50000 - 10000
     }));
   }
@@ -481,22 +481,22 @@ export class CashflowService {
   private generateProjections() {
     return {
       nextQuarter: {
-        projectedRevenue: 275000,
-        projectedCosts: 200000,
+        projectedIncome: 275000,
+        projectedExpenses: 200000,
         netCashflow: 75000,
         confidence: 85
       },
       nextSixMonths: {
-        projectedRevenue: 550000,
-        projectedCosts: 420000,
+        projectedIncome: 550000,
+        projectedExpenses: 420000,
         netCashflow: 130000,
         confidence: 75
       }
     };
   }
 
-  private detectColumnMapping(headers: string[]): { date?: number, description?: number, revenue?: number, costs?: number } {
-    const mapping: { date?: number, description?: number, revenue?: number, costs?: number } = {};
+  private detectColumnMapping(headers: string[]): { date?: number, description?: number, income?: number, expenses?: number } {
+    const mapping: { date?: number, description?: number, income?: number, expenses?: number } = {};
 
     headers.forEach((header, index) => {
       const columnNumber = index + 1;
@@ -510,11 +510,11 @@ export class CashflowService {
       }
       
       if (header.includes('revenue') || header.includes('income') || header.includes('ingreso') || header.includes('venta') || header.includes('sales')) {
-        mapping.revenue = columnNumber;
+        mapping.income = columnNumber;
       }
       
       if (header.includes('cost') || header.includes('expense') || header.includes('gasto') || header.includes('egreso') || header.includes('spend')) {
-        mapping.costs = columnNumber;
+        mapping.expenses = columnNumber;
       }
     });
 

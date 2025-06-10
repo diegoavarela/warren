@@ -40,7 +40,7 @@ export const HomePage: React.FC = () => {
     {
       id: 'pnl',
       title: 'Profit & Loss Analysis',
-      description: 'Monitor revenue, expenses, and profitability metrics with detailed P&L statements',
+      description: 'Monitor income, expenses, and profitability metrics with detailed P&L statements',
       icon: ChartBarIcon,
       gradient: 'from-emerald-600 via-teal-600 to-cyan-600',
       lightGradient: 'from-emerald-50/50 via-teal-50/30 to-cyan-50/50',
@@ -49,7 +49,7 @@ export const HomePage: React.FC = () => {
       borderGlow: 'hover:shadow-teal-500/20',
       path: '/pnl',
       features: [
-        'Revenue & expense tracking',
+        'Income & expense tracking',
         'Margin analysis',
         'Budget vs actual comparison',
         'Profitability trends'

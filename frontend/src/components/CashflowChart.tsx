@@ -17,8 +17,8 @@ ChartJS.register(
 interface ChartDataPoint {
   date: string
   month: string
-  revenue: number
-  costs: number
+  income: number
+  expenses: number
   cashflow: number
   isActual?: boolean
 }
@@ -36,8 +36,8 @@ export function CashflowChart({ data }: CashflowChartProps) {
     datasets: [
       {
         type: 'bar' as const,
-        label: t('dashboard.chart.revenue'),
-        data: data.map(item => item.revenue),
+        label: t('dashboard.chart.income'),
+        data: data.map(item => item.income),
         backgroundColor: data.map(item => 
           item.isActual ? 'rgba(34, 197, 94, 0.6)' : 'rgba(34, 197, 94, 0.2)'
         ),
@@ -49,8 +49,8 @@ export function CashflowChart({ data }: CashflowChartProps) {
       },
       {
         type: 'bar' as const,
-        label: t('dashboard.chart.costs'),
-        data: data.map(item => item.costs),
+        label: t('dashboard.chart.expenses'),
+        data: data.map(item => item.expenses),
         backgroundColor: data.map(item => 
           item.isActual ? 'rgba(249, 115, 22, 0.6)' : 'rgba(249, 115, 22, 0.2)'
         ),
@@ -153,7 +153,7 @@ export function CashflowChart({ data }: CashflowChartProps) {
         position: 'left' as const,
         title: {
           display: true,
-          text: 'Revenue & Costs ($)'
+          text: 'Income & Expenses ($)'
         },
         ticks: {
           callback: function(value: any) {

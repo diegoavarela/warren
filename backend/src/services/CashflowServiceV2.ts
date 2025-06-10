@@ -145,8 +145,8 @@ export class CashflowServiceV2 {
       chartData.push({
         date: format(parsedMetrics[i].date, 'yyyy-MM'),
         month: parsedMetrics[i].month,
-        revenue: parsedMetrics[i].totalIncome,
-        costs: Math.abs(parsedMetrics[i].totalExpense),
+        income: parsedMetrics[i].totalIncome,
+        expenses: Math.abs(parsedMetrics[i].totalExpense),
         cashflow: parsedMetrics[i].finalBalance,  // Row 104: Final Balance
         isActual: isActual
       });
@@ -228,18 +228,18 @@ export class CashflowServiceV2 {
         totalBalance: 11925379.16
       },
       chartData: [
-        { date: '2025-01', month: 'January', revenue: 70346123.45, costs: 65432198.76, cashflow: 35000000.00, isActual: true },
-        { date: '2025-02', month: 'February', revenue: 68234567.89, costs: 67123456.78, cashflow: 36111111.11, isActual: true },
-        { date: '2025-03', month: 'March', revenue: 69876543.21, costs: 68765432.10, cashflow: 37222222.22, isActual: true },
-        { date: '2025-04', month: 'April', revenue: 65432109.87, costs: 69876543.21, cashflow: 32777788.88, isActual: true },
-        { date: '2025-05', month: 'May', revenue: 63210987.65, costs: 70123456.78, cashflow: 25865319.75, isActual: true },
-        { date: '2025-06', month: 'June', revenue: 61715728.02, costs: 69286881.42, cashflow: 26924011.97, isActual: true },
-        { date: '2025-07', month: 'July', revenue: 61715728.02, costs: 69286881.42, cashflow: 19352858.56, isActual: false },
-        { date: '2025-08', month: 'August', revenue: 61715728.02, costs: 69286881.42, cashflow: 11781705.15, isActual: false },
-        { date: '2025-09', month: 'September', revenue: 61715728.02, costs: 69286881.42, cashflow: 4210551.74, isActual: false },
-        { date: '2025-10', month: 'October', revenue: 61715728.02, costs: 69286881.42, cashflow: -3360601.67, isActual: false },
-        { date: '2025-11', month: 'November', revenue: 61715728.02, costs: 69286881.42, cashflow: -10931755.08, isActual: false },
-        { date: '2025-12', month: 'December', revenue: 61715728.02, costs: 69286881.42, cashflow: -18502908.49, isActual: false }
+        { date: '2025-01', month: 'January', income: 70346123.45, expenses: 65432198.76, cashflow: 35000000.00, isActual: true },
+        { date: '2025-02', month: 'February', income: 68234567.89, expenses: 67123456.78, cashflow: 36111111.11, isActual: true },
+        { date: '2025-03', month: 'March', income: 69876543.21, expenses: 68765432.10, cashflow: 37222222.22, isActual: true },
+        { date: '2025-04', month: 'April', income: 65432109.87, expenses: 69876543.21, cashflow: 32777788.88, isActual: true },
+        { date: '2025-05', month: 'May', income: 63210987.65, expenses: 70123456.78, cashflow: 25865319.75, isActual: true },
+        { date: '2025-06', month: 'June', income: 61715728.02, expenses: 69286881.42, cashflow: 26924011.97, isActual: true },
+        { date: '2025-07', month: 'July', income: 61715728.02, expenses: 69286881.42, cashflow: 19352858.56, isActual: false },
+        { date: '2025-08', month: 'August', income: 61715728.02, expenses: 69286881.42, cashflow: 11781705.15, isActual: false },
+        { date: '2025-09', month: 'September', income: 61715728.02, expenses: 69286881.42, cashflow: 4210551.74, isActual: false },
+        { date: '2025-10', month: 'October', income: 61715728.02, expenses: 69286881.42, cashflow: -3360601.67, isActual: false },
+        { date: '2025-11', month: 'November', income: 61715728.02, expenses: 69286881.42, cashflow: -10931755.08, isActual: false },
+        { date: '2025-12', month: 'December', income: 61715728.02, expenses: 69286881.42, cashflow: -18502908.49, isActual: false }
       ],
       highlights: {
         pastThreeMonths: [

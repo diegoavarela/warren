@@ -397,9 +397,9 @@ export class PDFExportService {
 
     // Analysis content
     const insights = [
-      'Revenue growth analysis and trend identification',
+      'Income growth analysis and trend identification',
       'Profitability margin evaluation and benchmarking',
-      'Cost structure optimization opportunities',
+      'Expense structure optimization opportunities',
       'Cash flow pattern analysis and forecasting',
       'Risk assessment and mitigation strategies'
     ]
@@ -422,8 +422,8 @@ export class PDFExportService {
     yPos += 15
 
     const recommendations = [
-      'Focus on high-margin revenue streams to improve profitability',
-      'Monitor expense categories for cost optimization opportunities',
+      'Focus on high-margin income streams to improve profitability',
+      'Monitor expense categories for optimization opportunities',
       'Maintain healthy cash reserves for operational stability',
       'Implement regular financial performance monitoring',
       'Consider strategic investments based on cash flow projections'
@@ -466,7 +466,7 @@ export class PDFExportService {
 
     // Create metrics grid
     const metrics = [
-      { label: 'Revenue', value: currentMonth.revenue, format: 'currency' },
+      { label: 'Income', value: currentMonth.income, format: 'currency' },
       { label: 'Gross Profit', value: currentMonth.grossProfit, format: 'currency', percentage: currentMonth.grossMargin },
       { label: 'Operating Income', value: currentMonth.operatingIncome, format: 'currency', percentage: currentMonth.operatingMargin },
       { label: 'EBITDA', value: currentMonth.ebitda, format: 'currency', percentage: currentMonth.ebitdaMargin },
@@ -574,7 +574,7 @@ export class PDFExportService {
 
     // Summary metrics
     const summaryMetrics = [
-      { label: 'Total Revenue', value: summary.totalRevenue },
+      { label: 'Total Income', value: summary.totalIncome },
       { label: 'Total Gross Profit', value: summary.totalGrossProfit },
       { label: 'Total Operating Income', value: summary.totalOperatingIncome },
       { label: 'Total Net Income', value: summary.totalNetIncome }
@@ -627,25 +627,25 @@ export class PDFExportService {
     let yPos = startY
     const currentMonth = data.currentMonth
 
-    // Detailed revenue breakdown
+    // Detailed income breakdown
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(12)
     const primaryRgb = this.hexToRgb(primaryColor)
     pdf.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
-    pdf.text('Revenue Analysis', margin, yPos)
+    pdf.text('Income Analysis', margin, yPos)
     yPos += 15
 
-    // Revenue details table
-    const revenueData = [
+    // Income details table
+    const incomeData = [
       ['Metric', 'Current Month', 'YTD Total', 'Margin %'],
-      ['Total Revenue', this.formatCurrency(currentMonth.revenue, currentMonth.currency), 'N/A', '100.0%'],
+      ['Total Income', this.formatCurrency(currentMonth.income, currentMonth.currency), 'N/A', '100.0%'],
       ['Gross Profit', this.formatCurrency(currentMonth.grossProfit, currentMonth.currency), 'N/A', `${currentMonth.grossMargin?.toFixed(1) || '0.0'}%`],
       ['Operating Income', this.formatCurrency(currentMonth.operatingIncome, currentMonth.currency), 'N/A', `${currentMonth.operatingMargin?.toFixed(1) || '0.0'}%`],
       ['Net Income', this.formatCurrency(currentMonth.netIncome, currentMonth.currency), 'N/A', `${currentMonth.netMargin?.toFixed(1) || '0.0'}%`]
     ]
 
-    this.drawTable(pdf, revenueData, margin, yPos, pageWidth - 2 * margin, primaryColor)
-    yPos += (revenueData.length * 8) + 20
+    this.drawTable(pdf, incomeData, margin, yPos, pageWidth - 2 * margin, primaryColor)
+    yPos += (incomeData.length * 8) + 20
 
     return yPos
   }

@@ -23,8 +23,8 @@
       "highestCash": "Efectivo Máximo (6M)",
       "biggestGain": "Mayor Ganancia (6M)",
       "lowestGain": "Menor Ganancia (6M)",
-      "revenueYTD": "Ingresos Anuales",
-      "costsYTD": "Costos Anuales"
+      "incomeYTD": "Ingresos Anuales",
+      "expensesYTD": "Gastos Anuales"
     },
     "highlights": {
       "title": "Puntos Clave",
@@ -33,8 +33,8 @@
     },
     "chart": {
       "title": "Tendencias de Flujo de Efectivo",
-      "revenue": "Ingresos",
-      "costs": "Costos",
+      "income": "Ingresos",
+      "expenses": "Gastos",
       "cashflow": "Flujo Neto"
     }
   },

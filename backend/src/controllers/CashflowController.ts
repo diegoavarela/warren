@@ -161,9 +161,9 @@ export class CashflowController {
       
       // Default scenarios if not provided
       const scenarios = {
-        base: base || { revenueChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
-        best: best || { revenueChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
-        worst: worst || { revenueChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
+        base: base || { incomeChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
+        best: best || { incomeChange: 25, expenseChange: -15, startingMonth: 0, duration: 6 },
+        worst: worst || { incomeChange: -30, expenseChange: 20, startingMonth: 0, duration: 3 }
       };
 
       const now = new Date();

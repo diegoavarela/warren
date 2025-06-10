@@ -221,9 +221,9 @@ export class ProfessionalPDFService {
       // KPI Cards
       const kpiData = [
         {
-          label: 'Revenue',
-          value: data.currentMonth.revenue,
-          change: data.previousMonth ? this.calculateChange(data.currentMonth.revenue, data.previousMonth.revenue) : null,
+          label: 'Income',
+          value: data.currentMonth.income,
+          change: data.previousMonth ? this.calculateChange(data.currentMonth.income, data.previousMonth.income) : null,
           color: theme.success
         },
         {
@@ -264,9 +264,9 @@ export class ProfessionalPDFService {
       const tableData = [
         ['Metric', 'Current Month', 'YTD Total', 'YoY Change', 'Status'],
         [
-          'Revenue',
-          this.formatCurrency(data.currentMonth.revenue, company.currency),
-          data.summary ? this.formatCurrency(data.summary.totalRevenue, company.currency) : 'N/A',
+          'Income',
+          this.formatCurrency(data.currentMonth.income, company.currency),
+          data.summary ? this.formatCurrency(data.summary.totalIncome, company.currency) : 'N/A',
           '+12.5%',
           'On Track'
         ],
@@ -336,7 +336,7 @@ export class ProfessionalPDFService {
     pdf.setFontSize(9)
     pdf.setTextColor(...this.hexToRgb(theme.text.secondary))
     const insights = [
-      '• Revenue growth continues to outpace industry average by 3.2%',
+      '• Income growth continues to outpace industry average by 3.2%',
       '• Gross margins improved by 1.5% due to operational efficiencies',
       '• Operating expenses under control, tracking 2% below budget',
       '• Strong cash position maintained with 6+ months runway'
@@ -363,24 +363,24 @@ export class ProfessionalPDFService {
       pdf.setFont(this.FONTS.HELVETICA, 'bold')
       pdf.setFontSize(12)
       pdf.setTextColor(...this.hexToRgb(theme.primary))
-      pdf.text('Revenue & Profitability Analysis', 20, yPos)
+      pdf.text('Income & Profitability Analysis', 20, yPos)
       yPos += 10
 
       // Detailed metrics table
       const detailedData = [
         ['Category', 'Amount', 'Margin %', 'vs Last Month', 'vs Budget', 'Trend'],
         [
-          'Total Revenue',
-          this.formatCurrency(data.currentMonth.revenue, company.currency),
+          'Total Income',
+          this.formatCurrency(data.currentMonth.income, company.currency),
           '100.0%',
           '+5.2%',
           '+2.1%',
           '↑'
         ],
         [
-          'Cost of Goods Sold',
+          'Expense of Goods Sold',
           this.formatCurrency(data.currentMonth.cogs || 0, company.currency),
-          `-${((data.currentMonth.cogs || 0) / data.currentMonth.revenue * 100).toFixed(1)}%`,
+          `-${((data.currentMonth.cogs || 0) / data.currentMonth.income * 100).toFixed(1)}%`,
           '+3.1%',
           '-1.2%',
           '↑'
@@ -396,7 +396,7 @@ export class ProfessionalPDFService {
         [
           'Operating Expenses',
           this.formatCurrency(data.currentMonth.operatingExpenses || 0, company.currency),
-          `-${((data.currentMonth.operatingExpenses || 0) / data.currentMonth.revenue * 100).toFixed(1)}%`,
+          `-${((data.currentMonth.operatingExpenses || 0) / data.currentMonth.income * 100).toFixed(1)}%`,
           '+2.3%',
           '-0.8%',
           '→'
@@ -467,7 +467,7 @@ export class ProfessionalPDFService {
             const value = data.cell.text[0]
             if (value.startsWith('+')) {
               pdf.setTextColor(...this.hexToRgb(theme.success))
-            } else if (value.startsWith('-') && !data.row.raw[0].includes('Cost') && !data.row.raw[0].includes('Expenses')) {
+            } else if (value.startsWith('-') && !data.row.raw[0].includes('Expense') && !data.row.raw[0].includes('Expenses')) {
               pdf.setTextColor(...this.hexToRgb(theme.danger))
             }
             pdf.text(value, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, { align: 'center' })
@@ -494,7 +494,7 @@ export class ProfessionalPDFService {
     pdf.setFont(this.FONTS.HELVETICA, 'bold')
     pdf.setFontSize(12)
     pdf.setTextColor(...this.hexToRgb(theme.primary))
-    pdf.text('Revenue Trend Analysis', 20, yPos)
+    pdf.text('Income Trend Analysis', 20, yPos)
     yPos += 10
 
     // Draw chart placeholder
@@ -522,11 +522,11 @@ export class ProfessionalPDFService {
       pdf.setDrawColor(...this.hexToRgb(theme.primary))
       
       let prevX = startX
-      let prevY = startY - (chartData[0].revenue / Math.max(...chartData.map((d: any) => d.revenue)) * 50)
+      let prevY = startY - (chartData[0].income / Math.max(...chartData.map((d: any) => d.income)) * 50)
       
       chartData.forEach((point: any, index: number) => {
         const x = startX + (index * stepX)
-        const y = startY - (point.revenue / Math.max(...chartData.map((d: any) => d.revenue)) * 50)
+        const y = startY - (point.income / Math.max(...chartData.map((d: any) => d.income)) * 50)
         
         if (index > 0) {
           pdf.line(prevX, prevY, x, y)
@@ -588,7 +588,7 @@ export class ProfessionalPDFService {
     // Recommendations
     const recommendations = [
       {
-        title: 'Revenue Growth Opportunities',
+        title: 'Income Growth Opportunities',
         priority: 'HIGH',
         items: [
           'Expand into adjacent market segments showing 15% YoY growth',
@@ -597,10 +597,10 @@ export class ProfessionalPDFService {
         ]
       },
       {
-        title: 'Cost Optimization',
+        title: 'Expense Optimization',
         priority: 'MEDIUM',
         items: [
-          'Automate manual processes to reduce operational costs by 8%',
+          'Automate manual processes to reduce operational expenses by 8%',
           'Renegotiate supplier contracts for better terms',
           'Implement zero-based budgeting for Q3'
         ]
