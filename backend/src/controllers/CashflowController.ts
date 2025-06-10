@@ -30,7 +30,7 @@ export class CashflowController {
         return next(createError('No worksheet found in Excel file', 400));
       }
 
-      const metrics = this.cashflowService.parseWorksheet(worksheet);
+      const metrics = this.cashflowService.parseWorksheet(worksheet, req.file.originalname);
       logger.info(`Cashflow file uploaded by user ${req.user?.email}, ${metrics.length} months processed`);
 
       res.json({

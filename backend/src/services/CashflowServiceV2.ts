@@ -15,14 +15,20 @@ interface MonthlyMetrics {
 
 // Simple global storage for parsed data
 let parsedMetrics: MonthlyMetrics[] = [];
+let uploadedFileName: string = '';
 
 export class CashflowServiceV2 {
   /**
    * Parse the Excel worksheet and extract monthly metrics
    */
-  parseWorksheet(worksheet: ExcelJS.Worksheet): MonthlyMetrics[] {
+  parseWorksheet(worksheet: ExcelJS.Worksheet, filename?: string): MonthlyMetrics[] {
     // Clear previous data
     parsedMetrics = [];
+    
+    // Store the filename
+    if (filename) {
+      uploadedFileName = filename;
+    }
     
     // Define the exact row numbers from the Excel file
     const ROW_NUMBERS = {
@@ -151,6 +157,8 @@ export class CashflowServiceV2 {
     const projections = this.generateProjections(parsedMetrics, currentMonthArrayIndex);
     
     return {
+      hasData: true,
+      uploadedFileName: uploadedFileName,
       currentMonth: {
         month: currentMonthData.month,
         totalIncome: currentMonthData.totalIncome,
@@ -204,6 +212,8 @@ export class CashflowServiceV2 {
    */
   private getMockData() {
     return {
+      hasData: false,
+      uploadedFileName: uploadedFileName || null,
       currentMonth: {
         month: 'June',
         totalIncome: 61715728.02,

@@ -403,14 +403,14 @@ export const ConfigurationPage: React.FC = () => {
                     {!selectedCompany.isActive && (
                       <button
                         onClick={() => handleSetActiveCompany(selectedCompany.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-emerald-500/25 transform hover:-translate-y-0.5"
                       >
                         Set as Active
                       </button>
                     )}
                     <button
                       onClick={() => setShowStructureMapping(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-purple-500/25 transform hover:-translate-y-0.5"
                     >
                       Configure Excel Structure
                     </button>
@@ -588,11 +588,11 @@ export const ConfigurationPage: React.FC = () => {
 
                       {mappingStep === 'configure' && detectedStructure && (
                         <div className="space-y-6">
-                          <h3 className="text-lg font-medium text-gray-900">Review Detected Structure</h3>
+                          <h3 className="text-lg font-medium bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Review Detected Structure</h3>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                              <h4 className="text-sm font-medium text-gray-700 mb-3">Worksheets Found</h4>
+                              <h4 className="text-sm font-medium bg-gradient-to-r from-gray-700 to-purple-700 bg-clip-text text-transparent mb-3">Worksheets Found</h4>
                               <div className="space-y-2">
                                 {detectedStructure.worksheets.map((sheet: string, index: number) => (
                                   <label key={index} className="flex items-center">
@@ -604,10 +604,10 @@ export const ConfigurationPage: React.FC = () => {
                             </div>
 
                             <div>
-                              <h4 className="text-sm font-medium text-gray-700 mb-3">Detected Metrics</h4>
+                              <h4 className="text-sm font-medium bg-gradient-to-r from-gray-700 to-purple-700 bg-clip-text text-transparent mb-3">Detected Metrics</h4>
                               <div className="space-y-2">
                                 {Object.entries(detectedStructure.potentialMetrics).map(([row, description]) => (
-                                  <div key={row} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                  <div key={row} className="flex items-center justify-between p-2 bg-gradient-to-br from-gray-50/50 to-purple-50/30 rounded-xl border border-gray-100">
                                     <span className="text-sm text-gray-600">{row}</span>
                                     <span className="text-xs text-gray-500">{description}</span>
                                   </div>

@@ -176,15 +176,15 @@ export const PnLDashboardPage: React.FC = () => {
           label: 'Gross Margin %',
           data: data.chartData.map(d => d.grossMargin),
           borderColor: '#10B981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          backgroundColor: 'rgba(16, 185, 129, 0.15)',
           tension: 0.4,
           fill: true
         },
         {
           label: 'Net Margin %',
           data: data.chartData.map(d => d.netMargin),
-          borderColor: '#6366F1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          borderColor: '#8B5CF6',
+          backgroundColor: 'rgba(139, 92, 246, 0.15)',
           tension: 0.4,
           fill: true
         }
@@ -201,17 +201,17 @@ export const PnLDashboardPage: React.FC = () => {
         {
           label: 'Revenue',
           data: data.chartData.map(d => d.revenue),
-          backgroundColor: '#10B981'
+          backgroundColor: '#059669'
         },
         {
           label: 'Gross Profit',
           data: data.chartData.map(d => d.grossProfit),
-          backgroundColor: '#3B82F6'
+          backgroundColor: '#2563EB'
         },
         {
           label: 'Net Income',
           data: data.chartData.map(d => d.netIncome),
-          backgroundColor: '#6366F1'
+          backgroundColor: '#7C3AED'
         }
       ]
     }
@@ -295,7 +295,7 @@ export const PnLDashboardPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-            <ChartBarIcon className="h-8 w-8 mr-3 text-green-600" />
+            <ChartBarIcon className="h-8 w-8 mr-3 text-emerald-600" />
             Profit & Loss Dashboard
           </h1>
           <p className="text-gray-600 mt-2">Upload your P&L statement to view financial insights</p>
@@ -321,7 +321,7 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <ChartBarIcon className="h-8 w-8 mr-3 text-green-600" />
+              <ChartBarIcon className="h-8 w-8 mr-3 text-emerald-600" />
               Profit & Loss Dashboard
             </h1>
             <p className="text-gray-600 mt-2">Financial performance analysis and insights</p>
@@ -330,7 +330,7 @@ export const PnLDashboardPage: React.FC = () => {
             <button
               onClick={exportToPDF}
               disabled={exporting}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-xl hover:from-violet-700 hover:via-purple-700 hover:to-fuchsia-700 transition-all duration-200 shadow-lg hover:shadow-2xl transform hover:scale-105 disabled:opacity-50 disabled:transform-none backdrop-blur-sm"
             >
               <DocumentArrowDownIcon className="h-5 w-5" />
               <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
@@ -365,10 +365,10 @@ export const PnLDashboardPage: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {/* Revenue */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <ArrowTrendingUpIcon className="h-6 w-6 text-green-600" />
+                <div className="p-3 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl shadow-md">
+                  <ArrowTrendingUpIcon className="h-6 w-6 text-emerald-600" />
                 </div>
                 {data.previousMonth && (() => {
                   const change = calculateChange(data.currentMonth.revenue, data.previousMonth.revenue)
@@ -393,10 +393,10 @@ export const PnLDashboardPage: React.FC = () => {
             </div>
 
             {/* Gross Profit */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <CurrencyDollarIcon className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-gradient-to-br from-blue-500/20 to-sky-500/20 rounded-xl shadow-md">
+                  <CurrencyDollarIcon className="h-6 w-6 text-sky-600" />
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium text-blue-600">
@@ -426,9 +426,9 @@ export const PnLDashboardPage: React.FC = () => {
             </div>
 
             {/* Operating Income */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-indigo-100 rounded-xl">
+                <div className="p-3 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 rounded-xl shadow-md">
                   <CalculatorIcon className="h-6 w-6 text-indigo-600" />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -459,10 +459,10 @@ export const PnLDashboardPage: React.FC = () => {
             </div>
 
             {/* EBITDA */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <ChartBarIcon className="h-6 w-6 text-purple-600" />
+                <div className="p-3 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-xl shadow-md">
+                  <ChartBarIcon className="h-6 w-6 text-violet-600" />
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium text-purple-600">
@@ -492,7 +492,7 @@ export const PnLDashboardPage: React.FC = () => {
             </div>
 
             {/* Net Income */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl ${
                   data.currentMonth.netIncome >= 0 ? 'bg-green-100' : 'bg-red-100'
