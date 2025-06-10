@@ -3,7 +3,9 @@ import {
   FireIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  MinusIcon
+  MinusIcon,
+  QuestionMarkCircleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { Line } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
@@ -35,6 +37,7 @@ export const BurnRateTrend: React.FC = () => {
   const [burnData, setBurnData] = useState<BurnRateData | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedView, setSelectedView] = useState<'chart' | 'metrics'>('metrics')
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   useEffect(() => {
     loadBurnRateData()
@@ -187,27 +190,36 @@ export const BurnRateTrend: React.FC = () => {
           </div>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        {/* View Toggle and Help */}
+        <div className="flex items-center space-x-2">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setSelectedView('metrics')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                selectedView === 'metrics'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Metrics
+            </button>
+            <button
+              onClick={() => setSelectedView('chart')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                selectedView === 'chart'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Chart
+            </button>
+          </div>
           <button
-            onClick={() => setSelectedView('metrics')}
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-              selectedView === 'metrics'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            onClick={() => setShowHelpModal(true)}
+            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="How burn rate and cash generation work"
           >
-            Metrics
-          </button>
-          <button
-            onClick={() => setSelectedView('chart')}
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-              selectedView === 'chart'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Chart
+            <QuestionMarkCircleIcon className="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -321,6 +333,202 @@ export const BurnRateTrend: React.FC = () => {
       ) : (
         <div className="h-64">
           <Line data={chartData} options={chartOptions} />
+        </div>
+      )}
+
+      {/* Help Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Understanding Burn Rate & Cash Generation</h2>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 What is Burn Rate?</h3>
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Burn Rate</strong> is how much cash your company spends above income each month. 
+                    It's only counted when expenses exceed income.
+                  </p>
+                  <div className="mt-3 p-3 bg-white rounded-lg">
+                    <p className="text-sm font-mono text-gray-800">
+                      Burn Rate = Expenses - Income (only when negative)
+                    </p>
+                    <p className="text-xs text-gray-600 mt-2">
+                      If Income ≥ Expenses → You're "Cash Positive" (no burn)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 What is Cash Generation?</h3>
+                <div className="bg-green-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Cash Generation</strong> tracks your monthly cash flow - positive when you're 
+                    making money, negative when you're burning cash.
+                  </p>
+                  <div className="mt-3 p-3 bg-white rounded-lg">
+                    <p className="text-sm font-mono text-gray-800">
+                      Cash Generation = Income - Expenses
+                    </p>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Positive = Generating cash | Negative = Burning cash
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Your Current Numbers</h3>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Current Month Status:</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {isGenerating ? 'Cash Positive' : `Burning ${formatCurrency(burnData?.currentMonthBurn || 0)}`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Cash Generation:</span>
+                    <span className={`text-sm font-semibold ${
+                      (burnData?.currentMonthGeneration || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {(burnData?.currentMonthGeneration || 0) >= 0 ? '+' : '-'}
+                      {formatCurrency(Math.abs(burnData?.currentMonthGeneration || 0))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Month-over-Month Change:</span>
+                    <span className={`text-sm font-semibold ${
+                      burnData?.generationTrend === 'increasing' ? 'text-green-600' :
+                      burnData?.generationTrend === 'decreasing' ? 'text-red-600' :
+                      'text-gray-600'
+                    }`}>
+                      {burnData?.generationChange || 0 > 0 ? '+' : ''}{formatCurrency(Math.abs(burnData?.generationChange || 0))}
+                      {' '}({burnData?.generationChangePercent || 0 > 0 ? '+' : ''}{(burnData?.generationChangePercent || 0).toFixed(1)}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Understanding the Trends</h3>
+                <div className="space-y-3">
+                  <div className="border-l-4 border-green-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Improving Trend</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Burn rate is decreasing or cash generation is increasing. 
+                      You're moving in the right direction! 🎉
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-yellow-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Stable Trend</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Your burn rate or cash generation is consistent month-over-month. 
+                      Predictable and manageable.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-red-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Worsening Trend</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Burn rate is increasing or cash generation is decreasing. 
+                      Time to examine expenses and revenue strategies. ⚠️
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Averages Explained</h3>
+                <div className="bg-yellow-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">
+                    We track different time periods to show trends:
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start">
+                      <span className="text-gray-500 mr-2">•</span>
+                      <div>
+                        <strong>3-Month Average:</strong> Recent trend (most volatile)
+                        <div className="text-xs text-gray-500 mt-1">
+                          Currently: {burnData?.threeMonthAverage === 0 ? 'Cash Positive' : formatCurrency(burnData?.threeMonthAverage || 0)}
+                        </div>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-gray-500 mr-2">•</span>
+                      <div>
+                        <strong>6-Month Average:</strong> Medium-term trend
+                        <div className="text-xs text-gray-500 mt-1">
+                          Currently: {burnData?.sixMonthAverage === 0 ? 'Cash Positive' : formatCurrency(burnData?.sixMonthAverage || 0)}
+                        </div>
+                      </div>
+                    </li>
+                    {burnData?.twelveMonthAverage !== null && (
+                      <li className="flex items-start">
+                        <span className="text-gray-500 mr-2">•</span>
+                        <div>
+                          <strong>12-Month Average:</strong> Long-term baseline
+                          <div className="text-xs text-gray-500 mt-1">
+                            Currently: {burnData?.twelveMonthAverage === 0 ? 'Cash Positive' : formatCurrency(burnData.twelveMonthAverage)}
+                          </div>
+                        </div>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Reading the Chart</h3>
+                <div className="bg-purple-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">
+                    The chart shows your cash generation over time:
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-center">
+                      <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                      <span>Above zero line = Generating cash (good!)</span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                      <span>Below zero line = Burning cash (monitor closely)</span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-16 h-0.5 bg-gray-400 mr-2"></div>
+                      <span>Zero line = Break-even point</span>
+                    </li>
+                  </ul>
+                  <p className="text-xs text-gray-500 mt-3">
+                    Hover over points to see exact values and changes
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Key Takeaways</h3>
+                <div className="bg-green-50 rounded-xl p-4 space-y-2">
+                  <p className="text-sm text-gray-700 font-medium">Use this analysis to:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
+                    <li>Track if you're improving month-over-month</li>
+                    <li>Identify when you became cash positive (or when you might)</li>
+                    <li>Spot trends before they become problems</li>
+                    <li>Celebrate improvements in cash generation! 🎉</li>
+                    <li>Make data-driven decisions about expenses and growth</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

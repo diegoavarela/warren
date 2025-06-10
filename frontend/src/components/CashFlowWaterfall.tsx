@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { 
   ChartBarIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  QuestionMarkCircleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { Bar } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
@@ -21,6 +23,7 @@ export const CashFlowWaterfall: React.FC = () => {
   const [waterfallData, setWaterfallData] = useState<WaterfallData | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState(6) // Default to 6 months
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   useEffect(() => {
     loadWaterfallData()
@@ -197,7 +200,7 @@ export const CashFlowWaterfall: React.FC = () => {
             </div>
           </div>
           
-          {/* Period Selector */}
+          {/* Period Selector and Help */}
           <div className="flex items-center space-x-2">
             <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
             <select
@@ -209,6 +212,13 @@ export const CashFlowWaterfall: React.FC = () => {
               <option value={6}>Last 6 months</option>
               <option value={12}>Last 12 months</option>
             </select>
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="How waterfall charts work"
+            >
+              <QuestionMarkCircleIcon className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -271,6 +281,179 @@ export const CashFlowWaterfall: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Help Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Understanding Cash Flow Waterfall</h2>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💧 What is a Waterfall Chart?</h3>
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    A <strong>waterfall chart</strong> shows how your cash balance changes over time, 
+                    breaking down the cumulative effect of positive and negative cash flows.
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Think of it like a financial story: starting balance → what happened → ending balance
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Your Current Numbers</h3>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-xs text-gray-600">Start</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(waterfallData?.startValue || 0)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-600">Change</p>
+                      <p className={`text-sm font-semibold ${
+                        (waterfallData?.endValue || 0) - (waterfallData?.startValue || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {(waterfallData?.endValue || 0) - (waterfallData?.startValue || 0) >= 0 ? '+' : ''}
+                        {formatCurrency((waterfallData?.endValue || 0) - (waterfallData?.startValue || 0))}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-600">End</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(waterfallData?.endValue || 0)}</p>
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-xs text-gray-500">
+                      Period: Last {period} months
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📖 How to Read the Chart</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-4 h-4 bg-gray-600 rounded mt-0.5"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Gray Bars (Totals)</p>
+                      <p className="text-sm text-gray-600">Show your cash balance at start and end points</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <div className="w-4 h-4 bg-green-500 rounded mt-0.5"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Green Bars (Income)</p>
+                      <p className="text-sm text-gray-600">Money coming in - increases your cash balance</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <div className="w-4 h-4 bg-red-500 rounded mt-0.5"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Red Bars (Expenses)</p>
+                      <p className="text-sm text-gray-600">Money going out - decreases your cash balance</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🔍 Understanding the Flow</h3>
+                <div className="bg-yellow-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">
+                    The chart shows a step-by-step progression:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 ml-2">
+                    <li><strong>Starting Balance:</strong> Where you began the period</li>
+                    <li><strong>Income (Green):</strong> Each source of income adds to your balance</li>
+                    <li><strong>Expenses (Red):</strong> Each expense reduces your balance</li>
+                    <li><strong>Ending Balance:</strong> Where you finished the period</li>
+                  </ol>
+                  <p className="text-xs text-gray-500 mt-3">
+                    Bars "float" at different heights to show the cumulative effect
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Visual Insights</h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p className="flex items-start">
+                    <span className="text-green-500 mr-2">•</span>
+                    <span><strong>Upward trend:</strong> Your cash is growing (more income than expenses)</span>
+                  </p>
+                  <p className="flex items-start">
+                    <span className="text-red-500 mr-2">•</span>
+                    <span><strong>Downward trend:</strong> Your cash is declining (more expenses than income)</span>
+                  </p>
+                  <p className="flex items-start">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span><strong>Bar height:</strong> The bigger the bar, the larger the cash impact</span>
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">⏱️ Time Periods</h3>
+                <div className="bg-purple-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">
+                    Choose different time periods to see different perspectives:
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start">
+                      <span className="text-gray-500 mr-2">•</span>
+                      <div>
+                        <strong>3 months:</strong> Recent detailed view
+                        <div className="text-xs text-gray-500">Best for: Current trends and immediate planning</div>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-gray-500 mr-2">•</span>
+                      <div>
+                        <strong>6 months:</strong> Balanced perspective
+                        <div className="text-xs text-gray-500">Best for: Understanding seasonal patterns</div>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-gray-500 mr-2">•</span>
+                      <div>
+                        <strong>12 months:</strong> Full year view
+                        <div className="text-xs text-gray-500">Best for: Annual planning and long-term trends</div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Pro Tips</h3>
+                <div className="bg-green-50 rounded-xl p-4 space-y-2">
+                  <p className="text-sm text-gray-700 font-medium">Use waterfall charts to:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
+                    <li>Identify your biggest sources of income and expenses</li>
+                    <li>See the cumulative impact of many small transactions</li>
+                    <li>Understand why your cash balance changed</li>
+                    <li>Spot patterns in cash flow timing</li>
+                    <li>Make better decisions about spending and investment</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

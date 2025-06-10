@@ -5,7 +5,9 @@ import {
   PlayIcon,
   ArrowPathIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  QuestionMarkCircleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { Line } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
@@ -49,6 +51,7 @@ export const ScenarioPlanning: React.FC = () => {
   } | null>(null)
   const [selectedScenario, setSelectedScenario] = useState<'base' | 'best' | 'worst'>('base')
   const [showResults, setShowResults] = useState(false)
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   const runScenarios = async () => {
     try {
@@ -171,6 +174,13 @@ export const ScenarioPlanning: React.FC = () => {
           </div>
           <div className="flex space-x-2">
             <button
+              onClick={() => setShowHelpModal(true)}
+              className="p-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
+              title="How scenario planning works"
+            >
+              <QuestionMarkCircleIcon className="h-5 w-5" />
+            </button>
+            <button
               onClick={resetScenarios}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               title="Reset scenarios"
@@ -286,6 +296,21 @@ export const ScenarioPlanning: React.FC = () => {
               ))}
             </div>
 
+            {/* Base Values Info */}
+            {results && (
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg flex items-start space-x-2">
+                <QuestionMarkCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-700">
+                  <p className="font-medium mb-1">Current base values (3-month average):</p>
+                  <div className="flex space-x-4">
+                    <span>Income: {formatCurrency(results.base.monthlyProjections[0]?.income || 0)}/mo</span>
+                    <span>Expenses: {formatCurrency(results.base.monthlyProjections[0]?.expenses || 0)}/mo</span>
+                    <span>Starting Cash: {formatCurrency((results.base.monthlyProjections[0]?.endingBalance || 0) - (results.base.monthlyProjections[0]?.netCashFlow || 0))}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Results Summary */}
             {results && (
               <div className="grid grid-cols-2 gap-4">
@@ -366,6 +391,122 @@ export const ScenarioPlanning: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Help Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">How Scenario Planning Works</h2>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Understanding the Math</h3>
+                <div className="bg-blue-50 rounded-xl p-4 space-y-2">
+                  <p className="text-sm text-gray-700">Warren uses your actual financial data to project future cash flow:</p>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 ml-2">
+                    <li><strong>Starting Point:</strong> Your current cash balance</li>
+                    <li><strong>Base Values:</strong> Average of your last 3 months of income and expenses</li>
+                    <li><strong>Projections:</strong> 12 months forward from today</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🧮 The Calculation</h3>
+                <div className="bg-gray-50 rounded-xl p-4 font-mono text-sm">
+                  <p className="text-gray-700 mb-2">For each month:</p>
+                  <p className="text-indigo-600">Monthly Income = Base Income × (1 + Income Change %)</p>
+                  <p className="text-red-600">Monthly Expenses = Base Expenses × (1 + Expense Change %)</p>
+                  <p className="text-green-600">Net Cash Flow = Monthly Income - Monthly Expenses</p>
+                  <p className="text-blue-600">New Balance = Previous Balance + Net Cash Flow</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Example</h3>
+                <div className="bg-yellow-50 rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Let's say your current situation is:</p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Current Cash: $500,000</li>
+                    <li>• Average Monthly Income: $100,000</li>
+                    <li>• Average Monthly Expenses: $95,000</li>
+                    <li>• Monthly Cash Generation: +$5,000</li>
+                  </ul>
+                  
+                  <div className="border-t border-yellow-200 pt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Base Case (0% changes):</p>
+                    <p className="text-sm text-gray-600">Month 1: $500,000 + $5,000 = $505,000</p>
+                    <p className="text-sm text-gray-600">Month 12: $500,000 + ($5,000 × 12) = $560,000 ✅</p>
+                  </div>
+                  
+                  <div className="border-t border-yellow-200 pt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Worst Case (-10% income, +10% expenses):</p>
+                    <p className="text-sm text-gray-600">New Income: $90,000 | New Expenses: $104,500</p>
+                    <p className="text-sm text-gray-600">Monthly Burn: -$14,500</p>
+                    <p className="text-sm text-red-600">Runs out in: $500,000 ÷ $14,500 = ~34 months</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">⚠️ Why You Might Run Out of Cash</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 font-bold text-sm">1</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Low Cash Reserves</p>
+                      <p className="text-sm text-gray-600">Even if profitable, low starting cash means little buffer for changes</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 font-bold text-sm">2</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Thin Margins</p>
+                      <p className="text-sm text-gray-600">Small profit margins mean small changes have big impacts</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 font-bold text-sm">3</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Compound Effects</p>
+                      <p className="text-sm text-gray-600">Income down + expenses up = double impact on cash flow</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Using Scenario Planning</h3>
+                <div className="bg-green-50 rounded-xl p-4 space-y-2">
+                  <p className="text-sm text-gray-700 font-medium">Scenario planning helps you:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
+                    <li>Test your business resilience to market changes</li>
+                    <li>Identify when to raise capital before it's urgent</li>
+                    <li>Plan cost reductions proactively</li>
+                    <li>Set realistic growth targets based on cash constraints</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -4,7 +4,9 @@ import {
   ExclamationTriangleIcon,
   ChartBarIcon,
   ArrowTrendingDownIcon,
-  ArrowTrendingUpIcon
+  ArrowTrendingUpIcon,
+  QuestionMarkCircleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { cashflowService } from '../services/cashflowService'
 
@@ -25,6 +27,7 @@ export const CashRunwayWidget: React.FC = () => {
   const [runwayData, setRunwayData] = useState<RunwayData | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedScenario, setSelectedScenario] = useState<'conservative' | 'moderate' | 'optimistic'>('moderate')
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   useEffect(() => {
     loadRunwayData()
@@ -118,7 +121,16 @@ export const CashRunwayWidget: React.FC = () => {
             </p>
           </div>
         </div>
-        {getTrendIcon()}
+        <div className="flex items-center space-x-2">
+          {getTrendIcon()}
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white/50 rounded-lg transition-colors"
+            title="How cash runway is calculated"
+          >
+            <QuestionMarkCircleIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {isGeneratingCash ? (
@@ -226,6 +238,153 @@ export const CashRunwayWidget: React.FC = () => {
             <p className="text-xs text-red-700 mt-1">
               Consider fundraising or reducing expenses soon
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Help Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Understanding Cash Runway</h2>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">⏱️ What is Cash Runway?</h3>
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    Cash runway tells you <strong>how many months your company can operate</strong> before running out of cash, 
+                    based on your current burn rate.
+                  </p>
+                  <div className="mt-3 p-3 bg-white rounded-lg">
+                    <p className="text-sm font-mono text-gray-800">
+                      Cash Runway = Current Cash Balance ÷ Monthly Burn Rate
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Your Current Numbers</h3>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Current Cash Balance:</span>
+                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(runwayData?.currentBalance || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Average Burn Rate:</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {runwayData?.averageBurnRate === 0 ? 'Cash Positive' : formatCurrency(runwayData?.averageBurnRate || 0) + '/mo'}
+                    </span>
+                  </div>
+                  <div className="border-t pt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Runway:</span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {runwayData?.monthsRemaining === null ? 'Infinite (Cash Positive)' : `${runwayData.monthsRemaining} months`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Three Scenarios Explained</h3>
+                <div className="space-y-3">
+                  <div className="border-l-4 border-red-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Conservative (Worst Case)</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Uses your highest burn rate from recent months + 20% buffer.
+                      Shows: <strong>{runwayData?.confidence.conservative || 'Infinite'} months</strong>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Assumes things get worse - good for risk planning
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-yellow-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Moderate (Expected)</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Weighted average: 60% last 3 months + 40% last 6 months.
+                      Shows: <strong>{runwayData?.confidence.moderate || 'Infinite'} months</strong>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Most realistic projection based on recent trends
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-green-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Optimistic (Best Case)</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Uses your lowest burn rate from recent months - 20% improvement.
+                      Shows: <strong>{runwayData?.confidence.optimistic || 'Infinite'} months</strong>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Assumes improvements - useful for growth planning
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Burn Rate Trend</h3>
+                <div className="bg-yellow-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">
+                    Your burn rate is <strong>{runwayData?.burnRateTrend || 'stable'}</strong>:
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2">•</span>
+                      <div>
+                        <strong>Decelerating:</strong> Burning less cash over time (good!) - runway extends
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-yellow-500 mr-2">•</span>
+                      <div>
+                        <strong>Stable:</strong> Consistent burn rate - predictable runway
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-red-500 mr-2">•</span>
+                      <div>
+                        <strong>Accelerating:</strong> Burning more cash over time (concerning) - runway shortens
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">⚡ Color Indicators</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-4 h-4 bg-green-500 rounded"></div>
+                    <span className="text-sm text-gray-600"><strong>Green:</strong> &gt;12 months runway (healthy)</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                    <span className="text-sm text-gray-600"><strong>Yellow:</strong> 6-12 months (plan ahead)</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-4 h-4 bg-red-500 rounded"></div>
+                    <span className="text-sm text-gray-600"><strong>Red:</strong> &lt;6 months (take action)</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-4 h-4 bg-gray-500 rounded"></div>
+                    <span className="text-sm text-gray-600"><strong>Gray:</strong> Cash positive (no burn)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
