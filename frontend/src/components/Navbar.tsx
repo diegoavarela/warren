@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { 
   HomeIcon,
   BanknotesIcon,
@@ -14,6 +15,7 @@ import {
 export const Navbar: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navigationItems = [
@@ -30,8 +32,7 @@ export const Navbar: React.FC = () => {
   }
 
   const handleSignOut = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    logout()
     navigate('/login')
   }
 

@@ -116,7 +116,7 @@ export function LoginPage() {
             </button>
           </div>
 
-          <div className="text-center text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          {/* <div className="text-center text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="font-medium text-blue-800 mb-2">Demo Credentials</p>
             <div className="space-y-1 text-blue-700">
               <p><strong>Email:</strong> admin@vort-ex.com</p>
@@ -125,7 +125,7 @@ export function LoginPage() {
             <p className="text-xs text-blue-600 mt-2">
               Use these credentials to access the admin dashboard
             </p>
-          </div>
+          </div> */}
         </form>
       </div>
     </div>

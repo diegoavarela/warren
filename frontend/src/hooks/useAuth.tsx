@@ -43,9 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.data.user)
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    setUser(null)
+  const logout = async () => {
+    try {
+      await authService.logout()
+    } catch (error) {
+      // Even if backend logout fails, we still want to clear local state
+      console.error('Logout error:', error)
+    } finally {
+      localStorage.removeItem('token')
+      setUser(null)
+    }
   }
 
   return (

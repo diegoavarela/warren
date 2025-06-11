@@ -7,6 +7,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Vortex brand colors
+        'vortex-green': '#7CB342',
+        'vortex-green-dark': '#6A9E39',
         // Custom color palette for Warren
         'midnight': {
           50: '#e6e9f0',
