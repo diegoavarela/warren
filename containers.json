@@ -1,0 +1,16 @@
+{
+  "warren": {
+    "image": "676206922169.dkr.ecr.us-east-1.amazonaws.com/warren-app:v11",
+    "ports": {
+      "80": "HTTP"
+    },
+    "environment": {
+      "NODE_ENV": "production",
+      "JWT_SECRET": "warren-production-secret-key-2025",
+      "PORT": "3002",
+      "ADMIN_EMAIL": "admin@vort-ex.com",
+      "ADMIN_PASSWORD": "vortex123",
+      "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/warren"
+    }
+  }
+}

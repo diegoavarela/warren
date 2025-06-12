@@ -5,7 +5,6 @@ import {
   CalendarIcon,
   BanknotesIcon,
   ChartBarIcon,
-  ExclamationTriangleIcon,
   SparklesIcon,
   DocumentArrowDownIcon,
   XCircleIcon,

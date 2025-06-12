@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
 
 export function DebugPage() {
-  const { user } = useAuth();
   const [debugData, setDebugData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 

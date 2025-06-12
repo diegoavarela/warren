@@ -15,7 +15,7 @@ interface TeamInfo {
 }
 
 export function Footer() {
-  const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
+  const [_teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
 
   useEffect(() => {
     fetchTeamInfo();

@@ -129,7 +129,7 @@ export const CashFlowWaterfall: React.FC = () => {
           afterLabel: (context: any) => {
             const index = context.dataIndex
             if (index === 0 || waterfallData?.categories[index].isTotal) {
-              return `Balance: ${formatCurrency(waterfallData.categories[index].value)}`
+              return `Balance: ${formatCurrency(waterfallData?.categories[index].value || 0)}`
             }
             return ''
           }
@@ -139,7 +139,7 @@ export const CashFlowWaterfall: React.FC = () => {
         display: true,
         anchor: 'end' as const,
         align: 'top' as const,
-        formatter: (value: any, context: any) => {
+        formatter: (_value: any, context: any) => {
           const category = waterfallData?.categories[context.dataIndex]
           if (!category) return ''
           

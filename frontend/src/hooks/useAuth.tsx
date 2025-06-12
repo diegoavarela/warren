@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authService } from '../services/authService'
 
 interface User {
   id: string
   email: string
+  role?: 'admin' | 'user'
 }
 
 interface AuthContextType {

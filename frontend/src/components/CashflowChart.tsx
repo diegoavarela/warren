@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, BarElement } from 'chart.js'
 import { Chart } from 'react-chartjs-2'
 import { useTranslation } from 'react-i18next'
@@ -72,7 +72,7 @@ export function CashflowChart({ data }: CashflowChartProps) {
           return isFirstForecast ? '#7CB342' : 'rgba(124, 179, 66, 0.5)';
         }),
         borderWidth: data.map(item => item.isActual ? 3 : 2),
-        borderDash: data.map(item => item.isActual ? [] : [5, 5]),
+        borderDash: data.map(item => item.isActual ? [] : [5, 5]) as any,
         tension: 0.4,
         yAxisID: 'y1',
         segment: {

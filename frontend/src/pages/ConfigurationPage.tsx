@@ -8,7 +8,6 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ArrowUpTrayIcon,
-  EyeIcon,
   PencilIcon,
   PhotoIcon,
   GlobeAltIcon,

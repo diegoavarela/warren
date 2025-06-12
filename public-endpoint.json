@@ -1,0 +1,8 @@
+{
+  "containerName": "warren",
+  "containerPort": 80,
+  "healthCheck": {
+    "path": "/health",
+    "successCodes": "200-499"
+  }
+}

@@ -24,8 +24,10 @@ app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
       'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002'
+      'http://localhost:3001', 
+      'http://localhost:3002',
+      'https://warren-app.7vcqzp5xr1bfc.us-east-1.cs.amazonlightsail.com',
+      'https://warren.vort-ex.com'
     ];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
@@ -39,11 +41,12 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - exclude health check
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => req.path === '/health'
 });
 app.use(limiter);
 

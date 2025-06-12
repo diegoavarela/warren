@@ -118,7 +118,7 @@ interface PnLDashboardData {
 export const PnLDashboardPage: React.FC = () => {
   const [data, setData] = useState<PnLDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [_error, setError] = useState('')
   const [exporting, setExporting] = useState(false)
   const [showPersonnelHelpModal, setShowPersonnelHelpModal] = useState(false)
   const [showCostEfficiencyHelpModal, setShowCostEfficiencyHelpModal] = useState(false)
