@@ -235,6 +235,17 @@ export const BurnRateTrend: React.FC = () => {
               </span>
             </div>
             
+            {/* Formula Display */}
+            <div className="mb-3 p-2 bg-white/80 rounded-lg border border-gray-200">
+              <div className="text-xs font-mono text-gray-700 text-center">
+                {isGenerating ? (
+                  <span className="text-green-600">Income &gt; Expenses = Cash Positive ✓</span>
+                ) : (
+                  <span className="text-red-600">Burn Rate = Expenses - Income</span>
+                )}
+              </div>
+            </div>
+            
             {/* Cash Generation Analysis */}
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="flex justify-between items-center">
@@ -331,8 +342,30 @@ export const BurnRateTrend: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="h-64">
-          <Line data={chartData} options={chartOptions} />
+        <div className="space-y-4">
+          {/* Formula Display for Chart View */}
+          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="text-center space-y-1">
+              <p className="text-xs font-medium text-gray-600">Monthly Cash Flow Formula:</p>
+              <p className="text-sm font-mono text-gray-800">
+                Cash Generation = Income - Expenses
+              </p>
+              <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 mt-2">
+                <span className="flex items-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
+                  Positive = Generating Cash
+                </span>
+                <span className="flex items-center">
+                  <div className="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
+                  Negative = Burning Cash
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="h-64">
+            <Line data={chartData} options={chartOptions} />
+          </div>
         </div>
       )}
 

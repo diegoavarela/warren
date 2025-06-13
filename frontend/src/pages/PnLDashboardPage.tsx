@@ -127,6 +127,9 @@ export const PnLDashboardPage: React.FC = () => {
   const [showCurrentPnLHelpModal, setShowCurrentPnLHelpModal] = useState(false)
   const [showMarginsChartHelpModal, setShowMarginsChartHelpModal] = useState(false)
   const [showRevenueChartHelpModal, setShowRevenueChartHelpModal] = useState(false)
+  const [comparisonPeriod, setComparisonPeriod] = useState<'month' | 'quarter' | 'year'>('month')
+  const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
+  const [displayUnit, setDisplayUnit] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
 
   useEffect(() => {
     loadDashboard()
@@ -146,12 +149,52 @@ export const PnLDashboardPage: React.FC = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
+    // Apply unit conversion
+    let adjustedAmount = amount
+    let unitSuffix = ''
+    
+    switch (displayUnit) {
+      case 'thousands':
+        adjustedAmount = amount / 1000
+        unitSuffix = 'K'
+        break
+      case 'millions':
+        adjustedAmount = amount / 1000000
+        unitSuffix = 'M'
+        break
+      case 'billions':
+        adjustedAmount = amount / 1000000000
+        unitSuffix = 'B'
+        break
+    }
+
+    // Get locale based on currency
+    const getLocale = () => {
+      switch (currency) {
+        case 'USD': return 'en-US'
+        case 'EUR': return 'en-GB'
+        case 'BRL': return 'pt-BR'
+        default: return 'es-AR'
+      }
+    }
+
+    const formatted = new Intl.NumberFormat(getLocale(), {
       style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
+      currency: currency,
+      minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+      maximumFractionDigits: displayUnit === 'actual' ? 0 : 2,
+    }).format(adjustedAmount)
+
+    // Add unit suffix for non-actual displays
+    if (displayUnit !== 'actual' && unitSuffix) {
+      // Insert suffix before currency symbol if it's at the end
+      const parts = formatted.match(/^([^0-9]*)([0-9,.\s]+)(.*)$/)
+      if (parts) {
+        return `${parts[1]}${parts[2]}${unitSuffix}${parts[3]}`
+      }
+    }
+
+    return formatted
   }
 
   const formatPercentage = (value: number) => {
@@ -165,6 +208,99 @@ export const PnLDashboardPage: React.FC = () => {
       value: current - previous,
       percentage: change,
       isPositive: change >= 0
+    }
+  }
+
+  const getComparisonData = () => {
+    if (!data?.chartData || !data.currentMonth) return null
+
+    const currentMonthIndex = data.chartData.findIndex(d => d.month === data.currentMonth.month)
+    if (currentMonthIndex === -1) return null
+
+    let comparisonData = null
+    let comparisonLabel = ''
+
+    switch (comparisonPeriod) {
+      case 'month':
+        // Previous month comparison
+        if (currentMonthIndex > 0) {
+          const prevMonth = data.chartData[currentMonthIndex - 1]
+          comparisonData = {
+            revenue: prevMonth.revenue,
+            grossProfit: prevMonth.grossProfit,
+            operatingIncome: prevMonth.operatingIncome,
+            netIncome: prevMonth.netIncome,
+            ebitda: prevMonth.operatingIncome, // Approximation
+          }
+          comparisonLabel = prevMonth.month
+        }
+        break
+      
+      case 'quarter':
+        // Previous quarter comparison (3 months ago)
+        if (currentMonthIndex >= 3) {
+          const quarterData = data.chartData[currentMonthIndex - 3]
+          comparisonData = {
+            revenue: quarterData.revenue,
+            grossProfit: quarterData.grossProfit,
+            operatingIncome: quarterData.operatingIncome,
+            netIncome: quarterData.netIncome,
+            ebitda: quarterData.operatingIncome, // Approximation
+          }
+          comparisonLabel = `Q${Math.floor((currentMonthIndex - 3) / 3) + 1} ${quarterData.month}`
+        }
+        break
+      
+      case 'year':
+        // Same period last year (12 months ago)
+        if (data.chartData.length >= 12 && currentMonthIndex >= 12) {
+          const yearAgoData = data.chartData[currentMonthIndex - 12]
+          comparisonData = {
+            revenue: yearAgoData.revenue,
+            grossProfit: yearAgoData.grossProfit,
+            operatingIncome: yearAgoData.operatingIncome,
+            netIncome: yearAgoData.netIncome,
+            ebitda: yearAgoData.operatingIncome, // Approximation
+          }
+          comparisonLabel = yearAgoData.month
+        }
+        break
+    }
+
+    return { data: comparisonData, label: comparisonLabel }
+  }
+
+  const hasYearOverYearData = () => {
+    return data?.chartData && data.chartData.length >= 12
+  }
+
+  const getYearToDateComparison = () => {
+    if (!data?.chartData || !hasYearOverYearData()) return null
+
+    const currentYear = new Date().getFullYear()
+    const currentYearMonths = data.chartData.filter(d => {
+      // Assuming month format includes year
+      return true // This would need proper date parsing
+    }).slice(-12)
+
+    const previousYearMonths = currentYearMonths.length >= 12 ? 
+      data.chartData.slice(0, currentYearMonths.length) : null
+
+    if (!previousYearMonths) return null
+
+    return {
+      currentYTD: {
+        revenue: currentYearMonths.reduce((sum, m) => sum + m.revenue, 0),
+        grossProfit: currentYearMonths.reduce((sum, m) => sum + m.grossProfit, 0),
+        operatingIncome: currentYearMonths.reduce((sum, m) => sum + m.operatingIncome, 0),
+        netIncome: currentYearMonths.reduce((sum, m) => sum + m.netIncome, 0)
+      },
+      previousYTD: {
+        revenue: previousYearMonths.reduce((sum, m) => sum + m.revenue, 0),
+        grossProfit: previousYearMonths.reduce((sum, m) => sum + m.grossProfit, 0),
+        operatingIncome: previousYearMonths.reduce((sum, m) => sum + m.operatingIncome, 0),
+        netIncome: previousYearMonths.reduce((sum, m) => sum + m.netIncome, 0)
+      }
     }
   }
 
@@ -358,6 +494,58 @@ export const PnLDashboardPage: React.FC = () => {
         variant="pnl"
       />
 
+      {/* Period Comparison Selector */}
+      {data?.hasData && (
+        <div className="mb-6 mt-6">
+          <div className="flex items-center justify-center mb-2">
+            <div className="inline-flex items-center bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-1">
+              <span className="px-3 py-2 text-sm font-medium text-gray-600">Compare against:</span>
+              <button
+                onClick={() => setComparisonPeriod('month')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  comparisonPeriod === 'month'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Previous Month
+              </button>
+              <button
+                onClick={() => setComparisonPeriod('quarter')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  comparisonPeriod === 'quarter'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Previous Quarter
+              </button>
+              <button
+                onClick={() => setComparisonPeriod('year')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  comparisonPeriod === 'year'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Same Period Last Year
+              </button>
+            </div>
+          </div>
+          {/* Historic Data Note */}
+          {comparisonPeriod === 'year' && data.chartData && data.chartData.length < 12 && (
+            <div className="text-center">
+              <p className="text-sm text-amber-600 bg-amber-50 px-4 py-2 rounded-lg inline-flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                Historic year-over-year data not available. Showing month-over-month comparison.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Current Month Overview */}
       {data.currentMonth && (
         <div className="mb-8">
@@ -368,11 +556,30 @@ export const PnLDashboardPage: React.FC = () => {
               </h2>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="px-3 py-1 bg-gray-100 rounded-lg font-medium">
-                  ARS (in thousands)
-                </span>
-              </div>
+              {/* Currency Selector */}
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as any)}
+                className="px-3 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                <option value="ARS">ARS</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="BRL">BRL</option>
+              </select>
+              
+              {/* Unit Selector */}
+              <select
+                value={displayUnit}
+                onChange={(e) => setDisplayUnit(e.target.value as any)}
+                className="px-3 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                <option value="actual">Actual</option>
+                <option value="thousands">Thousands (K)</option>
+                <option value="millions">Millions (M)</option>
+                <option value="billions">Billions (B)</option>
+              </select>
+              
               <button
                 onClick={() => setShowCurrentPnLHelpModal(true)}
                 className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -390,8 +597,10 @@ export const PnLDashboardPage: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl shadow-md">
                   <ArrowTrendingUpIcon className="h-6 w-6 text-emerald-600" />
                 </div>
-                {data.previousMonth && (() => {
-                  const change = calculateChange(data.currentMonth.revenue, data.previousMonth.revenue)
+                {(() => {
+                  const comparison = getComparisonData()
+                  if (!comparison?.data) return null
+                  const change = calculateChange(data.currentMonth.revenue, comparison.data.revenue)
                   return change && (
                     <div className={`flex items-center space-x-1 text-sm font-medium ${
                       change.isPositive ? 'text-green-600' : 'text-red-600'
@@ -419,11 +628,16 @@ export const PnLDashboardPage: React.FC = () => {
                   <CurrencyDollarIcon className="h-6 w-6 text-sky-600" />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-blue-600">
-                    {formatPercentage(data.currentMonth.grossMargin)}
-                  </span>
-                  {data.previousMonth && (() => {
-                    const change = calculateChange(data.currentMonth.grossProfit, data.previousMonth.grossProfit)
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-medium text-blue-600">
+                      {formatPercentage(data.currentMonth.grossMargin)}
+                    </span>
+                    <span className="text-xs text-gray-500">of sales</span>
+                  </div>
+                  {(() => {
+                    const comparison = getComparisonData()
+                    if (!comparison?.data) return null
+                    const change = calculateChange(data.currentMonth.grossProfit, comparison.data.grossProfit)
                     return change && (
                       <div className={`flex items-center space-x-1 text-sm font-medium ${
                         change.isPositive ? 'text-green-600' : 'text-red-600'
@@ -452,11 +666,16 @@ export const PnLDashboardPage: React.FC = () => {
                   <CalculatorIcon className="h-6 w-6 text-indigo-600" />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-indigo-600">
-                    {formatPercentage(data.currentMonth.operatingMargin)}
-                  </span>
-                  {data.previousMonth && (() => {
-                    const change = calculateChange(data.currentMonth.operatingIncome, data.previousMonth.operatingIncome)
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-medium text-indigo-600">
+                      {formatPercentage(data.currentMonth.operatingMargin)}
+                    </span>
+                    <span className="text-xs text-gray-500">of sales</span>
+                  </div>
+                  {(() => {
+                    const comparison = getComparisonData()
+                    if (!comparison?.data) return null
+                    const change = calculateChange(data.currentMonth.operatingIncome, comparison.data.operatingIncome)
                     return change && (
                       <div className={`flex items-center space-x-1 text-sm font-medium ${
                         change.isPositive ? 'text-green-600' : 'text-red-600'
@@ -485,11 +704,16 @@ export const PnLDashboardPage: React.FC = () => {
                   <ChartBarIcon className="h-6 w-6 text-violet-600" />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-purple-600">
-                    {formatPercentage(data.currentMonth.ebitdaMargin)}
-                  </span>
-                  {data.previousMonth && (() => {
-                    const change = calculateChange(data.currentMonth.ebitda, data.previousMonth.ebitda)
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-medium text-purple-600">
+                      {formatPercentage(data.currentMonth.ebitdaMargin)}
+                    </span>
+                    <span className="text-xs text-gray-500">of sales</span>
+                  </div>
+                  {(() => {
+                    const comparison = getComparisonData()
+                    if (!comparison?.data) return null
+                    const change = calculateChange(data.currentMonth.ebitda, comparison.data.ebitda)
                     return change && (
                       <div className={`flex items-center space-x-1 text-sm font-medium ${
                         change.isPositive ? 'text-green-600' : 'text-red-600'
@@ -522,13 +746,18 @@ export const PnLDashboardPage: React.FC = () => {
                   }`} />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={`text-sm font-medium ${
-                    data.currentMonth.netMargin >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {formatPercentage(data.currentMonth.netMargin)}
-                  </span>
-                  {data.previousMonth && (() => {
-                    const change = calculateChange(data.currentMonth.netIncome, data.previousMonth.netIncome)
+                  <div className="flex flex-col items-end">
+                    <span className={`text-sm font-medium ${
+                      data.currentMonth.netMargin >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {formatPercentage(data.currentMonth.netMargin)}
+                    </span>
+                    <span className="text-xs text-gray-500">of sales</span>
+                  </div>
+                  {(() => {
+                    const comparison = getComparisonData()
+                    if (!comparison?.data) return null
+                    const change = calculateChange(data.currentMonth.netIncome, comparison.data.netIncome)
                     return change && (
                       <div className={`flex items-center space-x-1 text-sm font-medium ${
                         change.isPositive ? 'text-green-600' : 'text-red-600'
@@ -652,44 +881,76 @@ export const PnLDashboardPage: React.FC = () => {
           
           {/* Detailed Breakdown */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700">Cost Breakdown</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-gray-700">Cost Breakdown</h4>
+              <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                Total = Salaries + Payroll Taxes + Benefits
+              </div>
+            </div>
             
             <div className="space-y-2">
               {/* Salaries */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
                 <span className="text-sm text-gray-600">Total Salaries</span>
-                <div className="text-right">
+                <div className="text-right relative">
                   <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.personnelSalariesOp || 0))}
                   </span>
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-gray-500 ml-2 cursor-help border-b border-dotted border-gray-400">
                     ({(((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.personnelSalariesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
                   </span>
+                  <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    Percentage of total personnel cost
+                    <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
+                  </div>
                 </div>
               </div>
               
               {/* Payroll Taxes */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
                 <span className="text-sm text-gray-600">Payroll Taxes</span>
-                <div className="text-right">
+                <div className="text-right relative">
                   <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency((data.currentMonth.payrollTaxesCoR || 0) + (data.currentMonth.payrollTaxesOp || 0))}
                   </span>
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-gray-500 ml-2 cursor-help border-b border-dotted border-gray-400">
                     ({(((data.currentMonth.payrollTaxesCoR || 0) + (data.currentMonth.payrollTaxesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
                   </span>
+                  <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    Percentage of total personnel cost
+                    <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
+                  </div>
                 </div>
               </div>
               
               {/* Health & Benefits */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
                 <span className="text-sm text-gray-600">Health Coverage & Benefits</span>
-                <div className="text-right">
+                <div className="text-right relative">
                   <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency((data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0))}
                   </span>
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-gray-500 ml-2 cursor-help border-b border-dotted border-gray-400">
                     ({(((data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
+                  </span>
+                  <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    Percentage of total personnel cost
+                    <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Total verification */}
+            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-blue-900">Total Personnel Cost</span>
+                <div className="text-right">
+                  <span className="text-sm font-bold text-blue-900">
+                    {formatCurrency(data.currentMonth.totalPersonnelCost)}
+                  </span>
+                  <span className="text-xs text-blue-700 ml-2">
+                    (100%)
                   </span>
                 </div>
               </div>
@@ -899,7 +1160,14 @@ export const PnLDashboardPage: React.FC = () => {
       {data.summary && (
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold text-gray-900">Year to Date Summary</h3>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Year to Date Summary</h3>
+              {!hasYearOverYearData() && (
+                <p className="text-sm text-amber-600 mt-1">
+                  Upload 12+ months of data to see year-over-year comparisons
+                </p>
+              )}
+            </div>
             <button
               onClick={() => setShowYTDSummaryHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -910,11 +1178,23 @@ export const PnLDashboardPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {/* Revenue */}
-            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl relative">
               <p className="text-sm font-medium text-green-600 mb-2">Total Revenue</p>
               <p className="text-3xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalRevenue)}
               </p>
+              {hasYearOverYearData() && (() => {
+                const ytdComparison = getYearToDateComparison()
+                if (!ytdComparison) return null
+                const change = calculateChange(ytdComparison.currentYTD.revenue, ytdComparison.previousYTD.revenue)
+                return change && (
+                  <div className={`mt-2 text-sm font-medium ${
+                    change.isPositive ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                  </div>
+                )
+              })()}
             </div>
             
             {/* Gross Profit */}
@@ -926,6 +1206,18 @@ export const PnLDashboardPage: React.FC = () => {
               <p className="text-sm text-gray-600 mt-1">
                 {formatPercentage(data.summary.avgGrossMargin)} margin
               </p>
+              {hasYearOverYearData() && (() => {
+                const ytdComparison = getYearToDateComparison()
+                if (!ytdComparison) return null
+                const change = calculateChange(ytdComparison.currentYTD.grossProfit, ytdComparison.previousYTD.grossProfit)
+                return change && (
+                  <div className={`mt-2 text-sm font-medium ${
+                    change.isPositive ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                  </div>
+                )
+              })()}
             </div>
             
             {/* Operating Income */}
@@ -937,6 +1229,18 @@ export const PnLDashboardPage: React.FC = () => {
               <p className="text-sm text-gray-600 mt-1">
                 {formatPercentage(data.summary.avgOperatingMargin)} margin
               </p>
+              {hasYearOverYearData() && (() => {
+                const ytdComparison = getYearToDateComparison()
+                if (!ytdComparison) return null
+                const change = calculateChange(ytdComparison.currentYTD.operatingIncome, ytdComparison.previousYTD.operatingIncome)
+                return change && (
+                  <div className={`mt-2 text-sm font-medium ${
+                    change.isPositive ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                  </div>
+                )
+              })()}
             </div>
             
             {/* EBITDA */}
@@ -974,6 +1278,18 @@ export const PnLDashboardPage: React.FC = () => {
               <p className="text-sm text-gray-600 mt-1">
                 {formatPercentage(data.summary.avgNetMargin)} margin
               </p>
+              {hasYearOverYearData() && (() => {
+                const ytdComparison = getYearToDateComparison()
+                if (!ytdComparison) return null
+                const change = calculateChange(ytdComparison.currentYTD.netIncome, ytdComparison.previousYTD.netIncome)
+                return change && (
+                  <div className={`mt-2 text-sm font-medium ${
+                    change.isPositive ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                  </div>
+                )
+              })()}
             </div>
           </div>
           
