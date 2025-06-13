@@ -63,6 +63,8 @@ export const DashboardPage: React.FC = () => {
   const [showCurrentMonthHelpModal, setShowCurrentMonthHelpModal] = useState(false)
   const [showYTDHelpModal, setShowYTDHelpModal] = useState(false)
   const [showChartHelpModal, setShowChartHelpModal] = useState(false)
+  const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
+  const [displayUnit, setDisplayUnit] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
 
   useEffect(() => {
     loadDashboard()
@@ -82,12 +84,64 @@ export const DashboardPage: React.FC = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount)
+    // Handle invalid/null amounts
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return '$0'
+    }
+    
+    let adjustedAmount = amount
+    let unitSuffix = ''
+    
+    // Apply unit conversion
+    switch (displayUnit) {
+      case 'thousands':
+        adjustedAmount = amount / 1000
+        unitSuffix = 'K'
+        break
+      case 'millions':
+        adjustedAmount = amount / 1000000
+        unitSuffix = 'M'
+        break
+      case 'billions':
+        adjustedAmount = amount / 1000000000
+        unitSuffix = 'B'
+        break
+      default:
+        adjustedAmount = amount
+        unitSuffix = ''
+    }
+    
+    const localeMap = {
+      'ARS': 'es-AR',
+      'USD': 'en-US', 
+      'EUR': 'de-DE',
+      'BRL': 'pt-BR'
+    }
+    
+    try {
+      let formatted: string
+      
+      if (currency === 'ARS') {
+        // Handle ARS manually since browser support varies
+        const number = new Intl.NumberFormat('es-AR', {
+          minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+          maximumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+        }).format(Math.abs(adjustedAmount))
+        formatted = `$${number}`
+      } else {
+        formatted = new Intl.NumberFormat(localeMap[currency], {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+          maximumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+        }).format(Math.abs(adjustedAmount))
+      }
+      
+      return unitSuffix ? `${formatted}${unitSuffix}` : formatted
+    } catch (error) {
+      console.error('Currency formatting error:', error, { amount, currency, displayUnit })
+      return `$${Math.abs(adjustedAmount).toFixed(1)}${unitSuffix}`
+    }
   }
 
   const getMetricColor = (value: number) => {
@@ -223,10 +277,40 @@ export const DashboardPage: React.FC = () => {
 
         {/* Cash Flow Analysis Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Cash Flow Analysis</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Cash Flow Analysis</h2>
+            <div className="flex items-center space-x-3">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as 'ARS' | 'USD' | 'EUR' | 'BRL')}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="ARS">ARS ($)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="BRL">BRL (R$)</option>
+              </select>
+              <select
+                value={displayUnit}
+                onChange={(e) => setDisplayUnit(e.target.value as 'actual' | 'thousands' | 'millions' | 'billions')}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="actual">Actual</option>
+                <option value="thousands">Thousands</option>
+                <option value="millions">Millions</option>
+                <option value="billions">Billions</option>
+              </select>
+            </div>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CashRunwayWidget />
-            <BurnRateTrend />
+            <CashRunwayWidget 
+              currency={currency} 
+              displayUnit={displayUnit} 
+            />
+            <BurnRateTrend 
+              currency={currency} 
+              displayUnit={displayUnit} 
+            />
           </div>
         </div>
 

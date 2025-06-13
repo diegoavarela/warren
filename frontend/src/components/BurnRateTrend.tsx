@@ -33,7 +33,12 @@ interface BurnRateData {
   }>
 }
 
-export const BurnRateTrend: React.FC = () => {
+interface BurnRateTrendProps {
+  currency: 'ARS' | 'USD' | 'EUR' | 'BRL'
+  displayUnit: 'actual' | 'thousands' | 'millions' | 'billions'
+}
+
+export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayUnit }) => {
   const [burnData, setBurnData] = useState<BurnRateData | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedView, setSelectedView] = useState<'chart' | 'metrics'>('metrics')
@@ -42,6 +47,11 @@ export const BurnRateTrend: React.FC = () => {
   useEffect(() => {
     loadBurnRateData()
   }, [])
+
+  // Force re-render when currency or displayUnit changes
+  useEffect(() => {
+    // No need to reload data, just trigger a re-render
+  }, [currency, displayUnit])
 
   const loadBurnRateData = async () => {
     try {
@@ -56,12 +66,64 @@ export const BurnRateTrend: React.FC = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Math.abs(amount))
+    // Handle invalid/null amounts
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return '$0'
+    }
+    
+    let adjustedAmount = amount
+    let unitSuffix = ''
+    
+    // Apply unit conversion
+    switch (displayUnit) {
+      case 'thousands':
+        adjustedAmount = amount / 1000
+        unitSuffix = 'K'
+        break
+      case 'millions':
+        adjustedAmount = amount / 1000000
+        unitSuffix = 'M'
+        break
+      case 'billions':
+        adjustedAmount = amount / 1000000000
+        unitSuffix = 'B'
+        break
+      default:
+        adjustedAmount = amount
+        unitSuffix = ''
+    }
+    
+    const localeMap = {
+      'ARS': 'es-AR',
+      'USD': 'en-US', 
+      'EUR': 'de-DE',
+      'BRL': 'pt-BR'
+    }
+    
+    try {
+      let formatted: string
+      
+      if (currency === 'ARS') {
+        // Handle ARS manually since browser support varies
+        const number = new Intl.NumberFormat('es-AR', {
+          minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+          maximumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+        }).format(Math.abs(adjustedAmount))
+        formatted = `$${number}`
+      } else {
+        formatted = new Intl.NumberFormat(localeMap[currency], {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+          maximumFractionDigits: displayUnit === 'actual' ? 0 : 1,
+        }).format(Math.abs(adjustedAmount))
+      }
+      
+      return unitSuffix ? `${formatted}${unitSuffix}` : formatted
+    } catch (error) {
+      console.error('Currency formatting error:', error, { amount, currency, displayUnit })
+      return `$${Math.abs(adjustedAmount).toFixed(1)}${unitSuffix}`
+    }
   }
 
   const getTrendIcon = (trend: string) => {
@@ -163,7 +225,13 @@ export const BurnRateTrend: React.FC = () => {
   }
 
   if (!burnData) {
-    return null
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="text-center py-8">
+          <p className="text-gray-500">No burn rate data available</p>
+        </div>
+      </div>
+    )
   }
 
   // With the fixed logic, burn rate is 0 when cash positive
