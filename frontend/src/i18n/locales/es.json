@@ -33,8 +33,10 @@
     },
     "chart": {
       "title": "Tendencias de Flujo de Efectivo",
-      "income": "Ingresos",
-      "expenses": "Gastos",
+      "income": "Entrada",
+      "expenses": "Salida",
+      "inflow": "Entrada",
+      "outflow": "Salida",
       "cashflow": "Flujo Neto"
     }
   },

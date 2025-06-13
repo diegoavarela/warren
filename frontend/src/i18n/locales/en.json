@@ -33,8 +33,10 @@
     },
     "chart": {
       "title": "Cashflow Trends",
-      "income": "Income",
-      "expenses": "Expenses",
+      "income": "Inflow",
+      "expenses": "Outflow",
+      "inflow": "Inflow",
+      "outflow": "Outflow",
       "cashflow": "Net Cashflow"
     }
   },
