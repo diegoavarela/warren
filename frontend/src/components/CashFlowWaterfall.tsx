@@ -267,11 +267,11 @@ export const CashFlowWaterfall: React.FC = () => {
               </div>
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                <span className="text-gray-600">Income</span>
+                <span className="text-gray-600">Inflow</span>
               </div>
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
-                <span className="text-gray-600">Expenses</span>
+                <span className="text-gray-600">Outflow</span>
               </div>
             </div>
           </>
@@ -354,7 +354,7 @@ export const CashFlowWaterfall: React.FC = () => {
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-green-500 rounded mt-0.5"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Green Bars (Income)</p>
+                      <p className="text-sm font-medium text-gray-900">Green Bars (Inflow)</p>
                       <p className="text-sm text-gray-600">Money coming in - increases your cash balance</p>
                     </div>
                   </div>
@@ -362,7 +362,7 @@ export const CashFlowWaterfall: React.FC = () => {
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-red-500 rounded mt-0.5"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Red Bars (Expenses)</p>
+                      <p className="text-sm font-medium text-gray-900">Red Bars (Outflow)</p>
                       <p className="text-sm text-gray-600">Money going out - decreases your cash balance</p>
                     </div>
                   </div>
@@ -377,8 +377,8 @@ export const CashFlowWaterfall: React.FC = () => {
                   </p>
                   <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 ml-2">
                     <li><strong>Starting Balance:</strong> Where you began the period</li>
-                    <li><strong>Income (Green):</strong> Each source of income adds to your balance</li>
-                    <li><strong>Expenses (Red):</strong> Each expense reduces your balance</li>
+                    <li><strong>Inflow (Green):</strong> Each source of inflow adds to your balance</li>
+                    <li><strong>Outflow (Red):</strong> Each expense reduces your balance</li>
                     <li><strong>Ending Balance:</strong> Where you finished the period</li>
                   </ol>
                   <p className="text-xs text-gray-500 mt-3">
@@ -392,11 +392,11 @@ export const CashFlowWaterfall: React.FC = () => {
                 <div className="space-y-2 text-sm text-gray-600">
                   <p className="flex items-start">
                     <span className="text-green-500 mr-2">•</span>
-                    <span><strong>Upward trend:</strong> Your cash is growing (more income than expenses)</span>
+                    <span><strong>Upward trend:</strong> Your cash is growing (more inflow than outflow)</span>
                   </p>
                   <p className="flex items-start">
                     <span className="text-red-500 mr-2">•</span>
-                    <span><strong>Downward trend:</strong> Your cash is declining (more expenses than income)</span>
+                    <span><strong>Downward trend:</strong> Your cash is declining (more outflow than inflow)</span>
                   </p>
                   <p className="flex items-start">
                     <span className="text-blue-500 mr-2">•</span>
@@ -442,7 +442,7 @@ export const CashFlowWaterfall: React.FC = () => {
                 <div className="bg-green-50 rounded-xl p-4 space-y-2">
                   <p className="text-sm text-gray-700 font-medium">Use waterfall charts to:</p>
                   <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                    <li>Identify your biggest sources of income and expenses</li>
+                    <li>Identify your biggest sources of inflow and outflow</li>
                     <li>See the cumulative impact of many small transactions</li>
                     <li>Understand why your cash balance changed</li>
                     <li>Spot patterns in cash flow timing</li>

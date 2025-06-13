@@ -307,9 +307,9 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
             <div className="mb-3 p-2 bg-white/80 rounded-lg border border-gray-200">
               <div className="text-xs font-mono text-gray-700 text-center">
                 {isGenerating ? (
-                  <span className="text-green-600">Income &gt; Expenses = Cash Positive ✓</span>
+                  <span className="text-green-600">Inflow &gt; Outflow = Cash Positive ✓</span>
                 ) : (
-                  <span className="text-red-600">Burn Rate = Expenses - Income</span>
+                  <span className="text-red-600">Burn Rate = Outflow - Inflow</span>
                 )}
               </div>
             </div>
@@ -416,7 +416,7 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
             <div className="text-center space-y-1">
               <p className="text-xs font-medium text-gray-600">Monthly Cash Flow Formula:</p>
               <p className="text-sm font-mono text-gray-800">
-                Cash Generation = Income - Expenses
+                Cash Generation = Inflow - Outflow
               </p>
               <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 mt-2">
                 <span className="flex items-center">
@@ -456,15 +456,15 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 What is Burn Rate?</h3>
                 <div className="bg-blue-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    <strong>Burn Rate</strong> is how much cash your company spends above income each month. 
-                    It's only counted when expenses exceed income.
+                    <strong>Burn Rate</strong> is how much cash your company spends above inflow each month. 
+                    It's only counted when outflow exceeds inflow.
                   </p>
                   <div className="mt-3 p-3 bg-white rounded-lg">
                     <p className="text-sm font-mono text-gray-800">
-                      Burn Rate = Expenses - Income (only when negative)
+                      Burn Rate = Outflow - Inflow (only when negative)
                     </p>
                     <p className="text-xs text-gray-600 mt-2">
-                      If Income ≥ Expenses → You're "Cash Positive" (no burn)
+                      If Inflow ≥ Outflow → You're "Cash Positive" (no burn)
                     </p>
                   </div>
                 </div>
@@ -479,7 +479,7 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
                   </p>
                   <div className="mt-3 p-3 bg-white rounded-lg">
                     <p className="text-sm font-mono text-gray-800">
-                      Cash Generation = Income - Expenses
+                      Cash Generation = Inflow - Outflow
                     </p>
                     <p className="text-xs text-gray-600 mt-2">
                       Positive = Generating cash | Negative = Burning cash
@@ -543,7 +543,7 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
                     <h4 className="text-sm font-semibold text-gray-900">Worsening Trend</h4>
                     <p className="text-sm text-gray-600 mt-1">
                       Burn rate is increasing or cash generation is decreasing. 
-                      Time to examine expenses and revenue strategies. ⚠️
+                      Time to examine outflow and revenue strategies. ⚠️
                     </p>
                   </div>
                 </div>
@@ -624,7 +624,7 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
                     <li>Identify when you became cash positive (or when you might)</li>
                     <li>Spot trends before they become problems</li>
                     <li>Celebrate improvements in cash generation! 🎉</li>
-                    <li>Make data-driven decisions about expenses and growth</li>
+                    <li>Make data-driven decisions about outflow and growth</li>
                   </ul>
                 </div>
               </div>

@@ -336,7 +336,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-              {/* Total Income */}
+              {/* Total Inflow */}
               <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl shadow-lg">
@@ -344,13 +344,13 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className="h-5 w-5 text-emerald-500" />
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">Total Income</h3>
+                <h3 className="text-sm font-medium text-gray-600 mb-1">Total Inflow</h3>
                 <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   {formatCurrency(data.currentMonth.totalIncome)}
                 </p>
               </div>
 
-              {/* Total Expense */}
+              {/* Total Outflow */}
               <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-gradient-to-br from-rose-500 to-pink-500 rounded-2xl shadow-lg">
@@ -358,7 +358,7 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className="h-5 w-5 text-rose-500" />
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">Total Expense</h3>
+                <h3 className="text-sm font-medium text-gray-600 mb-1">Total Outflow</h3>
                 <p className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
                   {formatCurrency(Math.abs(data.currentMonth.totalExpense))}
                 </p>
@@ -428,7 +428,7 @@ export const DashboardPage: React.FC = () => {
                   <ArrowTrendingUpIcon className="h-8 w-8 text-emerald-600" />
                   <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">YTD</span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Income</h3>
+                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Inflow</h3>
                 <p className="text-3xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">{formatCurrency(data.yearToDate.totalIncome)}</p>
                 <p className="text-sm text-emerald-600 mt-2">Total income accumulated</p>
               </div>
@@ -438,9 +438,9 @@ export const DashboardPage: React.FC = () => {
                   <ArrowTrendingDownIcon className="h-8 w-8 text-rose-600" />
                   <span className="text-xs font-medium text-rose-600 bg-rose-100 px-3 py-1 rounded-full">YTD</span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Expense</h3>
+                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Outflow</h3>
                 <p className="text-3xl font-bold bg-gradient-to-r from-rose-700 to-pink-700 bg-clip-text text-transparent">{formatCurrency(Math.abs(data.yearToDate.totalExpense))}</p>
-                <p className="text-sm text-rose-600 mt-2">Total expenses incurred</p>
+                <p className="text-sm text-rose-600 mt-2">Total outflow incurred</p>
               </div>
               
               <div className={`bg-gradient-to-br ${data.yearToDate.totalBalance >= 0 ? 'from-blue-50/90 via-indigo-50/90 to-purple-50/90 border-blue-200/50' : 'from-orange-50/90 via-red-50/90 to-rose-50/90 border-orange-200/50'} backdrop-blur-sm rounded-3xl p-6 border shadow-xl`}>
@@ -615,9 +615,9 @@ export const DashboardPage: React.FC = () => {
                     </div>
                     
                     <div className="border-l-4 border-pink-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Expense Analysis</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Outflow Analysis</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Spot unusual expense spikes, cost control successes, or spending patterns.
+                        Spot unusual outflow spikes, cost control successes, or spending patterns.
                         Identifies opportunities for cost optimization.
                       </p>
                     </div>
@@ -909,11 +909,11 @@ export const DashboardPage: React.FC = () => {
                   <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-600">Total Income</p>
+                        <p className="text-xs text-gray-600">Total Inflow</p>
                         <p className="text-sm font-semibold text-emerald-600">{formatCurrency(data?.currentMonth?.totalIncome || 0)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600">Total Expense</p>
+                        <p className="text-xs text-gray-600">Total Outflow</p>
                         <p className="text-sm font-semibold text-rose-600">{formatCurrency(Math.abs(data?.currentMonth?.totalExpense || 0))}</p>
                       </div>
                     </div>
@@ -938,7 +938,7 @@ export const DashboardPage: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Metrics Explained</h3>
                   <div className="space-y-3">
                     <div className="border-l-4 border-emerald-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Income</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Total Inflow</h4>
                       <p className="text-sm text-gray-600 mt-1">
                         All money coming into your business this month from sales, services, and other revenue sources.
                         This is your "top line" number.
@@ -946,10 +946,10 @@ export const DashboardPage: React.FC = () => {
                     </div>
                     
                     <div className="border-l-4 border-rose-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Expense</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Total Outflow</h4>
                       <p className="text-sm text-gray-600 mt-1">
                         All money going out of your business this month including operational costs, 
-                        salaries, rent, and other business expenses.
+                        salaries, rent, and other business outflow.
                       </p>
                     </div>
                     
@@ -957,7 +957,7 @@ export const DashboardPage: React.FC = () => {
                       <h4 className="text-sm font-semibold text-gray-900">Final Balance</h4>
                       <p className="text-sm text-gray-600 mt-1">
                         Your cash position at the end of the month. 
-                        Formula: Starting Balance + Income - Expenses
+                        Formula: Starting Balance + Inflow - Outflow
                       </p>
                     </div>
                     
@@ -972,7 +972,7 @@ export const DashboardPage: React.FC = () => {
                     <div className="border-l-4 border-cyan-500 pl-4">
                       <h4 className="text-sm font-semibold text-gray-900">Cash Generation</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Net cash flow for the month (Income - Expenses). 
+                        Net cash flow for the month (Inflow - Outflow). 
                         Positive means you generated cash, negative means you consumed cash.
                       </p>
                     </div>
@@ -1056,11 +1056,11 @@ export const DashboardPage: React.FC = () => {
                   <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-xs text-gray-600">Total Income</p>
+                        <p className="text-xs text-gray-600">Total Inflow</p>
                         <p className="text-sm font-semibold text-emerald-600">{formatCurrency(data?.yearToDate?.totalIncome || 0)}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-gray-600">Total Expense</p>
+                        <p className="text-xs text-gray-600">Total Outflow</p>
                         <p className="text-sm font-semibold text-rose-600">{formatCurrency(Math.abs(data?.yearToDate?.totalExpense || 0))}</p>
                       </div>
                       <div className="text-center">
@@ -1077,7 +1077,7 @@ export const DashboardPage: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Metrics Explained</h3>
                   <div className="space-y-3">
                     <div className="border-l-4 border-emerald-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Income (YTD)</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Total Inflow (YTD)</h4>
                       <p className="text-sm text-gray-600 mt-1">
                         Sum of all income from January through the current month. 
                         This shows your revenue generation capacity for the year.
@@ -1085,7 +1085,7 @@ export const DashboardPage: React.FC = () => {
                     </div>
                     
                     <div className="border-l-4 border-rose-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Expense (YTD)</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Total Outflow (YTD)</h4>
                       <p className="text-sm text-gray-600 mt-1">
                         Sum of all expenses from January through the current month. 
                         Helps track spending patterns and cost control.
@@ -1095,7 +1095,7 @@ export const DashboardPage: React.FC = () => {
                     <div className="border-l-4 border-blue-500 pl-4">
                       <h4 className="text-sm font-semibold text-gray-900">Net Balance (YTD)</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Your cumulative cash generation for the year (Total Income - Total Expenses). 
+                        Your cumulative cash generation for the year (Total Inflow - Total Outflows). 
                         Shows if you're profitable year-to-date.
                       </p>
                     </div>

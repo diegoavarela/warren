@@ -197,7 +197,7 @@ export const CashRunwayWidget: React.FC<CashRunwayWidgetProps> = ({ currency, di
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              {isGeneratingCash ? 'Cash Positive' : 'Cash Runway'} Analysis
+              Cash Runway Analysis
             </h3>
             <p className={`text-sm font-medium flex items-center space-x-1 ${getTrendColor(runwayData.burnRateTrend)}`}>
               {getTrendIcon(runwayData.burnRateTrend)}
@@ -230,7 +230,7 @@ export const CashRunwayWidget: React.FC<CashRunwayWidgetProps> = ({ currency, di
             {/* Formula Display */}
             <div className="mb-3 p-2 bg-white/80 rounded-lg border border-gray-200">
               <div className="text-xs font-mono text-gray-700 text-center">
-                <span className="text-green-600">Income &gt; Expenses = Cash Positive ✓</span>
+                <span className="text-green-600">Inflow &gt; Outflow = Cash Positive ✓</span>
               </div>
             </div>
             
@@ -402,7 +402,7 @@ export const CashRunwayWidget: React.FC<CashRunwayWidgetProps> = ({ currency, di
           <div>
             <p className="text-sm font-medium text-red-800">Low Cash Warning</p>
             <p className="text-xs text-red-600 mt-1">
-              Consider fundraising or reducing expenses soon
+              Consider fundraising or reducing outflow soon
             </p>
           </div>
         </div>
