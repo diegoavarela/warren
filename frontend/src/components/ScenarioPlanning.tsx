@@ -13,8 +13,8 @@ import { Line } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
 
 interface ScenarioParameters {
-  incomeChange: number
-  expenseChange: number
+  inflowChange: number
+  outflowChange: number
   startingMonth: number
   duration: number
 }
@@ -22,15 +22,15 @@ interface ScenarioParameters {
 interface ScenarioResult {
   monthlyProjections: Array<{
     month: string
-    income: number
-    expenses: number
+    inflow: number
+    outflows: number
     netCashFlow: number
     endingBalance: number
   }>
   summary: {
     endingCash: number
-    totalIncome: number
-    totalExpenses: number
+    totalInflow: number
+    totalOutflows: number
     netCashFlow: number
     monthsOfRunway: number | null
     runOutDate: Date | null
@@ -40,9 +40,9 @@ interface ScenarioResult {
 export const ScenarioPlanning: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [scenarios, setScenarios] = useState({
-    base: { incomeChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
-    best: { incomeChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
-    worst: { incomeChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
+    base: { inflowChange: 0, outflowChange: 0, startingMonth: 0, duration: 12 },
+    best: { inflowChange: 20, outflowChange: -10, startingMonth: 0, duration: 12 },
+    worst: { inflowChange: -20, outflowChange: 10, startingMonth: 0, duration: 12 }
   })
   const [results, setResults] = useState<{
     base: ScenarioResult
@@ -152,9 +152,9 @@ export const ScenarioPlanning: React.FC = () => {
 
   const resetScenarios = () => {
     setScenarios({
-      base: { incomeChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
-      best: { incomeChange: 20, expenseChange: -10, startingMonth: 0, duration: 12 },
-      worst: { incomeChange: -20, expenseChange: 10, startingMonth: 0, duration: 12 }
+      base: { inflowChange: 0, outflowChange: 0, startingMonth: 0, duration: 12 },
+      best: { inflowChange: 20, outflowChange: -10, startingMonth: 0, duration: 12 },
+      worst: { inflowChange: -20, outflowChange: 10, startingMonth: 0, duration: 12 }
     })
     setShowResults(false)
   }
@@ -169,7 +169,7 @@ export const ScenarioPlanning: React.FC = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Scenario Planning</h3>
-              <p className="text-sm text-gray-600">Model different revenue and expense scenarios</p>
+              <p className="text-sm text-gray-600">Model different revenue and outflow scenarios</p>
             </div>
           </div>
           <div className="flex space-x-2">
@@ -222,25 +222,25 @@ export const ScenarioPlanning: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-gray-600">Income Change (%)</label>
+                    <label className="text-sm text-gray-600">Inflow Change (%)</label>
                     <input
                       type="number"
                       min="-100"
                       max="100"
-                      value={scenarios[scenario].incomeChange}
-                      onChange={(e) => updateScenario(scenario, 'incomeChange', parseFloat(e.target.value) || 0)}
+                      value={scenarios[scenario].inflowChange}
+                      onChange={(e) => updateScenario(scenario, 'inflowChange', parseFloat(e.target.value) || 0)}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   
                   <div>
-                    <label className="text-sm text-gray-600">Expense Change (%)</label>
+                    <label className="text-sm text-gray-600">Outflow Change (%)</label>
                     <input
                       type="number"
                       min="-100"
                       max="100"
-                      value={scenarios[scenario].expenseChange}
-                      onChange={(e) => updateScenario(scenario, 'expenseChange', parseFloat(e.target.value) || 0)}
+                      value={scenarios[scenario].outflowChange}
+                      onChange={(e) => updateScenario(scenario, 'outflowChange', parseFloat(e.target.value) || 0)}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
@@ -303,8 +303,8 @@ export const ScenarioPlanning: React.FC = () => {
                 <div className="text-xs text-blue-700">
                   <p className="font-medium mb-1">Current base values (3-month average):</p>
                   <div className="flex space-x-4">
-                    <span>Income: {formatCurrency(results.base.monthlyProjections[0]?.income || 0)}/mo</span>
-                    <span>Expenses: {formatCurrency(results.base.monthlyProjections[0]?.expenses || 0)}/mo</span>
+                    <span>Inflow: {formatCurrency(results.base.monthlyProjections[0]?.inflow || 0)}/mo</span>
+                    <span>Outflows: {formatCurrency(results.base.monthlyProjections[0]?.outflows || 0)}/mo</span>
                     <span>Starting Cash: {formatCurrency((results.base.monthlyProjections[0]?.endingBalance || 0) - (results.base.monthlyProjections[0]?.netCashFlow || 0))}</span>
                   </div>
                 </div>
@@ -413,7 +413,7 @@ export const ScenarioPlanning: React.FC = () => {
                   <p className="text-sm text-gray-700">Warren uses your actual financial data to project future cash flow:</p>
                   <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 ml-2">
                     <li><strong>Starting Point:</strong> Your current cash balance</li>
-                    <li><strong>Base Values:</strong> Average of your last 3 months of income and expenses</li>
+                    <li><strong>Base Values:</strong> Average of your last 3 months of inflow and outflows</li>
                     <li><strong>Projections:</strong> 12 months forward from today</li>
                   </ol>
                 </div>
@@ -423,9 +423,9 @@ export const ScenarioPlanning: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">🧮 The Calculation</h3>
                 <div className="bg-gray-50 rounded-xl p-4 font-mono text-sm">
                   <p className="text-gray-700 mb-2">For each month:</p>
-                  <p className="text-indigo-600">Monthly Income = Base Income × (1 + Income Change %)</p>
-                  <p className="text-red-600">Monthly Expenses = Base Expenses × (1 + Expense Change %)</p>
-                  <p className="text-green-600">Net Cash Flow = Monthly Income - Monthly Expenses</p>
+                  <p className="text-indigo-600">Monthly Inflow = Base Inflow × (1 + Inflow Change %)</p>
+                  <p className="text-red-600">Monthly Outflows = Base Outflows × (1 + Outflow Change %)</p>
+                  <p className="text-green-600">Net Cash Flow = Monthly Inflow - Monthly Outflows</p>
                   <p className="text-blue-600">New Balance = Previous Balance + Net Cash Flow</p>
                 </div>
               </div>
@@ -436,8 +436,8 @@ export const ScenarioPlanning: React.FC = () => {
                   <p className="text-sm font-medium text-gray-700">Let's say your current situation is:</p>
                   <ul className="text-sm text-gray-600 space-y-1">
                     <li>• Current Cash: $500,000</li>
-                    <li>• Average Monthly Income: $100,000</li>
-                    <li>• Average Monthly Expenses: $95,000</li>
+                    <li>• Average Monthly Inflow: $100,000</li>
+                    <li>• Average Monthly Outflows: $95,000</li>
                     <li>• Monthly Cash Generation: +$5,000</li>
                   </ul>
                   
@@ -448,8 +448,8 @@ export const ScenarioPlanning: React.FC = () => {
                   </div>
                   
                   <div className="border-t border-yellow-200 pt-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Worst Case (-10% income, +10% expenses):</p>
-                    <p className="text-sm text-gray-600">New Income: $90,000 | New Expenses: $104,500</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Worst Case (-10% inflow, +10% outflows):</p>
+                    <p className="text-sm text-gray-600">New Inflow: $90,000 | New Outflows: $104,500</p>
                     <p className="text-sm text-gray-600">Monthly Burn: -$14,500</p>
                     <p className="text-sm text-red-600">Runs out in: $500,000 ÷ $14,500 = ~34 months</p>
                   </div>
@@ -485,7 +485,7 @@ export const ScenarioPlanning: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">Compound Effects</p>
-                      <p className="text-sm text-gray-600">Income down + expenses up = double impact on cash flow</p>
+                      <p className="text-sm text-gray-600">Inflow down + outflows up = double impact on cash flow</p>
                     </div>
                   </div>
                 </div>

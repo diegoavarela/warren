@@ -40,7 +40,7 @@ export const HomePage: React.FC = () => {
     {
       id: 'pnl',
       title: 'Profit & Loss Analysis',
-      description: 'Monitor income, expenses, and profitability metrics with detailed P&L statements',
+      description: 'Monitor inflows, outflows, and profitability metrics with detailed P&L statements',
       icon: ChartBarIcon,
       gradient: 'from-emerald-600 via-teal-600 to-cyan-600',
       lightGradient: 'from-emerald-50/50 via-teal-50/30 to-cyan-50/50',
@@ -49,7 +49,7 @@ export const HomePage: React.FC = () => {
       borderGlow: 'hover:shadow-teal-500/20',
       path: '/pnl',
       features: [
-        'Income & expense tracking',
+        'Inflow & outflow tracking',
         'Margin analysis',
         'Budget vs actual comparison',
         'Profitability trends'
@@ -222,29 +222,29 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Quick Stats Dashboard */}
-        <div className="bg-gradient-to-br from-purple-900 via-violet-900 to-indigo-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+        <div className="bg-gradient-to-br from-purple-100 via-violet-100 to-indigo-100 rounded-3xl p-6 shadow-xl relative overflow-hidden">
           {/* Background decoration */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-indigo-600/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-200/30 via-transparent to-indigo-200/30"></div>
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500 rounded-full filter blur-3xl opacity-20"></div>
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500 rounded-full filter blur-3xl opacity-20"></div>
           
           <div className="relative z-10">
-            <h3 className="text-2xl font-bold text-white mb-6 text-center">Platform Overview</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Platform Overview</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-                <p className="text-purple-200 text-sm mb-2">Active Modules</p>
-                <p className="text-3xl font-bold text-white">2</p>
-                <p className="text-purple-300 text-sm mt-1">Cash Flow & P&L</p>
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-purple-200">
+                <p className="text-purple-700 text-sm mb-2">Active Modules</p>
+                <p className="text-3xl font-bold text-gray-800">2</p>
+                <p className="text-purple-600 text-sm mt-1">Cash Flow & P&L</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-                <p className="text-purple-200 text-sm mb-2">Last Sync</p>
-                <p className="text-3xl font-bold text-white">Live</p>
-                <p className="text-purple-300 text-sm mt-1">Real-time updates</p>
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-purple-200">
+                <p className="text-purple-700 text-sm mb-2">Last Sync</p>
+                <p className="text-3xl font-bold text-gray-800">Live</p>
+                <p className="text-purple-600 text-sm mt-1">Real-time updates</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-                <p className="text-purple-200 text-sm mb-2">Data Security</p>
-                <p className="text-3xl font-bold text-emerald-400">100%</p>
-                <p className="text-purple-300 text-sm mt-1">Enterprise-grade</p>
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-purple-200">
+                <p className="text-purple-700 text-sm mb-2">Data Security</p>
+                <p className="text-3xl font-bold text-emerald-600">100%</p>
+                <p className="text-purple-600 text-sm mt-1">Enterprise-grade</p>
               </div>
             </div>
           </div>
@@ -254,7 +254,7 @@ export const HomePage: React.FC = () => {
       <Footer />
 
       {/* CSS for blob animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
           33% { transform: translate(30px, -50px) scale(1.1); }

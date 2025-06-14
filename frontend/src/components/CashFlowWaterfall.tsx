@@ -128,8 +128,8 @@ export const CashFlowWaterfall: React.FC = () => {
           },
           afterLabel: (context: any) => {
             const index = context.dataIndex
-            if (index === 0 || waterfallData?.categories[index].isTotal) {
-              return `Balance: ${formatCurrency(waterfallData.categories[index].value)}`
+            if (index === 0 || waterfallData?.categories[index]?.isTotal) {
+              return `Balance: ${formatCurrency(waterfallData?.categories[index]?.value || 0)}`
             }
             return ''
           }
@@ -139,7 +139,7 @@ export const CashFlowWaterfall: React.FC = () => {
         display: true,
         anchor: 'end' as const,
         align: 'top' as const,
-        formatter: (value: any, context: any) => {
+        formatter: (_value: any, context: any) => {
           const category = waterfallData?.categories[context.dataIndex]
           if (!category) return ''
           
@@ -378,7 +378,7 @@ export const CashFlowWaterfall: React.FC = () => {
                   <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 ml-2">
                     <li><strong>Starting Balance:</strong> Where you began the period</li>
                     <li><strong>Inflow (Green):</strong> Each source of inflow adds to your balance</li>
-                    <li><strong>Outflow (Red):</strong> Each expense reduces your balance</li>
+                    <li><strong>Outflow (Red):</strong> Each outflow reduces your balance</li>
                     <li><strong>Ending Balance:</strong> Where you finished the period</li>
                   </ol>
                   <p className="text-xs text-gray-500 mt-3">

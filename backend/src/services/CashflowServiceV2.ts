@@ -6,8 +6,8 @@ interface MonthlyMetrics {
   month: string;
   columnIndex: number;
   columnLetter: string;
-  totalIncome: number;
-  totalExpense: number;
+  totalInflow: number;
+  totalOutflow: number;
   finalBalance: number;
   lowestBalance: number;
   monthlyGeneration: number;
@@ -33,8 +33,8 @@ export class CashflowServiceV2 {
     // Define the exact row numbers from the Excel file
     const ROW_NUMBERS = {
       DATES: 3,           // Row 3: Month dates
-      TOTAL_INCOME: 24,   // Row 24: TOTAL INCOME
-      TOTAL_EXPENSE: 100, // Row 100: TOTAL EXPENSE  
+      TOTAL_INFLOW: 24,   // Row 24: TOTAL INCOME
+      TOTAL_OUTFLOW: 100, // Row 100: TOTAL EXPENSE  
       FINAL_BALANCE: 104, // Row 104: Final Balance
       LOWEST_BALANCE: 112, // Row 112: Lowest Balance of the month
       MONTHLY_GENERATION: 113 // Row 113: Monthly Cash Generation
@@ -71,23 +71,23 @@ export class CashflowServiceV2 {
         month: monthInfo.month,
         columnIndex: monthInfo.col,
         columnLetter: this.getColumnLetter(monthInfo.col),
-        totalIncome: 0,
-        totalExpense: 0,
+        totalInflow: 0,
+        totalOutflow: 0,
         finalBalance: 0,
         lowestBalance: 0,
         monthlyGeneration: 0
       };
       
       // Get values from specific rows
-      const incomeValue = worksheet.getRow(ROW_NUMBERS.TOTAL_INCOME).getCell(monthInfo.col).value;
-      const expenseValue = worksheet.getRow(ROW_NUMBERS.TOTAL_EXPENSE).getCell(monthInfo.col).value;
+      const inflowValue = worksheet.getRow(ROW_NUMBERS.TOTAL_INFLOW).getCell(monthInfo.col).value;
+      const outflowValue = worksheet.getRow(ROW_NUMBERS.TOTAL_OUTFLOW).getCell(monthInfo.col).value;
       const balanceValue = worksheet.getRow(ROW_NUMBERS.FINAL_BALANCE).getCell(monthInfo.col).value;
       const lowestValue = worksheet.getRow(ROW_NUMBERS.LOWEST_BALANCE).getCell(monthInfo.col).value;
       const generationValue = worksheet.getRow(ROW_NUMBERS.MONTHLY_GENERATION).getCell(monthInfo.col).value;
       
       // Convert to numbers
-      metrics.totalIncome = this.toNumber(incomeValue);
-      metrics.totalExpense = this.toNumber(expenseValue);
+      metrics.totalInflow = this.toNumber(inflowValue);
+      metrics.totalOutflow = this.toNumber(outflowValue);
       metrics.finalBalance = this.toNumber(balanceValue);
       metrics.lowestBalance = this.toNumber(lowestValue);
       metrics.monthlyGeneration = this.toNumber(generationValue);
@@ -119,7 +119,7 @@ export class CashflowServiceV2 {
     }
     
     // Calculate YTD (Year to Date) values
-    let ytdIncome = 0;
+    let ytdInflow = 0;
     let ytdExpense = 0;
     
     // Find the index of the current month in parsedMetrics
@@ -127,11 +127,11 @@ export class CashflowServiceV2 {
     
     // Sum up all months from start of year up to and including current month
     for (let i = 0; i <= currentMonthArrayIndex && i < parsedMetrics.length; i++) {
-      ytdIncome += parsedMetrics[i].totalIncome;
-      ytdExpense += parsedMetrics[i].totalExpense;
+      ytdInflow += parsedMetrics[i].totalInflow;
+      ytdExpense += parsedMetrics[i].totalOutflow;
     }
     
-    const ytdBalance = ytdIncome + ytdExpense; // expense is negative
+    const ytdBalance = ytdInflow + ytdExpense; // outflow is negative
     
     // Generate chart data for all available months in the Excel file
     const chartData = [];
@@ -145,8 +145,8 @@ export class CashflowServiceV2 {
       chartData.push({
         date: format(parsedMetrics[i].date, 'yyyy-MM'),
         month: parsedMetrics[i].month,
-        income: parsedMetrics[i].totalIncome,
-        expenses: Math.abs(parsedMetrics[i].totalExpense),
+        inflow: parsedMetrics[i].totalInflow,
+        outflows: Math.abs(parsedMetrics[i].totalOutflow),
         cashflow: parsedMetrics[i].finalBalance,  // Row 104: Final Balance
         isActual: isActual
       });
@@ -161,15 +161,15 @@ export class CashflowServiceV2 {
       uploadedFileName: uploadedFileName,
       currentMonth: {
         month: currentMonthData.month,
-        totalIncome: currentMonthData.totalIncome,
-        totalExpense: currentMonthData.totalExpense,
+        totalInflow: currentMonthData.totalInflow,
+        totalOutflow: currentMonthData.totalOutflow,
         finalBalance: currentMonthData.finalBalance,
         lowestBalance: currentMonthData.lowestBalance,
         monthlyGeneration: currentMonthData.monthlyGeneration
       },
       yearToDate: {
-        totalIncome: ytdIncome,
-        totalExpense: ytdExpense,
+        totalInflow: ytdInflow,
+        totalOutflow: ytdExpense,
         totalBalance: ytdBalance
       },
       chartData: chartData,
@@ -216,42 +216,42 @@ export class CashflowServiceV2 {
       uploadedFileName: uploadedFileName || null,
       currentMonth: {
         month: 'June',
-        totalIncome: 61715728.02,
-        totalExpense: -69286881.42,
+        totalInflow: 61715728.02,
+        totalOutflow: -69286881.42,
         finalBalance: 26924011.97,
         lowestBalance: 17129280.86,
         monthlyGeneration: -7571153.41
       },
       yearToDate: {
-        totalIncome: 400616487.75,
-        totalExpense: -388691108.59,
+        totalInflow: 400616487.75,
+        totalOutflow: -388691108.59,
         totalBalance: 11925379.16
       },
       chartData: [
-        { date: '2025-01', month: 'January', income: 70346123.45, expenses: 65432198.76, cashflow: 35000000.00, isActual: true },
-        { date: '2025-02', month: 'February', income: 68234567.89, expenses: 67123456.78, cashflow: 36111111.11, isActual: true },
-        { date: '2025-03', month: 'March', income: 69876543.21, expenses: 68765432.10, cashflow: 37222222.22, isActual: true },
-        { date: '2025-04', month: 'April', income: 65432109.87, expenses: 69876543.21, cashflow: 32777788.88, isActual: true },
-        { date: '2025-05', month: 'May', income: 63210987.65, expenses: 70123456.78, cashflow: 25865319.75, isActual: true },
-        { date: '2025-06', month: 'June', income: 61715728.02, expenses: 69286881.42, cashflow: 26924011.97, isActual: true },
-        { date: '2025-07', month: 'July', income: 61715728.02, expenses: 69286881.42, cashflow: 19352858.56, isActual: false },
-        { date: '2025-08', month: 'August', income: 61715728.02, expenses: 69286881.42, cashflow: 11781705.15, isActual: false },
-        { date: '2025-09', month: 'September', income: 61715728.02, expenses: 69286881.42, cashflow: 4210551.74, isActual: false },
-        { date: '2025-10', month: 'October', income: 61715728.02, expenses: 69286881.42, cashflow: -3360601.67, isActual: false },
-        { date: '2025-11', month: 'November', income: 61715728.02, expenses: 69286881.42, cashflow: -10931755.08, isActual: false },
-        { date: '2025-12', month: 'December', income: 61715728.02, expenses: 69286881.42, cashflow: -18502908.49, isActual: false }
+        { date: '2025-01', month: 'January', inflow: 70346123.45, outflows: 65432198.76, cashflow: 35000000.00, isActual: true },
+        { date: '2025-02', month: 'February', inflow: 68234567.89, outflows: 67123456.78, cashflow: 36111111.11, isActual: true },
+        { date: '2025-03', month: 'March', inflow: 69876543.21, outflows: 68765432.10, cashflow: 37222222.22, isActual: true },
+        { date: '2025-04', month: 'April', inflow: 65432109.87, outflows: 69876543.21, cashflow: 32777788.88, isActual: true },
+        { date: '2025-05', month: 'May', inflow: 63210987.65, outflows: 70123456.78, cashflow: 25865319.75, isActual: true },
+        { date: '2025-06', month: 'June', inflow: 61715728.02, outflows: 69286881.42, cashflow: 26924011.97, isActual: true },
+        { date: '2025-07', month: 'July', inflow: 61715728.02, outflows: 69286881.42, cashflow: 19352858.56, isActual: false },
+        { date: '2025-08', month: 'August', inflow: 61715728.02, outflows: 69286881.42, cashflow: 11781705.15, isActual: false },
+        { date: '2025-09', month: 'September', inflow: 61715728.02, outflows: 69286881.42, cashflow: 4210551.74, isActual: false },
+        { date: '2025-10', month: 'October', inflow: 61715728.02, outflows: 69286881.42, cashflow: -3360601.67, isActual: false },
+        { date: '2025-11', month: 'November', inflow: 61715728.02, outflows: 69286881.42, cashflow: -10931755.08, isActual: false },
+        { date: '2025-12', month: 'December', inflow: 61715728.02, outflows: 69286881.42, cashflow: -18502908.49, isActual: false }
       ],
       highlights: {
         pastThreeMonths: [
-          'Income decreased by 12.5% over the last 3 months',
+          'Inflow decreased by 12.5% over the last 3 months',
           'Average monthly cash burn of $7.6M over the last 3 months',
           'Cash balance has remained stable with low volatility'
         ],
         nextSixMonths: [
           'Excel projections show $45.4M in cash consumption over the next 6 months',
           'Warning: Projections indicate negative cash balance in 4 months (October)',
-          'Projected average monthly income: $61.7M',
-          'Projected average monthly expenses: $69.3M',
+          'Projected average monthly inflow: $61.7M',
+          'Projected average monthly outflows: $69.3M',
           'Year-end projected cash balance: -$18.5M'
         ]
       },
@@ -277,18 +277,18 @@ export class CashflowServiceV2 {
     const lastThreeMonths = metrics.slice(start, currentIndex + 1);
     
     if (lastThreeMonths.length >= 2) {
-      // Income trend
-      const incomeChange = ((lastThreeMonths[lastThreeMonths.length - 1].totalIncome - 
-                            lastThreeMonths[0].totalIncome) / lastThreeMonths[0].totalIncome * 100);
-      if (Math.abs(incomeChange) > 5) {
-        insights.push(`Income ${incomeChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(incomeChange).toFixed(1)}% over the last ${lastThreeMonths.length} months`);
+      // Inflow trend
+      const inflowChange = ((lastThreeMonths[lastThreeMonths.length - 1].totalInflow - 
+                            lastThreeMonths[0].totalInflow) / lastThreeMonths[0].totalInflow * 100);
+      if (Math.abs(inflowChange) > 5) {
+        insights.push(`Inflow ${inflowChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(inflowChange).toFixed(1)}% over the last ${lastThreeMonths.length} months`);
       }
       
       // Expense trend
-      const expenseChange = ((Math.abs(lastThreeMonths[lastThreeMonths.length - 1].totalExpense) - 
-                             Math.abs(lastThreeMonths[0].totalExpense)) / Math.abs(lastThreeMonths[0].totalExpense) * 100);
-      if (Math.abs(expenseChange) > 5) {
-        insights.push(`Expenses ${expenseChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(expenseChange).toFixed(1)}% over the last ${lastThreeMonths.length} months`);
+      const outflowChange = ((Math.abs(lastThreeMonths[lastThreeMonths.length - 1].totalOutflow) - 
+                             Math.abs(lastThreeMonths[0].totalOutflow)) / Math.abs(lastThreeMonths[0].totalOutflow) * 100);
+      if (Math.abs(outflowChange) > 5) {
+        insights.push(`Outflows ${outflowChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(outflowChange).toFixed(1)}% over the last ${lastThreeMonths.length} months`);
       }
       
       // Cash generation analysis
@@ -345,12 +345,12 @@ export class CashflowServiceV2 {
           projections.push(`Warning: Projections indicate negative cash balance in ${monthsUntilNegative} months (${negativeMonth.month})`);
         }
         
-        // Average projected income/expense
-        const avgFutureIncome = next6Months.reduce((sum, m) => sum + m.totalIncome, 0) / next6Months.length;
-        const avgFutureExpense = next6Months.reduce((sum, m) => sum + Math.abs(m.totalExpense), 0) / next6Months.length;
+        // Average projected inflow/outflow
+        const avgFutureInflow = next6Months.reduce((sum, m) => sum + m.totalInflow, 0) / next6Months.length;
+        const avgFutureExpense = next6Months.reduce((sum, m) => sum + Math.abs(m.totalOutflow), 0) / next6Months.length;
         
-        projections.push(`Projected average monthly income: ${this.formatCurrency(avgFutureIncome)}`);
-        projections.push(`Projected average monthly expenses: ${this.formatCurrency(avgFutureExpense)}`);
+        projections.push(`Projected average monthly inflow: ${this.formatCurrency(avgFutureInflow)}`);
+        projections.push(`Projected average monthly outflows: ${this.formatCurrency(avgFutureExpense)}`);
         
         // End of year position
         const lastMonth = futureMonths[futureMonths.length - 1];
@@ -394,13 +394,13 @@ export class CashflowServiceV2 {
       if (!monthlyAverages[m.month]) {
         monthlyAverages[m.month] = [];
       }
-      monthlyAverages[m.month].push(m.totalIncome);
+      monthlyAverages[m.month].push(m.totalInflow);
     });
     
-    // Find months with consistently high or low income
+    // Find months with consistently high or low inflow
     let highMonths: string[] = [];
     let lowMonths: string[] = [];
-    const overallAvg = metrics.reduce((sum, m) => sum + m.totalIncome, 0) / metrics.length;
+    const overallAvg = metrics.reduce((sum, m) => sum + m.totalInflow, 0) / metrics.length;
     
     Object.entries(monthlyAverages).forEach(([month, values]) => {
       const monthAvg = values.reduce((sum, val) => sum + val, 0) / values.length;

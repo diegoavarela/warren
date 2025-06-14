@@ -11,11 +11,11 @@ import { cashflowService } from '../services/cashflowService'
 interface StackedBarData {
   months: string[]
   categories: {
-    income: {
+    inflow: {
       revenue: number[]
-      otherIncome: number[]
+      otherInflow: number[]
     }
-    expenses: {
+    outflows: {
       wages: number[]
       opex: number[]
       taxes: number[]
@@ -24,8 +24,8 @@ interface StackedBarData {
     }
   }
   totals: {
-    income: number[]
-    expenses: number[]
+    inflow: number[]
+    outflows: number[]
     netCashFlow: number[]
   }
 }
@@ -55,10 +55,10 @@ export const CashFlowStackedBar: React.FC = () => {
         setStackedData({
           months: [],
           categories: {
-            income: { revenue: [], otherIncome: [] },
-            expenses: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+            inflow: { revenue: [], otherInflow: [] },
+            outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
           },
-          totals: { income: [], expenses: [], netCashFlow: [] }
+          totals: { inflow: [], outflows: [], netCashFlow: [] }
         })
         return
       }
@@ -75,15 +75,15 @@ export const CashFlowStackedBar: React.FC = () => {
         setStackedData({
           months: [],
           categories: {
-            income: { revenue: [], otherIncome: [] },
-            expenses: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+            inflow: { revenue: [], otherInflow: [] },
+            outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
           },
-          totals: { income: [], expenses: [], netCashFlow: [] }
+          totals: { inflow: [], outflows: [], netCashFlow: [] }
         })
         return
       }
       
-      // Also fetch operational data for expense breakdown
+      // Also fetch operational data for outflow breakdown
       const operationalRes = await cashflowService.getOperationalData()
       const operationalData = operationalRes.data.data || []
       
@@ -99,10 +99,10 @@ export const CashFlowStackedBar: React.FC = () => {
       setStackedData({
         months: [],
         categories: {
-          income: { revenue: [], otherIncome: [] },
-          expenses: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+          inflow: { revenue: [], otherInflow: [] },
+          outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
         },
-        totals: { income: [], expenses: [], netCashFlow: [] }
+        totals: { inflow: [], outflows: [], netCashFlow: [] }
       })
     } finally {
       setLoading(false)
@@ -120,10 +120,10 @@ export const CashFlowStackedBar: React.FC = () => {
       return {
         months: [],
         categories: {
-          income: { revenue: [], otherIncome: [] },
-          expenses: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+          inflow: { revenue: [], otherInflow: [] },
+          outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
         },
-        totals: { income: [], expenses: [], netCashFlow: [] }
+        totals: { inflow: [], outflows: [], netCashFlow: [] }
       }
     }
     
@@ -137,26 +137,26 @@ export const CashFlowStackedBar: React.FC = () => {
     
     const months: string[] = []
     const revenue: number[] = []
-    const otherIncome: number[] = []
+    const otherInflow: number[] = []
     const wages: number[] = []
     const opex: number[] = []
     const taxes: number[] = []
     const bankFees: number[] = []
-    const otherExpenses: number[] = []
-    const totalIncome: number[] = []
-    const totalExpenses: number[] = []
+    const otherOutflows: number[] = []
+    const totalInflow: number[] = []
+    const totalOutflows: number[] = []
     const netCashFlow: number[] = []
     
     relevantCashflow.forEach((month, index) => {
       months.push(month.month)
       
-      // Income breakdown - handle both possible field names
-      const monthIncome = Math.abs(month.income || month.totalIncome || 0)
-      revenue.push(monthIncome)
-      otherIncome.push(0) // Placeholder for other income sources
-      totalIncome.push(monthIncome)
+      // Inflow breakdown - handle both possible field names
+      const monthInflow = Math.abs(month.inflow || month.totalInflow || 0)
+      revenue.push(monthInflow)
+      otherInflow.push(0) // Placeholder for other inflow sources
+      totalInflow.push(monthInflow)
       
-      // Expense breakdown from operational data
+      // Outflow breakdown from operational data
       const operational = relevantOperational[index] || {}
       const monthWages = Math.abs(operational.totalWages || 0)
       const monthOpex = Math.abs(operational.totalOpex || 0)
@@ -168,40 +168,40 @@ export const CashFlowStackedBar: React.FC = () => {
       taxes.push(monthTaxes)
       bankFees.push(monthBankFees)
       
-      // Calculate other expenses (remainder) - handle both possible field names
-      const monthExpenses = Math.abs(month.expenses || month.totalExpense || 0)
-      const knownExpenses = monthWages + monthOpex + monthTaxes + monthBankFees
-      const other = Math.max(0, monthExpenses - knownExpenses)
-      otherExpenses.push(other)
+      // Calculate other outflows (remainder) - handle both possible field names
+      const monthOutflows = Math.abs(month.outflows || month.totalOutflow || 0)
+      const knownOutflows = monthWages + monthOpex + monthTaxes + monthBankFees
+      const other = Math.max(0, monthOutflows - knownOutflows)
+      otherOutflows.push(other)
       
-      totalExpenses.push(monthExpenses)
+      totalOutflows.push(monthOutflows)
       
       // Net cash flow - handle both structures
       if (month.cashflow !== undefined) {
         netCashFlow.push(month.cashflow)
       } else {
-        netCashFlow.push(monthIncome - monthExpenses)
+        netCashFlow.push(monthInflow - monthOutflows)
       }
     })
     
     return {
       months,
       categories: {
-        income: {
+        inflow: {
           revenue,
-          otherIncome
+          otherInflow
         },
-        expenses: {
+        outflows: {
           wages,
           opex,
           taxes,
           bankFees,
-          other: otherExpenses
+          other: otherOutflows
         }
       },
       totals: {
-        income: totalIncome,
-        expenses: totalExpenses,
+        inflow: totalInflow,
+        outflows: totalOutflows,
         netCashFlow
       }
     }
@@ -222,53 +222,53 @@ export const CashFlowStackedBar: React.FC = () => {
     return {
       labels: stackedData.months,
       datasets: [
-        // Income datasets (positive values)
+        // Inflow datasets (positive values)
         {
           label: 'Revenue',
-          data: stackedData.categories.income.revenue,
+          data: stackedData.categories.inflow.revenue,
           backgroundColor: '#10B981',
-          stack: 'income',
+          stack: 'inflow',
           barPercentage: 0.8,
           categoryPercentage: 0.9
         },
-        // Expense datasets (negative values for below x-axis)
+        // Outflow datasets (negative values for below x-axis)
         {
           label: 'Wages',
-          data: stackedData.categories.expenses.wages.map(v => -v),
+          data: stackedData.categories.outflows.wages.map(v => -v),
           backgroundColor: '#EF4444',
-          stack: 'expenses',
+          stack: 'outflows',
           barPercentage: 0.8,
           categoryPercentage: 0.9
         },
         {
           label: 'OpEx',
-          data: stackedData.categories.expenses.opex.map(v => -v),
+          data: stackedData.categories.outflows.opex.map(v => -v),
           backgroundColor: '#F59E0B',
-          stack: 'expenses',
+          stack: 'outflows',
           barPercentage: 0.8,
           categoryPercentage: 0.9
         },
         {
           label: 'Taxes',
-          data: stackedData.categories.expenses.taxes.map(v => -v),
+          data: stackedData.categories.outflows.taxes.map(v => -v),
           backgroundColor: '#8B5CF6',
-          stack: 'expenses',
+          stack: 'outflows',
           barPercentage: 0.8,
           categoryPercentage: 0.9
         },
         {
           label: 'Bank Fees',
-          data: stackedData.categories.expenses.bankFees.map(v => -v),
+          data: stackedData.categories.outflows.bankFees.map(v => -v),
           backgroundColor: '#06B6D4',
-          stack: 'expenses',
+          stack: 'outflows',
           barPercentage: 0.8,
           categoryPercentage: 0.9
         },
         {
           label: 'Other',
-          data: stackedData.categories.expenses.other.map(v => -v),
+          data: stackedData.categories.outflows.other.map(v => -v),
           backgroundColor: '#6B7280',
-          stack: 'expenses',
+          stack: 'outflows',
           barPercentage: 0.8,
           categoryPercentage: 0.9
         }
@@ -308,8 +308,8 @@ export const CashFlowStackedBar: React.FC = () => {
             const monthIndex = tooltipItems[0].dataIndex
             return [
               '',
-              `Total Income: ${formatCurrency(stackedData.totals.income[monthIndex])}`,
-              `Total Expenses: ${formatCurrency(stackedData.totals.expenses[monthIndex])}`,
+              `Total Inflow: ${formatCurrency(stackedData.totals.inflow[monthIndex])}`,
+              `Total Outflows: ${formatCurrency(stackedData.totals.outflows[monthIndex])}`,
               `Net Cash Flow: ${formatCurrency(stackedData.totals.netCashFlow[monthIndex])}`
             ]
           }
@@ -353,7 +353,7 @@ export const CashFlowStackedBar: React.FC = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Cash Flow Composition</h3>
-              <p className="text-sm text-gray-600">Breakdown of income and expenses</p>
+              <p className="text-sm text-gray-600">Breakdown of inflow and outflows</p>
             </div>
           </div>
           
@@ -386,18 +386,18 @@ export const CashFlowStackedBar: React.FC = () => {
             {/* Summary Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="text-center p-4 bg-green-50 rounded-xl">
-                <p className="text-sm text-gray-600">Avg Monthly Income</p>
+                <p className="text-sm text-gray-600">Avg Monthly Inflow</p>
                 <p className="text-xl font-bold text-green-600">
                   {formatCurrency(
-                    stackedData.totals.income.reduce((a, b) => a + b, 0) / stackedData.totals.income.length
+                    stackedData.totals.inflow.reduce((a, b) => a + b, 0) / stackedData.totals.inflow.length
                   )}
                 </p>
               </div>
               <div className="text-center p-4 bg-red-50 rounded-xl">
-                <p className="text-sm text-gray-600">Avg Monthly Expenses</p>
+                <p className="text-sm text-gray-600">Avg Monthly Outflows</p>
                 <p className="text-xl font-bold text-red-600">
                   {formatCurrency(
-                    stackedData.totals.expenses.reduce((a, b) => a + b, 0) / stackedData.totals.expenses.length
+                    stackedData.totals.outflows.reduce((a, b) => a + b, 0) / stackedData.totals.outflows.length
                   )}
                 </p>
               </div>
@@ -420,43 +420,43 @@ export const CashFlowStackedBar: React.FC = () => {
               {getChartData() && <Bar data={getChartData()!} options={chartOptions} />}
             </div>
 
-            {/* Expense Breakdown Summary */}
+            {/* Outflow Breakdown Summary */}
             <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Average Expense Breakdown</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Average Outflow Breakdown</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-red-500 rounded"></div>
                   <span className="text-gray-600">Wages: {
-                    Math.round((stackedData.categories.expenses.wages.reduce((a, b) => a + b, 0) / 
-                    stackedData.totals.expenses.reduce((a, b) => a + b, 0)) * 100)
+                    Math.round((stackedData.categories.outflows.wages.reduce((a, b) => a + b, 0) / 
+                    stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-orange-500 rounded"></div>
                   <span className="text-gray-600">OpEx: {
-                    Math.round((stackedData.categories.expenses.opex.reduce((a, b) => a + b, 0) / 
-                    stackedData.totals.expenses.reduce((a, b) => a + b, 0)) * 100)
+                    Math.round((stackedData.categories.outflows.opex.reduce((a, b) => a + b, 0) / 
+                    stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-purple-500 rounded"></div>
                   <span className="text-gray-600">Taxes: {
-                    Math.round((stackedData.categories.expenses.taxes.reduce((a, b) => a + b, 0) / 
-                    stackedData.totals.expenses.reduce((a, b) => a + b, 0)) * 100)
+                    Math.round((stackedData.categories.outflows.taxes.reduce((a, b) => a + b, 0) / 
+                    stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-cyan-500 rounded"></div>
                   <span className="text-gray-600">Bank: {
-                    Math.round((stackedData.categories.expenses.bankFees.reduce((a, b) => a + b, 0) / 
-                    stackedData.totals.expenses.reduce((a, b) => a + b, 0)) * 100)
+                    Math.round((stackedData.categories.outflows.bankFees.reduce((a, b) => a + b, 0) / 
+                    stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-gray-500 rounded"></div>
                   <span className="text-gray-600">Other: {
-                    Math.round((stackedData.categories.expenses.other.reduce((a, b) => a + b, 0) / 
-                    stackedData.totals.expenses.reduce((a, b) => a + b, 0)) * 100)
+                    Math.round((stackedData.categories.outflows.other.reduce((a, b) => a + b, 0) / 
+                    stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
               </div>
@@ -489,29 +489,29 @@ export const CashFlowStackedBar: React.FC = () => {
                 <div className="bg-blue-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
                     A <strong>stacked bar chart</strong> shows the composition of your cash flow, 
-                    breaking down both income and expenses into their component parts.
+                    breaking down both inflow and outflows into their component parts.
                   </p>
                   <p className="text-sm text-gray-600 mt-2">
-                    Each bar represents a month, with income stacked above the x-axis and expenses below.
+                    Each bar represents a month, with inflow stacked above the x-axis and outflows below.
                   </p>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 Income Components</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 Inflow Components</h3>
                 <div className="space-y-2">
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-green-500 rounded mt-0.5"></div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">Revenue (Green)</p>
-                      <p className="text-sm text-gray-600">Your primary business income</p>
+                      <p className="text-sm text-gray-600">Your primary business inflow</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">💸 Expense Components</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💸 Outflow Components</h3>
                 <div className="space-y-2">
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-red-500 rounded mt-0.5"></div>
@@ -524,7 +524,7 @@ export const CashFlowStackedBar: React.FC = () => {
                     <div className="w-4 h-4 bg-orange-500 rounded mt-0.5"></div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">OpEx (Orange)</p>
-                      <p className="text-sm text-gray-600">Operational expenses excluding wages</p>
+                      <p className="text-sm text-gray-600">Operational outflows excluding wages</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
@@ -545,7 +545,7 @@ export const CashFlowStackedBar: React.FC = () => {
                     <div className="w-4 h-4 bg-gray-500 rounded mt-0.5"></div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">Other (Gray)</p>
-                      <p className="text-sm text-gray-600">Miscellaneous expenses</p>
+                      <p className="text-sm text-gray-600">Miscellaneous outflows</p>
                     </div>
                   </div>
                 </div>
@@ -555,7 +555,7 @@ export const CashFlowStackedBar: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">📖 How to Read the Chart</h3>
                 <div className="bg-yellow-50 rounded-xl p-4">
                   <ul className="space-y-2 text-sm text-gray-600">
-                    <li>• <strong>Bar height:</strong> Total income (above) and expenses (below)</li>
+                    <li>• <strong>Bar height:</strong> Total inflow (above) and outflows (below)</li>
                     <li>• <strong>Segment size:</strong> Proportion of each category</li>
                     <li>• <strong>Net position:</strong> Compare top vs bottom of each month</li>
                     <li>• <strong>Trends:</strong> See how composition changes over time</li>
@@ -566,10 +566,10 @@ export const CashFlowStackedBar: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Key Insights</h3>
                 <div className="space-y-2 text-sm text-gray-600">
-                  <p>• Quickly identify your largest expense categories</p>
-                  <p>• See if expense proportions are changing over time</p>
-                  <p>• Understand the stability of your income sources</p>
-                  <p>• Spot months with unusual expense patterns</p>
+                  <p>• Quickly identify your largest outflow categories</p>
+                  <p>• See if outflow proportions are changing over time</p>
+                  <p>• Understand the stability of your inflow sources</p>
+                  <p>• Spot months with unusual outflow patterns</p>
                 </div>
               </div>
             </div>

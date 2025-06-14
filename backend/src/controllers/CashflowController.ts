@@ -4,15 +4,18 @@ import { AuthRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { CashflowServiceV2 } from '../services/CashflowServiceV2';
 import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
+import { ExtendedFinancialService } from '../services/ExtendedFinancialService';
 import { logger } from '../utils/logger';
 
 // Create singleton instances
 const cashflowServiceInstance = new CashflowServiceV2();
 const analysisServiceInstance = new CashFlowAnalysisService();
+const extendedFinancialServiceInstance = new ExtendedFinancialService();
 
 export class CashflowController {
   private cashflowService = cashflowServiceInstance;
   private analysisService = analysisServiceInstance;
+  private extendedFinancialService = extendedFinancialServiceInstance;
 
   async uploadFile(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -33,6 +36,10 @@ export class CashflowController {
       const metrics = this.cashflowService.parseWorksheet(worksheet, req.file.originalname);
       logger.info(`Cashflow file uploaded by user ${req.user?.email}, ${metrics.length} months processed`);
 
+      // Also parse extended financial data (operational costs, banks, taxes)
+      const extendedData = this.extendedFinancialService.parseExtendedFinancialData(worksheet);
+      logger.info(`Extended financial data parsed: ${extendedData.operational.length} operational months processed`);
+
       res.json({
         success: true,
         message: 'File uploaded and processed successfully',
@@ -42,7 +49,12 @@ export class CashflowController {
           dateRange: metrics.length > 0 ? {
             from: metrics[0].date,
             to: metrics[metrics.length - 1].date
-          } : null
+          } : null,
+          extendedDataProcessed: {
+            operational: extendedData.operational.length,
+            banks: extendedData.banks.length,
+            taxes: extendedData.taxes.length
+          }
         }
       });
     } catch (error: any) {
@@ -77,8 +89,8 @@ export class CashflowController {
           metrics: storedMetrics.map(m => ({
             month: m.month,
             column: m.columnLetter,
-            totalIncome: m.totalIncome,
-            totalExpense: m.totalExpense,
+            totalInflow: m.totalInflow,
+            totalOutflow: m.totalOutflow,
             monthlyGeneration: m.monthlyGeneration
           }))
         }
@@ -161,9 +173,9 @@ export class CashflowController {
       
       // Default scenarios if not provided
       const scenarios = {
-        base: base || { incomeChange: 0, expenseChange: 0, startingMonth: 0, duration: 12 },
-        best: best || { incomeChange: 25, expenseChange: -15, startingMonth: 0, duration: 6 },
-        worst: worst || { incomeChange: -30, expenseChange: 20, startingMonth: 0, duration: 3 }
+        base: base || { inflowChange: 0, outflowChange: 0, startingMonth: 0, duration: 12 },
+        best: best || { inflowChange: 25, outflowChange: -15, startingMonth: 0, duration: 6 },
+        worst: worst || { inflowChange: -30, outflowChange: 20, startingMonth: 0, duration: 3 }
       };
 
       const now = new Date();
@@ -216,6 +228,60 @@ export class CashflowController {
       res.json({
         success: true,
         data: waterfallData
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getOperationalData(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      // For now, return the stored extended financial data from the service
+      // In a production environment, this would be stored in a database
+      const extendedData = this.extendedFinancialService.getStoredExtendedData();
+      
+      res.json({
+        success: true,
+        data: extendedData.operational
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getBankingData(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const extendedData = this.extendedFinancialService.getStoredExtendedData();
+      
+      res.json({
+        success: true,
+        data: extendedData.banks
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getTaxesData(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const extendedData = this.extendedFinancialService.getStoredExtendedData();
+      
+      res.json({
+        success: true,
+        data: extendedData.taxes
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getInvestmentsData(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const extendedData = this.extendedFinancialService.getStoredExtendedData();
+      
+      res.json({
+        success: true,
+        data: extendedData.investments
       });
     } catch (error) {
       next(error);

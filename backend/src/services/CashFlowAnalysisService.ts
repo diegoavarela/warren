@@ -3,8 +3,8 @@ import { format } from 'date-fns';
 interface MonthlyMetrics {
   date: Date;
   month: string;
-  totalIncome: number;
-  totalExpense: number;
+  totalInflow: number;
+  totalOutflow: number;
   finalBalance: number;
   monthlyGeneration: number;
 }
@@ -46,8 +46,8 @@ interface BurnRateAnalysis {
 }
 
 interface ScenarioParameters {
-  incomeChange: number; // percentage change (-100 to +100)
-  expenseChange: number; // percentage change (-100 to +100)
+  inflowChange: number; // percentage change (-100 to +100)
+  outflowChange: number; // percentage change (-100 to +100)
   startingMonth: number; // month index to start applying changes
   duration: number; // how many months to apply changes
 }
@@ -55,15 +55,15 @@ interface ScenarioParameters {
 interface ScenarioResult {
   monthlyProjections: Array<{
     month: string;
-    income: number;
-    expenses: number;
+    inflow: number;
+    outflows: number;
     netCashFlow: number;
     endingBalance: number;
   }>;
   summary: {
     endingCash: number;
-    totalIncome: number;
-    totalExpenses: number;
+    totalInflow: number;
+    totalOutflows: number;
     netCashFlow: number;
     monthsOfRunway: number | null;
     runOutDate: Date | null;
@@ -99,13 +99,18 @@ export class CashFlowAnalysisService {
     // Determine burn rate trend
     const burnTrend = this.analyzeBurnTrend(metrics, currentMonthIndex);
     
-    // If not burning cash at all, return null for runway
+    // If not burning cash at all, calculate cash generation instead
     if (threeMonthBurn === 0 && sixMonthBurn === 0) {
+      // Calculate actual cash generation when cash positive
+      const threeMonthGeneration = this.calculateAverageCashGeneration(metrics, currentMonthIndex, 3);
+      const sixMonthGeneration = this.calculateAverageCashGeneration(metrics, currentMonthIndex, 6);
+      const averageGeneration = (threeMonthGeneration * 0.6) + (sixMonthGeneration * 0.4);
+      
       return {
         monthsRemaining: null,
         runwayDate: null,
         currentBalance,
-        averageBurnRate: 0,
+        averageBurnRate: averageGeneration, // This will show cash generation amount
         burnRateTrend: 'stable',
         confidence: {
           conservative: null,
@@ -161,7 +166,7 @@ export class CashFlowAnalysisService {
 
     // Calculate actual burn rate (only positive when burning cash)
     const currentMonth = metrics[currentMonthIndex];
-    const currentMonthBurn = currentMonth.totalExpense > currentMonth.totalIncome 
+    const currentMonthBurn = currentMonth.totalOutflow > currentMonth.totalInflow 
       ? Math.abs(currentMonth.monthlyGeneration)
       : 0;
     
@@ -194,7 +199,7 @@ export class CashFlowAnalysisService {
       : null;
 
     // Calculate burn rate change
-    const previousMonthBurn = previousMonth.totalExpense > previousMonth.totalIncome
+    const previousMonthBurn = previousMonth.totalOutflow > previousMonth.totalInflow
       ? Math.abs(previousMonth.monthlyGeneration)
       : 0;
     
@@ -220,12 +225,12 @@ export class CashFlowAnalysisService {
     
     for (let i = startIndex; i <= currentMonthIndex; i++) {
       const metric = metrics[i];
-      const burnRate = metric.totalExpense > metric.totalIncome
+      const burnRate = metric.totalOutflow > metric.totalInflow
         ? Math.abs(metric.monthlyGeneration)
         : 0;
       
       const prevMetric = i > 0 ? metrics[i - 1] : metric;
-      const previousBurn = prevMetric.totalExpense > prevMetric.totalIncome
+      const previousBurn = prevMetric.totalOutflow > prevMetric.totalInflow
         ? Math.abs(prevMetric.monthlyGeneration)
         : 0;
       
@@ -242,7 +247,7 @@ export class CashFlowAnalysisService {
         month: metric.month,
         burnRate,
         changeFromPrevious: change,
-        isCashPositive: metric.totalIncome >= metric.totalExpense,
+        isCashPositive: metric.totalInflow >= metric.totalOutflow,
         cashGeneration,
         generationChange: genChange
       });
@@ -287,12 +292,26 @@ export class CashFlowAnalysisService {
     if (relevantMonths.length === 0) return 0;
     
     // Only count months where we're actually burning cash
-    const burningMonths = relevantMonths.filter(m => m.totalExpense > m.totalIncome);
+    const burningMonths = relevantMonths.filter(m => m.totalOutflow > m.totalInflow);
     
     if (burningMonths.length === 0) return 0; // Cash positive for entire period
     
     const totalBurn = burningMonths.reduce((sum, m) => sum + Math.abs(m.monthlyGeneration), 0);
     return totalBurn / relevantMonths.length; // Average over all months, not just burning months
+  }
+
+  /**
+   * Calculate average cash generation for cash positive periods
+   */
+  private calculateAverageCashGeneration(metrics: MonthlyMetrics[], currentIndex: number, months: number): number {
+    const startIndex = Math.max(0, currentIndex - months + 1);
+    const relevantMonths = metrics.slice(startIndex, currentIndex + 1);
+    
+    if (relevantMonths.length === 0) return 0;
+    
+    // Calculate average monthly generation (positive when generating cash)
+    const totalGeneration = relevantMonths.reduce((sum, m) => sum + m.monthlyGeneration, 0);
+    return totalGeneration / relevantMonths.length;
   }
 
   /**
@@ -385,8 +404,8 @@ export class CashFlowAnalysisService {
   ): ScenarioResult {
     const projections = [];
     let runningBalance = currentMonthIndex >= 0 ? metrics[currentMonthIndex].finalBalance : 0;
-    let totalIncome = 0;
-    let totalExpenses = 0;
+    let totalInflow = 0;
+    let totalOutflows = 0;
     let monthsOfRunway = null;
     let runOutDate = null;
     
@@ -396,20 +415,20 @@ export class CashFlowAnalysisService {
                        'July', 'August', 'September', 'October', 'November', 'December'];
     
     // Calculate base values once (average of last 3 months for consistency)
-    let baseIncome: number;
-    let baseExpenses: number;
+    let baseInflow: number;
+    let baseOutflows: number;
     
     if (metrics.length > 0 && currentMonthIndex >= 0) {
       const avgMonths = Math.min(3, currentMonthIndex + 1);
       const startIdx = Math.max(0, currentMonthIndex - avgMonths + 1);
       const recentData = metrics.slice(startIdx, currentMonthIndex + 1);
       
-      baseIncome = recentData.reduce((sum, m) => sum + m.totalIncome, 0) / recentData.length;
-      baseExpenses = recentData.reduce((sum, m) => sum + Math.abs(m.totalExpense), 0) / recentData.length;
+      baseInflow = recentData.reduce((sum, m) => sum + m.totalInflow, 0) / recentData.length;
+      baseOutflows = recentData.reduce((sum, m) => sum + Math.abs(m.totalOutflow), 0) / recentData.length;
     } else {
       // Fallback if no data
-      baseIncome = 100000; // $100K default
-      baseExpenses = 80000;  // $80K default
+      baseInflow = 100000; // $100K default
+      baseOutflows = 80000;  // $80K default
     }
     
     for (let i = 0; i < monthsToProject; i++) {
@@ -417,20 +436,20 @@ export class CashFlowAnalysisService {
       const shouldApplyChange = i >= params.startingMonth && i < (params.startingMonth + params.duration);
       
       // Apply scenario changes
-      const income = shouldApplyChange 
-        ? baseIncome * (1 + params.incomeChange / 100)
-        : baseIncome;
+      const inflow = shouldApplyChange 
+        ? baseInflow * (1 + params.inflowChange / 100)
+        : baseInflow;
       
-      const expenses = shouldApplyChange
-        ? baseExpenses * (1 + params.expenseChange / 100)
-        : baseExpenses;
+      const outflows = shouldApplyChange
+        ? baseOutflows * (1 + params.outflowChange / 100)
+        : baseOutflows;
       
-      const netCashFlow = income - expenses;
+      const netCashFlow = inflow - outflows;
       runningBalance += netCashFlow;
       
       // Track totals
-      totalIncome += income;
-      totalExpenses += expenses;
+      totalInflow += inflow;
+      totalOutflows += outflows;
       
       // Check for cash depletion (first time balance goes negative)
       if (runningBalance < 0 && monthsOfRunway === null) {
@@ -446,8 +465,8 @@ export class CashFlowAnalysisService {
       
       projections.push({
         month: monthName,
-        income: Math.round(income),
-        expenses: Math.round(expenses),
+        inflow: Math.round(inflow),
+        outflows: Math.round(outflows),
         netCashFlow: Math.round(netCashFlow),
         endingBalance: Math.round(runningBalance)
       });
@@ -455,7 +474,7 @@ export class CashFlowAnalysisService {
     
     // Calculate extended runway if cash is still positive after 12 months
     if (monthsOfRunway === null && runningBalance > 0) {
-      const avgMonthlyBurn = (totalIncome - totalExpenses) / monthsToProject;
+      const avgMonthlyBurn = (totalInflow - totalOutflows) / monthsToProject;
       if (avgMonthlyBurn < 0) {
         // How many additional months beyond the 12 projected
         const additionalMonths = Math.floor(runningBalance / Math.abs(avgMonthlyBurn));
@@ -470,9 +489,9 @@ export class CashFlowAnalysisService {
       monthlyProjections: projections,
       summary: {
         endingCash: Math.round(runningBalance),
-        totalIncome: Math.round(totalIncome),
-        totalExpenses: Math.round(totalExpenses),
-        netCashFlow: Math.round(totalIncome - totalExpenses),
+        totalInflow: Math.round(totalInflow),
+        totalOutflows: Math.round(totalOutflows),
+        netCashFlow: Math.round(totalInflow - totalOutflows),
         monthsOfRunway,
         runOutDate
       }
@@ -499,22 +518,22 @@ export class CashFlowAnalysisService {
     const endBalance = metrics[endIndex].finalBalance;
     
     // Aggregate data between start and end
-    let totalIncome = 0;
-    let totalExpenses = 0;
-    const incomeByMonth: { [key: string]: number } = {};
-    const expenseByMonth: { [key: string]: number } = {};
+    let totalInflow = 0;
+    let totalOutflows = 0;
+    const inflowByMonth: { [key: string]: number } = {};
+    const outflowByMonth: { [key: string]: number } = {};
     
     for (let i = startIndex; i <= endIndex; i++) {
-      totalIncome += metrics[i].totalIncome;
-      totalExpenses += metrics[i].totalExpense; // This is already negative
+      totalInflow += metrics[i].totalInflow;
+      totalOutflows += metrics[i].totalOutflow; // This is already negative
       
-      if (!incomeByMonth[metrics[i].month]) {
-        incomeByMonth[metrics[i].month] = 0;
-        expenseByMonth[metrics[i].month] = 0;
+      if (!inflowByMonth[metrics[i].month]) {
+        inflowByMonth[metrics[i].month] = 0;
+        outflowByMonth[metrics[i].month] = 0;
       }
       
-      incomeByMonth[metrics[i].month] += metrics[i].totalIncome;
-      expenseByMonth[metrics[i].month] += metrics[i].totalExpense;
+      inflowByMonth[metrics[i].month] += metrics[i].totalInflow;
+      outflowByMonth[metrics[i].month] += metrics[i].totalOutflow;
     }
     
     const categories = [
@@ -526,13 +545,13 @@ export class CashFlowAnalysisService {
       }
     ];
     
-    // Add income categories (positive values)
-    if (Object.keys(incomeByMonth).length <= 3) {
+    // Add inflow categories (positive values)
+    if (Object.keys(inflowByMonth).length <= 3) {
       // Show individual months if 3 or fewer
-      Object.entries(incomeByMonth).forEach(([month, value]) => {
+      Object.entries(inflowByMonth).forEach(([month, value]) => {
         if (value > 0) {
           categories.push({
-            name: `${month} Income`,
+            name: `${month} Inflow`,
             value: value,
             color: '#10B981', // green
             isTotal: false
@@ -542,20 +561,20 @@ export class CashFlowAnalysisService {
     } else {
       // Aggregate if more than 3 months
       categories.push({
-        name: 'Total Income',
-        value: totalIncome,
+        name: 'Total Inflow',
+        value: totalInflow,
         color: '#10B981', // green
         isTotal: true
       });
     }
     
-    // Add expense categories (negative values)
-    if (Object.keys(expenseByMonth).length <= 3) {
+    // Add outflow categories (negative values)
+    if (Object.keys(outflowByMonth).length <= 3) {
       // Show individual months if 3 or fewer
-      Object.entries(expenseByMonth).forEach(([month, value]) => {
+      Object.entries(outflowByMonth).forEach(([month, value]) => {
         if (value < 0) {
           categories.push({
-            name: `${month} Expenses`,
+            name: `${month} Outflows`,
             value: value,
             color: '#EF4444', // red
             isTotal: false
@@ -565,8 +584,8 @@ export class CashFlowAnalysisService {
     } else {
       // Aggregate if more than 3 months
       categories.push({
-        name: 'Total Expenses',
-        value: totalExpenses,
+        name: 'Total Outflows',
+        value: totalOutflows,
         color: '#EF4444', // red
         isTotal: true
       });

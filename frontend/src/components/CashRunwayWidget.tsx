@@ -142,6 +142,14 @@ export const CashRunwayWidget: React.FC<CashRunwayWidgetProps> = ({ currency, di
     return runwayData.confidence[selectedScenario]
   }
 
+  const getRunwayDate = () => {
+    const months = getRunwayMonths()
+    if (!months || months <= 0) return null
+    const today = new Date()
+    const futureDate = new Date(today.getFullYear(), today.getMonth() + months, today.getDate())
+    return futureDate
+  }
+
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'accelerating':
@@ -273,7 +281,7 @@ export const CashRunwayWidget: React.FC<CashRunwayWidgetProps> = ({ currency, di
             
             {currentMonths !== null && currentMonths > 0 && (
               <p className="text-xs text-gray-600 mb-3">
-                Until {formatDate(runwayData.runwayDate)}
+                Until {formatDate(getRunwayDate())}
               </p>
             )}
             
@@ -309,7 +317,10 @@ export const CashRunwayWidget: React.FC<CashRunwayWidgetProps> = ({ currency, di
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-gray-600">Scenario Analysis</span>
               <span className="text-xs text-gray-500">
-                Weighted: 60% × 3mo + 40% × 6mo
+                {runwayData.confidence.conservative === null && runwayData.confidence.moderate === null && runwayData.confidence.optimistic === null
+                  ? 'Cash positive - no scenarios'
+                  : 'Weighted: 60% × 3mo + 40% × 6mo'
+                }
               </span>
             </div>
             

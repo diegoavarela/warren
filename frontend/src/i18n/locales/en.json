@@ -23,8 +23,8 @@
       "highestCash": "Highest Cash (6M)",
       "biggestGain": "Biggest Gain (6M)",
       "lowestGain": "Lowest Gain (6M)",
-      "incomeYTD": "Income YTD",
-      "expensesYTD": "Expenses YTD"
+      "inflowYTD": "Inflow YTD",
+      "outflowsYTD": "Outflows YTD"
     },
     "highlights": {
       "title": "Key Highlights",

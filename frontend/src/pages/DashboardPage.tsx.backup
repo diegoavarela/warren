@@ -20,7 +20,7 @@ import { CashflowChart } from '../components/CashflowChart'
 import { CashRunwayWidget } from '../components/CashRunwayWidget'
 import { BurnRateTrend } from '../components/BurnRateTrend'
 import { ScenarioPlanning } from '../components/ScenarioPlanning'
-import { CashFlowStackedBar } from '../components/CashFlowStackedBar'
+import { CashFlowWaterfall } from '../components/CashFlowWaterfall'
 import { InvestmentsWidget } from '../components/InvestmentsWidget'
 import { BankingWidget } from '../components/BankingWidget'
 import { TaxesWidget } from '../components/TaxesWidget'
@@ -478,29 +478,12 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Cash Flow Analysis Section - Runway and Burn Rate */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Cash Flow Analysis</h2>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CashRunwayWidget 
-              currency={currency} 
-              displayUnit={displayUnit} 
-            />
-            <BurnRateTrend 
-              currency={currency} 
-              displayUnit={displayUnit} 
-            />
-          </div>
-        </div>
-
         {/* Advanced Analytics Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Advanced Analytics</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ScenarioPlanning />
-            <CashFlowStackedBar />
+            <CashFlowWaterfall />
           </div>
         </div>
 

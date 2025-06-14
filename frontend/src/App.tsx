@@ -18,6 +18,7 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/test" element={<div style={{padding: '20px', fontSize: '24px', color: 'green'}}>React App is Working! ✅</div>} />
         <Route path="/" element={
           <ProtectedRoute>
             <HomePage />

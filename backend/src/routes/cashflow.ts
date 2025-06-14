@@ -36,5 +36,9 @@ router.get('/analysis/runway', cashflowController.getRunwayAnalysis.bind(cashflo
 router.get('/analysis/burn-rate', cashflowController.getBurnRateAnalysis.bind(cashflowController));
 router.post('/analysis/scenario', cashflowController.getScenarioAnalysis.bind(cashflowController));
 router.get('/analysis/waterfall', cashflowController.getWaterfallData.bind(cashflowController));
+router.get('/operational', cashflowController.getOperationalData.bind(cashflowController));
+router.get('/banking', cashflowController.getBankingData.bind(cashflowController));
+router.get('/taxes', cashflowController.getTaxesData.bind(cashflowController));
+router.get('/investments', cashflowController.getInvestmentsData.bind(cashflowController));
 
 export { router as cashflowRouter };

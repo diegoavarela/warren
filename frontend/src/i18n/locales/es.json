@@ -23,8 +23,8 @@
       "highestCash": "Efectivo Máximo (6M)",
       "biggestGain": "Mayor Ganancia (6M)",
       "lowestGain": "Menor Ganancia (6M)",
-      "incomeYTD": "Ingresos Anuales",
-      "expensesYTD": "Gastos Anuales"
+      "inflowYTD": "Entradas Anuales",
+      "outflowsYTD": "Salidas Anuales"
     },
     "highlights": {
       "title": "Puntos Clave",

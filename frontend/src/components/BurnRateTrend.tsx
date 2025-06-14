@@ -383,6 +383,25 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
           {/* Recent Changes */}
           <div className="pt-3 border-t border-gray-200">
             <p className="text-xs font-medium text-gray-600 mb-2">Monthly Cash Generation Trend</p>
+            
+            {/* Last Three Months Summary */}
+            <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Last Three Months</span>
+                <span className={`text-lg font-bold ${
+                  burnData.monthlyData.slice(-3).reduce((sum, month) => sum + month.generationChange, 0) >= 0 
+                    ? 'text-green-600' 
+                    : 'text-red-600'
+                }`}>
+                  {(() => {
+                    const totalChange = burnData.monthlyData.slice(-3).reduce((sum, month) => sum + month.generationChange, 0);
+                    return (totalChange >= 0 ? '+' : '') + formatCurrency(Math.abs(totalChange));
+                  })()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Net change in cash generation (from brackets)</p>
+            </div>
+            
             <div className="space-y-2">
               {burnData.monthlyData.slice(-3).reverse().map((month, index) => (
                 <div key={index} className="flex justify-between items-center text-sm">
