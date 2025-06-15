@@ -17,21 +17,32 @@ import { useAuth } from '../hooks/useAuth'
 export const Navbar: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  
+  // Check if we're in demo mode
+  const isDemoMode = location.pathname.startsWith('/demo') || window.location.search.includes('demo=true')
+  
+  // Always call useAuth, but ignore it in demo mode
+  const authHook = useAuth()
+  const { user, logout } = isDemoMode 
+    ? { user: { name: 'Demo User', email: 'demo@warren.vortex.com' }, logout: () => navigate('/') }
+    : authHook
 
-  const navigationItems = [
-    { path: '/', label: 'Home', icon: HomeIcon, gradient: 'from-purple-600 to-violet-600' },
+  const navigationItems = isDemoMode ? [
+    { path: '/demo/cashflow', label: 'Cash Flow', icon: BanknotesIcon, gradient: 'from-violet-600 to-indigo-600' },
+    { path: '/demo/pnl', label: 'P&L', icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
+  ] : [
+    { path: '/home', label: 'Home', icon: HomeIcon, gradient: 'from-purple-600 to-violet-600' },
     { path: '/pnl', label: 'P&L', icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
     { path: '/cashflow', label: 'Cash Flow', icon: BanknotesIcon, gradient: 'from-violet-600 to-indigo-600' },
     { path: '/configuration', label: 'Configuration', icon: CogIcon, gradient: 'from-slate-600 to-gray-600' }
   ]
 
   const isActive = (path: string) => {
-    if (path === '/' && location.pathname === '/') return true
-    if (path !== '/' && location.pathname.startsWith(path)) return true
+    if (path === '/home' && location.pathname === '/home') return true
+    if (path !== '/home' && location.pathname.startsWith(path)) return true
     return false
   }
 
@@ -49,9 +60,8 @@ export const Navbar: React.FC = () => {
     }
   }, [])
 
-  const handleSignOut = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+  const handleSignOut = async () => {
+    await logout()
     navigate('/login')
   }
 
@@ -61,7 +71,7 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate('/')}>
+            <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate(isDemoMode ? '/demo/cashflow' : '/home')}>
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl blur-lg opacity-25 group-hover:opacity-40 transition-opacity"></div>
                 <div className="relative text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 font-mono text-lg leading-tight">
@@ -73,10 +83,11 @@ export const Navbar: React.FC = () => {
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent">
                   Warren Financial Dashboard
+                  {isDemoMode && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">DEMO</span>}
                 </h1>
                 <p className="text-xs text-gray-600 flex items-center">
                   <SparklesIcon className="h-3 w-3 mr-1 text-purple-500" />
-                  Executive Financial Intelligence Platform
+                  {isDemoMode ? 'Demo Mode - Sample Data' : 'Executive Financial Intelligence Platform'}
                 </p>
               </div>
             </div>
@@ -130,7 +141,17 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* User Actions */}
-          <div className="hidden md:flex items-center relative" ref={dropdownRef}>
+          <div className="hidden md:flex items-center space-x-4">
+            {isDemoMode && (
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center space-x-2 px-4 py-2 bg-orange-100 text-orange-800 rounded-full hover:bg-orange-200 transition-colors duration-200 font-medium text-sm"
+              >
+                <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                <span>Exit Demo</span>
+              </button>
+            )}
+          <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center space-x-2 p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200"
@@ -160,6 +181,7 @@ export const Navbar: React.FC = () => {
                 </button>
               </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -202,19 +224,35 @@ export const Navbar: React.FC = () => {
                   </button>
                 )
               })}
-              <button
-                onClick={handleSignOut}
-                className="
-                  w-full flex items-center space-x-3 px-4 py-3 
-                  bg-gradient-to-r from-gray-100 to-gray-200
-                  hover:from-rose-500 hover:to-pink-500 hover:text-white
-                  rounded-xl text-sm font-medium text-gray-700
-                  transition-all duration-300
-                "
-              >
-                <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                <span>Sign Out</span>
-              </button>
+              {isDemoMode ? (
+                <button
+                  onClick={() => navigate('/')}
+                  className="
+                    w-full flex items-center space-x-3 px-4 py-3 
+                    bg-gradient-to-r from-orange-100 to-orange-200
+                    hover:from-orange-200 hover:to-orange-300
+                    rounded-xl text-sm font-medium text-orange-800
+                    transition-all duration-300
+                  "
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <span>Exit Demo</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSignOut}
+                  className="
+                    w-full flex items-center space-x-3 px-4 py-3 
+                    bg-gradient-to-r from-gray-100 to-gray-200
+                    hover:from-rose-500 hover:to-pink-500 hover:text-white
+                    rounded-xl text-sm font-medium text-gray-700
+                    transition-all duration-300
+                  "
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <span>Sign Out</span>
+                </button>
+              )}
             </div>
           </div>
         )}

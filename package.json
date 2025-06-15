@@ -17,12 +17,22 @@
     "typecheck:frontend": "cd frontend && npm run typecheck",
     "typecheck:backend": "cd backend && npm run typecheck",
     "test": "npm run test:backend",
-    "test:backend": "cd backend && npm run test"
+    "test:backend": "cd backend && npm run test",
+    "screenshots": "node scripts/capture-screenshots.js",
+    "screenshots:extended": "node scripts/capture-screenshots-extended.js",
+    "screenshots:optimized": "node scripts/capture-screenshots-optimized.js"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "puppeteer": "^24.10.1"
   },
-  "keywords": ["cashflow", "dashboard", "financial", "vortex", "excel"],
+  "keywords": [
+    "cashflow",
+    "dashboard",
+    "financial",
+    "vortex",
+    "excel"
+  ],
   "author": "Vortex Team",
   "license": "MIT"
 }

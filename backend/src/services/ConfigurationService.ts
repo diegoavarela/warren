@@ -21,6 +21,15 @@ interface CompanyConfig {
   description?: string
   primaryColor?: string
   secondaryColor?: string
+  // Currency settings
+  defaultCurrency?: string
+  defaultUnit?: string
+  currencySettings?: {
+    defaultCurrency: string
+    defaultUnit: string
+    enableCurrencyConversion: boolean
+    showCurrencySelector: boolean
+  }
 }
 
 interface ExcelStructure {
@@ -71,6 +80,15 @@ export class ConfigurationService {
       description: 'Innovative technology solutions for modern businesses',
       primaryColor: '#7CB342',
       secondaryColor: '#2E7D32',
+      // Currency settings
+      defaultCurrency: 'ARS',
+      defaultUnit: 'thousands',
+      currencySettings: {
+        defaultCurrency: 'ARS',
+        defaultUnit: 'thousands',
+        enableCurrencyConversion: true,
+        showCurrencySelector: true
+      },
       excelStructure: {
         worksheetName: 'Combined Pesos',
         headerRow: 4,

@@ -7,6 +7,8 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline'
 import { cashflowService } from '../services/cashflowService'
+import { mockWidgetData } from '../services/mockDataService'
+import { isScreenshotMode } from '../utils/screenshotHelper'
 
 interface TaxData {
   month: string
@@ -32,6 +34,13 @@ export const TaxesWidget: React.FC<TaxesWidgetProps> = ({ currency, displayUnit 
   const loadTaxData = async () => {
     try {
       setLoading(true)
+      
+      if (isScreenshotMode()) {
+        // Use mock data for screenshots
+        setTaxData(mockWidgetData.taxes)
+        return
+      }
+      
       const response = await cashflowService.getTaxesData()
       setTaxData(response.data.data)
     } catch (error) {

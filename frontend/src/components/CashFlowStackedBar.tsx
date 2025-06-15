@@ -151,7 +151,7 @@ export const CashFlowStackedBar: React.FC = () => {
       months.push(month.month)
       
       // Inflow breakdown - handle both possible field names
-      const monthInflow = Math.abs(month.inflow || month.totalInflow || 0)
+      const monthInflow = Math.abs(month.income || month.inflow || month.totalInflow || 0)
       revenue.push(monthInflow)
       otherInflow.push(0) // Placeholder for other inflow sources
       totalInflow.push(monthInflow)
@@ -169,7 +169,7 @@ export const CashFlowStackedBar: React.FC = () => {
       bankFees.push(monthBankFees)
       
       // Calculate other outflows (remainder) - handle both possible field names
-      const monthOutflows = Math.abs(month.outflows || month.totalOutflow || 0)
+      const monthOutflows = Math.abs(month.expenses || month.outflows || month.totalOutflow || 0)
       const knownOutflows = monthWages + monthOpex + monthTaxes + monthBankFees
       const other = Math.max(0, monthOutflows - knownOutflows)
       otherOutflows.push(other)
@@ -208,7 +208,7 @@ export const CashFlowStackedBar: React.FC = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'ARS',
       minimumFractionDigits: 0,

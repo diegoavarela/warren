@@ -25,6 +25,11 @@ import { InvestmentsWidget } from '../components/InvestmentsWidget'
 import { BankingWidget } from '../components/BankingWidget'
 import { TaxesWidget } from '../components/TaxesWidget'
 import { OperationalAnalysisWidget } from '../components/OperationalAnalysisWidget'
+import { CurrencySelector } from '../components/CurrencySelector'
+import { CurrencyValue } from '../components/CurrencyValue'
+import { useCurrency } from '../hooks/useCurrency'
+import { Currency, Unit } from '../interfaces/currency'
+import { mockCashflowData } from '../services/mockDataService'
 
 interface DashboardData {
   hasData: boolean
@@ -61,14 +66,45 @@ export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isScreenshotMode] = useState(() => 
+    window.location.search.includes('screenshot=true') || 
+    sessionStorage.getItem('screenshotMode') === 'true'
+  )
+  const [isDemoMode] = useState(() => 
+    window.location.pathname.startsWith('/demo') || window.location.search.includes('demo=true')
+  )
+
+  console.log('DashboardPage render:', {
+    isScreenshotMode,
+    isDemoMode,
+    pathname: window.location.pathname,
+    search: window.location.search,
+    loading,
+    hasData: !!data
+  })
   const [exporting, setExporting] = useState(false)
   const [showKeyInsightsHelpModal, setShowKeyInsightsHelpModal] = useState(false)
   const [showProjectionsHelpModal, setShowProjectionsHelpModal] = useState(false)
   const [showCurrentMonthHelpModal, setShowCurrentMonthHelpModal] = useState(false)
   const [showYTDHelpModal, setShowYTDHelpModal] = useState(false)
   const [showChartHelpModal, setShowChartHelpModal] = useState(false)
+  
+  // Use the new currency hook
+  const { 
+    currency: displayCurrency, 
+    unit: displayUnit, 
+    baseCurrency,
+    settings,
+    setCurrency: setDisplayCurrency, 
+    setUnit: setDisplayUnit,
+    convertAmount,
+    formatAmount,
+    loading: currencyLoading
+  } = useCurrency()
+  
+  // Keep legacy states for backward compatibility
   const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
-  const [displayUnit, setDisplayUnit] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
+  const [displayUnitLegacy, setDisplayUnitLegacy] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
 
   useEffect(() => {
     loadDashboard()
@@ -78,74 +114,95 @@ export const DashboardPage: React.FC = () => {
     try {
       setLoading(true)
       setError('')
-      const response = await cashflowService.getDashboard()
-      setData(response.data.data)
+      
+      if (isScreenshotMode || isDemoMode) {
+        // Use mock data for screenshots/demo and don't make API calls
+        console.log('Loading mock data for screenshot/demo mode')
+        console.log('Mock data:', mockCashflowData)
+        setData(mockCashflowData)
+        setLoading(false)
+        return
+      } else {
+        const response = await cashflowService.getDashboard()
+        console.log('Dashboard response:', response.data.data)
+        setData(response.data.data)
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load dashboard data')
+      if (isScreenshotMode || isDemoMode) {
+        // If API fails in screenshot/demo mode, just use mock data
+        console.log('API failed in screenshot/demo mode, using mock data')
+        setData(mockCashflowData)
+      } else {
+        setError(err.response?.data?.message || 'Failed to load dashboard data')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    // Handle invalid/null amounts
+  // State for converted amounts
+  const [convertedAmounts, setConvertedAmounts] = useState<{ [key: string]: number }>({})
+  const [isConverting, setIsConverting] = useState(false)
+  
+  // Effect to convert amounts when currency changes
+  useEffect(() => {
+    // Skip currency conversion in screenshot/demo mode
+    if (isScreenshotMode || isDemoMode) return
+    
+    if (data && settings.enableCurrencyConversion && baseCurrency !== displayCurrency) {
+      convertAllAmounts()
+    } else if (baseCurrency === displayCurrency) {
+      // Clear converted amounts when showing base currency
+      setConvertedAmounts({})
+    }
+  }, [displayCurrency, data, baseCurrency, settings.enableCurrencyConversion, isScreenshotMode, isDemoMode])
+  
+  const convertAllAmounts = async () => {
+    if (!data || !data.currentMonth) return
+    
+    setIsConverting(true)
+    const converted: { [key: string]: number } = {}
+    
+    // Convert all the amounts we display
+    try {
+      converted.totalIncome = await convertAmount(data.currentMonth.totalIncome, baseCurrency)
+      converted.totalExpense = await convertAmount(Math.abs(data.currentMonth.totalExpense), baseCurrency)
+      converted.finalBalance = await convertAmount(data.currentMonth.finalBalance, baseCurrency)
+      converted.lowestBalance = await convertAmount(data.currentMonth.lowestBalance, baseCurrency)
+      converted.monthlyGeneration = await convertAmount(data.currentMonth.monthlyGeneration, baseCurrency)
+      
+      if (data.yearToDate) {
+        converted.ytdIncome = await convertAmount(data.yearToDate.totalIncome, baseCurrency)
+        converted.ytdExpense = await convertAmount(Math.abs(data.yearToDate.totalExpense), baseCurrency)
+        converted.ytdBalance = await convertAmount(data.yearToDate.totalBalance, baseCurrency)
+      }
+      
+      setConvertedAmounts(converted)
+    } catch (error) {
+      console.error('Error converting amounts:', error)
+    } finally {
+      setIsConverting(false)
+    }
+  }
+  
+  const formatCurrency = (amount: number, fieldName?: string) => {
+    // Use converted amount if available and conversion is enabled
+    if (settings.enableCurrencyConversion && baseCurrency !== displayCurrency && fieldName && convertedAmounts[fieldName] !== undefined) {
+      console.log(`Using converted amount for ${fieldName}: ${amount} ${baseCurrency} -> ${convertedAmounts[fieldName]} ${displayCurrency}`)
+      amount = convertedAmounts[fieldName]
+    }
+    
+    // Use the new formatAmount function from the currency hook
+    if (!currencyLoading) {
+      return formatAmount(amount)
+    }
+    
+    // Fallback to legacy formatting while currency settings load
     if (amount === null || amount === undefined || isNaN(amount)) {
       return '$0'
     }
     
-    let adjustedAmount = amount
-    let unitSuffix = ''
-    
-    // Apply unit conversion
-    switch (displayUnit) {
-      case 'thousands':
-        adjustedAmount = amount / 1000
-        unitSuffix = 'K'
-        break
-      case 'millions':
-        adjustedAmount = amount / 1000000
-        unitSuffix = 'M'
-        break
-      case 'billions':
-        adjustedAmount = amount / 1000000000
-        unitSuffix = 'B'
-        break
-      default:
-        adjustedAmount = amount
-        unitSuffix = ''
-    }
-    
-    const localeMap = {
-      'ARS': 'es-AR',
-      'USD': 'en-US', 
-      'EUR': 'de-DE',
-      'BRL': 'pt-BR'
-    }
-    
-    try {
-      let formatted: string
-      
-      if (currency === 'ARS') {
-        // Handle ARS manually since browser support varies
-        const number = new Intl.NumberFormat('es-AR', {
-          minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
-          maximumFractionDigits: displayUnit === 'actual' ? 0 : 1,
-        }).format(Math.abs(adjustedAmount))
-        formatted = `$${number}`
-      } else {
-        formatted = new Intl.NumberFormat(localeMap[currency], {
-          style: 'currency',
-          currency: currency,
-          minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
-          maximumFractionDigits: displayUnit === 'actual' ? 0 : 1,
-        }).format(Math.abs(adjustedAmount))
-      }
-      
-      return unitSuffix ? `${formatted}${unitSuffix}` : formatted
-    } catch (error) {
-      console.error('Currency formatting error:', error, { amount, currency, displayUnit })
-      return `$${Math.abs(adjustedAmount).toFixed(1)}${unitSuffix}`
-    }
+    return formatAmount(amount)
   }
 
   const getMetricColor = (value: number) => {
@@ -179,6 +236,9 @@ export const DashboardPage: React.FC = () => {
   }
 
   const handleUpload = async (uploadedFile: File) => {
+    // Skip upload in screenshot/demo mode
+    if (isScreenshotMode || isDemoMode) return
+    
     await cashflowService.uploadFile(uploadedFile)
     // Reload dashboard data
     await loadDashboard()
@@ -246,6 +306,17 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Demo Mode Banner */}
+        {isDemoMode && (
+          <div className="mb-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-xl shadow-lg">
+            <div className="flex items-center justify-center">
+              <SparklesIcon className="h-5 w-5 mr-2" />
+              <span className="font-medium">Demo Mode</span>
+              <span className="ml-2 text-blue-100">- This is sample data for demonstration purposes</span>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -270,40 +341,27 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* File Upload Section */}
-        <FileUploadSection
-          onFileUpload={handleUpload}
-          title="Upload Cash Flow Data"
-          description="Import your Excel file to analyze cash movements and financial health"
-          uploadedFileName={data?.uploadedFileName}
-          isRealData={data?.hasData}
-          variant="cashflow"
-        />
-
-        {/* Currency and Unit Selector - Global for all sections */}
-        <div className="mb-6 flex justify-end">
-          <div className="flex items-center space-x-3">
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value as 'ARS' | 'USD' | 'EUR' | 'BRL')}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="ARS">ARS ($)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="BRL">BRL (R$)</option>
-            </select>
-            <select
-              value={displayUnit}
-              onChange={(e) => setDisplayUnit(e.target.value as 'actual' | 'thousands' | 'millions' | 'billions')}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="actual">Actual</option>
-              <option value="thousands">Thousands</option>
-              <option value="millions">Millions</option>
-              <option value="billions">Billions</option>
-            </select>
+        {!isDemoMode ? (
+          <FileUploadSection
+            onFileUpload={handleUpload}
+            title="Upload Cash Flow Data"
+            description="Import your Excel file to analyze cash movements and financial health"
+            uploadedFileName={data?.uploadedFileName}
+            isRealData={data?.hasData}
+            variant="cashflow"
+          />
+        ) : (
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <div className="flex items-center">
+              <SparklesIcon className="h-6 w-6 text-blue-600 mr-3" />
+              <div>
+                <h3 className="text-lg font-semibold text-blue-800">Demo Mode Active</h3>
+                <p className="text-blue-600">File upload is disabled in demo mode. The data shown below is sample data for demonstration purposes.</p>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
 
         {/* Current Month Metrics */}
         {data.currentMonth && (
@@ -313,17 +371,43 @@ export const DashboardPage: React.FC = () => {
                 <div className="p-2 bg-gradient-to-br from-violet-600 to-purple-600 rounded-xl text-white mr-3 shadow-lg">
                   <CalendarIcon className="h-8 w-8" />
                 </div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">
-                  {data.currentMonth.month} Cashflow Overview
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">
+                    {data.currentMonth.month} Cashflow Overview
+                  </h2>
+                  {settings.enableCurrencyConversion && baseCurrency !== displayCurrency && (
+                    <p className="text-sm text-gray-500 mt-1 flex items-center">
+                      Converting from {baseCurrency} to {displayCurrency}
+                      {isConverting && (
+                        <svg className="animate-spin h-4 w-4 ml-2 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                    </p>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => setShowCurrentMonthHelpModal(true)}
-                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Understanding current month metrics"
-              >
-                <QuestionMarkCircleIcon className="h-5 w-5" />
-              </button>
+              <div className="flex items-center space-x-3">
+                {settings.showCurrencySelector && (
+                  <CurrencySelector
+                    currentCurrency={displayCurrency}
+                    currentUnit={displayUnit}
+                    onCurrencyChange={setDisplayCurrency}
+                    onUnitChange={setDisplayUnit}
+                    baseCurrency={baseCurrency}
+                    showConversionRate={settings.enableCurrencyConversion}
+                    compact={true}
+                  />
+                )}
+                <button
+                  onClick={() => setShowCurrentMonthHelpModal(true)}
+                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Understanding current month metrics"
+                >
+                  <QuestionMarkCircleIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -337,7 +421,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-1">Total Inflow</h3>
                 <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  {formatCurrency(data.currentMonth.totalIncome)}
+                  {formatCurrency(data.currentMonth.totalIncome, 'totalIncome')}
                 </p>
               </div>
 
@@ -351,7 +435,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-1">Total Outflow</h3>
                 <p className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
-                  {formatCurrency(Math.abs(data.currentMonth.totalExpense))}
+                  {formatCurrency(Math.abs(data.currentMonth.totalExpense), 'totalExpense')}
                 </p>
               </div>
 
@@ -365,7 +449,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-1">Final Balance</h3>
                 <p className={`text-2xl font-bold ${getMetricColor(data.currentMonth.finalBalance)}`}>
-                  {formatCurrency(data.currentMonth.finalBalance)}
+                  {formatCurrency(data.currentMonth.finalBalance, 'finalBalance')}
                 </p>
               </div>
 
@@ -379,7 +463,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-1">Lowest Balance</h3>
                 <p className={`text-2xl font-bold ${getMetricColor(data.currentMonth.lowestBalance)}`}>
-                  {formatCurrency(data.currentMonth.lowestBalance)}
+                  {formatCurrency(data.currentMonth.lowestBalance, 'lowestBalance')}
                 </p>
               </div>
 
@@ -393,7 +477,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-1">Cash Generation</h3>
                 <p className={`text-2xl font-bold ${getMetricColor(data.currentMonth.monthlyGeneration)}`}>
-                  {formatCurrency(data.currentMonth.monthlyGeneration)}
+                  {formatCurrency(data.currentMonth.monthlyGeneration, 'monthlyGeneration')}
                 </p>
               </div>
             </div>
@@ -420,7 +504,7 @@ export const DashboardPage: React.FC = () => {
                   <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">YTD</span>
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Total Inflow</h3>
-                <p className="text-3xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">{formatCurrency(data.yearToDate.totalIncome)}</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">{formatCurrency(data.yearToDate.totalIncome, 'ytdIncome')}</p>
                 <p className="text-sm text-emerald-600 mt-2">Total income accumulated</p>
               </div>
               
@@ -430,7 +514,7 @@ export const DashboardPage: React.FC = () => {
                   <span className="text-xs font-medium text-rose-600 bg-rose-100 px-3 py-1 rounded-full">YTD</span>
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Total Outflow</h3>
-                <p className="text-3xl font-bold bg-gradient-to-r from-rose-700 to-pink-700 bg-clip-text text-transparent">{formatCurrency(Math.abs(data.yearToDate.totalExpense))}</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-rose-700 to-pink-700 bg-clip-text text-transparent">{formatCurrency(Math.abs(data.yearToDate.totalExpense), 'ytdExpense')}</p>
                 <p className="text-sm text-rose-600 mt-2">Total outflow incurred</p>
               </div>
               
@@ -440,7 +524,7 @@ export const DashboardPage: React.FC = () => {
                   <span className={`text-xs font-medium ${data.yearToDate.totalBalance >= 0 ? 'text-blue-600 bg-blue-100' : 'text-orange-600 bg-orange-100'} px-3 py-1 rounded-full`}>YTD</span>
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Net Balance</h3>
-                <p className={`text-3xl font-bold bg-gradient-to-r ${data.yearToDate.totalBalance >= 0 ? 'from-blue-700 to-purple-700' : 'from-orange-700 to-red-700'} bg-clip-text text-transparent`}>{formatCurrency(data.yearToDate.totalBalance)}</p>
+                <p className={`text-3xl font-bold bg-gradient-to-r ${data.yearToDate.totalBalance >= 0 ? 'from-blue-700 to-purple-700' : 'from-orange-700 to-red-700'} bg-clip-text text-transparent`}>{formatCurrency(data.yearToDate.totalBalance, 'ytdBalance')}</p>
                 <p className={`text-sm ${data.yearToDate.totalBalance >= 0 ? 'text-blue-600' : 'text-orange-600'} mt-2`}>Net position year to date</p>
               </div>
             </div>
@@ -448,6 +532,7 @@ export const DashboardPage: React.FC = () => {
         )}
 
         {/* Chart Section */}
+        {console.log('Chart data:', data.chartData)}
         {data.chartData && data.chartData.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
@@ -473,7 +558,7 @@ export const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <CashflowChart data={data.chartData} />
+              <CashflowChart data={data.chartData} currency={displayCurrency} />
             </div>
           </div>
         )}

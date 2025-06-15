@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, BarElement } from 'chart.js'
 import { Chart } from 'react-chartjs-2'
-import { useTranslation } from 'react-i18next'
 
 ChartJS.register(
   CategoryScale,
@@ -17,18 +16,18 @@ ChartJS.register(
 interface ChartDataPoint {
   date: string
   month: string
-  inflow: number
-  outflows: number
+  income: number
+  expenses: number
   cashflow: number
   isActual?: boolean
 }
 
 interface CashflowChartProps {
   data: ChartDataPoint[]
+  currency?: string
 }
 
-export function CashflowChart({ data }: CashflowChartProps) {
-  const { t } = useTranslation()
+export function CashflowChart({ data, currency = 'ARS' }: CashflowChartProps) {
   const chartRef = useRef(null)
 
   const chartData = {
@@ -36,8 +35,8 @@ export function CashflowChart({ data }: CashflowChartProps) {
     datasets: [
       {
         type: 'bar' as const,
-        label: t('dashboard.chart.inflow'),
-        data: data.map(item => item.inflow),
+        label: 'Income',
+        data: data.map(item => item.income),
         backgroundColor: data.map(item => 
           item.isActual ? 'rgba(34, 197, 94, 0.6)' : 'rgba(34, 197, 94, 0.2)'
         ),
@@ -49,8 +48,8 @@ export function CashflowChart({ data }: CashflowChartProps) {
       },
       {
         type: 'bar' as const,
-        label: t('dashboard.chart.outflow'),
-        data: data.map(item => item.outflows),
+        label: 'Expenses',
+        data: data.map(item => item.expenses),
         backgroundColor: data.map(item => 
           item.isActual ? 'rgba(249, 115, 22, 0.6)' : 'rgba(249, 115, 22, 0.2)'
         ),
@@ -124,7 +123,7 @@ export function CashflowChart({ data }: CashflowChartProps) {
             if (context.parsed.y !== null) {
               label += new Intl.NumberFormat('en-US', {
                 style: 'currency',
-                currency: 'USD',
+                currency: currency,
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
               }).format(context.parsed.y)
@@ -153,13 +152,13 @@ export function CashflowChart({ data }: CashflowChartProps) {
         position: 'left' as const,
         title: {
           display: true,
-          text: 'Inflow & Outflow ($)'
+          text: `Income & Expenses (${currency})`
         },
         ticks: {
           callback: function(value: any) {
             return new Intl.NumberFormat('en-US', {
               style: 'currency',
-              currency: 'USD',
+              currency: currency,
               minimumFractionDigits: 0,
               maximumFractionDigits: 0,
             }).format(value)
@@ -172,7 +171,7 @@ export function CashflowChart({ data }: CashflowChartProps) {
         position: 'right' as const,
         title: {
           display: true,
-          text: 'Final Balance ($)'
+          text: `Final Balance (${currency})`
         },
         grid: {
           drawOnChartArea: false,
@@ -181,7 +180,7 @@ export function CashflowChart({ data }: CashflowChartProps) {
           callback: function(value: any) {
             return new Intl.NumberFormat('en-US', {
               style: 'currency',
-              currency: 'USD',
+              currency: currency,
               minimumFractionDigits: 0,
               maximumFractionDigits: 0,
             }).format(value)

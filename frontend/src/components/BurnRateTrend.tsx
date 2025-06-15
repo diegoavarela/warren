@@ -9,6 +9,8 @@ import {
 } from '@heroicons/react/24/outline'
 import { Line } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
+import { mockWidgetData } from '../services/mockDataService'
+import { isMockDataMode } from '../utils/screenshotMode'
 
 interface BurnRateData {
   currentMonthBurn: number
@@ -56,8 +58,14 @@ export const BurnRateTrend: React.FC<BurnRateTrendProps> = ({ currency, displayU
   const loadBurnRateData = async () => {
     try {
       setLoading(true)
-      const response = await cashflowService.getBurnRateAnalysis()
-      setBurnData(response.data.data)
+      
+      if (isMockDataMode()) {
+        // Use mock data for screenshots
+        setBurnData(mockWidgetData.burnRate as any)
+      } else {
+        const response = await cashflowService.getBurnRateAnalysis()
+        setBurnData(response.data.data)
+      }
     } catch (error) {
       console.error('Failed to load burn rate analysis:', error)
     } finally {

@@ -20,6 +20,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Skip auth checks if in demo mode
+    const isDemoMode = window.location.search.includes('demo=true')
+    const isScreenshotMode = window.location.search.includes('screenshot=true') || 
+                            sessionStorage.getItem('screenshotMode') === 'true'
+    
+    if (isDemoMode || isScreenshotMode) {
+      setLoading(false)
+      return
+    }
+
     const token = localStorage.getItem('token')
     if (token) {
       authService.getProfile()
@@ -43,9 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.data.user)
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    setUser(null)
+  const logout = async () => {
+    try {
+      // Call the logout endpoint to invalidate the session on the backend
+      await authService.logout()
+    } catch (error) {
+      // Even if the API call fails, we still want to clear local state
+      console.error('Logout API call failed:', error)
+    } finally {
+      // Clear local storage and state
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+    }
   }
 
   return (

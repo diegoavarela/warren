@@ -14,9 +14,13 @@ import {
   GlobeAltIcon,
   EnvelopeIcon,
   PhoneIcon,
-  MapPinIcon
+  MapPinIcon,
+  CurrencyDollarIcon,
+  CalculatorIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline'
 import { configurationService, CompanyConfig, StructureDetectionResult } from '../services/configurationService'
+import { Currency, Unit, CURRENCIES, UNITS } from '../interfaces/currency'
 
 
 export const ConfigurationPage: React.FC = () => {
@@ -31,8 +35,8 @@ export const ConfigurationPage: React.FC = () => {
   const [editingCompany, setEditingCompany] = useState<CompanyConfig | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
   const [newCompanyName, setNewCompanyName] = useState('')
-  const [newCompanyCurrency, setNewCompanyCurrency] = useState('ARS')
-  const [newCompanyScale, setNewCompanyScale] = useState('thousands')
+  const [newCompanyCurrency, setNewCompanyCurrency] = useState<Currency>('ARS')
+  const [newCompanyScale, setNewCompanyScale] = useState<Unit>('thousands')
   
   // Enhanced form fields
   const [companyForm, setCompanyForm] = useState({
@@ -47,7 +51,12 @@ export const ConfigurationPage: React.FC = () => {
     description: '',
     primaryColor: '#7CB342',
     secondaryColor: '#2E7D32',
-    logo: ''
+    logo: '',
+    // Currency settings
+    defaultCurrency: 'ARS' as Currency,
+    defaultUnit: 'thousands' as Unit,
+    enableCurrencyConversion: true,
+    showCurrencySelector: true
   })
   
   // File upload for structure detection
@@ -138,7 +147,12 @@ export const ConfigurationPage: React.FC = () => {
       description: company.description || '',
       primaryColor: company.primaryColor || '#7CB342',
       secondaryColor: company.secondaryColor || '#2E7D32',
-      logo: company.logo || ''
+      logo: company.logo || '',
+      // Currency settings
+      defaultCurrency: company.defaultCurrency || company.currency as Currency || 'ARS',
+      defaultUnit: company.defaultUnit || company.scale as Unit || 'thousands',
+      enableCurrencyConversion: company.currencySettings?.enableCurrencyConversion ?? true,
+      showCurrencySelector: company.currencySettings?.showCurrencySelector ?? true
     })
     setShowEditForm(true)
   }
@@ -160,7 +174,16 @@ export const ConfigurationPage: React.FC = () => {
 
     try {
       setLoading(true)
-      const response = await configurationService.updateCompany(editingCompany.id, companyForm)
+      const updateData = {
+        ...companyForm,
+        currencySettings: {
+          defaultCurrency: companyForm.defaultCurrency,
+          defaultUnit: companyForm.defaultUnit,
+          enableCurrencyConversion: companyForm.enableCurrencyConversion,
+          showCurrencySelector: companyForm.showCurrencySelector
+        }
+      }
+      const response = await configurationService.updateCompany(editingCompany.id, updateData)
       
       setCompanies(companies.map(c => c.id === editingCompany.id ? response.data : c))
       if (selectedCompany?.id === editingCompany.id) {
@@ -420,12 +443,16 @@ export const ConfigurationPage: React.FC = () => {
                 {/* Company Information Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600">Currency</p>
-                    <p className="text-lg font-semibold text-gray-900">{selectedCompany.currency}</p>
+                    <p className="text-sm text-gray-600">Default Currency</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {CURRENCIES[selectedCompany.defaultCurrency as Currency]?.name || selectedCompany.currency}
+                    </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600">Scale</p>
-                    <p className="text-lg font-semibold text-gray-900">{selectedCompany.scale}</p>
+                    <p className="text-sm text-gray-600">Default Unit</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {UNITS[selectedCompany.defaultUnit as Unit]?.label || selectedCompany.scale}
+                    </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-600">Status</p>
@@ -434,6 +461,24 @@ export const ConfigurationPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Currency Settings */}
+                {selectedCompany.currencySettings && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Currency Conversion</p>
+                      <p className={`text-lg font-semibold ${selectedCompany.currencySettings.enableCurrencyConversion ? 'text-green-600' : 'text-gray-500'}`}>
+                        {selectedCompany.currencySettings.enableCurrencyConversion ? 'Enabled' : 'Disabled'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Currency Selector</p>
+                      <p className={`text-lg font-semibold ${selectedCompany.currencySettings.showCurrencySelector ? 'text-green-600' : 'text-gray-500'}`}>
+                        {selectedCompany.currencySettings.showCurrencySelector ? 'Visible' : 'Hidden'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Contact Information */}
                 {(selectedCompany.website || selectedCompany.email || selectedCompany.phone || selectedCompany.address) && (
@@ -714,31 +759,96 @@ export const ConfigurationPage: React.FC = () => {
                       </div>
 
                       {/* Financial Settings */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                          <select
-                            value={companyForm.currency}
-                            onChange={(e) => setCompanyForm(prev => ({ ...prev, currency: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="ARS">Argentine Peso (ARS)</option>
-                            <option value="USD">US Dollar (USD)</option>
-                            <option value="EUR">Euro (EUR)</option>
-                            <option value="BRL">Brazilian Real (BRL)</option>
-                          </select>
+                      <div className="space-y-4">
+                        <h3 className="text-md font-semibold text-gray-800 flex items-center">
+                          <CurrencyDollarIcon className="h-5 w-5 mr-2 text-blue-600" />
+                          Financial Display Settings
+                        </h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
+                            <select
+                              value={companyForm.defaultCurrency}
+                              onChange={(e) => setCompanyForm(prev => ({ ...prev, defaultCurrency: e.target.value as Currency }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              {Object.entries(CURRENCIES).map(([code, info]) => (
+                                <option key={code} value={code}>
+                                  {info.name} ({code})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Default Unit</label>
+                            <select
+                              value={companyForm.defaultUnit}
+                              onChange={(e) => setCompanyForm(prev => ({ ...prev, defaultUnit: e.target.value as Unit }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              {Object.entries(UNITS).map(([unit, info]) => (
+                                <option key={unit} value={unit}>
+                                  {info.label} {info.suffix && `(${info.suffix})`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Scale</label>
-                          <select
-                            value={companyForm.scale}
-                            onChange={(e) => setCompanyForm(prev => ({ ...prev, scale: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="units">Units</option>
-                            <option value="thousands">Thousands</option>
-                            <option value="millions">Millions</option>
-                          </select>
+
+                        <div className="space-y-3">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={companyForm.enableCurrencyConversion}
+                              onChange={(e) => setCompanyForm(prev => ({ ...prev, enableCurrencyConversion: e.target.checked }))}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">
+                              Enable currency conversion in dashboards
+                            </span>
+                          </label>
+                          
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={companyForm.showCurrencySelector}
+                              onChange={(e) => setCompanyForm(prev => ({ ...prev, showCurrencySelector: e.target.checked }))}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">
+                              Show currency selector in dashboards
+                            </span>
+                          </label>
+                        </div>
+
+                        {/* Legacy settings for compatibility */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Legacy Currency</label>
+                            <select
+                              value={companyForm.currency}
+                              onChange={(e) => setCompanyForm(prev => ({ ...prev, currency: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="ARS">Argentine Peso (ARS)</option>
+                              <option value="USD">US Dollar (USD)</option>
+                              <option value="EUR">Euro (EUR)</option>
+                              <option value="BRL">Brazilian Real (BRL)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Legacy Scale</label>
+                            <select
+                              value={companyForm.scale}
+                              onChange={(e) => setCompanyForm(prev => ({ ...prev, scale: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="units">Units</option>
+                              <option value="thousands">Thousands</option>
+                              <option value="millions">Millions</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
 

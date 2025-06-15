@@ -9,12 +9,18 @@ import {
   ScaleIcon,
   DocumentArrowDownIcon,
   QuestionMarkCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline'
 import { pnlService } from '../services/pnlService'
 import { ProfessionalPDFService } from '../services/professionalPdfService'
 import { configurationService } from '../services/configurationService'
 import { FileUploadSection } from '../components/FileUploadSection'
+import { CurrencySelector } from '../components/CurrencySelector'
+import { CurrencyValue } from '../components/CurrencyValue'
+import { useCurrency } from '../hooks/useCurrency'
+import { Currency, Unit } from '../interfaces/currency'
+import { mockPnlData } from '../services/mockDataService'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -119,6 +125,13 @@ export const PnLDashboardPage: React.FC = () => {
   const [data, setData] = useState<PnLDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isScreenshotMode] = useState(() => 
+    window.location.search.includes('screenshot=true') || 
+    sessionStorage.getItem('screenshotMode') === 'true'
+  )
+  const [isDemoMode] = useState(() => 
+    window.location.pathname.startsWith('/demo') || window.location.search.includes('demo=true')
+  )
   const [exporting, setExporting] = useState(false)
   const [showPersonnelHelpModal, setShowPersonnelHelpModal] = useState(false)
   const [showCostEfficiencyHelpModal, setShowCostEfficiencyHelpModal] = useState(false)
@@ -128,8 +141,23 @@ export const PnLDashboardPage: React.FC = () => {
   const [showMarginsChartHelpModal, setShowMarginsChartHelpModal] = useState(false)
   const [showRevenueChartHelpModal, setShowRevenueChartHelpModal] = useState(false)
   const [comparisonPeriod, setComparisonPeriod] = useState<'month' | 'quarter' | 'year'>('month')
+  
+  // Use the new currency hook
+  const { 
+    currency: displayCurrency, 
+    unit: displayUnit, 
+    baseCurrency,
+    settings,
+    setCurrency: setDisplayCurrency, 
+    setUnit: setDisplayUnit,
+    convertAmount,
+    formatAmount,
+    loading: currencyLoading
+  } = useCurrency()
+  
+  // Keep legacy states for backward compatibility
   const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
-  const [displayUnit, setDisplayUnit] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
+  const [displayUnitLegacy, setDisplayUnitLegacy] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
 
   useEffect(() => {
     loadDashboard()
@@ -139,21 +167,41 @@ export const PnLDashboardPage: React.FC = () => {
     try {
       setLoading(true)
       setError('')
-      const response = await pnlService.getDashboard()
-      setData(response.data.data)
+      
+      if (isScreenshotMode || isDemoMode) {
+        // Use mock data for screenshots/demo
+        console.log('Loading P&L mock data for screenshot/demo mode')
+        setData(mockPnlData as any)
+        setLoading(false)
+        return
+      } else {
+        const response = await pnlService.getDashboard()
+        setData(response.data.data)
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load P&L data')
+      if (isScreenshotMode || isDemoMode) {
+        // If API fails in screenshot/demo mode, just use mock data
+        console.log('API failed in P&L screenshot/demo mode, using mock data')
+        setData(mockPnlData as any)
+      } else {
+        setError(err.response?.data?.message || 'Failed to load P&L data')
+      }
     } finally {
       setLoading(false)
     }
   }
 
   const formatCurrency = (amount: number) => {
-    // Apply unit conversion
+    // Use the new formatAmount function from the currency hook
+    if (!currencyLoading) {
+      return formatAmount(amount)
+    }
+    
+    // Fallback to legacy formatting while currency settings load
     let adjustedAmount = amount
     let unitSuffix = ''
     
-    switch (displayUnit) {
+    switch (displayUnitLegacy) {
       case 'thousands':
         adjustedAmount = amount / 1000
         unitSuffix = 'K'
@@ -306,6 +354,9 @@ export const PnLDashboardPage: React.FC = () => {
 
 
   const handleUpload = async (uploadedFile: File) => {
+    // Skip upload in screenshot/demo mode
+    if (isScreenshotMode || isDemoMode) return
+    
     await pnlService.uploadFile(uploadedFile)
     // Reload dashboard data
     await loadDashboard()
@@ -461,6 +512,17 @@ export const PnLDashboardPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Demo Mode Banner */}
+      {isDemoMode && (
+        <div className="mb-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-xl shadow-lg">
+          <div className="flex items-center justify-center">
+            <SparklesIcon className="h-5 w-5 mr-2" />
+            <span className="font-medium">Demo Mode</span>
+            <span className="ml-2 text-emerald-100">- This is sample P&L data for demonstration purposes</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -485,14 +547,26 @@ export const PnLDashboardPage: React.FC = () => {
       </div>
 
       {/* File Upload Section */}
-      <FileUploadSection
-        onFileUpload={handleUpload}
-        title="Upload P&L Statement"
-        description="Import your Profit & Loss Excel file to analyze financial performance"
-        uploadedFileName={data?.uploadedFileName}
-        isRealData={data?.hasData}
-        variant="pnl"
-      />
+      {!isDemoMode ? (
+        <FileUploadSection
+          onFileUpload={handleUpload}
+          title="Upload P&L Statement"
+          description="Import your Profit & Loss Excel file to analyze financial performance"
+          uploadedFileName={data?.uploadedFileName}
+          isRealData={data?.hasData}
+          variant="pnl"
+        />
+      ) : (
+        <div className="mb-8 bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+          <div className="flex items-center">
+            <SparklesIcon className="h-6 w-6 text-emerald-600 mr-3" />
+            <div>
+              <h3 className="text-lg font-semibold text-emerald-800">Demo Mode Active</h3>
+              <p className="text-emerald-600">File upload is disabled in demo mode. The P&L data shown below is sample data for demonstration purposes.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Period Comparison Selector */}
       {data?.hasData && (
@@ -555,31 +629,18 @@ export const PnLDashboardPage: React.FC = () => {
                 {data.currentMonth.month} P&L Overview
               </h2>
             </div>
-            <div className="flex items-center space-x-2">
-              {/* Currency Selector */}
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as any)}
-                className="px-3 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="ARS">ARS</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="BRL">BRL</option>
-              </select>
-              
-              {/* Unit Selector */}
-              <select
-                value={displayUnit}
-                onChange={(e) => setDisplayUnit(e.target.value as any)}
-                className="px-3 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="actual">Actual</option>
-                <option value="thousands">Thousands (K)</option>
-                <option value="millions">Millions (M)</option>
-                <option value="billions">Billions (B)</option>
-              </select>
-              
+            <div className="flex items-center space-x-3">
+              {settings.showCurrencySelector && (
+                <CurrencySelector
+                  currentCurrency={displayCurrency}
+                  currentUnit={displayUnit}
+                  onCurrencyChange={setDisplayCurrency}
+                  onUnitChange={setDisplayUnit}
+                  baseCurrency={baseCurrency}
+                  showConversionRate={settings.enableCurrencyConversion}
+                  compact={true}
+                />
+              )}
               <button
                 onClick={() => setShowCurrentPnLHelpModal(true)}
                 className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -617,7 +678,10 @@ export const PnLDashboardPage: React.FC = () => {
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">Revenue</h3>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(data.currentMonth.revenue)}
+                <CurrencyValue 
+                  amount={data.currentMonth.revenue} 
+                  fromCurrency={baseCurrency}
+                />
               </p>
             </div>
 
@@ -655,7 +719,10 @@ export const PnLDashboardPage: React.FC = () => {
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">Gross Profit</h3>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(data.currentMonth.grossProfit)}
+                <CurrencyValue 
+                  amount={data.currentMonth.grossProfit} 
+                  fromCurrency={baseCurrency}
+                />
               </p>
             </div>
 
@@ -693,7 +760,10 @@ export const PnLDashboardPage: React.FC = () => {
               </div>
               <h3 className="text-sm font-medium text-gray-600 mb-1">Operating Income</h3>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(data.currentMonth.operatingIncome)}
+                <CurrencyValue 
+                  amount={data.currentMonth.operatingIncome} 
+                  fromCurrency={baseCurrency}
+                />
               </p>
             </div>
 

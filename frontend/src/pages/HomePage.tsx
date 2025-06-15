@@ -183,13 +183,24 @@ export const HomePage: React.FC = () => {
                     <span className={`text-sm font-bold ${module.accentColor} ml-1`}>{module.stats.value}</span>
                   </div>
                   
-                  <button className={`
-                    inline-flex items-center px-6 py-3 bg-gradient-to-r ${module.gradient} text-white font-semibold rounded-2xl
-                    shadow-lg hover:shadow-xl hover:shadow-${module.shadowColor} transform group-hover:translate-x-1 transition-all duration-300
-                  `}>
-                    Access Module
-                    <ArrowRightIcon className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`/demo${module.path}`)
+                      }}
+                      className="inline-flex items-center px-4 py-2 bg-white border-2 border-purple-200 text-purple-600 font-medium rounded-xl hover:bg-purple-50 hover:border-purple-300 transition-all duration-200"
+                    >
+                      Try Demo
+                    </button>
+                    <button className={`
+                      inline-flex items-center px-6 py-3 bg-gradient-to-r ${module.gradient} text-white font-semibold rounded-2xl
+                      shadow-lg hover:shadow-xl hover:shadow-${module.shadowColor} transform group-hover:translate-x-1 transition-all duration-300
+                    `}>
+                      Access Module
+                      <ArrowRightIcon className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -36,19 +36,33 @@ let users: User[] = [
     isActive: true,
     createdAt: new Date(),
     lastLogin: new Date()
+  },
+  {
+    id: '2',
+    email: 'demo@warren.vortex.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'user',
+    department: 'Demo',
+    isActive: true,
+    createdAt: new Date(),
+    lastLogin: new Date()
   }
 ];
 
 // In-memory password store (encrypted)
 let userPasswords: Map<string, string> = new Map();
 userPasswords.set('1', bcrypt.hashSync('vortex123', 10));
+userPasswords.set('2', bcrypt.hashSync('WarrenDemo2024!', 10));
 
 export class UserService {
   private static encryptionKey = process.env.ENCRYPTION_KEY || 'warren-encryption-key-2025';
 
   static validateEmail(email: string): boolean {
+    // Allow vort-ex.com domain and the demo email
     const emailRegex = /^[^\s@]+@vort-ex\.com$/;
-    return emailRegex.test(email);
+    const isDemoEmail = email === 'demo@warren.vortex.com';
+    return emailRegex.test(email) || isDemoEmail;
   }
 
   static async authenticateUser(email: string, password: string): Promise<User | null> {
@@ -72,6 +86,15 @@ export class UserService {
       // Update last login
       adminUser.lastLogin = new Date();
       return adminUser;
+    }
+
+    // Check demo account (special handling)
+    if (email === 'demo@warren.vortex.com' && password === 'WarrenDemo2024!') {
+      const demoUser = users.find(u => u.email === 'demo@warren.vortex.com');
+      if (demoUser) {
+        demoUser.lastLogin = new Date();
+        return demoUser;
+      }
     }
 
     // Check registered users

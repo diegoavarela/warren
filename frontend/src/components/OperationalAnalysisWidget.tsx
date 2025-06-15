@@ -10,6 +10,8 @@ import {
 } from '@heroicons/react/24/outline'
 import { Doughnut } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
+import { mockWidgetData } from '../services/mockDataService'
+import { isScreenshotMode } from '../utils/screenshotHelper'
 
 interface OperationalData {
   month: string
@@ -39,6 +41,13 @@ export const OperationalAnalysisWidget: React.FC<OperationalAnalysisWidgetProps>
   const loadOperationalData = async () => {
     try {
       setLoading(true)
+      
+      if (isScreenshotMode()) {
+        // Use mock data for screenshots
+        setOperationalData(mockWidgetData.operational)
+        return
+      }
+      
       const response = await cashflowService.getOperationalData()
       setOperationalData(response.data.data)
     } catch (error) {

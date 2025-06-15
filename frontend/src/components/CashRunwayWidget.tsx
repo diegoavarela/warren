@@ -9,6 +9,8 @@ import {
   MinusIcon
 } from '@heroicons/react/24/outline'
 import { cashflowService } from '../services/cashflowService'
+import { mockWidgetData } from '../services/mockDataService'
+import { isMockDataMode } from '../utils/screenshotMode'
 
 interface RunwayData {
   monthsRemaining: number | null
@@ -53,16 +55,27 @@ export const CashRunwayWidget: React.FC<CashRunwayWidgetProps> = ({ currency, di
   const loadRunwayData = async () => {
     try {
       setLoading(true)
-      const [runwayResponse, burnRateResponse] = await Promise.all([
-        cashflowService.getRunwayAnalysis(),
-        cashflowService.getBurnRateAnalysis()
-      ])
-      setRunwayData(runwayResponse.data.data)
-      setBurnRateDetails({
-        threeMonthAverage: burnRateResponse.data.data.threeMonthAverage,
-        sixMonthAverage: burnRateResponse.data.data.sixMonthAverage,
-        twelveMonthAverage: burnRateResponse.data.data.twelveMonthAverage
-      })
+      
+      if (isMockDataMode()) {
+        // Use mock data for screenshots
+        setRunwayData(mockWidgetData.runway as any)
+        setBurnRateDetails({
+          threeMonthAverage: mockWidgetData.burnRate.threeMonthAverage,
+          sixMonthAverage: mockWidgetData.burnRate.sixMonthAverage,
+          twelveMonthAverage: mockWidgetData.burnRate.twelveMonthAverage
+        })
+      } else {
+        const [runwayResponse, burnRateResponse] = await Promise.all([
+          cashflowService.getRunwayAnalysis(),
+          cashflowService.getBurnRateAnalysis()
+        ])
+        setRunwayData(runwayResponse.data.data)
+        setBurnRateDetails({
+          threeMonthAverage: burnRateResponse.data.data.threeMonthAverage,
+          sixMonthAverage: burnRateResponse.data.data.sixMonthAverage,
+          twelveMonthAverage: burnRateResponse.data.data.twelveMonthAverage
+        })
+      }
     } catch (error) {
       console.error('Failed to load runway analysis:', error)
     } finally {

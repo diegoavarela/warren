@@ -9,6 +9,8 @@ import {
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
 import { cashflowService } from '../services/cashflowService'
+import { mockWidgetData } from '../services/mockDataService'
+import { isScreenshotMode } from '../utils/screenshotHelper'
 
 interface BankData {
   month: string
@@ -40,8 +42,25 @@ export const BankingWidget: React.FC<BankingWidgetProps> = ({ currency, displayU
   const loadBankData = async () => {
     try {
       setLoading(true)
-      const response = await cashflowService.getBankingData()
-      setBankData(response.data.data)
+      
+      if (isScreenshotMode()) {
+        // Use mock data for screenshots
+        setBankData([{
+          month: 'January 2025',
+          date: '2025-01-15',
+          checkingBalance: mockWidgetData.banking.accounts[0].balance,
+          savingsBalance: mockWidgetData.banking.accounts[1].balance,
+          moneyMarketBalance: 0,
+          bankFees: 2500,
+          interestEarned: 8500,
+          creditLineUsed: 150000,
+          creditLineAvailable: 350000,
+          creditLineTotal: 500000
+        }])
+      } else {
+        const response = await cashflowService.getBankingData()
+        setBankData(response.data.data)
+      }
     } catch (error) {
       console.error('Failed to load bank data:', error)
       // Don't use mock data - leave empty

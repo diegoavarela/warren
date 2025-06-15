@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { Currency, Unit, CurrencySettings } from '../interfaces/currency'
 
 const API_BASE_URL = 'http://localhost:3002/api'
 
@@ -50,6 +51,10 @@ export interface CompanyConfig {
   description?: string
   primaryColor?: string
   secondaryColor?: string
+  // Currency settings
+  defaultCurrency?: Currency
+  defaultUnit?: Unit
+  currencySettings?: CurrencySettings
 }
 
 export interface ExcelStructure {

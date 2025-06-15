@@ -8,6 +8,8 @@ import {
 } from '@heroicons/react/24/outline'
 import { Line } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
+import { mockWidgetData } from '../services/mockDataService'
+import { isScreenshotMode } from '../utils/screenshotHelper'
 
 interface InvestmentData {
   month: string
@@ -40,6 +42,13 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
   const loadInvestmentData = async () => {
     try {
       setLoading(true)
+      
+      if (isScreenshotMode()) {
+        // Use mock data for screenshots
+        setInvestmentData(mockWidgetData.investments)
+        return
+      }
+      
       const response = await cashflowService.getInvestmentsData()
       setInvestmentData(response.data.data)
     } catch (error) {

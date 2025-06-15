@@ -338,14 +338,14 @@ export class CashflowService {
     
     return {
       pastThreeMonths: [
-        `Average monthly income (Jan-May): ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(avgIncome)}`,
-        `Average monthly expenses (Jan-May): ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(avgExpense)}`,
-        `Best performing month: ${bestMonth.month} with ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(bestMonth.monthlyGeneration)}`
+        `Average monthly income (Jan-May): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ARS' }).format(avgIncome)}`,
+        `Average monthly expenses (Jan-May): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ARS' }).format(avgExpense)}`,
+        `Best performing month: ${bestMonth.month} with ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ARS' }).format(bestMonth.monthlyGeneration)}`
       ],
       nextSixMonths: [
-        `Worst performing month: ${worstMonth.month} with ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(worstMonth.monthlyGeneration)}`,
+        `Worst performing month: ${worstMonth.month} with ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ARS' }).format(worstMonth.monthlyGeneration)}`,
         `Current balance trend: ${metrics[metrics.length - 1].finalBalance > metrics[0].finalBalance ? 'Positive' : 'Negative'}`,
-        `Monthly average cash generation: ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(
+        `Monthly average cash generation: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ARS' }).format(
           metrics.reduce((sum, m) => sum + m.monthlyGeneration, 0) / metrics.length
         )}`
       ]
