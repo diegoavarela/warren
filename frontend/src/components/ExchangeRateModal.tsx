@@ -32,7 +32,7 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({
 
   useEffect(() => {
     if (isOpen && currentRate) {
-      setManualRate(currentRate.toFixed(4))
+      setManualRate(currentRate.toFixed(2))
       fetchLatestRate()
     }
   }, [isOpen, currentRate])
@@ -59,7 +59,7 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({
 
   const handleUseApiRate = () => {
     if (apiRate) {
-      setManualRate(apiRate.toFixed(4))
+      setManualRate(apiRate.toFixed(2))
       setUseManualRate(false)
     }
   }
@@ -100,7 +100,7 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({
                 <div>
                   <p className="text-sm text-gray-600">From exchangerate-api.com</p>
                   <p className="text-lg font-semibold text-blue-700">
-                    1 {baseCurrency} = {loading ? 'Loading...' : apiRate ? apiRate.toFixed(4) : 'N/A'} {targetCurrency}
+                    1 {baseCurrency} = {loading ? 'Loading...' : apiRate ? apiRate.toFixed(2) : 'N/A'} {targetCurrency}
                   </p>
                 </div>
                 {apiRate && !loading && (
@@ -162,7 +162,7 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({
           <div className="bg-gray-100 rounded-lg p-3">
             <p className="text-sm text-gray-600">Currently using:</p>
             <p className="text-base font-semibold text-gray-900">
-              1 {baseCurrency} = {currentRate ? currentRate.toFixed(4) : 'N/A'} {targetCurrency}
+              1 {baseCurrency} = {currentRate ? currentRate.toFixed(2) : 'N/A'} {targetCurrency}
             </p>
           </div>
         </div>

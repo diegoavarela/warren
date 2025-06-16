@@ -82,10 +82,10 @@ export class ConfigurationService {
       secondaryColor: '#2E7D32',
       // Currency settings
       defaultCurrency: 'ARS',
-      defaultUnit: 'thousands',
+      defaultUnit: 'units',
       currencySettings: {
         defaultCurrency: 'ARS',
-        defaultUnit: 'thousands',
+        defaultUnit: 'units',
         enableCurrencyConversion: true,
         showCurrencySelector: true
       },

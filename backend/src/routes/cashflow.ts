@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { CashflowController } from '../controllers/CashflowController';
+import { DebugController } from '../controllers/DebugController';
+import { ExcelMappingController } from '../controllers/ExcelMappingController';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 const cashflowController = new CashflowController();
+const debugController = new DebugController();
+const excelMappingController = new ExcelMappingController();
 
 // Configure multer for file uploads
 const upload = multer({
@@ -26,6 +30,10 @@ const upload = multer({
   }
 });
 
+// Debug routes (no auth required for debugging)
+router.post('/debug/investment-parsing', upload.single('file'), debugController.debugInvestmentParsing.bind(debugController));
+router.post('/debug/excel-mapping', upload.single('file'), excelMappingController.showInvestmentDataMapping.bind(excelMappingController));
+
 // All routes require authentication
 router.use(authMiddleware);
 
@@ -40,6 +48,8 @@ router.get('/operational', cashflowController.getOperationalData.bind(cashflowCo
 router.get('/banking', cashflowController.getBankingData.bind(cashflowController));
 router.get('/taxes', cashflowController.getTaxesData.bind(cashflowController));
 router.get('/investments', cashflowController.getInvestmentsData.bind(cashflowController));
+
+router.get('/financial-summary', cashflowController.getFinancialSummary.bind(cashflowController));
 router.post('/investments/diagnose', upload.single('file'), cashflowController.diagnoseInvestments.bind(cashflowController));
 
 export { router as cashflowRouter };

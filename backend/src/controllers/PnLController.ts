@@ -73,12 +73,14 @@ export class PnLController {
         cogs: acc.cogs + metric.cogs,
         grossProfit: acc.grossProfit + metric.grossProfit,
         operatingExpenses: acc.operatingExpenses + metric.operatingExpenses,
+        ebitda: acc.ebitda + metric.ebitda,
         netIncome: acc.netIncome + metric.netIncome
       }), {
         revenue: 0,
         cogs: 0,
         grossProfit: 0,
         operatingExpenses: 0,
+        ebitda: 0,
         netIncome: 0
       })
 
@@ -88,8 +90,10 @@ export class PnLController {
         revenue: metric.revenue,
         grossProfit: metric.grossProfit,
         operatingIncome: metric.operatingIncome,
+        ebitda: metric.ebitda,
         netIncome: metric.netIncome,
         grossMargin: metric.grossMargin,
+        ebitdaMargin: metric.ebitdaMargin,
         netMargin: metric.netMargin
       }))
 

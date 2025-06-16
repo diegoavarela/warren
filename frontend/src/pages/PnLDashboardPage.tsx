@@ -679,7 +679,7 @@ export const PnLDashboardPage: React.FC = () => {
                       <p className="text-xs text-gray-700">
                         Exchange Rate (USD baseline): 
                         <span className="ml-1 font-semibold text-gray-900">
-                          1 USD = {currentExchangeRate.toFixed(4)} {displayCurrency}
+                          1 USD = {currentExchangeRate.toFixed(2)} {displayCurrency}
                         </span>
                       </p>
                     </div>
@@ -1335,7 +1335,7 @@ export const PnLDashboardPage: React.FC = () => {
             {/* Revenue */}
             <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl relative">
               <p className="text-sm font-medium text-green-600 mb-2">Total Revenue</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalRevenue)}
               </p>
               {hasYearOverYearData() && (() => {
@@ -1355,7 +1355,7 @@ export const PnLDashboardPage: React.FC = () => {
             {/* Gross Profit */}
             <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
               <p className="text-sm font-medium text-blue-600 mb-2">Gross Profit</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalGrossProfit)}
               </p>
               <p className="text-sm text-gray-600 mt-1">
@@ -1378,7 +1378,7 @@ export const PnLDashboardPage: React.FC = () => {
             {/* Operating Income */}
             <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
               <p className="text-sm font-medium text-purple-600 mb-2">Operating Income</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalOperatingIncome)}
               </p>
               <p className="text-sm text-gray-600 mt-1">
@@ -1401,7 +1401,7 @@ export const PnLDashboardPage: React.FC = () => {
             {/* EBITDA */}
             <div className="text-center p-6 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl">
               <p className="text-sm font-medium text-indigo-600 mb-2">Total EBITDA</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.chartData?.reduce((sum, month) => {
                   // Calculate EBITDA as Operating Income + estimated D&A (assuming 3-5% of revenue)
                   const monthlyEBITDA = month.operatingIncome + (month.revenue * 0.04);
@@ -1425,7 +1425,7 @@ export const PnLDashboardPage: React.FC = () => {
               <p className={`text-sm font-medium mb-2 ${
                 data.summary.totalNetIncome >= 0 ? 'text-emerald-600' : 'text-red-600'
               }`}>Net Income</p>
-              <p className={`text-3xl font-bold ${
+              <p className={`text-2xl font-bold ${
                 data.summary.totalNetIncome >= 0 ? 'text-gray-900' : 'text-red-600'
               }`}>
                 {formatCurrency(data.summary.totalNetIncome)}

@@ -128,8 +128,10 @@ export class ExtendedFinancialService {
   private parseInvestmentData(worksheet: ExcelJS.Worksheet, dates: Array<{columnIndex: number, date: Date, monthName: string}>): InvestmentData[] {
     const investments: InvestmentData[] = [];
     
+    console.log('\n=== PARSE INVESTMENT DATA START ===');
+    console.log(`Processing ${dates.length} months of investment data`);
+    
     // Define row numbers for investment data based on Excel structure
-    // Note: These rows might need adjustment based on the actual Excel file structure
     const investmentRows = {
       investmentRow1: 21,       // First investment row
       investmentRow2: 22,       // Second investment row
@@ -138,18 +140,31 @@ export class ExtendedFinancialService {
       bondPortfolio: 22,        // Using row 22 for bonds/other investments
     };
     
-    // First, let's check what's actually in these rows
+    // Check what's actually in these rows
     const row21Desc = worksheet.getRow(21).getCell(1).value;
     const row22Desc = worksheet.getRow(22).getCell(1).value;
     const row23Desc = worksheet.getRow(23).getCell(1).value;
+    const row88Desc = worksheet.getRow(88).getCell(1).value;
+    const row99Desc = worksheet.getRow(99).getCell(1).value;
+    
+    console.log('Investment rows content check:');
+    console.log(`  Row 21: "${row21Desc}"`);
+    console.log(`  Row 22: "${row22Desc}"`);
+    console.log(`  Row 23: "${row23Desc}"`);
+    console.log(`  Row 88: "${row88Desc}"`);
+    console.log(`  Row 99: "${row99Desc}"`);
     
     logger.info('Investment rows content check:', {
       row21: { rowNum: 21, description: row21Desc },
       row22: { rowNum: 22, description: row22Desc },
-      row23: { rowNum: 23, description: row23Desc }
+      row23: { rowNum: 23, description: row23Desc },
+      row88: { rowNum: 88, description: row88Desc },
+      row99: { rowNum: 99, description: row99Desc }
     });
     
     for (const dateInfo of dates) {
+      console.log(`\n--- Processing ${dateInfo.monthName} (Column ${dateInfo.columnIndex}) ---`);
+      
       const investment: InvestmentData = {
         month: dateInfo.monthName,
         date: dateInfo.date,
@@ -161,18 +176,38 @@ export class ExtendedFinancialService {
         investment.stockPortfolio = this.getCellValue(worksheet, investmentRows.stockPortfolio, dateInfo.columnIndex);
         investment.bondPortfolio = this.getCellValue(worksheet, investmentRows.bondPortfolio, dateInfo.columnIndex);
         
+        console.log(`  Raw stockPortfolio (row 21): ${investment.stockPortfolio}`);
+        console.log(`  Raw bondPortfolio (row 22): ${investment.bondPortfolio}`);
+        
         // Get total investment from row 23
         const totalFromExcel = this.getCellValue(worksheet, investmentRows.totalInvestment, dateInfo.columnIndex);
+        console.log(`  Raw totalFromExcel (row 23): ${totalFromExcel}`);
         
         // Use the total from Excel if available, otherwise calculate
         investment.totalInvestmentValue = totalFromExcel || 
                                         ((investment.stockPortfolio || 0) + 
                                          (investment.bondPortfolio || 0));
         
-        // Set other investment fields to 0 for now
+        // Set other investment fields
         investment.realEstate = 0;
-        investment.dividendInflow = 0;
+        
+        // Get dividend income from investment income rows (21-23)
+        const galiciaIncome = this.getCellValue(worksheet, 21, dateInfo.columnIndex) || 0;
+        const balanzIncome = this.getCellValue(worksheet, 22, dateInfo.columnIndex) || 0;
+        investment.dividendInflow = galiciaIncome + balanzIncome;
+        
+        console.log(`  Raw galiciaIncome (row 21): ${galiciaIncome}`);
+        console.log(`  Raw balanzIncome (row 22): ${balanzIncome}`);
+        console.log(`  Calculated dividendInflow: ${investment.dividendInflow}`);
+        
+        // Investment fees: Since your Excel doesn't have specific investment fees,
+        // we'll set this to 0 rather than incorrectly using total bank expenses
+        // TODO: If you want to allocate a percentage of bank expenses to investments,
+        // we can add that logic here
         investment.investmentFees = 0;
+        
+        console.log(`  Investment fees set to 0 (no specific investment fees in Excel)`);
+        console.log(`  Final totalInvestmentValue: ${investment.totalInvestmentValue}`);
         
         investments.push(investment);
         
@@ -181,8 +216,13 @@ export class ExtendedFinancialService {
           stockPortfolio: investment.stockPortfolio,
           bondPortfolio: investment.bondPortfolio,
           totalInvestmentValue: investment.totalInvestmentValue,
+          dividendInflow: investment.dividendInflow,
+          investmentFees: investment.investmentFees,
+          galiciaIncome: galiciaIncome,
+          balanzIncome: balanzIncome,
           totalFromExcel: totalFromExcel,
-          columnLetter: String.fromCharCode(64 + dateInfo.columnIndex)
+          columnLetter: String.fromCharCode(64 + dateInfo.columnIndex),
+          note: 'Investment fees set to 0 - no specific fees in Excel'
         });
       } catch (error) {
         logger.warn(`Error parsing investment data for ${dateInfo.monthName}:`, error);
@@ -386,15 +426,49 @@ export class ExtendedFinancialService {
     
     // Calculate investment summaries
     if (data.investments.length > 0) {
-      const latestInvestment = data.investments[data.investments.length - 1];
-      summary.totalInvestmentValue = latestInvestment.totalInvestmentValue || 0;
-      summary.totalDividendInflow = data.investments.reduce((sum, inv) => sum + (inv.dividendInflow || 0), 0);
+      // Find current month data instead of just using the last month
+      const now = new Date();
+      const currentMonthName = format(now, 'MMMM');
+      
+      // Try to find current month, fallback to latest month with actual data
+      let currentInvestment = data.investments.find(inv => inv.month === currentMonthName);
+      
+      // If current month not found or has no data, find the latest month with actual investment data
+      if (!currentInvestment || !currentInvestment.totalInvestmentValue) {
+        // Find the latest month with non-zero investment value
+        for (let i = data.investments.length - 1; i >= 0; i--) {
+          const investmentValue = data.investments[i].totalInvestmentValue;
+          if (investmentValue && investmentValue > 0) {
+            currentInvestment = data.investments[i];
+            break;
+          }
+        }
+        
+        // If still no data found, use the last available month
+        if (!currentInvestment) {
+          currentInvestment = data.investments[data.investments.length - 1];
+        }
+      }
+      
+      summary.totalInvestmentValue = currentInvestment.totalInvestmentValue || 0;
+      
+      // For dividend inflow, show only the current month's dividend income (not cumulative)
+      summary.totalDividendInflow = currentInvestment.dividendInflow || 0;
     }
     
     // Calculate banking summaries  
     if (data.banks.length > 0) {
-      const latestBank = data.banks[data.banks.length - 1];
-      summary.totalCashBalance = (latestBank.checkingBalance || 0) + (latestBank.savingsBalance || 0);
+      // Find current month bank data, similar to investment logic
+      const now = new Date();
+      const currentMonthName = format(now, 'MMMM');
+      
+      let currentBank = data.banks.find(bank => bank.month === currentMonthName);
+      if (!currentBank) {
+        // If current month not found, use the latest month with data
+        currentBank = data.banks[data.banks.length - 1];
+      }
+      
+      summary.totalCashBalance = (currentBank.checkingBalance || 0) + (currentBank.savingsBalance || 0);
       summary.totalBankFees = data.banks.reduce((sum, bank) => sum + (bank.bankFees || 0), 0);
       summary.totalInterestEarned = data.banks.reduce((sum, bank) => sum + (bank.interestEarned || 0), 0);
     }

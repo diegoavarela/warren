@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Individual letter gradients for progressive effect -->
+    <linearGradient id="w" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6B46C1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A78BFA;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="r1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C4B5FD;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="r2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DDD6FE;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="e" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C4B5FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EDE9FE;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="n" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DDD6FE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F3F4F6;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Accent gradient -->
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DDD6FE;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Warren Text -->
+  <g font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="24" letter-spacing="-0.02em">
+    <text x="5" y="28" fill="url(#w)">W</text>
+    <text x="25" y="28" fill="url(#a)">A</text>
+    <text x="43" y="28" fill="url(#r1)">R</text>
+    <text x="60" y="28" fill="url(#r2)">R</text>
+    <text x="77" y="28" fill="url(#e)">E</text>
+    <text x="93" y="28" fill="url(#n)">N</text>
+  </g>
+  
+  <!-- Geometric accent representing data/analytics -->
+  <g transform="translate(120, 8)">
+    <!-- Stylized bar chart -->
+    <rect x="0" y="16" width="3" height="8" fill="#8B5CF6" rx="1.5"/>
+    <rect x="6" y="12" width="3" height="12" fill="#A78BFA" rx="1.5"/>
+    <rect x="12" y="8" width="3" height="16" fill="#C4B5FD" rx="1.5"/>
+    <rect x="18" y="4" width="3" height="20" fill="#DDD6FE" rx="1.5"/>
+    
+    <!-- Connection line suggesting trend -->
+    <path d="M1.5 20 L7.5 16 L13.5 12 L19.5 8" stroke="url(#accent)" stroke-width="1.5" fill="none" opacity="0.6"/>
+  </g>
+</svg>

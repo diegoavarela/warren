@@ -290,6 +290,20 @@ export class CashflowController {
     }
   }
 
+  async getFinancialSummary(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const extendedData = this.extendedFinancialService.getStoredExtendedData();
+      const summary = this.extendedFinancialService.generateFinancialSummary(extendedData);
+      
+      res.json({
+        success: true,
+        data: summary
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async diagnoseInvestments(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (!req.file) {

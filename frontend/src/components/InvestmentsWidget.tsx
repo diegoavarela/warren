@@ -104,7 +104,19 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
       }
     })
 
-    const averageMonthlyReturn = monthCount > 0 ? totalNetReturns / monthCount : 0
+    // Calculate YTD average based on total months in year so far, not just months with data
+    const currentMonth = currentDate.getMonth() + 1 // getMonth() is 0-based, so add 1
+    const ytdMonthsTotal = currentMonth // January = 1, June = 6, etc.
+    const averageMonthlyReturn = ytdMonthsTotal > 0 ? totalNetReturns / ytdMonthsTotal : 0
+    
+    console.log('YTD Calculation Debug:', {
+      totalNetReturns,
+      monthsWithData: monthCount,
+      ytdMonthsTotal,
+      currentMonth: currentDate.toLocaleDateString('en-US', { month: 'long' }),
+      oldAverage: monthCount > 0 ? totalNetReturns / monthCount : 0,
+      newAverage: averageMonthlyReturn
+    });
 
     setYtdMetrics({
       totalInvestment: sumInvestment, // Sum of all YTD investments
@@ -171,8 +183,51 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
     }
   }
 
-  const currentData = investmentData[investmentData.length - 1]
-  const previousData = investmentData[investmentData.length - 2]
+  // Find the latest month with actual investment data, not just the last month in array
+  const findLatestDataMonth = (data: InvestmentData[]) => {
+    // First try to find current month (June 2025)
+    const currentMonthName = new Date().toLocaleDateString('en-US', { month: 'long' });
+    let current = data.find(item => item.month === currentMonthName);
+    
+    // If current month has no data or zero values, find the latest month with actual investment data
+    if (!current || (!current.totalInvestmentValue && !current.dividendInflow)) {
+      // Search backwards for month with actual data
+      for (let i = data.length - 1; i >= 0; i--) {
+        const item = data[i];
+        if ((item.totalInvestmentValue && item.totalInvestmentValue > 0) || 
+            (item.dividendInflow && item.dividendInflow > 0)) {
+          current = item;
+          break;
+        }
+      }
+    }
+    
+    // Final fallback to last month
+    if (!current && data.length > 0) {
+      current = data[data.length - 1];
+    }
+    
+    return current;
+  };
+
+  const currentData = findLatestDataMonth(investmentData);
+  const currentIndex = currentData ? investmentData.indexOf(currentData) : -1;
+  const previousData = currentIndex > 0 ? investmentData[currentIndex - 1] : null;
+
+  // Debug logging
+  console.log('Investment Widget Debug:', {
+    totalMonths: investmentData.length,
+    selectedMonth: currentData?.month,
+    selectedDividends: currentData?.dividendInflow,
+    selectedFees: currentData?.investmentFees,
+    selectedPortfolioValue: currentData?.totalInvestmentValue,
+    allMonthsData: investmentData.map(item => ({
+      month: item.month,
+      dividends: item.dividendInflow,
+      fees: item.investmentFees,
+      portfolio: item.totalInvestmentValue
+    }))
+  });
   
   // Calculate change from previous month to current month
   const portfolioChange = currentData && previousData 
@@ -329,7 +384,10 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
           {/* Total Portfolio Value */}
           <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Total Portfolio Value</span>
+              <div>
+                <span className="text-sm font-medium text-gray-700">Total Portfolio Value</span>
+                <p className="text-xs text-gray-500">Market value of all holdings</p>
+              </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 {formatCurrency(currentData.totalInvestmentValue!)}
               </span>
@@ -363,20 +421,22 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-green-50 rounded-lg">
                 <p className="text-xs text-gray-600 mb-1">Dividend Income</p>
+                <p className="text-xs text-gray-500 mb-2">Cash from investments ({currentData?.month})</p>
                 <p className="text-lg font-bold text-green-600">
                   {formatCurrency(currentData.dividendInflow!)}
                 </p>
                 {ytdMetrics && ytdMetrics.totalDividendIncome > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">YTD: {formatCurrency(ytdMetrics.totalDividendIncome)}</p>
+                  <p className="text-xs text-gray-500 mt-1">YTD Total: {formatCurrency(ytdMetrics.totalDividendIncome)}</p>
                 )}
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <p className="text-xs text-gray-600 mb-1">Investment Fees</p>
+                <p className="text-xs text-gray-500 mb-2">Banking & management costs ({currentData?.month})</p>
                 <p className="text-lg font-bold text-red-600">
                   {formatCurrency(currentData.investmentFees!)}
                 </p>
                 {ytdMetrics && ytdMetrics.totalInvestmentFees > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">YTD: {formatCurrency(ytdMetrics.totalInvestmentFees)}</p>
+                  <p className="text-xs text-gray-500 mt-1">YTD Total: {formatCurrency(ytdMetrics.totalInvestmentFees)}</p>
                 )}
               </div>
             </div>
@@ -393,7 +453,16 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-600">Avg Monthly Net Return:</span>
-                  <span className="text-xs font-semibold text-purple-700">{formatCurrency(ytdMetrics.averageMonthlyReturn)}</span>
+                  <span className={`text-xs font-semibold ${ytdMetrics.averageMonthlyReturn >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {formatCurrency(ytdMetrics.averageMonthlyReturn)}
+                  </span>
+                </div>
+                <div className="mt-2 pt-2 border-t border-purple-200">
+                  <p className="text-xs text-gray-600">
+                    {ytdMetrics.averageMonthlyReturn >= 0 ? 
+                      '✓ Profitable: Dividends exceed fees on average' : 
+                      '⚠ Loss: Fees exceed dividends on average'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -444,32 +513,119 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Portfolio Overview</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 What is the Investment Portfolio Widget?</h3>
                 <div className="bg-purple-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-700">
-                    Your investment portfolio tracks the performance and allocation of your invested assets 
-                    across different asset classes including stocks, bonds, and real estate.
+                  <p className="text-sm text-gray-700 mb-3">
+                    This widget analyzes your investment income and costs from your Excel cashflow data. 
+                    It tracks dividend income from investment portfolios (like Galicia and Balanz) and 
+                    compares them against associated banking fees and investment costs.
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Data Source:</strong> Investment income (rows 21-23) and bank expenses (row 99) from your Excel file.
                   </p>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 Key Metrics</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Total Portfolio Value:</span>
-                    <span className="font-medium">{currentData ? formatCurrency(currentData.totalInvestmentValue || 0) : '$0'}</span>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 What Each Metric Means</h3>
+                <div className="space-y-4">
+                  
+                  <div className="border-l-4 border-green-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Dividend Income</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Total dividends received from your investment portfolios (Galicia + Balanz) for the selected month.
+                      This represents the cash income generated by your investments.
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      Current: {currentData ? formatCurrency(currentData.dividendInflow || 0) : '$0'} ({currentData?.month || 'No data'})
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Monthly Return:</span>
-                    <span className="font-medium text-green-600">{currentData ? formatCurrency(currentData.monthlyReturn || 0) : '$0'}</span>
+
+                  <div className="border-l-4 border-red-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Investment Fees</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Investment-related fees and costs. Currently set to $0 because your Excel file 
+                      doesn't have a separate line item for investment-specific fees.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Note: Bank expenses are tracked separately and not attributed to investments
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Return Percentage:</span>
-                    <span className="font-medium">{currentData ? (currentData.returnPercentage || 0).toFixed(2) : '0.00'}%</span>
+
+                  <div className="border-l-4 border-blue-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Total Portfolio Value</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      The current market value of your investment holdings. This represents the total worth 
+                      of your stock and bond portfolios combined.
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Current: {currentData ? formatCurrency(currentData.totalInvestmentValue || 0) : '$0'} ({currentData?.month || 'No data'})
+                    </p>
+                  </div>
+
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Avg Monthly Net Return</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Average monthly profit/loss from investments after subtracting all fees.
+                      <br/>
+                      <strong>Formula:</strong> (Total Dividend Income - Total Investment Fees) ÷ Number of Months
+                    </p>
+                    <p className="text-xs text-purple-600 mt-1">
+                      YTD Average: {ytdMetrics ? formatCurrency(ytdMetrics.averageMonthlyReturn) : '$0'}
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 How to Interpret Your Data</h3>
+                <div className="bg-yellow-50 rounded-xl p-4">
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <span className="font-medium text-green-600">✓ Positive Net Return:</span>
+                      <span className="text-gray-700 ml-2">Your investments are profitable after fees</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-green-600">✓ No Investment Fees:</span>
+                      <span className="text-gray-700 ml-2">All dividend income is pure profit since no investment fees are tracked</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-600">→ Bank Expenses:</span>
+                      <span className="text-gray-700 ml-2">General banking costs are tracked separately and not attributed to investments</span>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Your Current Situation</h3>
+                <div className="bg-blue-50 rounded-xl p-4">
+                  {currentData && ytdMetrics ? (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-gray-700">
+                        <strong>Latest Month:</strong> {currentData.month} shows {formatCurrency(currentData.dividendInflow || 0)} in dividends 
+                        vs {formatCurrency(currentData.investmentFees || 0)} in fees.
+                      </p>
+                      <p className="text-gray-700">
+                        <strong>Net Result:</strong> {((currentData.dividendInflow || 0) - (currentData.investmentFees || 0)) >= 0 ? 
+                          `Profit of ${formatCurrency(Math.abs((currentData.dividendInflow || 0) - (currentData.investmentFees || 0)))}` :
+                          `Loss of ${formatCurrency(Math.abs((currentData.dividendInflow || 0) - (currentData.investmentFees || 0)))}`
+                        }
+                      </p>
+                      <p className="text-gray-700">
+                        <strong>YTD Average:</strong> {ytdMetrics.averageMonthlyReturn >= 0 ? 
+                          `Monthly profit of ${formatCurrency(ytdMetrics.averageMonthlyReturn)}` :
+                          `Monthly loss of ${formatCurrency(Math.abs(ytdMetrics.averageMonthlyReturn))}`
+                        }
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600">No investment data available yet. Upload your Excel file to see investment analysis.</p>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient (optional, can be removed for transparent background) -->
+  <defs>
+    <!-- Warren gradient -->
+    <linearGradient id="warrenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="25%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#C4B5FD;stop-opacity:1" />
+      <stop offset="75%" style="stop-color:#DDD6FE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EDE9FE;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Individual letter gradients for progressive effect -->
+    <linearGradient id="w1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6B46C1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="a1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A78BFA;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="r1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C4B5FD;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="r2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DDD6FE;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="e1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C4B5FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EDE9FE;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="n1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DDD6FE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F3F4F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Warren Text with progressive gradient effect -->
+  <g font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="28" letter-spacing="-0.02em">
+    <!-- W -->
+    <text x="10" y="40" fill="url(#w1)">W</text>
+    
+    <!-- A -->
+    <text x="35" y="40" fill="url(#a1)">A</text>
+    
+    <!-- R -->
+    <text x="58" y="40" fill="url(#r1)">R</text>
+    
+    <!-- R -->
+    <text x="78" y="40" fill="url(#r2)">R</text>
+    
+    <!-- E -->
+    <text x="98" y="40" fill="url(#e1)">E</text>
+    
+    <!-- N -->
+    <text x="118" y="40" fill="url(#n1)">N</text>
+  </g>
+  
+  <!-- Geometric accent element inspired by Vortex -->
+  <g transform="translate(150, 15)">
+    <!-- Stylized geometric element representing financial growth/analysis -->
+    <rect x="0" y="20" width="4" height="10" fill="#8B5CF6" rx="2"/>
+    <rect x="8" y="15" width="4" height="15" fill="#A78BFA" rx="2"/>
+    <rect x="16" y="10" width="4" height="20" fill="#C4B5FD" rx="2"/>
+    <rect x="24" y="5" width="4" height="25" fill="#DDD6FE" rx="2"/>
+  </g>
+  
+  <!-- Subtle tagline -->
+  <text x="10" y="55" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="8" font-weight="400" fill="#6B7280" letter-spacing="0.05em">
+    FINANCIAL INTELLIGENCE
+  </text>
+</svg>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main gradient -->
+    <linearGradient id="main" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6B46C1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A78BFA;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Secondary gradient -->
+    <linearGradient id="secondary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C4B5FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DDD6FE;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Background circle gradient -->
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F8FAFC;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="url(#bg)" stroke="#E2E8F0" stroke-width="2"/>
+  
+  <!-- W lettermark in center -->
+  <g transform="translate(32, 32)">
+    <!-- Stylized W made of geometric elements -->
+    <g transform="translate(-12, -10)">
+      <!-- Left part of W -->
+      <rect x="0" y="0" width="3" height="20" fill="url(#main)" rx="1.5"/>
+      <rect x="4" y="8" width="3" height="12" fill="url(#main)" rx="1.5"/>
+      
+      <!-- Middle V -->
+      <rect x="8" y="12" width="3" height="8" fill="url(#secondary)" rx="1.5"/>
+      
+      <!-- Right part of W -->
+      <rect x="12" y="8" width="3" height="12" fill="url(#main)" rx="1.5"/>
+      <rect x="16" y="0" width="3" height="20" fill="url(#main)" rx="1.5"/>
+    </g>
+    
+    <!-- Data visualization accent -->
+    <g transform="translate(-8, 12)">
+      <circle cx="2" cy="0" r="1" fill="#8B5CF6" opacity="0.6"/>
+      <circle cx="6" cy="-2" r="1" fill="#A78BFA" opacity="0.6"/>
+      <circle cx="10" cy="-4" r="1" fill="#C4B5FD" opacity="0.6"/>
+      <circle cx="14" cy="-6" r="1" fill="#DDD6FE" opacity="0.6"/>
+      
+      <!-- Connecting line -->
+      <path d="M2 0 L6 -2 L10 -4 L14 -6" stroke="#C4B5FD" stroke-width="1" fill="none" opacity="0.4"/>
+    </g>
+  </g>
+</svg>

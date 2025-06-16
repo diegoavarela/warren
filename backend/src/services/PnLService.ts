@@ -47,6 +47,8 @@ interface PnLSummary {
   totalOperatingExpenses: number
   totalOperatingIncome: number
   avgOperatingMargin: number
+  totalEBITDA: number
+  avgEBITDAMargin: number
   totalNetIncome: number
   avgNetMargin: number
 }
@@ -412,6 +414,8 @@ export class PnLService {
         totalOperatingExpenses: 0,
         totalOperatingIncome: 0,
         avgOperatingMargin: 0,
+        totalEBITDA: 0,
+        avgEBITDAMargin: 0,
         totalNetIncome: 0,
         avgNetMargin: 0
       }
@@ -423,6 +427,7 @@ export class PnLService {
       grossProfit: acc.grossProfit + metric.grossProfit,
       operatingExpenses: acc.operatingExpenses + metric.operatingExpenses,
       operatingIncome: acc.operatingIncome + metric.operatingIncome,
+      ebitda: acc.ebitda + metric.ebitda,
       netIncome: acc.netIncome + metric.netIncome
     }), {
       revenue: 0,
@@ -430,6 +435,7 @@ export class PnLService {
       grossProfit: 0,
       operatingExpenses: 0,
       operatingIncome: 0,
+      ebitda: 0,
       netIncome: 0
     })
 
@@ -443,6 +449,8 @@ export class PnLService {
       totalOperatingExpenses: totals.operatingExpenses,
       totalOperatingIncome: totals.operatingIncome,
       avgOperatingMargin: totals.revenue > 0 ? (totals.operatingIncome / totals.revenue) * 100 : 0,
+      totalEBITDA: totals.ebitda,
+      avgEBITDAMargin: totals.revenue > 0 ? (totals.ebitda / totals.revenue) * 100 : 0,
       totalNetIncome: totals.netIncome,
       avgNetMargin: totals.revenue > 0 ? (totals.netIncome / totals.revenue) * 100 : 0
     }
