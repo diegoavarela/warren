@@ -27,12 +27,17 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
-      'http://localhost:3002'
+      'http://localhost:3002',
+      'https://warren-k0mraqa0p-diegoavarelas-projects.vercel.app',
+      /\.vercel\.app$/  // Allow all Vercel preview URLs
     ];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') return allowed === origin;
+      return allowed.test(origin);
+    })) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
