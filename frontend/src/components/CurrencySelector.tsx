@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import {
   CurrencyDollarIcon,
-  ChevronDownIcon,
-  ArrowsRightLeftIcon
+  ChevronDownIcon
 } from '@heroicons/react/24/outline'
 import { Currency, Unit, CURRENCIES, UNITS } from '../interfaces/currency'
 import { currencyService } from '../services/currencyService'
-import { configurationService } from '../services/configurationService'
 
 interface CurrencySelectorProps {
   currentCurrency: Currency
@@ -59,7 +57,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
           onChange={(e) => onCurrencyChange(e.target.value as Currency)}
           className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          {Object.entries(CURRENCIES).map(([code, info]) => (
+          {Object.entries(CURRENCIES).map(([code]) => (
             <option key={code} value={code}>
               {code}
             </option>

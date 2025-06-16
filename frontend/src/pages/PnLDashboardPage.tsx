@@ -159,6 +159,18 @@ export const PnLDashboardPage: React.FC = () => {
   const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
   const [displayUnitLegacy, setDisplayUnitLegacy] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
 
+  // Convert new Unit type to legacy unit type
+  const convertToLegacyUnit = (unit: Unit): 'actual' | 'thousands' | 'millions' | 'billions' => {
+    switch (unit) {
+      case 'units': return 'actual'
+      case 'thousands': return 'thousands'
+      case 'millions': return 'millions'
+      default: return 'thousands'
+    }
+  }
+
+  const legacyDisplayUnit = convertToLegacyUnit(displayUnit)
+
   useEffect(() => {
     loadDashboard()
   }, [])
@@ -229,12 +241,12 @@ export const PnLDashboardPage: React.FC = () => {
     const formatted = new Intl.NumberFormat(getLocale(), {
       style: 'currency',
       currency: currency,
-      minimumFractionDigits: displayUnit === 'actual' ? 0 : 1,
-      maximumFractionDigits: displayUnit === 'actual' ? 0 : 2,
+      minimumFractionDigits: legacyDisplayUnit === 'actual' ? 0 : 1,
+      maximumFractionDigits: legacyDisplayUnit === 'actual' ? 0 : 2,
     }).format(adjustedAmount)
 
     // Add unit suffix for non-actual displays
-    if (displayUnit !== 'actual' && unitSuffix) {
+    if (legacyDisplayUnit !== 'actual' && unitSuffix) {
       // Insert suffix before currency symbol if it's at the end
       const parts = formatted.match(/^([^0-9]*)([0-9,.\s]+)(.*)$/)
       if (parts) {

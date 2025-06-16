@@ -89,7 +89,7 @@ const ScreenshotGallery: React.FC = () => {
 
       {/* Content to Screenshot */}
       <div ref={contentRef} className="screenshot-content">
-        <style jsx global>{`
+        <style>{`
           .screenshot-content nav,
           .screenshot-content [class*="Navbar"],
           .screenshot-content [class*="FileUploadSection"] {

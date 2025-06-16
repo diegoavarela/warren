@@ -64,7 +64,7 @@ export function AdminPage() {
   });
 
   // Redirect if not admin
-  if (!user || user.role !== 'admin') {
+  if (!user || user.email !== 'admin@vort-ex.com') {
     return <Navigate to="/" replace />;
   }
 

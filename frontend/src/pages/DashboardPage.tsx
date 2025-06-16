@@ -106,6 +106,16 @@ export const DashboardPage: React.FC = () => {
   const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
   const [displayUnitLegacy, setDisplayUnitLegacy] = useState<'actual' | 'thousands' | 'millions' | 'billions'>('thousands')
 
+  // Convert new Unit type to legacy unit type
+  const convertToLegacyUnit = (unit: Unit): 'actual' | 'thousands' | 'millions' | 'billions' => {
+    switch (unit) {
+      case 'units': return 'actual'
+      case 'thousands': return 'thousands'
+      case 'millions': return 'millions'
+      default: return 'thousands'
+    }
+  }
+
   useEffect(() => {
     loadDashboard()
   }, [])
@@ -571,11 +581,11 @@ export const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CashRunwayWidget 
               currency={currency} 
-              displayUnit={displayUnit} 
+              displayUnit={convertToLegacyUnit(displayUnit)} 
             />
             <BurnRateTrend 
               currency={currency} 
-              displayUnit={displayUnit} 
+              displayUnit={convertToLegacyUnit(displayUnit)} 
             />
           </div>
         </div>
@@ -595,21 +605,21 @@ export const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <OperationalAnalysisWidget 
               currency={currency} 
-              displayUnit={displayUnit} 
+              displayUnit={convertToLegacyUnit(displayUnit)} 
             />
             <BankingWidget 
               currency={currency} 
-              displayUnit={displayUnit} 
+              displayUnit={convertToLegacyUnit(displayUnit)} 
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <InvestmentsWidget 
               currency={currency} 
-              displayUnit={displayUnit} 
+              displayUnit={convertToLegacyUnit(displayUnit)} 
             />
             <TaxesWidget 
               currency={currency} 
-              displayUnit={displayUnit} 
+              displayUnit={convertToLegacyUnit(displayUnit)} 
             />
           </div>
         </div>

@@ -9,7 +9,6 @@ import {
   Bars3Icon,
   XMarkIcon,
   SparklesIcon,
-  UserCircleIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
@@ -166,7 +165,7 @@ export const Navbar: React.FC = () => {
             {dropdownOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin User'}</p>
+                  <p className="text-sm font-medium text-gray-900">{user?.email?.split('@')[0] || 'Admin User'}</p>
                   <p className="text-xs text-gray-500">{user?.email || 'admin@vort-ex.com'}</p>
                 </div>
                 <button
@@ -195,7 +194,7 @@ export const Navbar: React.FC = () => {
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin User'}</p>
+                  <p className="text-sm font-medium text-gray-900">{user?.email?.split('@')[0] || 'Admin User'}</p>
                   <p className="text-xs text-gray-500">{user?.email || 'admin@vort-ex.com'}</p>
                 </div>
               </div>

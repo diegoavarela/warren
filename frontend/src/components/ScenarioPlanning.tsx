@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { 
   AdjustmentsHorizontalIcon,
-  ChartBarIcon,
   PlayIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
   QuestionMarkCircleIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'

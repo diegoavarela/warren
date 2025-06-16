@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { 
   BuildingLibraryIcon,
-  CreditCardIcon,
   BanknotesIcon,
   QuestionMarkCircleIcon,
-  XMarkIcon,
-  ArrowUpIcon,
-  ArrowDownIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { cashflowService } from '../services/cashflowService'
 import { mockWidgetData } from '../services/mockDataService'
@@ -149,11 +146,7 @@ export const BankingWidget: React.FC<BankingWidgetProps> = ({ currency, displayU
     ? (currentData.checkingBalance! + currentData.savingsBalance! + (currentData.moneyMarketBalance || 0))
     : 0
     
-  const previousTotalCash = previousData
-    ? (previousData.checkingBalance! + previousData.savingsBalance! + (previousData.moneyMarketBalance || 0))
-    : 0
     
-  const cashChange = totalCashBalance - previousTotalCash
   const creditUtilization = currentData && currentData.creditLineTotal
     ? (currentData.creditLineUsed! / currentData.creditLineTotal!) * 100
     : 0
@@ -329,7 +322,7 @@ export const BankingWidget: React.FC<BankingWidgetProps> = ({ currency, displayU
                   <div className="flex justify-between">
                     <span>Monthly Net Interest:</span>
                     <span className="font-medium text-green-600">
-                      {formatCurrency((currentData.interestEarned!) - (currentData.bankFees!))}
+                      {currentData ? formatCurrency((currentData.interestEarned!) - (currentData.bankFees!)) : '$0'}
                     </span>
                   </div>
                 </div>

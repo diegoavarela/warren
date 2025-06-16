@@ -15,7 +15,7 @@ export const CurrencyValue: React.FC<CurrencyValueProps> = ({
   className = '',
   showSign = false
 }) => {
-  const { convertAmount, formatAmount, currency, baseCurrency, settings } = useCurrency()
+  const { convertAmount, formatAmount, currency, settings } = useCurrency()
   const [displayValue, setDisplayValue] = useState<string>('--')
   const [loading, setLoading] = useState(false)
 
