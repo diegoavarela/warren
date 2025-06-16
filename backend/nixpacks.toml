@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs", "npm"]
+nixPkgs = ["nodejs-18_x"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci --only=production", "npm install typescript"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["npx tsc"]
 
 [start]
 cmd = "npm start"
