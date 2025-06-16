@@ -29,6 +29,7 @@
     "multer": "^1.4.5-lts.1",
     "pg": "^8.11.3",
     "puppeteer": "^24.10.0",
+    "typescript": "^5.2.2",
     "winston": "^3.11.0"
   },
   "devDependencies": {
@@ -46,7 +47,6 @@
     "eslint": "^8.53.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.2.2"
+    "ts-node": "^10.9.1"
   }
 }
