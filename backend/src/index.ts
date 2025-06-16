@@ -11,6 +11,7 @@ import { adminRouter } from './routes/admin';
 import { legalRouter } from './routes/legal';
 import configurationRouter from './routes/configuration';
 import currencyRouter from './routes/currency';
+import mondayRouter from './routes/monday';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
@@ -61,6 +62,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/legal', legalRouter);
 app.use('/api/configuration', configurationRouter);
 app.use('/api/currency', currencyRouter);
+app.use('/api/monday', mondayRouter);
 
 // Health check
 app.get('/health', (req, res) => {

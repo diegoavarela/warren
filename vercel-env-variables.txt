@@ -1,0 +1,47 @@
+# Vercel Environment Variables for Warren
+# Copy these values into Vercel Dashboard > Settings > Environment Variables
+
+# Monday.com Integration (REQUIRED)
+MONDAY_API_KEY=eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5NzI0OTc3NSwiYWFpIjoxMSwidWlkIjo3MTE0NDk1NSwiaWFkIjoiMjAyNS0wNC0wOFQxNjowMzoxOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6Mjc1Nzg2ODAsInJnbiI6InVzZTEifQ.eCW5sA3rB7V6GeI6-XAsPa-qDYP67jBduwS3xP1OAcM
+MONDAY_BOARD_ID=9379175656
+
+# Authentication & Security (REQUIRED)
+JWT_SECRET=warren-super-secret-jwt-key-production-2025
+ADMIN_EMAIL=admin@vort-ex.com
+ADMIN_PASSWORD=vortex123
+ENCRYPTION_KEY=warren-encryption-key-production-2025
+
+# Application Settings (REQUIRED)
+NODE_ENV=production
+PORT=3002
+
+# Optional - Monday.com Notifications
+MONDAY_WEBHOOK_URL=your-slack-webhook-url-here
+
+# Optional - Exchange Rate API
+EXCHANGE_API_KEY=your-exchange-rate-api-key-here
+
+# Optional - CORS Origins (Vercel will auto-configure this)
+ALLOWED_ORIGINS=https://your-vercel-domain.vercel.app
+
+# =================================
+# INSTRUCTIONS FOR VERCEL:
+# =================================
+# 1. Go to your Vercel project dashboard
+# 2. Click "Settings" tab
+# 3. Click "Environment Variables" in sidebar
+# 4. For each variable above (except comments):
+#    - Click "Add New"
+#    - Name: [copy name exactly]
+#    - Value: [copy value exactly]
+#    - Environment: Select "Production" and "Preview"
+#    - Click "Save"
+# 5. After adding all variables, go to "Deployments" tab
+# 6. Click "Redeploy" on latest deployment
+# =================================
+
+# IMPORTANT NOTES:
+# - The MONDAY_API_KEY and MONDAY_BOARD_ID are your real values that work
+# - Change ADMIN_PASSWORD to something more secure if you want
+# - You can skip the optional variables for now
+# - Make sure to select both "Production" and "Preview" environments
