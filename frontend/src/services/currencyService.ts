@@ -19,33 +19,43 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Mock exchange rates for fallback
+// Mock exchange rates for fallback (June 2025)
 const MOCK_RATES: Record<string, number> = {
-  'USD_ARS': 850.50,
+  'USD_ARS': 1187.67,
   'USD_EUR': 0.92,
   'USD_BRL': 4.95,
-  'EUR_ARS': 924.35,
+  'EUR_ARS': 1290.90,
   'EUR_USD': 1.09,
   'EUR_BRL': 5.38,
-  'ARS_USD': 0.00118,
-  'ARS_EUR': 0.00108,
-  'ARS_BRL': 0.00582,
+  'ARS_USD': 0.000842,
+  'ARS_EUR': 0.000774,
+  'ARS_BRL': 0.00417,
   'BRL_USD': 0.202,
   'BRL_EUR': 0.186,
-  'BRL_ARS': 171.82
+  'BRL_ARS': 239.93
 }
 
 class CurrencyService {
   private cache: Map<string, { rate: number; timestamp: number }> = new Map()
   private cacheTimeout = 3600000 // 1 hour in milliseconds
+  
+  // Set a manual exchange rate
+  setExchangeRate(from: Currency, to: Currency, rate: number): void {
+    const cacheKey = `${from}_${to}`
+    this.cache.set(cacheKey, { rate, timestamp: Date.now() })
+    
+    // Also set the reverse rate
+    const reverseCacheKey = `${to}_${from}`
+    this.cache.set(reverseCacheKey, { rate: 1 / rate, timestamp: Date.now() })
+  }
 
-  async getExchangeRate(from: Currency, to: Currency): Promise<number> {
+  async getExchangeRate(from: Currency, to: Currency, forceRefresh: boolean = false): Promise<number> {
     if (from === to) return 1
 
     const cacheKey = `${from}_${to}`
     const cached = this.cache.get(cacheKey)
     
-    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+    if (!forceRefresh && cached && Date.now() - cached.timestamp < this.cacheTimeout) {
       return cached.rate
     }
 

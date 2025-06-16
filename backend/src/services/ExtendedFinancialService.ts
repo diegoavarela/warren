@@ -42,13 +42,14 @@ export class ExtendedFinancialService {
       }
       
       const operational = this.parseOperationalData(worksheet, dates);
+      const investments = this.parseInvestmentData(worksheet, dates);
       const banks = this.parseBankData(worksheet, dates);
       const taxes = this.parseTaxData(worksheet, dates);
       
       // Store the parsed data
       this.storedExtendedData = { 
         operational, 
-        investments: [], // Not implemented yet
+        investments,
         banks, 
         taxes 
       };
@@ -127,14 +128,26 @@ export class ExtendedFinancialService {
   private parseInvestmentData(worksheet: ExcelJS.Worksheet, dates: Array<{columnIndex: number, date: Date, monthName: string}>): InvestmentData[] {
     const investments: InvestmentData[] = [];
     
-    // Define row numbers for investment data (these are examples - you'll need to provide actual row numbers)
+    // Define row numbers for investment data based on Excel structure
+    // Note: These rows might need adjustment based on the actual Excel file structure
     const investmentRows = {
-      stockPortfolio: 120,      // Example row number
-      bondPortfolio: 121,       // Example row number  
-      realEstate: 122,          // Example row number
-      dividendInflow: 123,      // Example row number
-      investmentFees: 124,      // Example row number
+      investmentRow1: 21,       // First investment row
+      investmentRow2: 22,       // Second investment row
+      totalInvestment: 23,      // Total investment row
+      stockPortfolio: 21,       // Using row 21 for stock portfolio
+      bondPortfolio: 22,        // Using row 22 for bonds/other investments
     };
+    
+    // First, let's check what's actually in these rows
+    const row21Desc = worksheet.getRow(21).getCell(1).value;
+    const row22Desc = worksheet.getRow(22).getCell(1).value;
+    const row23Desc = worksheet.getRow(23).getCell(1).value;
+    
+    logger.info('Investment rows content check:', {
+      row21: { rowNum: 21, description: row21Desc },
+      row22: { rowNum: 22, description: row22Desc },
+      row23: { rowNum: 23, description: row23Desc }
+    });
     
     for (const dateInfo of dates) {
       const investment: InvestmentData = {
@@ -144,20 +157,64 @@ export class ExtendedFinancialService {
       
       // Extract investment values from specified rows
       try {
+        // Get individual investment values from rows 21-22
         investment.stockPortfolio = this.getCellValue(worksheet, investmentRows.stockPortfolio, dateInfo.columnIndex);
         investment.bondPortfolio = this.getCellValue(worksheet, investmentRows.bondPortfolio, dateInfo.columnIndex);
-        investment.realEstate = this.getCellValue(worksheet, investmentRows.realEstate, dateInfo.columnIndex);
-        investment.dividendInflow = this.getCellValue(worksheet, investmentRows.dividendInflow, dateInfo.columnIndex);
-        investment.investmentFees = this.getCellValue(worksheet, investmentRows.investmentFees, dateInfo.columnIndex);
         
-        // Calculate derived values
-        investment.totalInvestmentValue = (investment.stockPortfolio || 0) + 
-                                        (investment.bondPortfolio || 0) + 
-                                        (investment.realEstate || 0);
+        // Get total investment from row 23
+        const totalFromExcel = this.getCellValue(worksheet, investmentRows.totalInvestment, dateInfo.columnIndex);
+        
+        // Use the total from Excel if available, otherwise calculate
+        investment.totalInvestmentValue = totalFromExcel || 
+                                        ((investment.stockPortfolio || 0) + 
+                                         (investment.bondPortfolio || 0));
+        
+        // Set other investment fields to 0 for now
+        investment.realEstate = 0;
+        investment.dividendInflow = 0;
+        investment.investmentFees = 0;
         
         investments.push(investment);
+        
+        // Enhanced logging for investment values
+        logger.info(`Investment data for ${dateInfo.monthName} (Column ${dateInfo.columnIndex}):`, {
+          stockPortfolio: investment.stockPortfolio,
+          bondPortfolio: investment.bondPortfolio,
+          totalInvestmentValue: investment.totalInvestmentValue,
+          totalFromExcel: totalFromExcel,
+          columnLetter: String.fromCharCode(64 + dateInfo.columnIndex)
+        });
       } catch (error) {
         logger.warn(`Error parsing investment data for ${dateInfo.monthName}:`, error);
+      }
+    }
+    
+    // Log summary of investment values to identify the issue
+    if (investments.length > 1) {
+      const allValues = investments
+        .map(inv => inv.totalInvestmentValue)
+        .filter((val): val is number => val !== undefined);
+      const uniqueValues = [...new Set(allValues)];
+      
+      if (allValues.length > 0) {
+        if (uniqueValues.length === 1) {
+          logger.warn('WARNING: All investment portfolio values are identical across all months!', {
+            value: uniqueValues[0],
+            months: investments.length,
+            details: investments.map(inv => ({
+              month: inv.month,
+              value: inv.totalInvestmentValue
+            }))
+          });
+        } else {
+          logger.info('Investment portfolio values vary across months', {
+            uniqueValues: uniqueValues.length,
+            range: {
+              min: Math.min(...allValues),
+              max: Math.max(...allValues)
+            }
+          });
+        }
       }
     }
     

@@ -51,6 +51,7 @@ export class ExchangeRateService {
           })
           
           logger.info(`Exchange rate from API: ${from} to ${to} = ${rate}`)
+          console.log(`API Response - Exchange rate: 1 ${from} = ${rate} ${to}`)
           return rate
         }
       }
@@ -65,30 +66,30 @@ export class ExchangeRateService {
   }
 
   private getFallbackRate(from: string, to: string): number {
-    // Fallback exchange rates (approximate as of 2025)
+    // Fallback exchange rates (approximate as of June 2025)
     const fallbackRates: Record<string, Record<string, number>> = {
       USD: {
-        ARS: 850.50,
+        ARS: 1187.67,
         EUR: 0.92,
         BRL: 4.95,
         USD: 1
       },
       EUR: {
-        ARS: 924.35,
+        ARS: 1290.90,
         USD: 1.09,
         BRL: 5.38,
         EUR: 1
       },
       ARS: {
-        USD: 0.00118,
-        EUR: 0.00108,
-        BRL: 0.00582,
+        USD: 0.000842,
+        EUR: 0.000774,
+        BRL: 0.00417,
         ARS: 1
       },
       BRL: {
         USD: 0.202,
         EUR: 0.186,
-        ARS: 171.82,
+        ARS: 239.93,
         BRL: 1
       }
     }

@@ -5,6 +5,7 @@ import {
   CalendarIcon,
   BanknotesIcon,
   ChartBarIcon,
+  CurrencyDollarIcon,
   ExclamationTriangleIcon,
   SparklesIcon,
   DocumentArrowDownIcon,
@@ -30,6 +31,8 @@ import { CurrencyValue } from '../components/CurrencyValue'
 import { useCurrency } from '../hooks/useCurrency'
 import { Currency, Unit } from '../interfaces/currency'
 import { mockCashflowData } from '../services/mockDataService'
+import { currencyService } from '../services/currencyService'
+import { ExchangeRateModal } from '../components/ExchangeRateModal'
 
 interface DashboardData {
   hasData: boolean
@@ -46,6 +49,7 @@ interface DashboardData {
     totalIncome: number
     totalExpense: number
     totalBalance: number
+    totalInvestment?: number
   }
   chartData?: Array<{
     date: string
@@ -88,6 +92,8 @@ export const DashboardPage: React.FC = () => {
   const [showCurrentMonthHelpModal, setShowCurrentMonthHelpModal] = useState(false)
   const [showYTDHelpModal, setShowYTDHelpModal] = useState(false)
   const [showChartHelpModal, setShowChartHelpModal] = useState(false)
+  const [currentExchangeRate, setCurrentExchangeRate] = useState<number | null>(null)
+  const [showExchangeRateModal, setShowExchangeRateModal] = useState(false)
   
   // Use the new currency hook
   const { 
@@ -119,6 +125,22 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     loadDashboard()
   }, [])
+
+  // Fetch exchange rate when currency changes - always use USD as baseline
+  useEffect(() => {
+    if (settings.enableCurrencyConversion) {
+      // Always convert from USD to display currency
+      if (displayCurrency !== 'USD') {
+        currencyService.getExchangeRate('USD', displayCurrency)
+          .then(rate => setCurrentExchangeRate(rate))
+          .catch(err => console.error('Failed to fetch exchange rate:', err))
+      } else {
+        setCurrentExchangeRate(null)
+      }
+    } else {
+      setCurrentExchangeRate(null)
+    }
+  }, [displayCurrency, settings.enableCurrencyConversion])
 
   const loadDashboard = async () => {
     try {
@@ -185,6 +207,9 @@ export const DashboardPage: React.FC = () => {
         converted.ytdIncome = await convertAmount(data.yearToDate.totalIncome, baseCurrency)
         converted.ytdExpense = await convertAmount(Math.abs(data.yearToDate.totalExpense), baseCurrency)
         converted.ytdBalance = await convertAmount(data.yearToDate.totalBalance, baseCurrency)
+        if (data.yearToDate.totalInvestment !== undefined) {
+          converted.ytdInvestment = await convertAmount(Math.abs(data.yearToDate.totalInvestment), baseCurrency)
+        }
       }
       
       setConvertedAmounts(converted)
@@ -385,16 +410,25 @@ export const DashboardPage: React.FC = () => {
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">
                     {data.currentMonth.month} Cashflow Overview
                   </h2>
-                  {settings.enableCurrencyConversion && baseCurrency !== displayCurrency && (
-                    <p className="text-sm text-gray-500 mt-1 flex items-center">
-                      Converting from {baseCurrency} to {displayCurrency}
-                      {isConverting && (
-                        <svg className="animate-spin h-4 w-4 ml-2 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      )}
-                    </p>
+                  {/* Exchange Rate Display */}
+                  {settings.enableCurrencyConversion && displayCurrency !== 'USD' && currentExchangeRate && (
+                    <div className="mt-2 flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg max-w-md">
+                      <div className="flex items-center space-x-2">
+                        <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
+                        <p className="text-xs text-gray-700">
+                          Exchange Rate (USD baseline): 
+                          <span className="ml-1 font-semibold text-gray-900">
+                            1 USD = {currentExchangeRate.toFixed(4)} {displayCurrency}
+                          </span>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowExchangeRateModal(true)}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -420,79 +454,80 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Total Inflow */}
-              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl shadow-lg">
-                    <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-1.5 bg-emerald-100 rounded-md">
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-emerald-600" />
                   </div>
-                  <SparklesIcon className="h-5 w-5 text-emerald-500" />
+                  <SparklesIcon className="h-4 w-4 text-emerald-400" />
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">Total Inflow</h3>
-                <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Total Inflow</h3>
+                <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(data.currentMonth.totalIncome, 'totalIncome')}
                 </p>
               </div>
 
               {/* Total Outflow */}
-              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-br from-rose-500 to-pink-500 rounded-2xl shadow-lg">
-                    <ArrowTrendingDownIcon className="h-6 w-6 text-white" />
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-1.5 bg-rose-100 rounded-md">
+                    <ArrowTrendingDownIcon className="h-4 w-4 text-rose-600" />
                   </div>
-                  <SparklesIcon className="h-5 w-5 text-rose-500" />
+                  <SparklesIcon className="h-4 w-4 text-rose-400" />
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">Total Outflow</h3>
-                <p className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Total Outflow</h3>
+                <p className="text-xl font-bold text-rose-600">
                   {formatCurrency(Math.abs(data.currentMonth.totalExpense), 'totalExpense')}
                 </p>
               </div>
 
               {/* Final Balance */}
-              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-2xl bg-gradient-to-br ${getMetricBgColor(data.currentMonth.finalBalance)} shadow-lg`}>
-                    <BanknotesIcon className={`h-6 w-6 ${data.currentMonth.finalBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`} />
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`p-1.5 rounded-md ${data.currentMonth.finalBalance >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                    <BanknotesIcon className={`h-4 w-4 ${data.currentMonth.finalBalance >= 0 ? 'text-emerald-600' : 'text-red-600'}`} />
                   </div>
-                  <SparklesIcon className={`h-5 w-5 ${getMetricColor(data.currentMonth.finalBalance)}`} />
+                  <SparklesIcon className={`h-4 w-4 ${data.currentMonth.finalBalance >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">Final Balance</h3>
-                <p className={`text-2xl font-bold ${getMetricColor(data.currentMonth.finalBalance)}`}>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Final Balance</h3>
+                <p className={`text-xl font-bold ${data.currentMonth.finalBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {formatCurrency(data.currentMonth.finalBalance, 'finalBalance')}
                 </p>
               </div>
 
               {/* Lowest Balance */}
-              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-2xl bg-gradient-to-br ${getMetricBgColor(data.currentMonth.lowestBalance)} shadow-lg`}>
-                    <ChartBarIcon className={`h-6 w-6 ${data.currentMonth.lowestBalance >= 0 ? 'text-purple-600' : 'text-rose-600'}`} />
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`p-1.5 rounded-md ${data.currentMonth.lowestBalance >= 0 ? 'bg-purple-100' : 'bg-red-100'}`}>
+                    <ChartBarIcon className={`h-4 w-4 ${data.currentMonth.lowestBalance >= 0 ? 'text-purple-600' : 'text-red-600'}`} />
                   </div>
-                  <SparklesIcon className={`h-5 w-5 ${data.currentMonth.lowestBalance >= 0 ? 'text-purple-500' : 'text-rose-500'}`} />
+                  <SparklesIcon className={`h-4 w-4 ${data.currentMonth.lowestBalance >= 0 ? 'text-purple-400' : 'text-red-400'}`} />
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">Lowest Balance</h3>
-                <p className={`text-2xl font-bold ${getMetricColor(data.currentMonth.lowestBalance)}`}>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Lowest Balance</h3>
+                <p className={`text-xl font-bold ${data.currentMonth.lowestBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {formatCurrency(data.currentMonth.lowestBalance, 'lowestBalance')}
                 </p>
               </div>
 
               {/* Monthly Generation */}
-              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-2xl bg-gradient-to-br ${getMetricBgColor(data.currentMonth.monthlyGeneration)} shadow-lg`}>
-                    <BanknotesIcon className={`h-6 w-6 ${data.currentMonth.monthlyGeneration >= 0 ? 'text-cyan-600' : 'text-orange-600'}`} />
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`p-1.5 rounded-md ${data.currentMonth.monthlyGeneration >= 0 ? 'bg-emerald-100' : 'bg-orange-100'}`}>
+                    <BanknotesIcon className={`h-4 w-4 ${data.currentMonth.monthlyGeneration >= 0 ? 'text-emerald-600' : 'text-orange-600'}`} />
                   </div>
-                  <SparklesIcon className={`h-5 w-5 ${getMetricColor(data.currentMonth.monthlyGeneration)}`} />
+                  <SparklesIcon className={`h-4 w-4 ${data.currentMonth.monthlyGeneration >= 0 ? 'text-emerald-400' : 'text-orange-400'}`} />
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">Cash Generation</h3>
-                <p className={`text-2xl font-bold ${getMetricColor(data.currentMonth.monthlyGeneration)}`}>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Cash Generation</h3>
+                <p className={`text-xl font-bold ${data.currentMonth.monthlyGeneration >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {formatCurrency(data.currentMonth.monthlyGeneration, 'monthlyGeneration')}
                 </p>
               </div>
             </div>
           </div>
         )}
+
 
         {/* YTD Summary */}
         {data.yearToDate && (
@@ -507,7 +542,7 @@ export const DashboardPage: React.FC = () => {
                 <QuestionMarkCircleIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className={`grid grid-cols-1 md:grid-cols-${data.yearToDate.totalInvestment ? '4' : '3'} gap-6`}>
               <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/90 to-cyan-50/90 backdrop-blur-sm rounded-3xl p-6 border border-emerald-200/50 shadow-xl">
                 <div className="flex items-center justify-between mb-4">
                   <ArrowTrendingUpIcon className="h-8 w-8 text-emerald-600" />
@@ -537,6 +572,19 @@ export const DashboardPage: React.FC = () => {
                 <p className={`text-3xl font-bold bg-gradient-to-r ${data.yearToDate.totalBalance >= 0 ? 'from-blue-700 to-purple-700' : 'from-orange-700 to-red-700'} bg-clip-text text-transparent`}>{formatCurrency(data.yearToDate.totalBalance, 'ytdBalance')}</p>
                 <p className={`text-sm ${data.yearToDate.totalBalance >= 0 ? 'text-blue-600' : 'text-orange-600'} mt-2`}>Net position year to date</p>
               </div>
+              
+              {/* YTD Investment Card - Only show if there's investment data */}
+              {data.yearToDate.totalInvestment !== undefined && data.yearToDate.totalInvestment !== 0 && (
+                <div className="bg-gradient-to-br from-purple-50/90 via-pink-50/90 to-rose-50/90 backdrop-blur-sm rounded-3xl p-6 border border-purple-200/50 shadow-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <BanknotesIcon className="h-8 w-8 text-purple-600" />
+                    <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">YTD</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Total Investment</h3>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">{formatCurrency(Math.abs(data.yearToDate.totalInvestment), 'ytdInvestment')}</p>
+                  <p className="text-sm text-purple-600 mt-2">Capital deployed year to date</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1444,6 +1492,22 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Exchange Rate Modal */}
+        {showExchangeRateModal && (
+          <ExchangeRateModal
+            isOpen={showExchangeRateModal}
+            onClose={() => setShowExchangeRateModal(false)}
+            baseCurrency={'USD'} // Always use USD as baseline
+            targetCurrency={displayCurrency}
+            currentRate={currentExchangeRate}
+            onRateUpdate={(rate) => {
+              setCurrentExchangeRate(rate)
+              // Update the cache with the new rate
+              currencyService.setExchangeRate('USD', displayCurrency, rate)
+            }}
+          />
         )}
       </div>
     </div>

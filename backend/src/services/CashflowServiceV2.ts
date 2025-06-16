@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
+import { ExtendedFinancialService } from './ExtendedFinancialService';
 
 interface MonthlyMetrics {
   date: Date;
@@ -121,14 +122,25 @@ export class CashflowServiceV2 {
     // Calculate YTD (Year to Date) values
     let ytdInflow = 0;
     let ytdExpense = 0;
+    let ytdInvestment = 0;
     
     // Find the index of the current month in parsedMetrics
     const currentMonthArrayIndex = parsedMetrics.findIndex(m => m.month === currentMonthData.month);
+    
+    // Get investment data for YTD calculation
+    const extendedService = new ExtendedFinancialService();
+    const extendedData = extendedService.getStoredExtendedData();
+    const investmentData = extendedData.investments || [];
     
     // Sum up all months from start of year up to and including current month
     for (let i = 0; i <= currentMonthArrayIndex && i < parsedMetrics.length; i++) {
       ytdInflow += parsedMetrics[i].totalInflow;
       ytdExpense += parsedMetrics[i].totalOutflow;
+      
+      // Add investment data if available
+      if (investmentData[i]) {
+        ytdInvestment += investmentData[i].totalInvestmentValue || 0;
+      }
     }
     
     const ytdBalance = ytdInflow + ytdExpense; // outflow is negative
@@ -170,7 +182,8 @@ export class CashflowServiceV2 {
       yearToDate: {
         totalIncome: ytdInflow,
         totalExpense: ytdExpense,
-        totalBalance: ytdBalance
+        totalBalance: ytdBalance,
+        totalInvestment: ytdInvestment
       },
       chartData: chartData,
       highlights: {

@@ -29,11 +29,19 @@ interface InvestmentsWidgetProps {
   displayUnit: 'actual' | 'thousands' | 'millions' | 'billions'
 }
 
+interface YTDMetrics {
+  totalInvestment: number
+  totalDividendIncome: number
+  totalInvestmentFees: number
+  averageMonthlyReturn: number
+}
+
 export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, displayUnit }) => {
   const [investmentData, setInvestmentData] = useState<InvestmentData[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedView, setSelectedView] = useState<'portfolio' | 'performance'>('portfolio')
   const [showHelpModal, setShowHelpModal] = useState(false)
+  const [ytdMetrics, setYtdMetrics] = useState<YTDMetrics | null>(null)
 
   useEffect(() => {
     loadInvestmentData()
@@ -46,18 +54,64 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
       if (isScreenshotMode()) {
         // Use mock data for screenshots
         setInvestmentData(mockWidgetData.investments)
+        calculateYTDMetrics(mockWidgetData.investments)
         return
       }
       
       const response = await cashflowService.getInvestmentsData()
-      setInvestmentData(response.data.data)
+      const data = response.data.data || []
+      setInvestmentData(data)
+      calculateYTDMetrics(data)
     } catch (error) {
       console.error('Failed to load investment data:', error)
       // Don't use mock data - leave empty
       setInvestmentData([])
+      setYtdMetrics(null)
     } finally {
       setLoading(false)
     }
+  }
+
+  const calculateYTDMetrics = (data: InvestmentData[]) => {
+    if (!data || data.length === 0) {
+      setYtdMetrics(null)
+      return
+    }
+
+    // Calculate YTD metrics
+    let sumInvestment = 0
+    let totalDividendIncome = 0
+    let totalInvestmentFees = 0
+    let totalNetReturns = 0 // Net returns = dividends - fees
+    let monthCount = 0
+
+    // Get current date to determine YTD period
+    const currentDate = new Date()
+    const currentYear = currentDate.getFullYear()
+
+    data.forEach(item => {
+      // Parse the date to check if it's in the current year
+      const itemDate = new Date(item.date)
+      if (itemDate.getFullYear() === currentYear && itemDate <= currentDate) {
+        // For YTD sum, we want the cumulative investment value
+        sumInvestment += item.totalInvestmentValue || 0
+        totalDividendIncome += item.dividendInflow || 0
+        totalInvestmentFees += item.investmentFees || 0
+        // Calculate net return for the month (dividends - fees)
+        const monthlyNetReturn = (item.dividendInflow || 0) - (item.investmentFees || 0)
+        totalNetReturns += monthlyNetReturn
+        monthCount++
+      }
+    })
+
+    const averageMonthlyReturn = monthCount > 0 ? totalNetReturns / monthCount : 0
+
+    setYtdMetrics({
+      totalInvestment: sumInvestment, // Sum of all YTD investments
+      totalDividendIncome,
+      totalInvestmentFees,
+      averageMonthlyReturn
+    })
   }
 
   const formatCurrency = (amount: number) => {
@@ -120,6 +174,7 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
   const currentData = investmentData[investmentData.length - 1]
   const previousData = investmentData[investmentData.length - 2]
   
+  // Calculate change from previous month to current month
   const portfolioChange = currentData && previousData 
     ? currentData.totalInvestmentValue! - previousData.totalInvestmentValue!
     : 0
@@ -127,6 +182,16 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
   const portfolioChangePercent = currentData && previousData && previousData.totalInvestmentValue
     ? ((currentData.totalInvestmentValue! - previousData.totalInvestmentValue!) / previousData.totalInvestmentValue!) * 100
     : 0
+  
+  // Calculate monthly return if not provided
+  if (currentData && !currentData.monthlyReturn) {
+    currentData.monthlyReturn = (currentData.dividendInflow || 0) - (currentData.investmentFees || 0)
+    if (currentData.totalInvestmentValue && currentData.totalInvestmentValue > 0) {
+      currentData.returnPercentage = (currentData.monthlyReturn / currentData.totalInvestmentValue) * 100
+    } else {
+      currentData.returnPercentage = 0
+    }
+  }
 
   const chartData = {
     labels: investmentData.map(d => d.month),
@@ -301,15 +366,38 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
                 <p className="text-lg font-bold text-green-600">
                   {formatCurrency(currentData.dividendInflow!)}
                 </p>
+                {ytdMetrics && ytdMetrics.totalDividendIncome > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">YTD: {formatCurrency(ytdMetrics.totalDividendIncome)}</p>
+                )}
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <p className="text-xs text-gray-600 mb-1">Investment Fees</p>
                 <p className="text-lg font-bold text-red-600">
                   {formatCurrency(currentData.investmentFees!)}
                 </p>
+                {ytdMetrics && ytdMetrics.totalInvestmentFees > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">YTD: {formatCurrency(ytdMetrics.totalInvestmentFees)}</p>
+                )}
               </div>
             </div>
           </div>
+
+          {/* YTD Summary - Only show if we have YTD data */}
+          {ytdMetrics && (
+            <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="text-xs font-semibold text-purple-700 mb-2">Year to Date Summary</h4>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">Total YTD Investment:</span>
+                  <span className="text-xs font-semibold text-purple-700">{formatCurrency(ytdMetrics.totalInvestment)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">Avg Monthly Net Return:</span>
+                  <span className="text-xs font-semibold text-purple-700">{formatCurrency(ytdMetrics.averageMonthlyReturn)}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -321,20 +409,20 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
           {/* Return Metrics */}
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
-              <p className="text-xs text-gray-600 mb-1">Monthly Return</p>
+              <p className="text-xs text-gray-600 mb-1">Monthly Net Return</p>
               <p className="text-xl font-bold text-green-600">
-                {formatCurrency(currentData.monthlyReturn!)}
+                {formatCurrency(currentData?.monthlyReturn || 0)}
               </p>
               <p className="text-xs text-green-600 mt-1">
-                {currentData.returnPercentage! >= 0 ? '+' : ''}{currentData.returnPercentage!.toFixed(1)}%
+                {(currentData?.returnPercentage || 0) >= 0 ? '+' : ''}{(currentData?.returnPercentage || 0).toFixed(2)}%
               </p>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-              <p className="text-xs text-gray-600 mb-1">Net Return</p>
+              <p className="text-xs text-gray-600 mb-1">Total Return</p>
               <p className="text-xl font-bold text-blue-600">
-                {formatCurrency((currentData.monthlyReturn! + currentData.dividendInflow!) - currentData.investmentFees!)}
+                {formatCurrency(portfolioChange)}
               </p>
-              <p className="text-xs text-blue-600 mt-1">After fees</p>
+              <p className="text-xs text-blue-600 mt-1">Portfolio change</p>
             </div>
           </div>
         </div>
@@ -370,15 +458,15 @@ export const InvestmentsWidget: React.FC<InvestmentsWidgetProps> = ({ currency, 
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex justify-between">
                     <span>Total Portfolio Value:</span>
-                    <span className="font-medium">{formatCurrency(currentData.totalInvestmentValue!)}</span>
+                    <span className="font-medium">{currentData ? formatCurrency(currentData.totalInvestmentValue || 0) : '$0'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Monthly Return:</span>
-                    <span className="font-medium text-green-600">{formatCurrency(currentData.monthlyReturn!)}</span>
+                    <span className="font-medium text-green-600">{currentData ? formatCurrency(currentData.monthlyReturn || 0) : '$0'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Return Percentage:</span>
-                    <span className="font-medium">{currentData.returnPercentage!.toFixed(1)}%</span>
+                    <span className="font-medium">{currentData ? (currentData.returnPercentage || 0).toFixed(2) : '0.00'}%</span>
                   </div>
                 </div>
               </div>

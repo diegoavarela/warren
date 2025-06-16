@@ -5,6 +5,7 @@ import { createError } from '../middleware/errorHandler';
 import { CashflowServiceV2 } from '../services/CashflowServiceV2';
 import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
 import { ExtendedFinancialService } from '../services/ExtendedFinancialService';
+import { InvestmentDiagnosticService } from '../services/InvestmentDiagnosticService';
 import { logger } from '../utils/logger';
 
 // Create singleton instances
@@ -16,6 +17,7 @@ export class CashflowController {
   private cashflowService = cashflowServiceInstance;
   private analysisService = analysisServiceInstance;
   private extendedFinancialService = extendedFinancialServiceInstance;
+  private investmentDiagnosticService = new InvestmentDiagnosticService();
 
   async uploadFile(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -286,5 +288,62 @@ export class CashflowController {
     } catch (error) {
       next(error);
     }
+  }
+
+  async diagnoseInvestments(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.file) {
+        return next(createError('No file uploaded', 400));
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(req.file.buffer);
+
+      const worksheet = workbook.getWorksheet(1);
+      if (!worksheet) {
+        return next(createError('No worksheet found in Excel file', 400));
+      }
+
+      // Run investment diagnostic
+      const diagnosticResults = await this.investmentDiagnosticService.diagnoseInvestmentData(worksheet);
+      
+      // Also find any investment-related rows
+      const investmentRows = this.investmentDiagnosticService.findInvestmentRows(worksheet);
+
+      res.json({
+        success: true,
+        message: 'Investment diagnostic completed',
+        data: {
+          diagnostic: diagnosticResults,
+          investmentRows: investmentRows,
+          recommendations: this.generateRecommendations(diagnosticResults)
+        }
+      });
+    } catch (error: any) {
+      logger.error('Error running investment diagnostic:', error);
+      next(createError(`Error running diagnostic: ${error.message}`, 500));
+    }
+  }
+
+  private generateRecommendations(diagnosticResults: any): string[] {
+    const recommendations = [];
+    
+    if (diagnosticResults.issues.includes('All investment values in row 23 are the same')) {
+      recommendations.push(
+        'The investment portfolio values are identical across all months, which causes the 0% change.',
+        'To fix this, ensure that investment values in the Excel file reflect actual month-to-month changes.',
+        'Check if the investment data is being updated monthly or if it\'s a static value.'
+      );
+    }
+    
+    if (diagnosticResults.issues.includes('No investment values found in rows 21-22')) {
+      recommendations.push(
+        'No investment data found in the expected rows (21-22).',
+        'Verify that investment data is placed in the correct rows in the Excel file.',
+        'Consider checking if investment data is located in different rows.'
+      );
+    }
+
+    return recommendations;
   }
 }

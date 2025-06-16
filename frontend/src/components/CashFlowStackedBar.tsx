@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { Bar } from 'react-chartjs-2'
 import { cashflowService } from '../services/cashflowService'
+import { useCurrency } from '../hooks/useCurrency'
 
 interface StackedBarData {
   months: string[]
@@ -20,6 +21,7 @@ interface StackedBarData {
       opex: number[]
       taxes: number[]
       bankFees: number[]
+      investment: number[]
       other: number[]
     }
   }
@@ -35,6 +37,7 @@ export const CashFlowStackedBar: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState(6) // Default to 6 months
   const [showHelpModal, setShowHelpModal] = useState(false)
+  const { formatAmount } = useCurrency()
 
   useEffect(() => {
     loadStackedBarData()
@@ -56,7 +59,7 @@ export const CashFlowStackedBar: React.FC = () => {
           months: [],
           categories: {
             inflow: { revenue: [], otherInflow: [] },
-            outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+            outflows: { wages: [], opex: [], taxes: [], bankFees: [], investment: [], other: [] }
           },
           totals: { inflow: [], outflows: [], netCashFlow: [] }
         })
@@ -76,7 +79,7 @@ export const CashFlowStackedBar: React.FC = () => {
           months: [],
           categories: {
             inflow: { revenue: [], otherInflow: [] },
-            outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+            outflows: { wages: [], opex: [], taxes: [], bankFees: [], investment: [], other: [] }
           },
           totals: { inflow: [], outflows: [], netCashFlow: [] }
         })
@@ -87,11 +90,22 @@ export const CashFlowStackedBar: React.FC = () => {
       const operationalRes = await cashflowService.getOperationalData()
       const operationalData = operationalRes.data.data || []
       
+      // Fetch investment data
+      let investmentData = []
+      try {
+        const investmentRes = await cashflowService.getInvestmentsData()
+        investmentData = investmentRes.data.data || []
+      } catch (investError) {
+        console.warn('Failed to fetch investment data:', investError)
+        investmentData = []
+      }
+      
       console.log('Cashflow data:', cashflowData)
       console.log('Operational data:', operationalData)
+      console.log('Investment data:', investmentData)
       
       // Process data for stacked visualization
-      const processedData = processDataForStackedBar(cashflowData, operationalData, period)
+      const processedData = processDataForStackedBar(cashflowData, operationalData, investmentData, period)
       console.log('Processed data:', processedData)
       setStackedData(processedData)
     } catch (error) {
@@ -100,7 +114,7 @@ export const CashFlowStackedBar: React.FC = () => {
         months: [],
         categories: {
           inflow: { revenue: [], otherInflow: [] },
-          outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+          outflows: { wages: [], opex: [], taxes: [], bankFees: [], investment: [], other: [] }
         },
         totals: { inflow: [], outflows: [], netCashFlow: [] }
       })
@@ -112,6 +126,7 @@ export const CashFlowStackedBar: React.FC = () => {
   const processDataForStackedBar = (
     cashflowData: any[], 
     operationalData: any[], 
+    investmentData: any[],
     monthsToShow: number
   ): StackedBarData => {
     // Ensure we have arrays
@@ -121,7 +136,7 @@ export const CashFlowStackedBar: React.FC = () => {
         months: [],
         categories: {
           inflow: { revenue: [], otherInflow: [] },
-          outflows: { wages: [], opex: [], taxes: [], bankFees: [], other: [] }
+          outflows: { wages: [], opex: [], taxes: [], bankFees: [], investment: [], other: [] }
         },
         totals: { inflow: [], outflows: [], netCashFlow: [] }
       }
@@ -134,6 +149,7 @@ export const CashFlowStackedBar: React.FC = () => {
     const startIndex = Math.max(0, actualData.length - monthsToShow)
     const relevantCashflow = actualData.slice(startIndex)
     const relevantOperational = operationalData.slice(startIndex)
+    const relevantInvestment = investmentData?.slice(startIndex) || []
     
     const months: string[] = []
     const revenue: number[] = []
@@ -142,6 +158,7 @@ export const CashFlowStackedBar: React.FC = () => {
     const opex: number[] = []
     const taxes: number[] = []
     const bankFees: number[] = []
+    const investment: number[] = []
     const otherOutflows: number[] = []
     const totalInflow: number[] = []
     const totalOutflows: number[] = []
@@ -168,9 +185,14 @@ export const CashFlowStackedBar: React.FC = () => {
       taxes.push(monthTaxes)
       bankFees.push(monthBankFees)
       
+      // Investment data
+      const monthInvestment = relevantInvestment && relevantInvestment[index] ? relevantInvestment[index] : {}
+      const totalInvestment = Math.abs(monthInvestment.totalInvestmentValue || 0)
+      investment.push(totalInvestment)
+      
       // Calculate other outflows (remainder) - handle both possible field names
       const monthOutflows = Math.abs(month.expenses || month.outflows || month.totalOutflow || 0)
-      const knownOutflows = monthWages + monthOpex + monthTaxes + monthBankFees
+      const knownOutflows = monthWages + monthOpex + monthTaxes + monthBankFees + totalInvestment
       const other = Math.max(0, monthOutflows - knownOutflows)
       otherOutflows.push(other)
       
@@ -196,6 +218,7 @@ export const CashFlowStackedBar: React.FC = () => {
           opex,
           taxes,
           bankFees,
+          investment,
           other: otherOutflows
         }
       },
@@ -208,12 +231,8 @@ export const CashFlowStackedBar: React.FC = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Math.abs(amount))
+    // Use the currency context formatter
+    return formatAmount(Math.abs(amount))
   }
 
   const getChartData = () => {
@@ -265,6 +284,14 @@ export const CashFlowStackedBar: React.FC = () => {
           categoryPercentage: 0.9
         },
         {
+          label: 'Investment',
+          data: stackedData.categories.outflows.investment.map(v => -v),
+          backgroundColor: '#EC4899',
+          stack: 'outflows',
+          barPercentage: 0.8,
+          categoryPercentage: 0.9
+        },
+        {
           label: 'Other',
           data: stackedData.categories.outflows.other.map(v => -v),
           backgroundColor: '#6B7280',
@@ -288,10 +315,11 @@ export const CashFlowStackedBar: React.FC = () => {
         position: 'bottom' as const,
         labels: {
           usePointStyle: true,
-          padding: 15,
+          padding: 10,
           font: {
-            size: 12
-          }
+            size: 11
+          },
+          boxWidth: 15
         }
       },
       tooltip: {
@@ -321,15 +349,28 @@ export const CashFlowStackedBar: React.FC = () => {
         stacked: true,
         grid: {
           display: false
+        },
+        ticks: {
+          font: {
+            size: 11
+          }
         }
       },
       y: {
         stacked: true,
         ticks: {
-          callback: (value: any) => formatCurrency(Math.abs(value))
+          callback: (value: any) => {
+            // Format without currency symbol for axis
+            const formatted = formatAmount(Math.abs(value))
+            // Remove currency symbol and keep just the number with K/M suffix
+            return formatted.replace(/[^0-9.,KMB\s-]/g, '').trim()
+          }
         },
         grid: {
           color: 'rgba(0, 0, 0, 0.05)'
+        },
+        title: {
+          display: false
         }
       }
     }
@@ -337,33 +378,33 @@ export const CashFlowStackedBar: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 animate-pulse">
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 animate-pulse">
         <div className="h-64 bg-gray-100 rounded"></div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <ChartBarIcon className="h-8 w-8 text-blue-600" />
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 bg-blue-100 rounded-md">
+              <ChartBarIcon className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Cash Flow Composition</h3>
-              <p className="text-sm text-gray-600">Breakdown of inflow and outflows</p>
+              <h3 className="text-sm font-semibold text-gray-900">Cash Flow Composition</h3>
+              <p className="text-xs text-gray-500">Breakdown of inflow and outflows</p>
             </div>
           </div>
           
           {/* Period Selector and Help */}
           <div className="flex items-center space-x-2">
-            <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
+            <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
             <select
               value={period}
               onChange={(e) => setPeriod(parseInt(e.target.value))}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={3}>Last 3 months</option>
               <option value={6}>Last 6 months</option>
@@ -371,39 +412,39 @@ export const CashFlowStackedBar: React.FC = () => {
             </select>
             <button
               onClick={() => setShowHelpModal(true)}
-              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
               title="Understanding cash flow composition"
             >
-              <QuestionMarkCircleIcon className="h-5 w-5" />
+              <QuestionMarkCircleIcon className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4">
         {stackedData && stackedData.months.length > 0 ? (
           <>
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-4 bg-green-50 rounded-xl">
-                <p className="text-sm text-gray-600">Avg Monthly Inflow</p>
-                <p className="text-xl font-bold text-green-600">
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-emerald-50 rounded-md p-2.5">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Monthly Inflow</p>
+                <p className="text-base font-bold text-emerald-600 mt-0.5">
                   {formatCurrency(
                     stackedData.totals.inflow.reduce((a, b) => a + b, 0) / stackedData.totals.inflow.length
                   )}
                 </p>
               </div>
-              <div className="text-center p-4 bg-red-50 rounded-xl">
-                <p className="text-sm text-gray-600">Avg Monthly Outflows</p>
-                <p className="text-xl font-bold text-red-600">
+              <div className="bg-rose-50 rounded-md p-2.5">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Monthly Outflows</p>
+                <p className="text-base font-bold text-rose-600 mt-0.5">
                   {formatCurrency(
                     stackedData.totals.outflows.reduce((a, b) => a + b, 0) / stackedData.totals.outflows.length
                   )}
                 </p>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-xl">
-                <p className="text-sm text-gray-600">Avg Net Cash Flow</p>
-                <p className={`text-xl font-bold ${
+              <div className="bg-blue-50 rounded-md p-2.5">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Net Cash Flow</p>
+                <p className={`text-base font-bold mt-0.5 ${
                   stackedData.totals.netCashFlow.reduce((a, b) => a + b, 0) >= 0 
                     ? 'text-blue-600' 
                     : 'text-red-600'
@@ -416,44 +457,51 @@ export const CashFlowStackedBar: React.FC = () => {
             </div>
 
             {/* Stacked Bar Chart */}
-            <div className="h-80">
+            <div className="h-64">
               {getChartData() && <Bar data={getChartData()!} options={chartOptions} />}
             </div>
 
             {/* Outflow Breakdown Summary */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Average Outflow Breakdown</h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded"></div>
+            <div className="mt-4 p-3 bg-gray-50 rounded-md">
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Average Outflow Breakdown</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 bg-red-500 rounded-sm"></div>
                   <span className="text-gray-600">Wages: {
                     Math.round((stackedData.categories.outflows.wages.reduce((a, b) => a + b, 0) / 
                     stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 bg-orange-500 rounded-sm"></div>
                   <span className="text-gray-600">OpEx: {
                     Math.round((stackedData.categories.outflows.opex.reduce((a, b) => a + b, 0) / 
                     stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 bg-purple-500 rounded-sm"></div>
                   <span className="text-gray-600">Taxes: {
                     Math.round((stackedData.categories.outflows.taxes.reduce((a, b) => a + b, 0) / 
                     stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-cyan-500 rounded"></div>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 bg-cyan-500 rounded-sm"></div>
                   <span className="text-gray-600">Bank: {
                     Math.round((stackedData.categories.outflows.bankFees.reduce((a, b) => a + b, 0) / 
                     stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
                   }%</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-gray-500 rounded"></div>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 bg-pink-500 rounded-sm"></div>
+                  <span className="text-gray-600">Investment: {
+                    Math.round((stackedData.categories.outflows.investment.reduce((a, b) => a + b, 0) / 
+                    stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
+                  }%</span>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 bg-gray-500 rounded-sm"></div>
                   <span className="text-gray-600">Other: {
                     Math.round((stackedData.categories.outflows.other.reduce((a, b) => a + b, 0) / 
                     stackedData.totals.outflows.reduce((a, b) => a + b, 0)) * 100)
@@ -539,6 +587,13 @@ export const CashFlowStackedBar: React.FC = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-900">Bank Fees (Cyan)</p>
                       <p className="text-sm text-gray-600">Banking and financial service charges</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-4 h-4 bg-pink-500 rounded mt-0.5"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Investment (Pink)</p>
+                      <p className="text-sm text-gray-600">Capital investments and asset purchases</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">

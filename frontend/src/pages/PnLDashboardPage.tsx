@@ -21,6 +21,8 @@ import { CurrencyValue } from '../components/CurrencyValue'
 import { useCurrency } from '../hooks/useCurrency'
 import { Currency, Unit } from '../interfaces/currency'
 import { mockPnlData } from '../services/mockDataService'
+import { currencyService } from '../services/currencyService'
+import { ExchangeRateModal } from '../components/ExchangeRateModal'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -140,7 +142,10 @@ export const PnLDashboardPage: React.FC = () => {
   const [showCurrentPnLHelpModal, setShowCurrentPnLHelpModal] = useState(false)
   const [showMarginsChartHelpModal, setShowMarginsChartHelpModal] = useState(false)
   const [showRevenueChartHelpModal, setShowRevenueChartHelpModal] = useState(false)
+  const [showComparisonHelpModal, setShowComparisonHelpModal] = useState(false)
   const [comparisonPeriod, setComparisonPeriod] = useState<'month' | 'quarter' | 'year'>('month')
+  const [currentExchangeRate, setCurrentExchangeRate] = useState<number | null>(null)
+  const [showExchangeRateModal, setShowExchangeRateModal] = useState(false)
   
   // Use the new currency hook
   const { 
@@ -174,6 +179,22 @@ export const PnLDashboardPage: React.FC = () => {
   useEffect(() => {
     loadDashboard()
   }, [])
+
+  // Fetch exchange rate when currency changes - always use USD as baseline
+  useEffect(() => {
+    if (settings.enableCurrencyConversion) {
+      // Always convert from USD to display currency
+      if (displayCurrency !== 'USD') {
+        currencyService.getExchangeRate('USD', displayCurrency)
+          .then(rate => setCurrentExchangeRate(rate))
+          .catch(err => console.error('Failed to fetch exchange rate:', err))
+      } else {
+        setCurrentExchangeRate(null)
+      }
+    } else {
+      setCurrentExchangeRate(null)
+    }
+  }, [displayCurrency, settings.enableCurrencyConversion])
 
   const loadDashboard = async () => {
     try {
@@ -585,7 +606,16 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="mb-6 mt-6">
           <div className="flex items-center justify-center mb-2">
             <div className="inline-flex items-center bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-1">
-              <span className="px-3 py-2 text-sm font-medium text-gray-600">Compare against:</span>
+              <span className="px-3 py-2 text-sm font-medium text-gray-600 flex items-center">
+                Compare against:
+                <button
+                  onClick={() => setShowComparisonHelpModal(true)}
+                  className="ml-1.5 p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Learn about comparison periods"
+                >
+                  <QuestionMarkCircleIcon className="h-4 w-4" />
+                </button>
+              </span>
               <button
                 onClick={() => setComparisonPeriod('month')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
@@ -637,9 +667,31 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {data.currentMonth.month} P&L Overview
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {data.currentMonth.month} P&L Overview
+                </h2>
+                {/* Exchange Rate Display */}
+                {settings.enableCurrencyConversion && displayCurrency !== 'USD' && currentExchangeRate && (
+                  <div className="mt-2 flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg max-w-md">
+                    <div className="flex items-center space-x-2">
+                      <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
+                      <p className="text-xs text-gray-700">
+                        Exchange Rate (USD baseline): 
+                        <span className="ml-1 font-semibold text-gray-900">
+                          1 USD = {currentExchangeRate.toFixed(4)} {displayCurrency}
+                        </span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowExchangeRateModal(true)}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               {settings.showCurrencySelector && (
@@ -663,206 +715,227 @@ export const PnLDashboardPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Revenue */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl shadow-md">
-                  <ArrowTrendingUpIcon className="h-6 w-6 text-emerald-600" />
-                </div>
-                {(() => {
-                  const comparison = getComparisonData()
-                  if (!comparison?.data) return null
-                  const change = calculateChange(data.currentMonth.revenue, comparison.data.revenue)
-                  return change && (
-                    <div className={`flex items-center space-x-1 text-sm font-medium ${
-                      change.isPositive ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {change.isPositive ? (
-                        <ChevronUpIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      )}
-                      <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="p-1.5 bg-emerald-100 rounded-md">
+                      <ArrowTrendingUpIcon className="h-4 w-4 text-emerald-600" />
                     </div>
-                  )
-                })()}
+                    {(() => {
+                      const comparison = getComparisonData()
+                      if (!comparison?.data) return null
+                      const change = calculateChange(data.currentMonth.revenue, comparison.data.revenue)
+                      return change && (
+                        <div className={`flex items-center space-x-0.5 text-sm font-medium ${
+                          change.isPositive ? 'text-emerald-600' : 'text-red-600'
+                        }`}>
+                          {change.isPositive ? (
+                            <ChevronUpIcon className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDownIcon className="h-3.5 w-3.5" />
+                          )}
+                          <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Revenue</h3>
+                  <p className="text-xl font-bold text-gray-900">
+                    <CurrencyValue 
+                      amount={data.currentMonth.revenue} 
+                      fromCurrency={baseCurrency}
+                    />
+                  </p>
+                </div>
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-1">Revenue</h3>
-              <p className="text-2xl font-bold text-gray-900">
-                <CurrencyValue 
-                  amount={data.currentMonth.revenue} 
-                  fromCurrency={baseCurrency}
-                />
-              </p>
             </div>
 
             {/* Gross Profit */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500/20 to-sky-500/20 rounded-xl shadow-md">
-                  <CurrencyDollarIcon className="h-6 w-6 text-sky-600" />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm font-medium text-blue-600">
-                      {formatPercentage(data.currentMonth.grossMargin)}
-                    </span>
-                    <span className="text-xs text-gray-500">of sales</span>
-                  </div>
-                  {(() => {
-                    const comparison = getComparisonData()
-                    if (!comparison?.data) return null
-                    const change = calculateChange(data.currentMonth.grossProfit, comparison.data.grossProfit)
-                    return change && (
-                      <div className={`flex items-center space-x-1 text-sm font-medium ${
-                        change.isPositive ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {change.isPositive ? (
-                          <ChevronUpIcon className="h-4 w-4" />
-                        ) : (
-                          <ChevronDownIcon className="h-4 w-4" />
-                        )}
-                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-1.5 bg-blue-100 rounded-md">
+                        <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
                       </div>
-                    )
-                  })()}
+                      {(() => {
+                        const comparison = getComparisonData()
+                        if (!comparison?.data) return null
+                        const change = calculateChange(data.currentMonth.grossProfit, comparison.data.grossProfit)
+                        return change && (
+                          <div className={`flex items-center space-x-0.5 text-sm font-medium ${
+                            change.isPositive ? 'text-emerald-600' : 'text-red-600'
+                          }`}>
+                            {change.isPositive ? (
+                              <ChevronUpIcon className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDownIcon className="h-3.5 w-3.5" />
+                            )}
+                            <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-blue-600">
+                        {formatPercentage(data.currentMonth.grossMargin)}
+                      </div>
+                      <div className="text-xs text-gray-500">of sales</div>
+                    </div>
+                  </div>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Gross Profit</h3>
+                  <p className="text-xl font-bold text-gray-900">
+                    <CurrencyValue 
+                      amount={data.currentMonth.grossProfit} 
+                      fromCurrency={baseCurrency}
+                    />
+                  </p>
                 </div>
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-1">Gross Profit</h3>
-              <p className="text-2xl font-bold text-gray-900">
-                <CurrencyValue 
-                  amount={data.currentMonth.grossProfit} 
-                  fromCurrency={baseCurrency}
-                />
-              </p>
             </div>
 
             {/* Operating Income */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 rounded-xl shadow-md">
-                  <CalculatorIcon className="h-6 w-6 text-indigo-600" />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm font-medium text-indigo-600">
-                      {formatPercentage(data.currentMonth.operatingMargin)}
-                    </span>
-                    <span className="text-xs text-gray-500">of sales</span>
-                  </div>
-                  {(() => {
-                    const comparison = getComparisonData()
-                    if (!comparison?.data) return null
-                    const change = calculateChange(data.currentMonth.operatingIncome, comparison.data.operatingIncome)
-                    return change && (
-                      <div className={`flex items-center space-x-1 text-sm font-medium ${
-                        change.isPositive ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {change.isPositive ? (
-                          <ChevronUpIcon className="h-4 w-4" />
-                        ) : (
-                          <ChevronDownIcon className="h-4 w-4" />
-                        )}
-                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-1.5 bg-indigo-100 rounded-md">
+                        <CalculatorIcon className="h-4 w-4 text-indigo-600" />
                       </div>
-                    )
-                  })()}
+                      {(() => {
+                        const comparison = getComparisonData()
+                        if (!comparison?.data) return null
+                        const change = calculateChange(data.currentMonth.operatingIncome, comparison.data.operatingIncome)
+                        return change && (
+                          <div className={`flex items-center space-x-0.5 text-sm font-medium ${
+                            change.isPositive ? 'text-emerald-600' : 'text-red-600'
+                          }`}>
+                            {change.isPositive ? (
+                              <ChevronUpIcon className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDownIcon className="h-3.5 w-3.5" />
+                            )}
+                            <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-indigo-600">
+                        {formatPercentage(data.currentMonth.operatingMargin)}
+                      </div>
+                      <div className="text-xs text-gray-500">of sales</div>
+                    </div>
+                  </div>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Operating Income</h3>
+                  <p className="text-xl font-bold text-gray-900">
+                    <CurrencyValue 
+                      amount={data.currentMonth.operatingIncome} 
+                      fromCurrency={baseCurrency}
+                    />
+                  </p>
                 </div>
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-1">Operating Income</h3>
-              <p className="text-2xl font-bold text-gray-900">
-                <CurrencyValue 
-                  amount={data.currentMonth.operatingIncome} 
-                  fromCurrency={baseCurrency}
-                />
-              </p>
             </div>
 
             {/* EBITDA */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-xl shadow-md">
-                  <ChartBarIcon className="h-6 w-6 text-violet-600" />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm font-medium text-purple-600">
-                      {formatPercentage(data.currentMonth.ebitdaMargin)}
-                    </span>
-                    <span className="text-xs text-gray-500">of sales</span>
-                  </div>
-                  {(() => {
-                    const comparison = getComparisonData()
-                    if (!comparison?.data) return null
-                    const change = calculateChange(data.currentMonth.ebitda, comparison.data.ebitda)
-                    return change && (
-                      <div className={`flex items-center space-x-1 text-sm font-medium ${
-                        change.isPositive ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {change.isPositive ? (
-                          <ChevronUpIcon className="h-4 w-4" />
-                        ) : (
-                          <ChevronDownIcon className="h-4 w-4" />
-                        )}
-                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-1.5 bg-purple-100 rounded-md">
+                        <ChartBarIcon className="h-4 w-4 text-purple-600" />
                       </div>
-                    )
-                  })()}
+                      {(() => {
+                        const comparison = getComparisonData()
+                        if (!comparison?.data) return null
+                        const change = calculateChange(data.currentMonth.ebitda, comparison.data.ebitda)
+                        return change && (
+                          <div className={`flex items-center space-x-0.5 text-sm font-medium ${
+                            change.isPositive ? 'text-emerald-600' : 'text-red-600'
+                          }`}>
+                            {change.isPositive ? (
+                              <ChevronUpIcon className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDownIcon className="h-3.5 w-3.5" />
+                            )}
+                            <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-purple-600">
+                        {formatPercentage(data.currentMonth.ebitdaMargin)}
+                      </div>
+                      <div className="text-xs text-gray-500">of sales</div>
+                    </div>
+                  </div>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">EBITDA</h3>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatCurrency(data.currentMonth.ebitda)}
+                  </p>
                 </div>
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-1">EBITDA</h3>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(data.currentMonth.ebitda)}
-              </p>
             </div>
 
             {/* Net Income */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-xl ${
-                  data.currentMonth.netIncome >= 0 ? 'bg-green-100' : 'bg-red-100'
-                }`}>
-                  <ScaleIcon className={`h-6 w-6 ${
-                    data.currentMonth.netIncome >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`} />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="flex flex-col items-end">
-                    <span className={`text-sm font-medium ${
-                      data.currentMonth.netMargin >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {formatPercentage(data.currentMonth.netMargin)}
-                    </span>
-                    <span className="text-xs text-gray-500">of sales</span>
-                  </div>
-                  {(() => {
-                    const comparison = getComparisonData()
-                    if (!comparison?.data) return null
-                    const change = calculateChange(data.currentMonth.netIncome, comparison.data.netIncome)
-                    return change && (
-                      <div className={`flex items-center space-x-1 text-sm font-medium ${
-                        change.isPositive ? 'text-green-600' : 'text-red-600'
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className={`p-1.5 rounded-md ${
+                        data.currentMonth.netIncome >= 0 ? 'bg-emerald-100' : 'bg-red-100'
                       }`}>
-                        {change.isPositive ? (
-                          <ChevronUpIcon className="h-4 w-4" />
-                        ) : (
-                          <ChevronDownIcon className="h-4 w-4" />
-                        )}
-                        <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                        <ScaleIcon className={`h-4 w-4 ${
+                          data.currentMonth.netIncome >= 0 ? 'text-emerald-600' : 'text-red-600'
+                        }`} />
                       </div>
-                    )
-                  })()}
+                      {(() => {
+                        const comparison = getComparisonData()
+                        if (!comparison?.data) return null
+                        const change = calculateChange(data.currentMonth.netIncome, comparison.data.netIncome)
+                        return change && (
+                          <div className={`flex items-center space-x-0.5 text-sm font-medium ${
+                            change.isPositive ? 'text-emerald-600' : 'text-red-600'
+                          }`}>
+                            {change.isPositive ? (
+                              <ChevronUpIcon className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDownIcon className="h-3.5 w-3.5" />
+                            )}
+                            <span>{Math.abs(change.percentage).toFixed(1)}%</span>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-semibold ${
+                        data.currentMonth.netMargin >= 0 ? 'text-emerald-600' : 'text-red-600'
+                      }`}>
+                        {formatPercentage(data.currentMonth.netMargin)}
+                      </div>
+                      <div className="text-xs text-gray-500">of sales</div>
+                    </div>
+                  </div>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Net Income</h3>
+                  <p className={`text-xl font-bold ${
+                    data.currentMonth.netIncome >= 0 ? 'text-gray-900' : 'text-red-600'
+                  }`}>
+                    {formatCurrency(data.currentMonth.netIncome)}
+                  </p>
                 </div>
               </div>
-              <h3 className="text-sm font-medium text-gray-600 mb-1">Net Income</h3>
-              <p className={`text-2xl font-bold ${
-                data.currentMonth.netIncome >= 0 ? 'text-gray-900' : 'text-red-600'
-              }`}>
-                {formatCurrency(data.currentMonth.netIncome)}
-              </p>
             </div>
           </div>
+
         </div>
       )}
 
@@ -2312,6 +2385,108 @@ export const PnLDashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Comparison Help Modal */}
+      {showComparisonHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Understanding Comparison Periods</h2>
+              <button
+                onClick={() => setShowComparisonHelpModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 What are Comparison Periods?</h3>
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    Comparison periods help you understand how your business performance changes over time. Each metric shows a percentage change compared to the selected period.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-emerald-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-emerald-900 mb-2">Previous Month</h4>
+                  <p className="text-sm text-gray-700">
+                    Compares current month metrics to the immediately preceding month. Useful for tracking short-term trends and seasonal variations.
+                  </p>
+                  <div className="mt-3 text-xs text-emerald-700">
+                    <strong>Example:</strong> May vs April
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-blue-900 mb-2">Previous Quarter</h4>
+                  <p className="text-sm text-gray-700">
+                    Compares current month to the same month in the previous quarter. Helps identify quarterly patterns and growth.
+                  </p>
+                  <div className="mt-3 text-xs text-blue-700">
+                    <strong>Example:</strong> May vs February
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-purple-900 mb-2">Same Period Last Year</h4>
+                  <p className="text-sm text-gray-700">
+                    Compares current month to the same month last year. Best for understanding year-over-year growth and eliminating seasonal effects.
+                  </p>
+                  <div className="mt-3 text-xs text-purple-700">
+                    <strong>Example:</strong> May 2025 vs May 2024
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 How to Read the Indicators</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1 text-emerald-600">
+                      <ChevronUpIcon className="h-4 w-4" />
+                      <span className="text-sm font-medium">24.1%</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Positive change - metric has increased compared to the selected period</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1 text-red-600">
+                      <ChevronDownIcon className="h-4 w-4" />
+                      <span className="text-sm font-medium">15.3%</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Negative change - metric has decreased compared to the selected period</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 rounded-xl p-4">
+                <p className="text-sm text-gray-700">
+                  <strong>Note:</strong> If historical data is not available for the selected comparison period, the system will automatically use the closest available data or notify you of the limitation.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exchange Rate Modal */}
+      {showExchangeRateModal && (
+        <ExchangeRateModal
+          isOpen={showExchangeRateModal}
+          onClose={() => setShowExchangeRateModal(false)}
+          baseCurrency={'USD'} // Always use USD as baseline
+          targetCurrency={displayCurrency}
+          currentRate={currentExchangeRate}
+          onRateUpdate={(rate) => {
+            setCurrentExchangeRate(rate)
+            // Update the cache with the new rate
+            currencyService.setExchangeRate('USD', displayCurrency, rate)
+          }}
+        />
       )}
     </div>
   )

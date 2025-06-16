@@ -40,5 +40,6 @@ router.get('/operational', cashflowController.getOperationalData.bind(cashflowCo
 router.get('/banking', cashflowController.getBankingData.bind(cashflowController));
 router.get('/taxes', cashflowController.getTaxesData.bind(cashflowController));
 router.get('/investments', cashflowController.getInvestmentsData.bind(cashflowController));
+router.post('/investments/diagnose', upload.single('file'), cashflowController.diagnoseInvestments.bind(cashflowController));
 
 export { router as cashflowRouter };
