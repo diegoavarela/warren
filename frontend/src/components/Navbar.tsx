@@ -10,7 +10,7 @@ import {
   XMarkIcon,
   SparklesIcon,
   UserCircleIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
 

@@ -191,7 +191,7 @@ export const HomePage: React.FC = () => {
                       }}
                       className="inline-flex items-center px-4 py-2 bg-white border-2 border-purple-200 text-purple-600 font-medium rounded-xl hover:bg-purple-50 hover:border-purple-300 transition-all duration-200"
                     >
-                      Try Demo
+                      Try it yourself
                     </button>
                     <button className={`
                       inline-flex items-center px-6 py-3 bg-gradient-to-r ${module.gradient} text-white font-semibold rounded-2xl
@@ -206,6 +206,7 @@ export const HomePage: React.FC = () => {
             </div>
           ))}
         </div>
+
 
         {/* Highlights Section */}
         <div className="mb-12">

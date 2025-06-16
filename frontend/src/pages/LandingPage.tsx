@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LicenseRequestModal } from '../components/LicenseRequestModal'
+import { VortexFooter } from '../components/VortexFooter'
 import { 
   ArrowRightIcon,
   ChartBarIcon,
@@ -23,7 +23,6 @@ import {
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate()
   const [activeFeature, setActiveFeature] = useState(0)
-  const [showLicenseModal, setShowLicenseModal] = useState(false)
 
   const features = [
     {
@@ -82,11 +81,14 @@ export const LandingPage: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <button className="hidden md:block text-gray-600 hover:text-gray-900 px-4 py-2">
+              <button 
+                onClick={() => {
+                  const featuresSection = document.getElementById('features-section');
+                  featuresSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="hidden md:block text-gray-600 hover:text-gray-900 px-4 py-2"
+              >
                 Features
-              </button>
-              <button className="hidden md:block text-gray-600 hover:text-gray-900 px-4 py-2">
-                About
               </button>
               <button
                 onClick={() => navigate('/login')}
@@ -98,7 +100,7 @@ export const LandingPage: React.FC = () => {
                 onClick={() => navigate('/demo/cashflow')}
                 className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-6 py-2 rounded-full font-medium hover:shadow-lg transition-all duration-300 hover:scale-105"
               >
-                Try Demo
+                Try it yourself
               </button>
             </div>
           </div>
@@ -116,11 +118,11 @@ export const LandingPage: React.FC = () => {
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
               <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                Master Your
+                Master your cash flow
               </span>
               <br />
               <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Cash Flow
+                and profit and loss
               </span>
             </h1>
             
@@ -138,7 +140,7 @@ export const LandingPage: React.FC = () => {
                 <ArrowRightIcon className="h-5 w-5 ml-2" />
               </button>
               <button
-                onClick={() => setShowLicenseModal(true)}
+                onClick={() => navigate('/request-license')}
                 className="inline-flex items-center px-8 py-4 bg-white text-violet-600 border-2 border-violet-600 rounded-full font-semibold text-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:bg-violet-50"
               >
                 Request License
@@ -198,7 +200,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="features-section" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -584,7 +586,7 @@ export const LandingPage: React.FC = () => {
                   <RocketLaunchIcon className="h-5 w-5 ml-2" />
                 </button>
                 <button 
-                  onClick={() => setShowLicenseModal(true)}
+                  onClick={() => navigate('/request-license')}
                   className="inline-flex items-center px-8 py-4 bg-transparent text-white rounded-full font-semibold text-lg border-2 border-white/50 hover:bg-white/10 transition-all duration-300"
                 >
                   Request License
@@ -597,61 +599,8 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="mb-4">
-                <div className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-400 font-mono text-lg leading-tight">
-                  <div className="text-xs">╭─╮╭─╮╭─╮╭─╮╭─╮╭─╮</div>
-                  <div className="text-xs">│W││A││R││R││E││N│</div>
-                  <div className="text-xs">╰─╯╰─╯╰─╯╰─╯╰─╯╰─╯</div>
-                </div>
-              </div>
-              <p className="text-gray-400">
-                The financial intelligence platform for modern businesses.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">Features</a></li>
-                <li><a href="#" className="hover:text-white">Security</a></li>
-                <li><a href="#" className="hover:text-white">Roadmap</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Careers</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">Privacy</a></li>
-                <li><a href="#" className="hover:text-white">Terms</a></li>
-                <li><a href="#" className="hover:text-white">Cookie Policy</a></li>
-                <li><a href="#" className="hover:text-white">GDPR</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-gray-400">
-              © 2024 Warren. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <VortexFooter />
 
-      {/* License Request Modal */}
-      <LicenseRequestModal 
-        isOpen={showLicenseModal}
-        onClose={() => setShowLicenseModal(false)}
-      />
     </div>
   )
 }

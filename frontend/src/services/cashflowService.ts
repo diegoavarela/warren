@@ -25,6 +25,14 @@ export const cashflowService = {
     })
   },
   
+  uploadExcel: (formData: FormData) => {
+    return api.post('/cashflow/upload-excel', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+  
   getDashboard: () => api.get('/cashflow/dashboard'),
   
   getMetrics: () => api.get('/cashflow/metrics'),

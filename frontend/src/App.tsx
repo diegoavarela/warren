@@ -7,7 +7,7 @@ import { LandingPage } from './pages/LandingPage'
 import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { PnLDashboardPage } from './pages/PnLDashboardPage'
-import { ConfigurationPage } from './pages/ConfigurationPage'
+import { ConfigurationPageV2 } from './pages/ConfigurationPageV2'
 import { AdminPage } from './pages/AdminPage'
 import { TermsPage } from './pages/TermsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
@@ -16,6 +16,7 @@ import { DebugPage } from './pages/DebugPage'
 import { ScreenshotPage } from './pages/ScreenshotPage'
 import { ScreenshotInstructions } from './pages/ScreenshotInstructions'
 import ScreenshotGallery from './pages/ScreenshotGallery'
+import { RequestLicensePage } from './pages/RequestLicensePage'
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/request-license" element={<RequestLicensePage />} />
         <Route path="/test" element={<div style={{padding: '20px', fontSize: '24px', color: 'green'}}>React App is Working! ✅</div>} />
         <Route path="/home" element={
           <ProtectedRoute>
@@ -56,7 +58,7 @@ function App() {
         <Route path="/configuration" element={
           <ProtectedRoute>
             <Layout>
-              <ConfigurationPage />
+              <ConfigurationPageV2 />
             </Layout>
           </ProtectedRoute>
         } />
