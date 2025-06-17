@@ -17,6 +17,7 @@ import { ScreenshotPage } from './pages/ScreenshotPage'
 import { ScreenshotInstructions } from './pages/ScreenshotInstructions'
 import ScreenshotGallery from './pages/ScreenshotGallery'
 import { RequestLicensePage } from './pages/RequestLicensePage'
+import { AnalysisPage } from './pages/AnalysisPage'
 
 function App() {
   return (
@@ -90,6 +91,13 @@ function App() {
         <Route path="/screenshot-gallery" element={
           <ProtectedRoute>
             <ScreenshotGallery />
+          </ProtectedRoute>
+        } />
+        <Route path="/analysis" element={
+          <ProtectedRoute>
+            <Layout>
+              <AnalysisPage />
+            </Layout>
           </ProtectedRoute>
         } />
       </Routes>
