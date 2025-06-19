@@ -3,7 +3,6 @@ import {
   SparklesIcon,
   PaperAirplaneIcon,
   ChartBarIcon,
-  TableCellsIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   DocumentTextIcon,
@@ -11,12 +10,17 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  BanknotesIcon,
+  CalendarIcon,
+  CheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { analysisService, AnalysisResponse, DataSummary } from '../services/analysisService'
-import { ChartRenderer } from '../components/ChartRenderer'
-import { TableRenderer } from '../components/TableRenderer'
-import { DataAvailabilityCard } from '../components/DataAvailabilityCard'
+import { InteractiveChart } from '../components/InteractiveChart'
+import { InteractiveTable } from '../components/InteractiveTable'
+import { DrillDownModal } from '../components/DrillDownModal'
+import { FollowUpQuestions } from '../components/FollowUpQuestions'
 
 interface QueryHistoryItem {
   id: string
@@ -31,9 +35,13 @@ export const AnalysisPage: React.FC = () => {
   const [dataSummary, setDataSummary] = useState<DataSummary | null>(null)
   const [suggestedQueries, setSuggestedQueries] = useState<string[]>([])
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([])
-  const [currentResponse, setCurrentResponse] = useState<AnalysisResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [drillDownModal, setDrillDownModal] = useState<{
+    isOpen: boolean
+    query: string
+    context: any
+  }>({ isOpen: false, query: '', context: null })
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -81,7 +89,6 @@ export const AnalysisPage: React.FC = () => {
       }
 
       setQueryHistory([...queryHistory, historyItem])
-      setCurrentResponse(response)
       setQuery('')
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to process query')
@@ -94,6 +101,43 @@ export const AnalysisPage: React.FC = () => {
     setQuery(suggestion)
   }
 
+  const handleChartDrillDown = (dataPoint: any, chartTitle: string) => {
+    const query = `Analyze the ${dataPoint.datasetLabel} value of ${dataPoint.value} for ${dataPoint.label}. What factors contributed to this result and how does it compare to other periods?`
+    setDrillDownModal({
+      isOpen: true,
+      query,
+      context: {
+        type: 'chart',
+        title: chartTitle,
+        data: dataPoint
+      }
+    })
+  }
+
+  const handleTableDrillDown = (cellData: any, tableTitle: string) => {
+    const query = `Provide detailed analysis of ${cellData.columnHeader}: ${cellData.value}. Show historical trends, comparisons, and key factors influencing this metric.`
+    setDrillDownModal({
+      isOpen: true,
+      query,
+      context: {
+        type: 'cell',
+        title: tableTitle,
+        data: cellData
+      }
+    })
+  }
+
+  const handleFollowUpQuestion = (question: string) => {
+    setQuery(question)
+    // Automatically submit the question
+    setTimeout(() => {
+      const form = document.querySelector('form')
+      if (form) {
+        form.dispatchEvent(new Event('submit', { bubbles: true }))
+      }
+    }, 100)
+  }
+
   const renderResponse = (response: AnalysisResponse) => {
     return (
       <div className="space-y-4">
@@ -104,23 +148,29 @@ export const AnalysisPage: React.FC = () => {
           </div>
         )}
 
-        {/* Charts */}
+        {/* Interactive Charts */}
         {response.charts && response.charts.length > 0 && (
           <div className="space-y-4">
             {response.charts.map((chart, index) => (
               <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
-                <ChartRenderer specification={chart} />
+                <InteractiveChart 
+                  specification={chart} 
+                  onDataPointClick={(dataPoint) => handleChartDrillDown(dataPoint, chart.title)}
+                />
               </div>
             ))}
           </div>
         )}
 
-        {/* Tables */}
+        {/* Interactive Tables */}
         {response.tables && response.tables.length > 0 && (
           <div className="space-y-4">
             {response.tables.map((table, index) => (
               <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
-                <TableRenderer specification={table} />
+                <InteractiveTable 
+                  specification={table}
+                  onCellClick={(cellData) => handleTableDrillDown(cellData, table.title)}
+                />
               </div>
             ))}
           </div>
@@ -204,25 +254,127 @@ export const AnalysisPage: React.FC = () => {
         <div className={`${sidebarCollapsed ? 'w-12' : 'w-72'} transition-all duration-300 ease-in-out bg-gray-50 border-r border-gray-200 flex flex-col relative overflow-hidden`}>
           {!sidebarCollapsed && (
             <div className="p-3 space-y-3 overflow-y-auto">
-              {/* Compact Data Availability */}
+              {/* Enhanced Data Availability */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <DocumentTextIcon className="h-4 w-4 mr-2 text-purple-600" />
                   Data Availability
                 </h3>
                 {dataSummary ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span>P&L Data</span>
-                      <div className={`w-2 h-2 rounded-full ${dataSummary.pnl.hasData ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  <div className="space-y-3">
+                    {/* P&L Data Section */}
+                    <div className="pb-2 border-b border-gray-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1">
+                          <ChartBarIcon className="h-3.5 w-3.5 text-gray-600" />
+                          <span className="text-xs font-medium text-gray-700">P&L Data</span>
+                        </div>
+                        {dataSummary.pnl.hasData ? (
+                          <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XCircleIcon className="h-4 w-4 text-gray-300" />
+                        )}
+                      </div>
+                      {dataSummary.pnl.hasData && (
+                        <div className="ml-4 space-y-0.5">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            {dataSummary.pnl.monthsAvailable} months
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1">
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.revenue ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Revenue</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.costs ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Costs</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.margins ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Margins</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.ebitda ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">EBITDA</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span>Cashflow Data</span>
-                      <div className={`w-2 h-2 rounded-full ${dataSummary.cashflow.hasData ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+
+                    {/* Cashflow Data Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1">
+                          <BanknotesIcon className="h-3.5 w-3.5 text-gray-600" />
+                          <span className="text-xs font-medium text-gray-700">Cashflow Data</span>
+                        </div>
+                        {dataSummary.cashflow.hasData ? (
+                          <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XCircleIcon className="h-4 w-4 text-gray-300" />
+                        )}
+                      </div>
+                      {dataSummary.cashflow.hasData && (
+                        <div className="ml-4 space-y-0.5">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            {dataSummary.cashflow.monthsAvailable} months
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1">
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.cashPosition ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Cash Pos.</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.bankBalances ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Bank Bal.</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.inflows ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Inflows</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.outflows ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Outflows</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {dataSummary.pnl.hasData && (
-                      <p className="text-xs text-gray-500 mt-1">{dataSummary.pnl.monthsAvailable} months available</p>
-                    )}
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">Loading...</p>
@@ -249,16 +401,16 @@ export const AnalysisPage: React.FC = () => {
             </div>
           )}
 
-          {/* Prominent Fold Button */}
+          {/* Sleek Fold Button */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-12 bg-white border border-gray-300 rounded-r-md shadow-sm hover:shadow-md transition-all flex items-center justify-center z-20"
+            className="absolute -right-2.5 top-1/2 transform -translate-y-1/2 w-5 h-10 bg-white border border-gray-200 rounded-r-md hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center z-20"
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {sidebarCollapsed ? (
-              <ChevronRightIcon className="h-4 w-4 text-gray-600" />
+              <ChevronRightIcon className="h-3 w-3 text-gray-500" />
             ) : (
-              <ChevronLeftIcon className="h-4 w-4 text-gray-600" />
+              <ChevronLeftIcon className="h-3 w-3 text-gray-500" />
             )}
           </button>
         </div>
@@ -268,7 +420,7 @@ export const AnalysisPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col min-h-0">
             {/* Chat Header */}
             <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Analysis Chat (Full Height)</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Analysis Chat</h3>
               <p className="text-sm text-gray-500">
                 {hasData ? 'Ask questions about your financial data' : 'Upload data to start analyzing'}
               </p>
@@ -302,6 +454,12 @@ export const AnalysisPage: React.FC = () => {
                   <div className="flex justify-start">
                     <div className="max-w-full">
                       {renderResponse(item.response)}
+                      {/* Follow-up Questions */}
+                      <FollowUpQuestions
+                        lastQuery={item.query}
+                        lastResponse={item.response}
+                        onQuestionClick={handleFollowUpQuestion}
+                      />
                     </div>
                   </div>
                 </div>
@@ -359,6 +517,14 @@ export const AnalysisPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Drill-Down Modal */}
+      <DrillDownModal
+        isOpen={drillDownModal.isOpen}
+        onClose={() => setDrillDownModal({ isOpen: false, query: '', context: null })}
+        initialQuery={drillDownModal.query}
+        context={drillDownModal.context}
+      />
     </div>
   )
 }

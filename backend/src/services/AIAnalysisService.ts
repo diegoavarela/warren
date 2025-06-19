@@ -65,7 +65,11 @@ export class AIAnalysisService {
 
   private constructor() {
     const apiKey = process.env.OPENAI_API_KEY
+    logger.info('Environment check - OPENAI_API_KEY exists:', !!apiKey)
+    logger.info('Environment check - OPENAI_API_KEY length:', apiKey?.length || 0)
     if (!apiKey) {
+      logger.error('OPENAI_API_KEY not found in environment variables')
+      logger.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('OPENAI')))
       throw new Error('OPENAI_API_KEY is not configured')
     }
     

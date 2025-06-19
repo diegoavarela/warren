@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express'
 import { AIAnalysisService } from '../services/AIAnalysisService'
 import { FinancialDataAggregator } from '../services/FinancialDataAggregator'
+import { FileUploadService } from '../services/FileUploadService'
+import { pool } from '../config/database'
 import { logger } from '../utils/logger'
 
 interface AuthRequest extends Request {
@@ -10,10 +12,12 @@ interface AuthRequest extends Request {
 export class AIAnalysisController {
   private aiService: AIAnalysisService
   private dataAggregator: FinancialDataAggregator
+  private fileUploadService: FileUploadService
 
   constructor() {
     this.aiService = AIAnalysisService.getInstance()
     this.dataAggregator = FinancialDataAggregator.getInstance()
+    this.fileUploadService = new FileUploadService(pool)
   }
 
   async analyzeQuery(req: AuthRequest, res: Response, next: NextFunction) {
@@ -49,6 +53,9 @@ export class AIAnalysisController {
     try {
       logger.info(`Data summary request from user ${req.user?.email}`)
 
+      // Get upload information from database
+      const uploadData = await this.fileUploadService.getDataAvailability(parseInt(req.user!.id))
+      
       const financialData = await this.dataAggregator.aggregateAllData()
       
       // Create a summary of available data
@@ -64,7 +71,7 @@ export class AIAnalysisController {
             personnelCosts: financialData.pnl.metrics.personnelCosts.some(p => p.total > 0),
             ebitda: financialData.pnl.metrics.ebitda.length > 0
           },
-          lastUpload: financialData.pnl.metadata.lastUpload
+          lastUpload: uploadData.pnl?.uploadDate || financialData.pnl.metadata.lastUpload
         },
         cashflow: {
           hasData: financialData.cashflow.metadata.hasData,
@@ -77,7 +84,7 @@ export class AIAnalysisController {
             inflows: financialData.cashflow.metrics.inflows.length > 0,
             outflows: financialData.cashflow.metrics.outflows.length > 0
           },
-          lastUpload: financialData.cashflow.metadata.lastUpload
+          lastUpload: uploadData.cashflow?.uploadDate || financialData.cashflow.metadata.lastUpload
         }
       }
 
@@ -130,6 +137,32 @@ export class AIAnalysisController {
       })
     } catch (error) {
       logger.error('Error checking data availability:', error)
+      next(error)
+    }
+  }
+
+  async getUploadHistory(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      logger.info(`Upload history request from user ${req.user?.email}`)
+
+      const uploads = await this.fileUploadService.getFileUploadsByUser(parseInt(req.user!.id))
+      
+      res.json({
+        success: true,
+        data: uploads.map(upload => ({
+          id: upload.id,
+          fileType: upload.fileType,
+          filename: upload.originalFilename,
+          uploadDate: upload.uploadDate,
+          status: upload.processingStatus,
+          isValid: upload.isValid,
+          monthsAvailable: upload.monthsAvailable,
+          periodStart: upload.periodStart,
+          periodEnd: upload.periodEnd
+        }))
+      })
+    } catch (error) {
+      logger.error('Error getting upload history:', error)
       next(error)
     }
   }
