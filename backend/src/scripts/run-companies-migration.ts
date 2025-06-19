@@ -1,3 +1,7 @@
+import dotenv from 'dotenv'
+// Load environment variables first
+dotenv.config()
+
 import { pool } from '../config/database'
 import fs from 'fs'
 import path from 'path'

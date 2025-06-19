@@ -26,11 +26,11 @@ CREATE TABLE IF NOT EXISTS companies (
     show_currency_selector BOOLEAN DEFAULT TRUE,
     
     -- Excel structure configuration (stored as JSON)
-    excel_structure JSONB,
-    
-    -- Constraints
-    CONSTRAINT unique_active_company UNIQUE (is_active) WHERE is_active = TRUE
+    excel_structure JSONB
 );
+
+-- Create partial unique index for active company constraint
+CREATE UNIQUE INDEX unique_active_company ON companies (is_active) WHERE is_active = TRUE;
 
 -- Create index for faster queries
 CREATE INDEX idx_companies_is_active ON companies(is_active);
