@@ -6,7 +6,14 @@ import {
   ArrowPathIcon,
   DocumentTextIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ChartBarIcon,
+  BanknotesIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  CheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { analysisService, AnalysisResponse, DataSummary } from '../services/analysisService'
 import { ChartRenderer } from '../components/ChartRenderer'
@@ -105,16 +112,138 @@ export const AnalysisPageFixed: React.FC = () => {
           {!sidebarCollapsed && (
             <div className="p-3 space-y-3">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-                <h3 className="text-sm font-semibold mb-2">Data Availability</h3>
-                {/* Data content */}
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-2 text-purple-600" />
+                  Data Availability
+                </h3>
+                {dataSummary ? (
+                  <div className="space-y-3">
+                    {/* P&L Data Section */}
+                    <div className="pb-2 border-b border-gray-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1">
+                          <ChartBarIcon className="h-3.5 w-3.5 text-gray-600" />
+                          <span className="text-xs font-medium text-gray-700">P&L Data</span>
+                        </div>
+                        {dataSummary.pnl.hasData ? (
+                          <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XCircleIcon className="h-4 w-4 text-gray-300" />
+                        )}
+                      </div>
+                      {dataSummary.pnl.hasData && (
+                        <div className="ml-4 space-y-0.5">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            {dataSummary.pnl.monthsAvailable} months
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1">
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.revenue ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Revenue</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.costs ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Costs</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.margins ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Margins</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.pnl.metrics.ebitda ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">EBITDA</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cashflow Data Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1">
+                          <BanknotesIcon className="h-3.5 w-3.5 text-gray-600" />
+                          <span className="text-xs font-medium text-gray-700">Cashflow Data</span>
+                        </div>
+                        {dataSummary.cashflow.hasData ? (
+                          <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XCircleIcon className="h-4 w-4 text-gray-300" />
+                        )}
+                      </div>
+                      {dataSummary.cashflow.hasData && (
+                        <div className="ml-4 space-y-0.5">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            {dataSummary.cashflow.monthsAvailable} months
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1">
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.cashPosition ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Cash Pos.</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.bankBalances ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Bank Bal.</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.inflows ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Inflows</span>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              {dataSummary.cashflow.metrics.outflows ? (
+                                <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
+                              ) : (
+                                <XMarkIcon className="h-3 w-3 text-gray-300 mr-1" />
+                              )}
+                              <span className="text-gray-600">Outflows</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Loading...</p>
+                )}
               </div>
             </div>
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-12 bg-white border rounded-r-md"
+            className="absolute -right-2.5 top-1/2 transform -translate-y-1/2 w-5 h-10 bg-white border border-gray-200 rounded-r-md hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center z-20"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {sidebarCollapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
+            {sidebarCollapsed ? <ChevronRightIcon className="h-3 w-3 text-gray-500" /> : <ChevronLeftIcon className="h-3 w-3 text-gray-500" />}
           </button>
         </div>
 

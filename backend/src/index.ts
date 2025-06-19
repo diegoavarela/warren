@@ -1,8 +1,11 @@
+import dotenv from 'dotenv';
+// Load environment variables FIRST before any other imports
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { authRouter } from './routes/auth';
 import { cashflowRouter } from './routes/cashflow';
 import { pnlRouter } from './routes/pnl';
@@ -16,10 +19,8 @@ import { analysisRoutes } from './routes/analysis';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
-dotenv.config();
-
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 4001;
 
 // Security middleware
 app.use(helmet());
@@ -29,6 +30,8 @@ app.use(cors({
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3002',
+      'http://localhost:4000',
+      'http://localhost:4001',
       'https://warren-k0mraqa0p-diegoavarelas-projects.vercel.app',
       /\.vercel\.app$/  // Allow all Vercel preview URLs
     ];
@@ -47,10 +50,10 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting (relaxed for development)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 1000, // limit each IP to 1000 requests per minute (very generous for dev)
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);

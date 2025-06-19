@@ -4,12 +4,22 @@ import { OperationalData, InvestmentData, BankData, TaxData, ExtendedFinancialDa
 import { logger } from '../utils/logger';
 
 export class ExtendedFinancialService {
+  private static instance: ExtendedFinancialService;
   private storedExtendedData: ExtendedFinancialData = {
     operational: [],
     investments: [],
     banks: [],
     taxes: []
   };
+
+  private constructor() {}
+
+  static getInstance(): ExtendedFinancialService {
+    if (!ExtendedFinancialService.instance) {
+      ExtendedFinancialService.instance = new ExtendedFinancialService();
+    }
+    return ExtendedFinancialService.instance;
+  }
   
   /**
    * Parse extended financial data from Excel worksheet
@@ -480,5 +490,12 @@ export class ExtendedFinancialService {
     }
     
     return summary;
+  }
+
+  /**
+   * Get extended metrics data
+   */
+  getExtendedMetrics(): ExtendedFinancialData {
+    return this.storedExtendedData;
   }
 }

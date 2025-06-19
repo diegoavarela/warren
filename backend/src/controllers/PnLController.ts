@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { PnLService } from '../services/PnLService'
+import { FileUploadService } from '../services/FileUploadService'
+import { pool } from '../config/database'
 import { logger } from '../utils/logger'
 
 interface AuthRequest extends Request {
@@ -8,12 +10,16 @@ interface AuthRequest extends Request {
 
 export class PnLController {
   private pnlService: PnLService
+  private fileUploadService: FileUploadService
 
   constructor() {
     this.pnlService = PnLService.getInstance()
+    this.fileUploadService = new FileUploadService(pool)
   }
 
   async uploadPnL(req: AuthRequest, res: Response, next: NextFunction) {
+    let fileUploadId: number | null = null;
+    
     try {
       if (!req.file || !req.file.buffer) {
         return res.status(400).json({
@@ -24,22 +30,91 @@ export class PnLController {
 
       logger.info(`P&L file upload initiated by user ${req.user?.email}`)
 
+      // Create file upload record
+      const fileUploadRecord = await this.fileUploadService.createFileUpload({
+        userId: parseInt(req.user!.id),
+        fileType: 'pnl',
+        filename: `pnl_${Date.now()}_${req.file.originalname}`,
+        originalFilename: req.file.originalname,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype
+      });
+      
+      fileUploadId = fileUploadRecord.id;
+
+      // Mark processing as started
+      await this.fileUploadService.markProcessingStarted(fileUploadId);
+
       const result = await this.pnlService.processExcelFile(req.file.buffer)
 
       if (!result.success) {
+        await this.fileUploadService.markProcessingFailed(fileUploadId, result.error || 'Failed to process P&L file');
         return res.status(400).json({
           success: false,
           message: result.error || 'Failed to process P&L file'
         })
       }
 
+      // Get metrics for data summary
+      const metrics = this.pnlService.getStoredMetrics();
+      const summary = this.pnlService.getSummary();
+      
+      // Calculate date range with proper validation
+      let periodStart: Date | null = null;
+      let periodEnd: Date | null = null;
+      
+      if (metrics.length > 0) {
+        const startDate = new Date(metrics[0].month);
+        const endDate = new Date(metrics[metrics.length - 1].month);
+        
+        // Only set if dates are valid
+        periodStart = !isNaN(startDate.getTime()) ? startDate : null;
+        periodEnd = !isNaN(endDate.getTime()) ? endDate : null;
+      }
+
+      // Create data summary
+      const dataSummary = {
+        monthsProcessed: result.data?.monthsProcessed || 0,
+        summary: {
+          totalRevenue: summary.totalRevenue,
+          totalCOGS: summary.totalCOGS,
+          totalGrossProfit: summary.totalGrossProfit,
+          avgGrossMargin: summary.avgGrossMargin,
+          totalOperatingExpenses: summary.totalOperatingExpenses,
+          totalOperatingIncome: summary.totalOperatingIncome,
+          avgOperatingMargin: summary.avgOperatingMargin,
+          totalEBITDA: summary.totalEBITDA,
+          avgEBITDAMargin: summary.avgEBITDAMargin
+        },
+        categoriesProcessed: result.data?.categoriesProcessed || []
+      };
+
+      // Mark processing as completed
+      await this.fileUploadService.markProcessingCompleted(fileUploadId, {
+        isValid: true,
+        dataSummary,
+        periodStart: periodStart || undefined,
+        periodEnd: periodEnd || undefined,
+        monthsAvailable: metrics.length,
+        recordsCount: metrics.length
+      });
+
       res.json({
         success: true,
         message: 'P&L file processed successfully',
-        data: result.data
+        data: {
+          ...result.data,
+          uploadId: fileUploadId
+        }
       })
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error in P&L upload:', error)
+      
+      // Mark processing as failed if we have a file upload ID
+      if (fileUploadId) {
+        await this.fileUploadService.markProcessingFailed(fileUploadId, error.message || 'Unknown error');
+      }
+      
       next(error)
     }
   }

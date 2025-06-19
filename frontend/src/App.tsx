@@ -20,6 +20,7 @@ import { RequestLicensePage } from './pages/RequestLicensePage'
 import { AnalysisPage } from './pages/AnalysisPage'
 import { AnalysisPageTest } from './pages/AnalysisPageTest'
 import { AnalysisPageFixed } from './pages/AnalysisPageFixed'
+import { AnalysisPageDemo } from './pages/AnalysisPageDemo'
 
 function App() {
   return (

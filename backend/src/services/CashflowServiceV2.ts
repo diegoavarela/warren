@@ -128,7 +128,7 @@ export class CashflowServiceV2 {
     const currentMonthArrayIndex = parsedMetrics.findIndex(m => m.month === currentMonthData.month);
     
     // Get investment data for YTD calculation
-    const extendedService = new ExtendedFinancialService();
+    const extendedService = ExtendedFinancialService.getInstance();
     const extendedData = extendedService.getStoredExtendedData();
     const investmentData = extendedData.investments || [];
     

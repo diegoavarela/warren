@@ -6,20 +6,25 @@ import { CashflowServiceV2 } from '../services/CashflowServiceV2';
 import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
 import { ExtendedFinancialService } from '../services/ExtendedFinancialService';
 import { InvestmentDiagnosticService } from '../services/InvestmentDiagnosticService';
+import { FileUploadService } from '../services/FileUploadService';
+import { pool } from '../config/database';
 import { logger } from '../utils/logger';
 
 // Create singleton instances
 const cashflowServiceInstance = new CashflowServiceV2();
 const analysisServiceInstance = new CashFlowAnalysisService();
-const extendedFinancialServiceInstance = new ExtendedFinancialService();
+const extendedFinancialServiceInstance = ExtendedFinancialService.getInstance();
 
 export class CashflowController {
   private cashflowService = cashflowServiceInstance;
   private analysisService = analysisServiceInstance;
   private extendedFinancialService = extendedFinancialServiceInstance;
   private investmentDiagnosticService = new InvestmentDiagnosticService();
+  private fileUploadService = new FileUploadService(pool);
 
   async uploadFile(req: AuthRequest, res: Response, next: NextFunction) {
+    let fileUploadId: number | null = null;
+    
     try {
       if (!req.file) {
         return next(createError('No file uploaded', 400));
@@ -27,11 +32,27 @@ export class CashflowController {
 
       logger.info(`File received: ${req.file.originalname}, size: ${req.file.size}, type: ${req.file.mimetype}`);
 
+      // Create file upload record
+      const fileUploadRecord = await this.fileUploadService.createFileUpload({
+        userId: parseInt(req.user!.id),
+        fileType: 'cashflow',
+        filename: `cashflow_${Date.now()}_${req.file.originalname}`,
+        originalFilename: req.file.originalname,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype
+      });
+      
+      fileUploadId = fileUploadRecord.id;
+
+      // Mark processing as started
+      await this.fileUploadService.markProcessingStarted(fileUploadId);
+
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(req.file.buffer);
 
       const worksheet = workbook.getWorksheet(1);
       if (!worksheet) {
+        await this.fileUploadService.markProcessingFailed(fileUploadId, 'No worksheet found in Excel file');
         return next(createError('No worksheet found in Excel file', 400));
       }
 
@@ -42,26 +63,60 @@ export class CashflowController {
       const extendedData = this.extendedFinancialService.parseExtendedFinancialData(worksheet);
       logger.info(`Extended financial data parsed: ${extendedData.operational.length} operational months processed`);
 
+      // Calculate date range
+      const periodStart = metrics.length > 0 ? new Date(metrics[0].date) : null;
+      const periodEnd = metrics.length > 0 ? new Date(metrics[metrics.length - 1].date) : null;
+
+      // Create data summary
+      const dataSummary = {
+        monthsProcessed: metrics.length,
+        dateRange: periodStart && periodEnd ? {
+          from: periodStart.toISOString(),
+          to: periodEnd.toISOString()
+        } : null,
+        extendedData: {
+          operational: extendedData.operational.length,
+          banks: extendedData.banks.length,
+          taxes: extendedData.taxes.length
+        },
+        metrics: {
+          totalInflows: metrics.reduce((sum, m) => sum + m.totalInflow, 0),
+          totalOutflows: metrics.reduce((sum, m) => sum + m.totalOutflow, 0),
+          avgMonthlyGeneration: metrics.length > 0 ? 
+            metrics.reduce((sum, m) => sum + m.monthlyGeneration, 0) / metrics.length : 0
+        }
+      };
+
+      // Mark processing as completed
+      await this.fileUploadService.markProcessingCompleted(fileUploadId, {
+        isValid: true,
+        dataSummary,
+        periodStart: periodStart || undefined,
+        periodEnd: periodEnd || undefined,
+        monthsAvailable: metrics.length,
+        recordsCount: metrics.length
+      });
+
       res.json({
         success: true,
         message: 'File uploaded and processed successfully',
         data: {
+          uploadId: fileUploadId,
           filename: req.file.originalname,
           monthsProcessed: metrics.length,
-          dateRange: metrics.length > 0 ? {
-            from: metrics[0].date,
-            to: metrics[metrics.length - 1].date
-          } : null,
-          extendedDataProcessed: {
-            operational: extendedData.operational.length,
-            banks: extendedData.banks.length,
-            taxes: extendedData.taxes.length
-          }
+          dateRange: dataSummary.dateRange,
+          extendedDataProcessed: dataSummary.extendedData
         }
       });
     } catch (error: any) {
       logger.error('Error processing Excel file:', error);
       const errorMessage = error.message || 'Unknown error processing Excel file';
+      
+      // Mark processing as failed if we have a file upload ID
+      if (fileUploadId) {
+        await this.fileUploadService.markProcessingFailed(fileUploadId, errorMessage);
+      }
+      
       next(createError(`Error processing Excel file: ${errorMessage}`, 500));
     }
   }

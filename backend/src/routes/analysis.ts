@@ -1,12 +1,17 @@
 import { Router } from 'express'
 import { AIAnalysisController } from '../controllers/AIAnalysisController'
 import { authMiddleware } from '../middleware/auth'
+import { logger } from '../utils/logger'
 
 const router = Router()
+
+// Initialize AI controller
 const aiController = new AIAnalysisController()
+logger.info('AI Analysis service initialized successfully')
 
 // All routes require authentication
 router.use(authMiddleware)
+
 
 // Main analysis endpoint
 router.post('/query', aiController.analyzeQuery.bind(aiController))
@@ -19,5 +24,8 @@ router.get('/suggestions', aiController.getSuggestedQueries.bind(aiController))
 
 // Check if specific data is available
 router.post('/check-availability', aiController.checkDataAvailability.bind(aiController))
+
+// Get file upload history for the current user
+router.get('/uploads', aiController.getUploadHistory.bind(aiController))
 
 export const analysisRoutes = router

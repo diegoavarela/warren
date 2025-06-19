@@ -1,7 +1,19 @@
 import { PnLService } from './PnLService'
 import { CashflowService } from './CashflowService'
+import { CashflowServiceV2 } from './CashflowServiceV2'
 import { ExtendedFinancialService } from './ExtendedFinancialService'
 import { logger } from '../utils/logger'
+import { format } from 'date-fns'
+import { BankData as ExtendedBankData, InvestmentData as ExtendedInvestmentData } from '../interfaces/FinancialData'
+
+interface CashflowEntry {
+  date: Date
+  description: string
+  income: number
+  expenses: number
+  cashflow: number
+  cumulativeCash: number
+}
 
 export interface MonthlyData {
   month: string
@@ -44,13 +56,13 @@ export interface DetailedOutflows {
   amount: number
 }
 
-export interface BankData {
+export interface SimpleBankData {
   month: string
   bank: string
   balance: number
 }
 
-export interface InvestmentData {
+export interface SimpleInvestmentData {
   month: string
   portfolioValue: number
   dividends: number
@@ -82,8 +94,8 @@ export interface FinancialDataContext {
       inflows: DetailedInflows[]
       outflows: DetailedOutflows[]
       netCashflow: MonthlyData[]
-      bankBalances: BankData[]
-      investments: InvestmentData[]
+      bankBalances: SimpleBankData[]
+      investments: SimpleInvestmentData[]
       cashPosition: MonthlyData[]
     }
     metadata: {
@@ -99,11 +111,13 @@ export class FinancialDataAggregator {
   private static instance: FinancialDataAggregator
   private pnlService: PnLService
   private cashflowService: CashflowService
+  private cashflowServiceV2: CashflowServiceV2
   private extendedService: ExtendedFinancialService
 
   private constructor() {
     this.pnlService = PnLService.getInstance()
     this.cashflowService = CashflowService.getInstance()
+    this.cashflowServiceV2 = new CashflowServiceV2()
     this.extendedService = ExtendedFinancialService.getInstance()
   }
 
@@ -288,10 +302,15 @@ export class FinancialDataAggregator {
   }
 
   private async aggregateCashflowData() {
-    const storedData = this.cashflowService.getStoredData()
-    const lastUpload = this.cashflowService.getLastUploadDate()
+    // Try to get data from CashflowServiceV2 first (which is what the controller uses)
+    const storedMetrics = this.cashflowServiceV2.getStoredMetrics()
     
-    if (!storedData || storedData.length === 0) {
+    // If no data in V2, fall back to original service
+    const storedData = storedMetrics.length > 0 ? [] : this.cashflowService.getStoredData()
+    const lastUpload = this.cashflowService.getLastUploadDate() || (storedMetrics.length > 0 ? new Date() : null)
+    
+    // Check if we have data from either source
+    if (storedMetrics.length === 0 && (!storedData || storedData.length === 0)) {
       return {
         availableMonths: [],
         metrics: {
@@ -314,104 +333,182 @@ export class FinancialDataAggregator {
     // Get extended metrics
     const extendedMetrics = await this.extendedService.getExtendedMetrics()
     
-    // Extract months
-    const availableMonths = storedData.map(d => d.month).filter(m => m !== 'Total')
+    // If we have data from CashflowServiceV2, use that
+    if (storedMetrics.length > 0) {
+      return this.aggregateFromV2Metrics(storedMetrics, extendedMetrics, lastUpload)
+    }
+    
+    // Otherwise, use the old format
+    // Extract months from cashflow data
+    const monthsSet = new Set<string>()
+    storedData.forEach((entry: CashflowEntry) => {
+      monthsSet.add(format(entry.date, 'MMMM'))
+    })
+    const availableMonths = Array.from(monthsSet)
+    
+    // Group cashflow data by month
+    const monthlyData = new Map<string, { income: number, expenses: number, cashflow: number, cumulative: number }>()
+    
+    storedData.forEach((entry: CashflowEntry) => {
+      const month = format(entry.date, 'MMMM')
+      if (!monthlyData.has(month)) {
+        monthlyData.set(month, { income: 0, expenses: 0, cashflow: 0, cumulative: 0 })
+      }
+      const data = monthlyData.get(month)!
+      data.income += entry.income
+      data.expenses += entry.expenses
+      data.cashflow += entry.cashflow
+      data.cumulative = entry.cumulativeCash
+    })
     
     // Inflows breakdown
     const inflows: DetailedInflows[] = []
-    storedData.forEach(row => {
-      if (row.month === 'Total') return
-      
-      // Revenue inflows
-      if (row.category === 'Revenues' && row[row.month] > 0) {
+    monthlyData.forEach((data, month) => {
+      if (data.income > 0) {
         inflows.push({
-          month: row.month,
-          category: 'Customer Revenues',
-          amount: row[row.month]
-        })
-      }
-      
-      // Investment inflows
-      const investmentRows = ['Galicia Dividends', 'Balanz Dividends']
-      if (investmentRows.includes(row.lineItem) && row[row.month] > 0) {
-        inflows.push({
-          month: row.month,
-          category: row.lineItem,
-          amount: row[row.month]
+          month,
+          category: 'Total Income',
+          amount: data.income
         })
       }
     })
 
     // Outflows breakdown
     const outflows: DetailedOutflows[] = []
-    const outflowCategories = [
-      'Personnel Costs',
-      'Taxes',
-      'Banking',
-      'Technology & Software',
-      'Professional Services',
-      'Office & Administration',
-      'Other Expenses'
-    ]
-    
-    storedData.forEach(row => {
-      if (row.month === 'Total') return
-      if (outflowCategories.includes(row.category || '') && row[row.month] > 0) {
+    monthlyData.forEach((data, month) => {
+      if (data.expenses > 0) {
         outflows.push({
-          month: row.month,
-          category: row.category!,
-          amount: Math.abs(row[row.month])
+          month,
+          category: 'Total Expenses',
+          amount: data.expenses
         })
       }
     })
 
     // Net cashflow
     const netCashflow: MonthlyData[] = []
-    const cashPositionRow = storedData.find(r => r.lineItem === 'Cash Position')
-    if (cashPositionRow) {
-      availableMonths.forEach(month => {
-        netCashflow.push({
-          month,
-          value: cashPositionRow[month] || 0,
-          date: this.getDateForMonth(month)
-        })
+    monthlyData.forEach((data, month) => {
+      netCashflow.push({
+        month,
+        value: data.cashflow,
+        date: this.getDateForMonth(month)
       })
-    }
+    })
 
-    // Bank balances
-    const bankBalances: BankData[] = []
-    const bankAccounts = ['Santander', 'Galicia', 'Frances', 'Payoneer', 'Brubank']
-    bankAccounts.forEach(bank => {
-      const bankRow = storedData.find(r => r.lineItem === bank)
-      if (bankRow) {
-        availableMonths.forEach(month => {
-          if (bankRow[month]) {
-            bankBalances.push({
-              month,
-              bank,
-              balance: bankRow[month]
-            })
-          }
+    // Bank balances from extended metrics
+    const bankBalances: SimpleBankData[] = []
+    extendedMetrics.banks.forEach((bankData: ExtendedBankData) => {
+      if (bankData.checkingBalance || bankData.savingsBalance) {
+        bankBalances.push({
+          month: bankData.month,
+          bank: 'Total Banks',
+          balance: (bankData.checkingBalance || 0) + (bankData.savingsBalance || 0)
         })
       }
     })
 
-    // Investments
-    const investments: InvestmentData[] = extendedMetrics.investments.monthlyData || []
-
-    // Cash position (ending balance)
-    const cashPosition: MonthlyData[] = []
-    const endingBalanceRow = storedData.find(r => r.lineItem === 'Ending Balance')
-    if (endingBalanceRow) {
-      availableMonths.forEach(month => {
-        cashPosition.push({
-          month,
-          value: endingBalanceRow[month] || 0,
-          date: this.getDateForMonth(month)
+    // Investments from extended metrics
+    const investments: SimpleInvestmentData[] = []
+    extendedMetrics.investments.forEach((inv: ExtendedInvestmentData) => {
+      if (inv.totalInvestmentValue || inv.dividendInflow) {
+        investments.push({
+          month: inv.month,
+          portfolioValue: inv.totalInvestmentValue || 0,
+          dividends: inv.dividendInflow || 0,
+          fees: inv.investmentFees || 0
         })
-      })
-    }
+      }
+    })
 
+    // Cash position (cumulative cash)
+    const cashPosition: MonthlyData[] = []
+    monthlyData.forEach((data, month) => {
+      cashPosition.push({
+        month,
+        value: data.cumulative,
+        date: this.getDateForMonth(month)
+      })
+    })
+
+    return {
+      availableMonths,
+      metrics: {
+        inflows,
+        outflows,
+        netCashflow,
+        bankBalances,
+        investments,
+        cashPosition
+      },
+      metadata: {
+        lastUpload,
+        dataRange: availableMonths.length > 0 ? {
+          start: availableMonths[0],
+          end: availableMonths[availableMonths.length - 1]
+        } : null,
+        currency: 'ARS',
+        hasData: true
+      }
+    }
+  }
+
+  private aggregateFromV2Metrics(storedMetrics: any[], extendedMetrics: any, lastUpload: Date | null) {
+    // Extract months from V2 metrics
+    const availableMonths = storedMetrics.map(m => m.month)
+    
+    // Inflows
+    const inflows: DetailedInflows[] = storedMetrics.map(m => ({
+      month: m.month,
+      category: 'Total Income',
+      amount: m.totalInflow
+    }))
+    
+    // Outflows
+    const outflows: DetailedOutflows[] = storedMetrics.map(m => ({
+      month: m.month,
+      category: 'Total Expenses',
+      amount: Math.abs(m.totalOutflow)
+    }))
+    
+    // Net cashflow (monthly generation)
+    const netCashflow: MonthlyData[] = storedMetrics.map(m => ({
+      month: m.month,
+      value: m.monthlyGeneration,
+      date: this.getDateForMonth(m.month)
+    }))
+    
+    // Cash position (final balance)
+    const cashPosition: MonthlyData[] = storedMetrics.map(m => ({
+      month: m.month,
+      value: m.finalBalance,
+      date: this.getDateForMonth(m.month)
+    }))
+    
+    // Bank balances from extended metrics
+    const bankBalances: SimpleBankData[] = []
+    extendedMetrics.banks.forEach((bankData: ExtendedBankData) => {
+      if (bankData.checkingBalance || bankData.savingsBalance) {
+        bankBalances.push({
+          month: bankData.month,
+          bank: 'Total Banks',
+          balance: (bankData.checkingBalance || 0) + (bankData.savingsBalance || 0)
+        })
+      }
+    })
+    
+    // Investments from extended metrics
+    const investments: SimpleInvestmentData[] = []
+    extendedMetrics.investments.forEach((inv: ExtendedInvestmentData) => {
+      if (inv.totalInvestmentValue || inv.dividendInflow) {
+        investments.push({
+          month: inv.month,
+          portfolioValue: inv.totalInvestmentValue || 0,
+          dividends: inv.dividendInflow || 0,
+          fees: inv.investmentFees || 0
+        })
+      }
+    })
+    
     return {
       availableMonths,
       metrics: {
@@ -472,16 +569,26 @@ export class FinancialDataAggregator {
       }
     }
     
-    // Check Cashflow metrics
+    // Check Cashflow metrics - first check V2, then fallback to V1
+    const cashflowV2Metrics = this.cashflowServiceV2.getStoredMetrics()
     const cashflowData = this.cashflowService.getStoredData()
-    if (cashflowData && cashflowData.length > 0) {
+    
+    if (cashflowV2Metrics.length > 0) {
+      // V2 data is available
+      availableMetrics.add('cash_position')
+      availableMetrics.add('bank_balances')
+      availableMetrics.add('cash_inflows')
+      availableMetrics.add('cash_outflows')
+      availableMetrics.add('investment_income')
+    } else if (cashflowData && cashflowData.length > 0) {
+      // V1 data is available
       availableMetrics.add('cash_position')
       availableMetrics.add('bank_balances')
       availableMetrics.add('cash_inflows')
       availableMetrics.add('cash_outflows')
       
-      // Check for investment data
-      if (cashflowData.some(r => r.lineItem?.includes('Dividends'))) {
+      // Check for investment data in description
+      if (cashflowData.some((r: CashflowEntry) => r.description?.includes('Dividends'))) {
         availableMetrics.add('investment_income')
       }
     }

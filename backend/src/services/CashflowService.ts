@@ -25,12 +25,24 @@ export let globalCashflowData: CashflowEntry[] = [];
 export let globalMetricsData: MonthlyMetrics[] = [];
 
 export class CashflowService {
+  private static instance: CashflowService;
   private currentData: CashflowEntry[] = [];
   private metricsData: MonthlyMetrics[] = [];
+  private lastUploadDate: Date | null = null;
+
+  private constructor() {}
+
+  static getInstance(): CashflowService {
+    if (!CashflowService.instance) {
+      CashflowService.instance = new CashflowService();
+    }
+    return CashflowService.instance;
+  }
 
   setCurrentData(data: CashflowEntry[]) {
     this.currentData = data;
     globalCashflowData = data; // Store globally
+    this.lastUploadDate = new Date();
     console.log(`Stored ${data.length} entries globally`);
     console.log('First entry:', data[0]);
     console.log('Global metrics length:', globalMetricsData.length);
@@ -43,6 +55,14 @@ export class CashflowService {
       this.currentData = globalCashflowData;
     }
     return this.currentData;
+  }
+
+  getStoredData(): CashflowEntry[] {
+    return this.getCurrentData();
+  }
+
+  getLastUploadDate(): Date | null {
+    return this.lastUploadDate;
   }
 
   parseWorksheet(worksheet: ExcelJS.Worksheet): CashflowEntry[] {
