@@ -391,21 +391,65 @@ export class ConfigurationServiceDB {
     }
   }
 
-  // Excel structure detection methods remain the same
+  // Excel structure detection methods
   async detectExcelStructure(buffer: Buffer): Promise<StructureDetectionResult> {
-    // ... (keep the existing implementation)
+    const ExcelJS = require('exceljs')
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(buffer)
+    
+    const worksheets = workbook.worksheets.map((ws: any) => ws.name)
+    const worksheet = workbook.worksheets[0]
+    
+    if (!worksheet) {
+      throw new Error('No worksheets found in Excel file')
+    }
+
+    const headers: string[] = []
+    const potentialMetrics: { [key: string]: string } = {}
+    
+    // Analyze first 20 rows to detect structure
+    for (let row = 1; row <= Math.min(20, worksheet.rowCount); row++) {
+      const rowData = worksheet.getRow(row)
+      const firstCell = rowData.getCell(1).value
+      
+      if (firstCell && typeof firstCell === 'string') {
+        // Look for date headers
+        if (row <= 10) {
+          for (let col = 1; col <= Math.min(30, worksheet.columnCount); col++) {
+            const cellValue = rowData.getCell(col).value
+            if (cellValue instanceof Date || (typeof cellValue === 'string' && /\d{4}/.test(cellValue))) {
+              headers.push(`Row ${row} might contain date headers`)
+              break
+            }
+          }
+        }
+        
+        // Look for metric labels
+        const lowerCase = firstCell.toLowerCase()
+        if (lowerCase.includes('revenue') || lowerCase.includes('income')) {
+          potentialMetrics.revenue = `Row ${row}: ${firstCell}`
+        }
+        if (lowerCase.includes('cost') || lowerCase.includes('expense')) {
+          potentialMetrics.costs = `Row ${row}: ${firstCell}`
+        }
+        if (lowerCase.includes('profit')) {
+          potentialMetrics.profit = `Row ${row}: ${firstCell}`
+        }
+      }
+    }
+
     return {
-      worksheets: [],
-      headers: [],
-      potentialMetrics: {},
+      worksheets,
+      headers,
+      potentialMetrics,
       suggestedMapping: {
-        worksheetName: '',
-        headerRow: 0,
-        dataStartRow: 0,
+        worksheetName: worksheets[0] || 'Sheet1',
+        headerRow: 4,
+        dataStartRow: 8,
         monthColumns: {},
         metricRows: {}
       },
-      confidence: 0
+      confidence: 70
     }
   }
 }

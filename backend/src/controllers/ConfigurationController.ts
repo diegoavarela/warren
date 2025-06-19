@@ -134,15 +134,8 @@ export class ConfigurationController {
     try {
       const { id } = req.params
       
-      const deleted = await this.configService.deleteCompany(id)
+      await this.configService.deleteCompany(id)
       
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: 'Company not found'
-        })
-      }
-
       logger.info(`Company deleted by user ${req.user?.email}: ${id}`)
 
       res.json({
@@ -159,15 +152,8 @@ export class ConfigurationController {
     try {
       const { id } = req.params
       
-      const success = await this.configService.setActiveCompany(id)
+      await this.configService.setActiveCompany(id)
       
-      if (!success) {
-        return res.status(404).json({
-          success: false,
-          message: 'Company not found'
-        })
-      }
-
       logger.info(`Active company set by user ${req.user?.email}: ${id}`)
 
       res.json({
@@ -176,6 +162,12 @@ export class ConfigurationController {
       })
     } catch (error) {
       logger.error('Error setting active company:', error)
+      if (error instanceof Error && error.message === 'Company not found') {
+        return res.status(404).json({
+          success: false,
+          message: 'Company not found'
+        })
+      }
       next(error)
     }
   }
@@ -191,7 +183,7 @@ export class ConfigurationController {
 
       logger.info(`Excel structure analysis initiated by user ${req.user?.email}`)
 
-      const analysis = await this.configService.analyzeExcelStructure(req.file.buffer)
+      const analysis = await this.configService.detectExcelStructure(req.file.buffer)
 
       res.json({
         success: true,
@@ -219,14 +211,7 @@ export class ConfigurationController {
         })
       }
 
-      const success = await this.configService.saveExcelStructure(companyId, structure)
-      
-      if (!success) {
-        return res.status(404).json({
-          success: false,
-          message: 'Company not found'
-        })
-      }
+      await this.configService.saveExcelStructure(companyId, structure)
 
       logger.info(`Excel structure saved by user ${req.user?.email} for company: ${companyId}`)
 
