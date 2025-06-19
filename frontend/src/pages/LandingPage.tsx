@@ -29,15 +29,15 @@ export const LandingPage: React.FC = () => {
       icon: SparklesIcon,
       title: 'AI-Powered Excel Import',
       description: 'Our intelligent system automatically understands any Excel format, eliminating manual configuration',
-      screenshot: '/screenshots/cashflow-dashboard-full.png',
-      screenshotAlt: 'AI-powered Excel mapping interface',
+      screenshot: '/screenshots/landing-ai-analysis.png',
+      screenshotAlt: 'AI-powered Excel mapping and analysis interface',
       benefits: ['Any Excel format', 'Auto-detection', 'Manual corrections']
     },
     {
       icon: ChartBarIcon,
       title: 'Real-Time Cash Flow Analysis',
       description: 'Monitor your company\'s financial health with live data updates and intelligent forecasting',
-      screenshot: '/screenshots/cashflow-dashboard-hero.png',
+      screenshot: '/screenshots/landing-hero-dashboard.png',
       screenshotAlt: 'Real-time cash flow dashboard showing inflow/outflow trends',
       benefits: ['Instant insights', 'Predictive analytics', 'Custom alerts']
     },
@@ -45,16 +45,16 @@ export const LandingPage: React.FC = () => {
       icon: BanknotesIcon,
       title: 'Smart Financial Planning',
       description: 'Scenario planning tools that help you make data-driven decisions for sustainable growth',
-      screenshot: '/screenshots/scenario-planning.png',
-      screenshotAlt: 'Scenario planning interface with what-if analysis',
+      screenshot: '/screenshots/landing-wide-dashboard.png',
+      screenshotAlt: 'Wide view financial planning dashboard',
       benefits: ['What-if scenarios', 'Risk assessment', 'Growth modeling']
     },
     {
       icon: DocumentChartBarIcon,
       title: 'Executive Dashboards',
       description: 'Beautiful, intuitive dashboards designed for C-level executives and board presentations',
-      screenshot: '/screenshots/pnl-dashboard-full.png',
-      screenshotAlt: 'Executive dashboard with key financial metrics',
+      screenshot: '/screenshots/landing-pnl-dashboard.png',
+      screenshotAlt: 'Executive P&L dashboard with key financial metrics',
       benefits: ['One-click reports', 'Board-ready visuals', 'Export to PDF']
     }
   ]
@@ -167,7 +167,7 @@ export const LandingPage: React.FC = () => {
             <div className="relative bg-white rounded-2xl shadow-2xl p-2 border border-gray-100">
               <div className="aspect-video bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg overflow-hidden">
                 <img 
-                  src="/screenshots/cashflow-dashboard-hero.png" 
+                  src="/screenshots/landing-hero-dashboard.png" 
                   alt="Warren Dashboard Preview"
                   className="w-full h-full object-contain"
                   onError={(e) => {
@@ -480,7 +480,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="aspect-video bg-gray-100">
                 <img 
-                  src="/screenshots/cashflow-dashboard-full.png"
+                  src="/screenshots/landing-hero-dashboard.png"
                   alt="Cash Flow Dashboard"
                   className="w-full h-full object-contain"
                   onError={(e) => {
@@ -500,7 +500,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="aspect-video bg-gray-100">
                 <img 
-                  src="/screenshots/pnl-dashboard-full.png"
+                  src="/screenshots/landing-pnl-dashboard.png"
                   alt="P&L Dashboard"
                   className="w-full h-full object-contain"
                   onError={(e) => {
