@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { ConfigurationService } from '../services/ConfigurationService'
+import { ConfigurationServiceDB } from '../services/ConfigurationServiceDB'
 import { logger } from '../utils/logger'
 
 interface AuthRequest extends Request {
@@ -7,15 +7,15 @@ interface AuthRequest extends Request {
 }
 
 export class ConfigurationController {
-  private configService: ConfigurationService
+  private configService: ConfigurationServiceDB
 
   constructor() {
-    this.configService = ConfigurationService.getInstance()
+    this.configService = ConfigurationServiceDB.getInstance()
   }
 
   async getCompanies(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const companies = this.configService.getCompanies()
+      const companies = await this.configService.getCompanies()
       
       res.json({
         success: true,
@@ -30,7 +30,8 @@ export class ConfigurationController {
   async getCompany(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params
-      const company = this.configService.getCompany(id)
+      const companies = await this.configService.getCompanies()
+      const company = companies.find(c => c.id === id)
       
       if (!company) {
         return res.status(404).json({
@@ -51,7 +52,7 @@ export class ConfigurationController {
 
   async getActiveCompany(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const company = this.configService.getActiveCompany()
+      const company = await this.configService.getActiveCompany()
       
       if (!company) {
         return res.status(404).json({
@@ -81,7 +82,7 @@ export class ConfigurationController {
         })
       }
 
-      const company = this.configService.addCompany({
+      const company = await this.configService.addCompany({
         name,
         currency,
         scale,
@@ -107,7 +108,7 @@ export class ConfigurationController {
       const { id } = req.params
       const updates = req.body
 
-      const company = this.configService.updateCompany(id, updates)
+      const company = await this.configService.updateCompany(id, updates)
       
       if (!company) {
         return res.status(404).json({
@@ -133,7 +134,7 @@ export class ConfigurationController {
     try {
       const { id } = req.params
       
-      const deleted = this.configService.deleteCompany(id)
+      const deleted = await this.configService.deleteCompany(id)
       
       if (!deleted) {
         return res.status(404).json({
@@ -158,7 +159,7 @@ export class ConfigurationController {
     try {
       const { id } = req.params
       
-      const success = this.configService.setActiveCompany(id)
+      const success = await this.configService.setActiveCompany(id)
       
       if (!success) {
         return res.status(404).json({
@@ -218,7 +219,7 @@ export class ConfigurationController {
         })
       }
 
-      const success = this.configService.saveExcelStructure(companyId, structure)
+      const success = await this.configService.saveExcelStructure(companyId, structure)
       
       if (!success) {
         return res.status(404).json({

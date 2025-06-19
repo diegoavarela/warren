@@ -159,9 +159,10 @@ export const ConfigurationPageV2: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
+    <div className="min-h-screen overflow-y-auto">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center">
           <Cog6ToothIcon className="h-8 w-8 mr-3 text-violet-600" />
           Company Configuration
@@ -481,6 +482,7 @@ export const ConfigurationPageV2: React.FC = () => {
             </ul>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
