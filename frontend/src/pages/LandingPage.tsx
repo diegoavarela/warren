@@ -29,7 +29,7 @@ export const LandingPage: React.FC = () => {
       icon: SparklesIcon,
       title: 'AI-Powered Excel Import',
       description: 'Our intelligent system automatically understands any Excel format, eliminating manual configuration',
-      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-10.png',
+      screenshot: '/screenshots/cashflow-dashboard-full.png',
       screenshotAlt: 'AI-powered Excel mapping interface',
       benefits: ['Any Excel format', 'Auto-detection', 'Manual corrections']
     },
@@ -37,7 +37,7 @@ export const LandingPage: React.FC = () => {
       icon: ChartBarIcon,
       title: 'Real-Time Cash Flow Analysis',
       description: 'Monitor your company\'s financial health with live data updates and intelligent forecasting',
-      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-7.png',
+      screenshot: '/screenshots/cashflow-dashboard-hero.png',
       screenshotAlt: 'Real-time cash flow dashboard showing inflow/outflow trends',
       benefits: ['Instant insights', 'Predictive analytics', 'Custom alerts']
     },
@@ -45,7 +45,7 @@ export const LandingPage: React.FC = () => {
       icon: BanknotesIcon,
       title: 'Smart Financial Planning',
       description: 'Scenario planning tools that help you make data-driven decisions for sustainable growth',
-      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-12.png',
+      screenshot: '/screenshots/scenario-planning.png',
       screenshotAlt: 'Scenario planning interface with what-if analysis',
       benefits: ['What-if scenarios', 'Risk assessment', 'Growth modeling']
     },
@@ -53,7 +53,7 @@ export const LandingPage: React.FC = () => {
       icon: DocumentChartBarIcon,
       title: 'Executive Dashboards',
       description: 'Beautiful, intuitive dashboards designed for C-level executives and board presentations',
-      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-6.png',
+      screenshot: '/screenshots/pnl-dashboard-full.png',
       screenshotAlt: 'Executive dashboard with key financial metrics',
       benefits: ['One-click reports', 'Board-ready visuals', 'Export to PDF']
     }
@@ -167,9 +167,9 @@ export const LandingPage: React.FC = () => {
             <div className="relative bg-white rounded-2xl shadow-2xl p-2 border border-gray-100">
               <div className="aspect-video bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg overflow-hidden">
                 <img 
-                  src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-12.png" 
+                  src="/screenshots/cashflow-dashboard-hero.png" 
                   alt="Warren Dashboard Preview"
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
                     // Fallback to placeholder if screenshot doesn't exist
                     e.currentTarget.style.display = 'none';
@@ -267,13 +267,9 @@ export const LandingPage: React.FC = () => {
               <div className="relative bg-white rounded-2xl shadow-2xl p-2 border border-gray-100">
                 <div className="aspect-video bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg overflow-hidden">
                   <img 
-                    src={
-                      activeFeature === 0 ? '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-10.png' :
-                      activeFeature === 1 ? '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-7.png' :
-                      '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-6.png'
-                    }
+                    src={features[activeFeature].screenshot}
                     alt={features[activeFeature].screenshotAlt}
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-contain"
                   />
                 </div>
               </div>
@@ -484,9 +480,9 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="aspect-video bg-gray-100">
                 <img 
-                  src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-12.png"
+                  src="/screenshots/cashflow-dashboard-full.png"
                   alt="Cash Flow Dashboard"
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgZmlsbD0iI2Y5ZmFmYiIvPgogIDx0ZXh0IHg9IjQwMCIgeT0iMjI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2YjcyODAiPkNhc2ggRmxvdyBEYXNoYm9hcmQgUHJldmlldzwvdGV4dD4KPC9zdmc+';
                   }}
@@ -504,9 +500,9 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="aspect-video bg-gray-100">
                 <img 
-                  src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-6.png"
+                  src="/screenshots/pnl-dashboard-full.png"
                   alt="P&L Dashboard"
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgZmlsbD0iI2Y5ZmFmYiIvPgogIDx0ZXh0IHg9IjQwMCIgeT0iMjI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2YjcyODAiPlAmYW1wO0wgRGFzaGJvYXJkIFByZXZpZXc8L3RleHQ+Cjwvc3ZnPg==';
                   }}
