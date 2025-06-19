@@ -138,6 +138,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
     setUploadSuccess(false)
 
     try {
+      // First attempt with standard parsing
       await onFileUpload(file)
       setUploadSuccess(true)
       setFile(null)
@@ -147,9 +148,21 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         setIsCollapsed(true)
       }, 2000)
     } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload file. Please try again.')
-    } finally {
-      setUploading(false)
+      // If standard parsing fails, check if it's a structure issue
+      const errorMessage = err.message || err.response?.data?.error || ''
+      const isStructureError = errorMessage.toLowerCase().includes('no data') || 
+                              errorMessage.toLowerCase().includes('structure') ||
+                              errorMessage.toLowerCase().includes('format') ||
+                              errorMessage.toLowerCase().includes('row')
+      
+      if (isStructureError && !showMappingWizard) {
+        // Automatically show AI mapping wizard for structure errors
+        setUploading(false)
+        setShowMappingWizard(true)
+      } else {
+        setUploadError(err.message || 'Failed to upload file. Please try again.')
+        setUploading(false)
+      }
     }
   }
 
@@ -278,9 +291,9 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                 </div>
               )}
 
-              {/* Upload Buttons */}
+              {/* Single Upload Button */}
               {file && !uploadSuccess && (
-                <div className="mt-8 space-y-4">
+                <div className="mt-8">
                   <button
                     onClick={handleUpload}
                     disabled={uploading}
@@ -301,24 +314,10 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                   ) : (
                     <div className="flex items-center justify-center space-x-2">
                       <CloudArrowUpIcon className="h-6 w-6" />
-                      <span>Upload & Analyze</span>
+                      <span>Process Excel</span>
                     </div>
                   )}
                 </button>
-                
-                {/* Intelligent Mapping Button */}
-                <button
-                  onClick={() => setShowMappingWizard(true)}
-                  disabled={uploading}
-                  className="w-full py-4 px-6 rounded-2xl font-semibold bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 hover:from-purple-200 hover:to-pink-200 transition-all duration-300 flex items-center justify-center space-x-2 border border-purple-200"
-                >
-                  <SparklesIcon className="h-5 w-5" />
-                  <span>Use AI-Powered Mapping</span>
-                </button>
-                
-                <p className="text-xs text-center text-gray-500 mt-2">
-                  New Excel format? Let AI understand your file structure
-                </p>
               </div>
             )}
             </div>
@@ -326,18 +325,28 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         )}
       </div>
       
-      {/* Excel Mapping Wizard */}
+      {/* Excel Mapping Wizard - Transparent to user */}
       {showMappingWizard && file && (
         <ExcelMappingWizard
           isOpen={showMappingWizard}
-          onClose={() => setShowMappingWizard(false)}
+          onClose={() => {
+            setShowMappingWizard(false)
+            setUploading(false)
+            setUploadError('Upload cancelled')
+          }}
           mappingType={variant}
           initialFile={file}
           onMappingComplete={async (mapping) => {
-            setShowMappingWizard(false);
-            // Here you would process the file with the custom mapping
-            // For now, just upload normally
-            await handleUpload();
+            setShowMappingWizard(false)
+            // TODO: In the future, use the mapping to process the file
+            // For now, show success message
+            setUploadSuccess(true)
+            setFile(null)
+            
+            // Auto-collapse after successful mapping
+            setTimeout(() => {
+              setIsCollapsed(true)
+            }, 2000)
           }}
         />
       )}

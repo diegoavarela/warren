@@ -46,7 +46,7 @@ export interface ExcelMapping {
         row: number;
         column?: number;
         description: string;
-        dataType: 'currency' | 'percentage' | 'number';
+        dataType: 'currency' | 'percentage' | 'number' | 'date';
       };
     };
   };

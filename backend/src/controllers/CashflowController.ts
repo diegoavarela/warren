@@ -21,6 +21,7 @@ export class CashflowController {
   private extendedFinancialService = extendedFinancialServiceInstance;
   private investmentDiagnosticService = new InvestmentDiagnosticService();
   private fileUploadService = new FileUploadService(pool);
+  private aiExcelService = require('../services/AIExcelAnalysisService').AIExcelAnalysisService.getInstance();
 
   async uploadFile(req: AuthRequest, res: Response, next: NextFunction) {
     let fileUploadId: number | null = null;
