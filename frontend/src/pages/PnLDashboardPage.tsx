@@ -544,7 +544,8 @@ export const PnLDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Demo Mode Banner */}
       {isDemoMode && (
         <div className="mb-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-xl shadow-lg">
@@ -2488,6 +2489,7 @@ export const PnLDashboardPage: React.FC = () => {
           }}
         />
       )}
+    </div>
     </div>
   )
 }

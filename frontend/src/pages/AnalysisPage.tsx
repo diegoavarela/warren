@@ -102,7 +102,20 @@ export const AnalysisPage: React.FC = () => {
   }
 
   const handleChartDrillDown = (dataPoint: any, chartTitle: string) => {
-    const query = `Analyze the ${dataPoint.datasetLabel} value of ${dataPoint.value} for ${dataPoint.label}. What factors contributed to this result and how does it compare to other periods?`
+    // Create a more specific drill-down query based on the context
+    let query = ''
+    
+    // Check if this is a time-based chart (month/quarter data)
+    const isTimeBasedLabel = /\b(january|february|march|april|may|june|july|august|september|october|november|december|q[1-4]|quarter)\b/i.test(dataPoint.label)
+    
+    if (isTimeBasedLabel) {
+      // For time-based data, focus on that specific period only
+      query = `Focus specifically on ${dataPoint.label} only: analyze the ${dataPoint.datasetLabel} of ${dataPoint.value}. Break down the components that make up this specific value for ${dataPoint.label}. Do not include data from other months or periods.`
+    } else {
+      // For non-time-based data, use the original query
+      query = `Analyze the ${dataPoint.datasetLabel} value of ${dataPoint.value} for ${dataPoint.label}. What factors contributed to this specific result?`
+    }
+    
     setDrillDownModal({
       isOpen: true,
       query,
@@ -115,7 +128,17 @@ export const AnalysisPage: React.FC = () => {
   }
 
   const handleTableDrillDown = (cellData: any, tableTitle: string) => {
-    const query = `Provide detailed analysis of ${cellData.columnHeader}: ${cellData.value}. Show historical trends, comparisons, and key factors influencing this metric.`
+    // Check if we have row context (like a specific month/period)
+    const rowContext = cellData.rowHeader || cellData.row?.[0] || ''
+    const isTimeBasedRow = /\b(january|february|march|april|may|june|july|august|september|october|november|december|q[1-4]|quarter)\b/i.test(rowContext)
+    
+    let query = ''
+    if (isTimeBasedRow && rowContext) {
+      query = `Focus specifically on ${rowContext}: analyze the ${cellData.columnHeader} value of ${cellData.value}. Break down what makes up this specific value for ${rowContext} only. Do not include data from other periods.`
+    } else {
+      query = `Provide detailed analysis of ${cellData.columnHeader}: ${cellData.value}${rowContext ? ` for ${rowContext}` : ''}. Focus on the specific factors that contribute to this exact value.`
+    }
+    
     setDrillDownModal({
       isOpen: true,
       query,
@@ -386,11 +409,11 @@ export const AnalysisPage: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
                   <h3 className="text-sm font-semibold text-gray-900 mb-2">Suggested Queries</h3>
                   <div className="space-y-1">
-                    {suggestedQueries.slice(0, 3).map((suggestion, index) => (
+                    {suggestedQueries.slice(0, 6).map((suggestion, index) => (
                       <button
                         key={index}
                         onClick={() => handleSuggestedQuery(suggestion)}
-                        className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-purple-50 rounded text-gray-700 hover:text-purple-700 transition-colors"
+                        className="w-full text-left p-1.5 text-xs bg-gray-50 hover:bg-purple-50 rounded text-gray-700 hover:text-purple-700 transition-colors"
                       >
                         {suggestion}
                       </button>

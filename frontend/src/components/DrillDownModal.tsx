@@ -203,7 +203,7 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
                       <XMarkIcon className="h-5 w-5 text-white" />
                     </button>
                   </div>
-                  {context.title && (
+                  {context?.title && (
                     <p className="text-purple-200 text-sm mt-1">{context.title}</p>
                   )}
                 </div>

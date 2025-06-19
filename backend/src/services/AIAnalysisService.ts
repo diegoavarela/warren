@@ -165,6 +165,17 @@ export class AIAnalysisService {
     4. When suggesting visualizations, provide exact data points and chart specifications.
     5. Always respond in JSON format with the structure provided.
     
+    CHART SELECTION GUIDELINES:
+    - PIE CHARTS: Only use when showing parts of a whole that sum to 100%. NEVER use for:
+      * Margin percentages (they don't sum to 100%)
+      * Time series data
+      * Negative values
+      * When all values are similar (creates meaningless single-color circle)
+    - LINE CHARTS: Best for trends over time, especially margins and growth rates
+    - BAR CHARTS: Good for comparing values across categories or time periods
+    - WATERFALL CHARTS: Ideal for showing how values build up or break down
+    - For margin analysis: Use bar charts or line charts, NEVER pie charts
+    
     Response Format:
     {
       "type": "text" | "chart" | "table" | "mixed",
@@ -211,7 +222,11 @@ export class AIAnalysisService {
     
     Remember:
     - Use exact figures from the data provided
-    - Suggest appropriate charts for visual representation
+    - Suggest appropriate charts for visual representation:
+      * For margins: Use bar or line charts (NEVER pie charts)
+      * For trends over time: Use line charts
+      * For category comparisons: Use bar charts
+      * For composition of a whole: Use pie charts ONLY if values sum to 100%
     - Highlight any unusual patterns or insights
     - Be clear about any limitations in the analysis
     `
@@ -415,9 +430,57 @@ ${data.cashflow.metrics.investments.map(i =>
   }
 
   private validateChartData(chart: any, data: FinancialDataContext): ChartSpecification {
-    // This method ensures chart data matches actual data
-    // For now, we trust the AI to use correct data, but in production
-    // we would validate each data point
+    // Fix inappropriate chart types
+    const chartTitle = chart.title?.toLowerCase() || ''
+    const chartDescription = chart.description?.toLowerCase() || ''
+    
+    // Check if this is a margin-related chart with pie type
+    if (chart.type === 'pie' && (
+      chartTitle.includes('margin') || 
+      chartDescription.includes('margin') ||
+      chartTitle.includes('percentage') ||
+      chartTitle.includes('rate')
+    )) {
+      // Convert to bar chart
+      chart.type = 'bar'
+      logger.info(`Converted inappropriate pie chart to bar chart for: ${chart.title}`)
+    }
+    
+    // Check if pie chart has all similar values (would create single color circle)
+    if (chart.type === 'pie' && chart.data?.datasets?.[0]?.data) {
+      const values = chart.data.datasets[0].data
+      if (values.length > 0) {
+        const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length
+        const allSimilar = values.every((v: number) => Math.abs(v - avg) < avg * 0.1) // Within 10% of average
+        
+        if (allSimilar) {
+          // Convert to bar chart
+          chart.type = 'bar'
+          logger.info(`Converted pie chart with similar values to bar chart for: ${chart.title}`)
+        }
+      }
+    }
+    
+    // Check if pie chart has negative values
+    if (chart.type === 'pie' && chart.data?.datasets?.[0]?.data) {
+      const hasNegative = chart.data.datasets[0].data.some((v: number) => v < 0)
+      if (hasNegative) {
+        chart.type = 'bar'
+        logger.info(`Converted pie chart with negative values to bar chart for: ${chart.title}`)
+      }
+    }
+    
+    // Ensure time series data doesn't use pie charts
+    if (chart.type === 'pie' && chart.data?.labels) {
+      const hasTimeLabels = chart.data.labels.some((label: string) => 
+        /\b(january|february|march|april|may|june|july|august|september|october|november|december|q[1-4]|quarter|month|year)\b/i.test(label)
+      )
+      if (hasTimeLabels) {
+        chart.type = 'line'
+        logger.info(`Converted time-series pie chart to line chart for: ${chart.title}`)
+      }
+    }
+    
     return chart
   }
 
@@ -443,41 +506,127 @@ ${data.cashflow.metrics.investments.map(i =>
     const suggestions: string[] = []
     
     if (data.pnl.metadata.hasData) {
-      suggestions.push(
-        "What are the trends in our gross margins over time?",
-        "Show me the breakdown of operating expenses by category",
-        "Which months had unusual cost spikes?",
-        "Compare revenue growth to expense growth"
+      // Check for gross margin data
+      const hasMarginData = data.pnl.metrics.margins.some(m => 
+        m.grossMargin !== null && m.grossMargin !== 0
       )
+      if (hasMarginData && data.pnl.metrics.margins.length >= 3) {
+        suggestions.push("What are the trends in our gross margins over time?")
+      }
       
-      if (data.pnl.metrics.personnelCosts.some(p => p.total > 0)) {
-        suggestions.push(
-          "Analyze personnel costs as a percentage of revenue",
-          "Show the trend of personnel costs over time"
-        )
+      // Check for cost breakdown data
+      const hasCostBreakdown = data.pnl.metrics.costs.some(c => 
+        c.category && c.amount > 0
+      )
+      if (hasCostBreakdown) {
+        suggestions.push("Show me the breakdown of operating expenses by category")
+      }
+      
+      // Check for revenue data
+      const hasRevenueData = data.pnl.metrics.revenue.filter(r => r.value > 0).length >= 3
+      if (hasRevenueData) {
+        // Check for cost variations
+        const operatingCosts = data.pnl.metrics.operatingExpenses.map(e => e.value).filter(v => v > 0)
+        if (operatingCosts.length >= 3) {
+          const avgCost = operatingCosts.reduce((a, b) => a + b, 0) / operatingCosts.length
+          const hasSpikes = operatingCosts.some(cost => cost > avgCost * 1.2) // 20% above average
+          if (hasSpikes) {
+            suggestions.push("Which months had unusual cost spikes?")
+          }
+        }
+        
+        // Revenue vs expense comparison
+        const hasExpenseData = data.pnl.metrics.operatingExpenses.filter(e => e.value > 0).length >= 3
+        if (hasExpenseData) {
+          suggestions.push("Compare revenue growth to expense growth")
+        }
+      }
+      
+      // Personnel costs
+      const hasPersonnelData = data.pnl.metrics.personnelCosts.filter(p => p.total > 0).length >= 2
+      if (hasPersonnelData && hasRevenueData) {
+        suggestions.push("Analyze personnel costs as a percentage of revenue")
+        if (data.pnl.metrics.personnelCosts.length >= 3) {
+          suggestions.push("Show the trend of personnel costs over time")
+        }
+      }
+      
+      // EBITDA analysis
+      const hasEbitdaData = data.pnl.metrics.ebitda.some(e => e.value !== 0)
+      if (hasEbitdaData && data.pnl.metrics.ebitda.length >= 3) {
+        suggestions.push("What is the EBITDA trend for the past quarter?")
       }
     }
     
     if (data.cashflow.metadata.hasData) {
-      suggestions.push(
-        "What is our cash runway based on current burn rate?",
-        "Show me the trend of cash position over time",
-        "Which banks have the highest balances?"
-      )
+      // Check for cash position data
+      const hasCashData = data.cashflow.metrics.cashPosition.filter(c => c.value !== null).length >= 3
+      if (hasCashData) {
+        suggestions.push("Show me the trend of cash position over time")
+        
+        // Check for burn rate (decreasing trend)
+        const cashValues = data.cashflow.metrics.cashPosition.map(c => c.value).filter(v => v !== null)
+        if (cashValues.length >= 3 && cashValues[cashValues.length - 1] < cashValues[0]) {
+          suggestions.push("What is our cash runway based on current burn rate?")
+        }
+      }
       
-      if (data.cashflow.metrics.investments.length > 0) {
-        suggestions.push(
-          "How are our investment portfolios performing?",
-          "What is the total dividend income from investments?"
+      // Bank balances - check if we have multiple banks
+      const bankData = data.cashflow.metrics.bankBalances
+      if (bankData.length > 0 && bankData[0].bank) {
+        const uniqueBanks = new Set(bankData.map(b => b.bank)).size
+        if (uniqueBanks > 1) {
+          suggestions.push("Which banks have the highest balances?")
+        }
+      }
+      
+      // Investment data
+      const hasInvestments = data.cashflow.metrics.investments.length > 0 && 
+        data.cashflow.metrics.investments.some(inv => inv.portfolioValue > 0)
+      if (hasInvestments) {
+        suggestions.push("How are our investment portfolios performing?")
+        
+        // Check for dividend data
+        const hasDividends = data.cashflow.metrics.investments.some(inv => 
+          inv.dividends > 0
         )
+        if (hasDividends) {
+          suggestions.push("What is the total dividend income from investments?")
+        }
+      }
+      
+      // Net cashflow analysis
+      const hasNetCashflow = data.cashflow.metrics.netCashflow.some(n => n.value !== 0)
+      if (hasNetCashflow && data.cashflow.metrics.netCashflow.length >= 3) {
+        suggestions.push("Analyze the monthly net cashflow patterns")
       }
     }
     
+    // Combined analysis suggestions
     if (data.pnl.metadata.hasData && data.cashflow.metadata.hasData) {
-      suggestions.push(
-        "Compare profit margins with cash generation",
-        "Analyze the relationship between revenue and cash position"
-      )
+      // Check for net income and cash data
+      const hasNetIncome = data.pnl.metrics.netIncome.some(n => n.value !== 0)
+      const hasCashGeneration = data.cashflow.metrics.netCashflow.some(n => n.value !== 0)
+      
+      if (hasNetIncome && hasCashGeneration) {
+        suggestions.push("Compare profit margins with cash generation")
+      }
+      
+      const hasRevenue = data.pnl.metrics.revenue.some(r => r.value > 0)
+      const hasCashPosition = data.cashflow.metrics.cashPosition.some(c => c.value > 0)
+      if (hasRevenue && hasCashPosition) {
+        suggestions.push("Analyze the relationship between revenue and cash position")
+      }
+    }
+    
+    // If we have very few suggestions, add some basic ones that should always work
+    if (suggestions.length < 3) {
+      if (data.pnl.metadata.hasData) {
+        suggestions.push("Show me a summary of revenue and costs for the last 3 months")
+      }
+      if (data.cashflow.metadata.hasData) {
+        suggestions.push("What is the current cash balance across all accounts?")
+      }
     }
     
     return suggestions

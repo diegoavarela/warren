@@ -33,7 +33,7 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pt-16 pb-4 flex flex-col min-h-0">
+      <main className="flex-1 pt-16 flex flex-col min-h-0 overflow-hidden">
         {children}
       </main>
 
