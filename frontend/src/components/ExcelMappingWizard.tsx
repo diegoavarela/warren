@@ -45,6 +45,7 @@ interface ExcelMappingWizardProps {
   onClose: () => void;
   mappingType: 'cashflow' | 'pnl';
   onMappingComplete: (mapping: ExcelMapping) => void;
+  initialFile?: File;
 }
 
 type WizardStep = 'upload' | 'analyzing' | 'review' | 'edit' | 'preview' | 'complete';
@@ -53,16 +54,24 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
   isOpen,
   onClose,
   mappingType,
-  onMappingComplete
+  onMappingComplete,
+  initialFile
 }) => {
-  const [currentStep, setCurrentStep] = useState<WizardStep>('upload');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentStep, setCurrentStep] = useState<WizardStep>(initialFile ? 'analyzing' : 'upload');
+  const [selectedFile, setSelectedFile] = useState<File | null>(initialFile || null);
   const [mapping, setMapping] = useState<ExcelMapping | null>(null);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [preview, setPreview] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sampleData, setSampleData] = useState<any>(null);
+
+  // Auto-analyze when component mounts with initial file
+  React.useEffect(() => {
+    if (initialFile && currentStep === 'analyzing') {
+      analyzeFile();
+    }
+  }, [initialFile]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

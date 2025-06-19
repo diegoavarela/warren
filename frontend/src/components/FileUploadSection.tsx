@@ -5,8 +5,10 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline'
+import { ExcelMappingWizard } from './ExcelMappingWizard'
 
 interface FileUploadSectionProps {
   onFileUpload: (file: File) => Promise<void>
@@ -33,6 +35,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   const [uploadError, setUploadError] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(isRealData)
+  const [showMappingWizard, setShowMappingWizard] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -275,25 +278,26 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                 </div>
               )}
 
-              {/* Upload Button */}
+              {/* Upload Buttons */}
               {file && !uploadSuccess && (
-                <button
-                  onClick={handleUpload}
-                  disabled={uploading}
-                  className={`mt-8 w-full py-5 px-6 rounded-2xl font-bold text-white transition-all duration-300 ${
-                    uploading
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : `bg-gradient-to-r ${colors.primary.buttonGradient} ${colors.primary.buttonGradientHover} shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.02]`
-                  }`}
-                >
-                  {uploading ? (
-                    <div className="flex items-center justify-center space-x-3">
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Processing...</span>
-                    </div>
+                <div className="mt-8 space-y-4">
+                  <button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className={`w-full py-5 px-6 rounded-2xl font-bold text-white transition-all duration-300 ${
+                      uploading
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : `bg-gradient-to-r ${colors.primary.buttonGradient} ${colors.primary.buttonGradientHover} shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.02]`
+                    }`}
+                  >
+                    {uploading ? (
+                      <div className="flex items-center justify-center space-x-3">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Processing...</span>
+                      </div>
                   ) : (
                     <div className="flex items-center justify-center space-x-2">
                       <CloudArrowUpIcon className="h-6 w-6" />
@@ -301,11 +305,42 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                     </div>
                   )}
                 </button>
-              )}
+                
+                {/* Intelligent Mapping Button */}
+                <button
+                  onClick={() => setShowMappingWizard(true)}
+                  disabled={uploading}
+                  className="w-full py-4 px-6 rounded-2xl font-semibold bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 hover:from-purple-200 hover:to-pink-200 transition-all duration-300 flex items-center justify-center space-x-2 border border-purple-200"
+                >
+                  <SparklesIcon className="h-5 w-5" />
+                  <span>Use AI-Powered Mapping</span>
+                </button>
+                
+                <p className="text-xs text-center text-gray-500 mt-2">
+                  New Excel format? Let AI understand your file structure
+                </p>
+              </div>
+            )}
             </div>
           </div>
         )}
       </div>
+      
+      {/* Excel Mapping Wizard */}
+      {showMappingWizard && file && (
+        <ExcelMappingWizard
+          isOpen={showMappingWizard}
+          onClose={() => setShowMappingWizard(false)}
+          mappingType={variant}
+          initialFile={file}
+          onMappingComplete={async (mapping) => {
+            setShowMappingWizard(false);
+            // Here you would process the file with the custom mapping
+            // For now, just upload normally
+            await handleUpload();
+          }}
+        />
+      )}
     </div>
   )
 }
