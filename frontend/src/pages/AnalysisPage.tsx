@@ -9,7 +9,9 @@ import {
   DocumentTextIcon,
   ArrowPathIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline'
 import { analysisService, AnalysisResponse, DataSummary } from '../services/analysisService'
 import { ChartRenderer } from '../components/ChartRenderer'
@@ -31,6 +33,7 @@ export const AnalysisPage: React.FC = () => {
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([])
   const [currentResponse, setCurrentResponse] = useState<AnalysisResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -172,16 +175,16 @@ export const AnalysisPage: React.FC = () => {
   const hasData = dataSummary && (dataSummary.pnl.hasData || dataSummary.cashflow.hasData)
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="flex flex-col h-full" style={{ height: '100%' }}>
       {/* Header */}
-      <div className="mb-8">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <SparklesIcon className="h-8 w-8 mr-3 text-purple-600" />
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+              <SparklesIcon className="h-6 w-6 mr-2 text-purple-600" />
               AI Financial Analysis
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-sm text-gray-600">
               Ask questions about your financial data and get intelligent insights
             </p>
           </div>
@@ -195,59 +198,99 @@ export const AnalysisPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel - Data Summary */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Data Availability */}
-          <DataAvailabilityCard summary={dataSummary} />
-
-          {/* Suggested Queries */}
-          {suggestedQueries.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <DocumentTextIcon className="h-5 w-5 mr-2 text-purple-600" />
-                Suggested Queries
-              </h3>
-              <div className="space-y-2">
-                {suggestedQueries.slice(0, 5).map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestedQuery(suggestion)}
-                    className="w-full text-left p-3 text-sm bg-gray-50 hover:bg-purple-50 rounded-lg transition-colors text-gray-700 hover:text-purple-700"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Panel - Data Summary - Semi-collapsed by default */}
+        <div className={`${sidebarCollapsed ? 'w-12' : 'w-72'} transition-all duration-300 ease-in-out bg-gray-50 border-r border-gray-200 flex flex-col relative overflow-hidden`}>
+          {!sidebarCollapsed && (
+            <div className="p-3 space-y-3 overflow-y-auto">
+              {/* Compact Data Availability */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-2 text-purple-600" />
+                  Data Availability
+                </h3>
+                {dataSummary ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>P&L Data</span>
+                      <div className={`w-2 h-2 rounded-full ${dataSummary.pnl.hasData ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Cashflow Data</span>
+                      <div className={`w-2 h-2 rounded-full ${dataSummary.cashflow.hasData ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    </div>
+                    {dataSummary.pnl.hasData && (
+                      <p className="text-xs text-gray-500 mt-1">{dataSummary.pnl.monthsAvailable} months available</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Loading...</p>
+                )}
               </div>
+
+              {/* Compact Suggested Queries */}
+              {suggestedQueries.length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Suggested Queries</h3>
+                  <div className="space-y-1">
+                    {suggestedQueries.slice(0, 3).map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSuggestedQuery(suggestion)}
+                        className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-purple-50 rounded text-gray-700 hover:text-purple-700 transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Prominent Fold Button */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-12 bg-white border border-gray-300 rounded-r-md shadow-sm hover:shadow-md transition-all flex items-center justify-center z-20"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRightIcon className="h-4 w-4 text-gray-600" />
+            ) : (
+              <ChevronLeftIcon className="h-4 w-4 text-gray-600" />
+            )}
+          </button>
         </div>
 
         {/* Right Panel - Chat Interface */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[700px] flex flex-col">
+        <div className="flex-1 p-3 flex flex-col">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col min-h-0">
             {/* Chat Header */}
             <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Analysis Chat</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Analysis Chat (Full Height)</h3>
               <p className="text-sm text-gray-500">
                 {hasData ? 'Ask questions about your financial data' : 'Upload data to start analyzing'}
               </p>
             </div>
 
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Chat Messages - Takes remaining space */}
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col bg-gray-50" style={{ minHeight: '0' }}>
               {!hasData && (
-                <div className="text-center py-12">
-                  <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No financial data available</p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    Please upload P&L and Cashflow files to start analyzing
-                  </p>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No financial data available</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Please upload P&L and Cashflow files to start analyzing
+                    </p>
+                  </div>
                 </div>
               )}
 
-              {queryHistory.map((item) => (
-                <div key={item.id} className="space-y-4">
+              <div className={queryHistory.length > 0 ? 'space-y-4' : 'flex-1 flex items-center justify-center'}>
+                {queryHistory.map((item) => (
+                  <div key={item.id} className="space-y-4">
                   {/* User Query */}
                   <div className="flex justify-end">
                     <div className="bg-purple-600 text-white rounded-lg px-4 py-2 max-w-md">
@@ -263,6 +306,7 @@ export const AnalysisPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              </div>
 
               {loading && (
                 <div className="flex justify-start">
@@ -289,7 +333,7 @@ export const AnalysisPage: React.FC = () => {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Query Input */}
+            {/* Query Input - Fixed at bottom */}
             <div className="p-4 border-t border-gray-200">
               <form onSubmit={handleSubmitQuery} className="flex space-x-2">
                 <input

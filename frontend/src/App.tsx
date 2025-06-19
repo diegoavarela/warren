@@ -18,6 +18,8 @@ import { ScreenshotInstructions } from './pages/ScreenshotInstructions'
 import ScreenshotGallery from './pages/ScreenshotGallery'
 import { RequestLicensePage } from './pages/RequestLicensePage'
 import { AnalysisPage } from './pages/AnalysisPage'
+import { AnalysisPageTest } from './pages/AnalysisPageTest'
+import { AnalysisPageFixed } from './pages/AnalysisPageFixed'
 
 function App() {
   return (
@@ -99,6 +101,11 @@ function App() {
               <AnalysisPage />
             </Layout>
           </ProtectedRoute>
+        } />
+        <Route path="/demo/analysis" element={
+          <Layout>
+            <AnalysisPageFixed />
+          </Layout>
         } />
       </Routes>
     </AuthProvider>
