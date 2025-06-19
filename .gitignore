@@ -42,3 +42,13 @@ coverage/
 
 # Docker
 .dockerignore
+
+# Puppeteer test scripts
+/frontend/puppeteer-*.js
+/frontend/capture-*.js
+/frontend/take-*.js
+
+# Test/Demo Analysis pages
+/frontend/src/pages/AnalysisPageDemo.tsx
+/frontend/src/pages/AnalysisPageEnhanced.tsx
+/frontend/src/pages/AnalysisPageTest.tsx
