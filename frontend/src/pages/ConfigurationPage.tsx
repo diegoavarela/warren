@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { configurationService, CompanyConfig, StructureDetectionResult } from '../services/configurationService'
 import { Currency, Unit, CURRENCIES, UNITS } from '../interfaces/currency'
+import { Navbar } from '../components/Navbar'
 
 
 export const ConfigurationPage: React.FC = () => {
@@ -268,15 +269,18 @@ export const ConfigurationPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <CogIcon className="h-8 w-8 mr-3 text-blue-600" />
-          Configuration Center
-        </h1>
-        <p className="text-gray-600 mt-2">Manage company configurations and Excel file structures</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+              <CogIcon className="h-8 w-8 mr-3 text-blue-600" />
+              Configuration Center
+            </h1>
+            <p className="text-gray-600 mt-2">Manage company configurations and Excel file structures</p>
+          </div>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-center">
@@ -1001,6 +1005,8 @@ export const ConfigurationPage: React.FC = () => {
               <p className="text-gray-600">Select a company from the list to view and edit its configuration</p>
             </div>
           )}
+        </div>
+      </div>
         </div>
       </div>
     </div>
