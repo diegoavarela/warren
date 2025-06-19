@@ -16,6 +16,7 @@ import configurationRouter from './routes/configuration';
 import currencyRouter from './routes/currency';
 import mondayRouter from './routes/monday';
 import { analysisRoutes } from './routes/analysis';
+import { excelAnalysisRouter } from './routes/excelAnalysis';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
@@ -73,6 +74,7 @@ app.use('/api/configuration', configurationRouter);
 app.use('/api/currency', currencyRouter);
 app.use('/api/monday', mondayRouter);
 app.use('/api/analysis', analysisRoutes);
+app.use('/api/excel', excelAnalysisRouter);
 
 // Health check
 app.get('/health', (req, res) => {
