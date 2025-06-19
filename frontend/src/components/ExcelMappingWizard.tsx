@@ -8,10 +8,12 @@ import {
   ArrowLeftIcon,
   CpuChipIcon,
   TableCellsIcon,
-  EyeIcon
+  EyeIcon,
+  PencilSquareIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
+import { ExcelMappingEditor } from './ExcelMappingEditor';
 
 interface ExcelMapping {
   fileName: string;
@@ -45,7 +47,7 @@ interface ExcelMappingWizardProps {
   onMappingComplete: (mapping: ExcelMapping) => void;
 }
 
-type WizardStep = 'upload' | 'analyzing' | 'review' | 'preview' | 'complete';
+type WizardStep = 'upload' | 'analyzing' | 'review' | 'edit' | 'preview' | 'complete';
 
 export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
   isOpen,
@@ -60,6 +62,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
   const [preview, setPreview] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sampleData, setSampleData] = useState<any>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -95,6 +98,10 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
       if (response.data.success) {
         setMapping(response.data.data.mapping);
         setValidation(response.data.data.validation);
+        // Store sample data for the editor
+        if (response.data.data.sampleData) {
+          setSampleData(response.data.data.sampleData);
+        }
         setCurrentStep('review');
       } else {
         throw new Error(response.data.error || 'Analysis failed');
@@ -310,12 +317,67 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
                 <ArrowLeftIcon className="h-5 w-5 mr-2" />
                 Back
               </button>
+              <div className="space-x-3">
+                <button
+                  onClick={() => setCurrentStep('edit')}
+                  className="px-6 py-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors inline-flex items-center"
+                >
+                  <PencilSquareIcon className="h-5 w-5 mr-2" />
+                  Edit Mapping
+                </button>
+                <button
+                  onClick={previewExtraction}
+                  disabled={loading}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center"
+                >
+                  Preview Data
+                  <EyeIcon className="h-5 w-5 ml-2" />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'edit':
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <PencilSquareIcon className="h-16 w-16 text-purple-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Edit Mapping Configuration
+              </h3>
+              <p className="text-gray-600">
+                Adjust field mappings to match your Excel structure
+              </p>
+            </div>
+
+            {mapping && (
+              <ExcelMappingEditor
+                mapping={mapping}
+                mappingType={mappingType}
+                sampleData={sampleData}
+                onUpdate={(updatedMapping) => {
+                  setMapping(updatedMapping);
+                  // Re-validate the updated mapping
+                  setValidation(null);
+                }}
+              />
+            )}
+
+            <div className="flex justify-between">
+              <button
+                onClick={() => setCurrentStep('review')}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                Back to Review
+              </button>
               <button
                 onClick={previewExtraction}
                 disabled={loading}
                 className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
               >
-                Preview Data
+                Test Mapping
                 <EyeIcon className="h-5 w-5 ml-2" />
               </button>
             </div>

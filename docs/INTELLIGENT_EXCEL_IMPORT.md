@@ -18,11 +18,13 @@ If no AI API is configured, the system uses pattern matching to find common term
 - "Total Expense", "Total Cost", "Egresos"
 - "Balance", "Cash Flow", "Net Income"
 
-### 3. User Validation
+### 3. User Validation & Editing
 The mapping wizard shows:
 - Detected structure with confidence scores
-- Preview of extracted data
-- Ability to adjust mappings before saving
+- **Manual editing interface** to correct AI mistakes
+- Preview of extracted data with edited mappings
+- Real-time sample values from your Excel file
+- Ability to add/remove/modify field mappings
 
 ### 4. Reusable Mappings
 Once validated, mappings are saved and can be:
@@ -136,6 +138,40 @@ Body:
 ### Get Saved Mappings
 ```
 GET /api/excel/mappings?companyId=123&mappingType=cashflow
+```
+
+## Editing Mappings
+
+The system includes a comprehensive mapping editor that allows users to:
+
+### Features
+1. **Edit Existing Mappings**
+   - Click the pencil icon to modify any detected field
+   - Change row numbers if AI picked the wrong row
+   - Update field descriptions
+   - Change data types (currency, percentage, number, date)
+
+2. **Add Missing Fields**
+   - Click "Add Field" to include fields AI missed
+   - See real-time sample values as you type row numbers
+   - Required fields are highlighted if missing
+
+3. **Delete Incorrect Mappings**
+   - Remove fields that shouldn't be included
+   - Clean up any false positives from AI
+
+4. **Visual Feedback**
+   - Sample values shown for each row
+   - Warning when required fields are missing
+   - Tips for successful mapping
+
+### Example Edit Flow
+```
+1. AI detects "Total Income" at row 24
+2. User sees sample value: "Cobros A1 LLC" (wrong row)
+3. User clicks edit, changes to row 26
+4. Sample updates to show "TOTAL COBROS" (correct)
+5. User saves and continues
 ```
 
 ## Frontend Usage

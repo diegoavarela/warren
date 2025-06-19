@@ -53,12 +53,16 @@ export class ExcelAnalysisController {
       // Validate the mapping
       const validation = await this.aiService.validateMapping(mapping, req.file.buffer);
 
+      // Get sample data for the editor
+      const sampleData = await this.getSampleData(req.file.buffer);
+
       res.json({
         success: true,
         data: {
           mapping,
           fileHash,
           validation,
+          sampleData,
           message: mapping.aiGenerated 
             ? 'AI analysis completed successfully' 
             : 'Pattern matching analysis completed'
@@ -236,5 +240,51 @@ export class ExcelAnalysisController {
     }
     
     return 0;
+  }
+
+  /**
+   * Helper: Get sample data from Excel
+   */
+  private async getSampleData(buffer: Buffer): Promise<any> {
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    
+    const worksheet = workbook.worksheets[0];
+    const sample = {
+      worksheetName: worksheet.name,
+      totalRows: worksheet.rowCount,
+      totalColumns: worksheet.columnCount,
+      rows: [] as any[]
+    };
+
+    // Extract first 50 rows for editor
+    const maxRows = Math.min(50, worksheet.rowCount);
+    
+    for (let rowNum = 1; rowNum <= maxRows; rowNum++) {
+      const row = worksheet.getRow(rowNum);
+      const rowData = {
+        rowNumber: rowNum,
+        cells: [] as any[]
+      };
+
+      // Extract first 20 columns
+      const maxCols = Math.min(20, worksheet.columnCount);
+      
+      for (let colNum = 1; colNum <= maxCols; colNum++) {
+        const cell = row.getCell(colNum);
+        const value = this.getCellValue(cell.value);
+        
+        rowData.cells.push({
+          column: colNum,
+          value: value,
+          type: typeof value
+        });
+      }
+      
+      sample.rows.push(rowData);
+    }
+
+    return sample;
   }
 }
