@@ -34,8 +34,8 @@ export const Navbar: React.FC = () => {
     { path: '/demo/pnl', label: 'P&L', icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
   ] : [
     { path: '/home', label: 'Home', icon: HomeIcon, gradient: 'from-purple-600 to-violet-600' },
-    { path: '/pnl', label: 'P&L', icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
     { path: '/cashflow', label: 'Cash Flow', icon: BanknotesIcon, gradient: 'from-violet-600 to-indigo-600' },
+    { path: '/pnl', label: 'P&L', icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
     { path: '/analysis', label: 'AI Analysis', icon: SparklesIcon, gradient: 'from-pink-600 to-purple-600' },
     { path: '/configuration', label: 'Configuration', icon: CogIcon, gradient: 'from-slate-600 to-gray-600' }
   ]
