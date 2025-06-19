@@ -26,10 +26,18 @@ export const LandingPage: React.FC = () => {
 
   const features = [
     {
+      icon: SparklesIcon,
+      title: 'AI-Powered Excel Import',
+      description: 'Our intelligent system automatically understands any Excel format, eliminating manual configuration',
+      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-10.png',
+      screenshotAlt: 'AI-powered Excel mapping interface',
+      benefits: ['Any Excel format', 'Auto-detection', 'Manual corrections']
+    },
+    {
       icon: ChartBarIcon,
       title: 'Real-Time Cash Flow Analysis',
       description: 'Monitor your company\'s financial health with live data updates and intelligent forecasting',
-      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-10.png',
+      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-7.png',
       screenshotAlt: 'Real-time cash flow dashboard showing inflow/outflow trends',
       benefits: ['Instant insights', 'Predictive analytics', 'Custom alerts']
     },
@@ -37,7 +45,7 @@ export const LandingPage: React.FC = () => {
       icon: BanknotesIcon,
       title: 'Smart Financial Planning',
       description: 'Scenario planning tools that help you make data-driven decisions for sustainable growth',
-      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-7.png',
+      screenshot: '/screenshots/Warren_by_Vortex_-_Financial_Dashboard-12.png',
       screenshotAlt: 'Scenario planning interface with what-if analysis',
       benefits: ['What-if scenarios', 'Risk assessment', 'Growth modeling']
     },
@@ -52,9 +60,9 @@ export const LandingPage: React.FC = () => {
   ]
 
   const metrics = [
-    { value: 'Excel', label: 'Data Source' },
+    { value: 'AI', label: 'Powered Import' },
+    { value: 'Any', label: 'Excel Format' },
     { value: '12', label: 'Month Forecast' },
-    { value: '3', label: 'Scenario Types' },
     { value: 'PDF', label: 'Export Format' }
   ]
 
@@ -113,7 +121,7 @@ export const LandingPage: React.FC = () => {
           <div className="text-center">
             <div className="inline-flex items-center px-4 py-1.5 bg-gradient-to-r from-violet-100 to-indigo-100 rounded-full mb-6">
               <SparklesIcon className="h-5 w-5 text-violet-600 mr-2" />
-              <span className="text-violet-700 font-medium">Excel-based financial analysis platform</span>
+              <span className="text-violet-700 font-medium">AI-Powered Excel Financial Analysis Platform</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
@@ -127,8 +135,8 @@ export const LandingPage: React.FC = () => {
             </h1>
             
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Warren transforms Excel financial data into beautiful dashboards, 
-              helping you understand cash flow, run scenarios, and make informed decisions.
+              Warren uses AI to automatically understand any Excel format and transform your financial data 
+              into beautiful dashboards, helping you master cash flow and make informed decisions.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -309,11 +317,11 @@ export const LandingPage: React.FC = () => {
 
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
               <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl w-fit mb-4">
-                <LightBulbIcon className="h-8 w-8 text-white" />
+                <SparklesIcon className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Financial Insights</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">AI Financial Insights</h3>
               <p className="text-gray-600">
-                Automated analysis of your cash flow trends with helpful insights about your financial health.
+                Advanced AI analysis of your financial data with actionable insights and trend predictions.
               </p>
             </div>
 
@@ -350,7 +358,108 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* AI Features Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl mb-4">
+              <SparklesIcon className="h-10 w-10 text-white" />
+            </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Powered by Artificial Intelligence
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Warren uses cutting-edge AI technology to make financial management effortless and intelligent
+            </p>
+          </div>
 
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div className="flex items-start space-x-4">
+                <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                  <DocumentChartBarIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Smart Excel Recognition
+                  </h3>
+                  <p className="text-gray-600">
+                    Upload any Excel file format - our AI automatically detects and maps your financial data structure, 
+                    no matter how complex or unique your spreadsheet is.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="p-2 bg-indigo-100 rounded-lg flex-shrink-0">
+                  <LightBulbIcon className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Intelligent Analysis
+                  </h3>
+                  <p className="text-gray-600">
+                    Get AI-powered insights about your financial health, including trend analysis, 
+                    anomaly detection, and predictive forecasting based on your historical data.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="p-2 bg-violet-100 rounded-lg flex-shrink-0">
+                  <RocketLaunchIcon className="h-6 w-6 text-violet-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Future-Ready Platform
+                  </h3>
+                  <p className="text-gray-600">
+                    As AI technology evolves, so does Warren. We continuously improve our algorithms 
+                    to provide you with the most accurate and valuable financial insights.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-400 blur-3xl opacity-20"></div>
+              <div className="relative bg-white rounded-2xl shadow-2xl p-8 border border-purple-100">
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h4 className="text-2xl font-bold text-gray-900">AI Capabilities</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl">
+                      <div className="text-3xl font-bold text-purple-600 mb-1">98%</div>
+                      <div className="text-sm text-gray-600">Accuracy Rate</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl">
+                      <div className="text-3xl font-bold text-indigo-600 mb-1">5s</div>
+                      <div className="text-sm text-gray-600">Analysis Time</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-violet-50 to-purple-50 p-4 rounded-xl">
+                      <div className="text-3xl font-bold text-violet-600 mb-1">∞</div>
+                      <div className="text-sm text-gray-600">Excel Formats</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl">
+                      <div className="text-3xl font-bold text-purple-600 mb-1">24/7</div>
+                      <div className="text-sm text-gray-600">AI Available</div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                      <SparklesIcon className="h-4 w-4" />
+                      <span>Powered by Claude & OpenAI</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Screenshots Gallery */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
