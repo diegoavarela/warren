@@ -98,7 +98,7 @@ export const ExcelMappingEditor: React.FC<ExcelMappingEditorProps> = ({
       structure: {
         ...mapping.structure,
         dateRow: parseInt(dateRow) || mapping.structure.dateRow,
-        dateColumns: dateColumns.split(',').map(c => parseInt(c.trim())).filter(n => !isNaN(n)),
+        dateColumns: dateColumns.split(',').map((c: string) => parseInt(c.trim())).filter((n: number) => !isNaN(n)),
         metricMappings: updatedFields.reduce((acc, field) => ({
           ...acc,
           [field.key]: {

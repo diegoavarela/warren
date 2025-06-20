@@ -320,7 +320,7 @@ export class ExecutivePDFService {
     if (data.currentMonth) {
       const tableData = this.generateTableData(data, type)
       
-      pdf.autoTable({
+      (pdf as any).autoTable({
         startY: yPos,
         head: [['Metric', 'Current Period', 'Previous Period', 'Change']],
         body: tableData,

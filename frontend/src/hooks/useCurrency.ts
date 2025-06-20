@@ -85,10 +85,10 @@ export const useCurrency = (module?: 'pnl' | 'cashflow'): UseCurrencyReturn => {
           // Override currency settings with module-specific ones
           setSettings(prev => ({
             ...prev,
-            defaultCurrency: company.pnlSettings.currency,
-            defaultUnit: company.pnlSettings.unit,
-            enableCurrencyConversion: company.pnlSettings.enableCurrencyConversion ?? prev.enableCurrencyConversion,
-            showCurrencySelector: company.pnlSettings.showCurrencySelector ?? prev.showCurrencySelector
+            defaultCurrency: company.pnlSettings?.currency || prev.defaultCurrency,
+            defaultUnit: company.pnlSettings?.unit || prev.defaultUnit,
+            enableCurrencyConversion: company.pnlSettings?.enableCurrencyConversion ?? prev.enableCurrencyConversion,
+            showCurrencySelector: company.pnlSettings?.showCurrencySelector ?? prev.showCurrencySelector
           }))
         } else if (module === 'cashflow' && company.cashflowSettings) {
           console.log('Loading Cash Flow settings from company:', company.cashflowSettings)
@@ -100,10 +100,10 @@ export const useCurrency = (module?: 'pnl' | 'cashflow'): UseCurrencyReturn => {
           // Override currency settings with module-specific ones
           setSettings(prev => ({
             ...prev,
-            defaultCurrency: company.cashflowSettings.currency,
-            defaultUnit: company.cashflowSettings.unit,
-            enableCurrencyConversion: company.cashflowSettings.enableCurrencyConversion ?? prev.enableCurrencyConversion,
-            showCurrencySelector: company.cashflowSettings.showCurrencySelector ?? prev.showCurrencySelector
+            defaultCurrency: company.cashflowSettings?.currency || prev.defaultCurrency,
+            defaultUnit: company.cashflowSettings?.unit || prev.defaultUnit,
+            enableCurrencyConversion: company.cashflowSettings?.enableCurrencyConversion ?? prev.enableCurrencyConversion,
+            showCurrencySelector: company.cashflowSettings?.showCurrencySelector ?? prev.showCurrencySelector
           }))
         } else {
           setCurrency(defaultCurrency)
