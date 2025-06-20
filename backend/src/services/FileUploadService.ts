@@ -26,6 +26,10 @@ export interface FileUploadRecord {
   updatedAt: Date
   deletedAt?: Date
   pnlUploadId?: number
+  yearStart?: number
+  yearEnd?: number
+  tags?: string[]
+  isActive?: boolean
 }
 
 export interface FileUploadCreateDto {
@@ -360,6 +364,41 @@ export class FileUploadService {
       processingError: error,
       processingCompletedAt: new Date()
     })
+  }
+
+  /**
+   * Get all active (valid and not deleted) file uploads for a user
+   */
+  async getActiveFileUploads(userId: number): Promise<FileUploadRecord[]> {
+    const query = `
+      SELECT 
+        fu.*,
+        fu.year_start,
+        fu.year_end,
+        fu.tags,
+        fu.is_active
+      FROM file_uploads fu
+      WHERE fu.user_id = $1 
+        AND fu.deleted_at IS NULL
+        AND fu.processing_status = 'completed'
+        AND fu.is_valid = TRUE
+        AND (fu.is_active IS NULL OR fu.is_active = TRUE)
+      ORDER BY fu.file_type, fu.period_start DESC
+    `
+    
+    try {
+      const result = await this.pool.query(query, [userId])
+      return result.rows.map(row => ({
+        ...this.mapToFileUploadRecord(row),
+        yearStart: row.year_start,
+        yearEnd: row.year_end,
+        tags: row.tags || [],
+        isActive: row.is_active !== false
+      }))
+    } catch (error) {
+      logger.error('Error getting active file uploads:', error)
+      throw error
+    }
   }
 
   /**

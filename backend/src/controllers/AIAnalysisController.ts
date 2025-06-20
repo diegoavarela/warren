@@ -56,9 +56,16 @@ export class AIAnalysisController {
       // Get upload information from database
       const uploadData = await this.fileUploadService.getDataAvailability(parseInt(req.user!.id))
       
+      // Get all active file uploads for multi-source support
+      const allUploads = await this.fileUploadService.getActiveFileUploads(parseInt(req.user!.id))
+      
       const financialData = await this.dataAggregator.aggregateAllData()
       
-      // Create a summary of available data
+      // Group uploads by type
+      const pnlSources = allUploads.filter(u => u.fileType === 'pnl' && u.isValid)
+      const cashflowSources = allUploads.filter(u => u.fileType === 'cashflow' && u.isValid)
+      
+      // Create enhanced summary with multi-source data
       const summary = {
         pnl: {
           hasData: financialData.pnl.metadata.hasData,
@@ -71,7 +78,20 @@ export class AIAnalysisController {
             personnelCosts: financialData.pnl.metrics.personnelCosts.some(p => p.total > 0),
             ebitda: financialData.pnl.metrics.ebitda.length > 0
           },
-          lastUpload: uploadData.pnl?.uploadDate || financialData.pnl.metadata.lastUpload
+          lastUpload: uploadData.pnl?.uploadDate || financialData.pnl.metadata.lastUpload,
+          dataSources: {
+            count: pnlSources.length,
+            files: pnlSources.map(source => ({
+              id: source.id,
+              filename: source.originalFilename,
+              yearRange: this.getYearRangeString(source),
+              monthsCount: source.monthsAvailable || 0,
+              uploadDate: source.uploadDate,
+              tags: source.tags || []
+            })),
+            totalMonths: pnlSources.reduce((sum, s) => sum + (s.monthsAvailable || 0), 0),
+            consolidatedRange: this.getConsolidatedRange(pnlSources)
+          }
         },
         cashflow: {
           hasData: financialData.cashflow.metadata.hasData,
@@ -84,7 +104,20 @@ export class AIAnalysisController {
             inflows: financialData.cashflow.metrics.inflows.length > 0,
             outflows: financialData.cashflow.metrics.outflows.length > 0
           },
-          lastUpload: uploadData.cashflow?.uploadDate || financialData.cashflow.metadata.lastUpload
+          lastUpload: uploadData.cashflow?.uploadDate || financialData.cashflow.metadata.lastUpload,
+          dataSources: {
+            count: cashflowSources.length,
+            files: cashflowSources.map(source => ({
+              id: source.id,
+              filename: source.originalFilename,
+              yearRange: this.getYearRangeString(source),
+              monthsCount: source.monthsAvailable || 0,
+              uploadDate: source.uploadDate,
+              tags: source.tags || []
+            })),
+            totalMonths: cashflowSources.reduce((sum, s) => sum + (s.monthsAvailable || 0), 0),
+            consolidatedRange: this.getConsolidatedRange(cashflowSources)
+          }
         }
       }
 
@@ -96,6 +129,50 @@ export class AIAnalysisController {
       logger.error('Error getting data summary:', error)
       next(error)
     }
+  }
+  
+  private getYearRangeString(source: any): string {
+    if (source.yearStart && source.yearEnd) {
+      return source.yearStart === source.yearEnd 
+        ? `${source.yearStart}` 
+        : `${source.yearStart}-${source.yearEnd}`
+    }
+    if (source.periodStart) {
+      const year = new Date(source.periodStart).getFullYear()
+      return `${year}`
+    }
+    return 'Unknown'
+  }
+  
+  private getConsolidatedRange(sources: any[]): { start: string; end: string } | null {
+    if (sources.length === 0) return null
+    
+    let earliestDate: Date | null = null
+    let latestDate: Date | null = null
+    
+    sources.forEach(source => {
+      if (source.periodStart) {
+        const startDate = new Date(source.periodStart)
+        if (!earliestDate || startDate < earliestDate) {
+          earliestDate = startDate
+        }
+      }
+      if (source.periodEnd) {
+        const endDate = new Date(source.periodEnd)
+        if (!latestDate || endDate > latestDate) {
+          latestDate = endDate
+        }
+      }
+    })
+    
+    if (earliestDate && latestDate) {
+      return {
+        start: earliestDate.toISOString().split('T')[0],
+        end: latestDate.toISOString().split('T')[0]
+      }
+    }
+    
+    return null
   }
 
   async getSuggestedQueries(req: AuthRequest, res: Response, next: NextFunction) {

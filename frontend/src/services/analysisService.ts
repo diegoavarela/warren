@@ -63,6 +63,22 @@ export interface AnalysisResponse {
   error?: string
 }
 
+export interface DataSourceFile {
+  id: number
+  filename: string
+  yearRange: string
+  monthsCount: number
+  uploadDate: Date
+  tags: string[]
+}
+
+export interface DataSourceInfo {
+  count: number
+  files: DataSourceFile[]
+  totalMonths: number
+  consolidatedRange: { start: string; end: string } | null
+}
+
 export interface DataSummary {
   pnl: {
     hasData: boolean
@@ -76,6 +92,7 @@ export interface DataSummary {
       ebitda: boolean
     }
     lastUpload: Date | null
+    dataSources?: DataSourceInfo
   }
   cashflow: {
     hasData: boolean
@@ -89,6 +106,7 @@ export interface DataSummary {
       outflows: boolean
     }
     lastUpload: Date | null
+    dataSources?: DataSourceInfo
   }
 }
 

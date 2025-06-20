@@ -505,6 +505,40 @@ ${data.cashflow.metrics.investments.map(i =>
   getSuggestedQueries(data: FinancialDataContext): string[] {
     const suggestions: string[] = []
     
+    // Check for multi-year data availability
+    const pnlYears = new Set<number>()
+    const cashflowYears = new Set<number>()
+    
+    if (data.pnl.metadata.hasData && data.pnl.availableMonths.length > 0) {
+      data.pnl.availableMonths.forEach(month => {
+        const year = new Date(month + '-01').getFullYear()
+        if (!isNaN(year)) pnlYears.add(year)
+      })
+    }
+    
+    if (data.cashflow.metadata.hasData && data.cashflow.availableMonths.length > 0) {
+      data.cashflow.availableMonths.forEach(month => {
+        const year = new Date(month + '-01').getFullYear()
+        if (!isNaN(year)) cashflowYears.add(year)
+      })
+    }
+    
+    // Multi-year analysis suggestions
+    if (pnlYears.size > 1) {
+      const years = Array.from(pnlYears).sort()
+      suggestions.push(`Compare revenue growth between ${years[0]} and ${years[years.length - 1]}`)
+      suggestions.push("Show year-over-year gross margin trends")
+      if (pnlYears.size > 2) {
+        suggestions.push("Analyze multi-year expense patterns and identify cost optimization opportunities")
+      }
+    }
+    
+    if (cashflowYears.size > 1) {
+      const years = Array.from(cashflowYears).sort()
+      suggestions.push(`Compare cash position trends across ${years.join(', ')}`)
+      suggestions.push("Show seasonal cashflow patterns over multiple years")
+    }
+    
     if (data.pnl.metadata.hasData) {
       // Check for gross margin data
       const hasMarginData = data.pnl.metrics.margins.some(m => 

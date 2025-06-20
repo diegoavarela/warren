@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import {
   SparklesIcon,
   PaperAirplaneIcon,
@@ -14,7 +15,12 @@ import {
   BanknotesIcon,
   CalendarIcon,
   CheckIcon,
-  XMarkIcon
+  XMarkIcon,
+  FolderOpenIcon,
+  DocumentIcon,
+  TagIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@heroicons/react/24/outline'
 import { analysisService, AnalysisResponse, DataSummary } from '../services/analysisService'
 import { InteractiveChart } from '../components/InteractiveChart'
@@ -37,6 +43,8 @@ export const AnalysisPage: React.FC = () => {
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [pnlSourcesExpanded, setPnlSourcesExpanded] = useState(false)
+  const [cashflowSourcesExpanded, setCashflowSourcesExpanded] = useState(false)
   const [drillDownModal, setDrillDownModal] = useState<{
     isOpen: boolean
     query: string
@@ -300,10 +308,56 @@ export const AnalysisPage: React.FC = () => {
                       </div>
                       {dataSummary.pnl.hasData && (
                         <div className="ml-4 space-y-0.5">
-                          <div className="flex items-center text-xs text-gray-500">
-                            <CalendarIcon className="h-3 w-3 mr-1" />
-                            {dataSummary.pnl.monthsAvailable} months
-                          </div>
+                          {/* Multi-source summary */}
+                          {dataSummary.pnl.dataSources && dataSummary.pnl.dataSources.count > 0 && (
+                            <div className="bg-emerald-50 rounded p-1.5 mb-1">
+                              <div className="flex items-center text-xs text-emerald-700 font-medium">
+                                <FolderOpenIcon className="h-3 w-3 mr-1" />
+                                {dataSummary.pnl.dataSources.count} file{dataSummary.pnl.dataSources.count > 1 ? 's' : ''}, {dataSummary.pnl.dataSources.totalMonths} months
+                              </div>
+                              {dataSummary.pnl.dataSources.consolidatedRange && (
+                                <div className="text-xs text-emerald-600 mt-0.5">
+                                  {dataSummary.pnl.dataSources.consolidatedRange.start} to {dataSummary.pnl.dataSources.consolidatedRange.end}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Expandable source list */}
+                          {dataSummary.pnl.dataSources && dataSummary.pnl.dataSources.count > 0 && (
+                            <button
+                              onClick={() => setPnlSourcesExpanded(!pnlSourcesExpanded)}
+                              className="flex items-center text-xs text-blue-600 hover:text-blue-700"
+                            >
+                              {pnlSourcesExpanded ? <ChevronUpIcon className="h-3 w-3 mr-1" /> : <ChevronDownIcon className="h-3 w-3 mr-1" />}
+                              View sources
+                            </button>
+                          )}
+                          {pnlSourcesExpanded && dataSummary.pnl.dataSources && (
+                            <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
+                              {dataSummary.pnl.dataSources.files.map((file) => (
+                                <div key={file.id} className="bg-gray-50 rounded p-1 text-xs">
+                                  <div className="flex items-center">
+                                    <DocumentIcon className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                    <span className="text-gray-700 truncate">{file.filename}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-gray-500 mt-0.5">
+                                    <span>{file.yearRange}</span>
+                                    <span>{file.monthsCount} mo</span>
+                                  </div>
+                                  {file.tags && file.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                      {file.tags.slice(0, 2).map((tag, idx) => (
+                                        <span key={idx} className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+                                          <TagIcon className="h-2 w-2 mr-0.5" />
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1">
                             <div className="flex items-center text-xs">
                               {dataSummary.pnl.metrics.revenue ? (
@@ -357,10 +411,56 @@ export const AnalysisPage: React.FC = () => {
                       </div>
                       {dataSummary.cashflow.hasData && (
                         <div className="ml-4 space-y-0.5">
-                          <div className="flex items-center text-xs text-gray-500">
-                            <CalendarIcon className="h-3 w-3 mr-1" />
-                            {dataSummary.cashflow.monthsAvailable} months
-                          </div>
+                          {/* Multi-source summary */}
+                          {dataSummary.cashflow.dataSources && dataSummary.cashflow.dataSources.count > 0 && (
+                            <div className="bg-purple-50 rounded p-1.5 mb-1">
+                              <div className="flex items-center text-xs text-purple-700 font-medium">
+                                <FolderOpenIcon className="h-3 w-3 mr-1" />
+                                {dataSummary.cashflow.dataSources.count} file{dataSummary.cashflow.dataSources.count > 1 ? 's' : ''}, {dataSummary.cashflow.dataSources.totalMonths} months
+                              </div>
+                              {dataSummary.cashflow.dataSources.consolidatedRange && (
+                                <div className="text-xs text-purple-600 mt-0.5">
+                                  {dataSummary.cashflow.dataSources.consolidatedRange.start} to {dataSummary.cashflow.dataSources.consolidatedRange.end}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Expandable source list */}
+                          {dataSummary.cashflow.dataSources && dataSummary.cashflow.dataSources.count > 0 && (
+                            <button
+                              onClick={() => setCashflowSourcesExpanded(!cashflowSourcesExpanded)}
+                              className="flex items-center text-xs text-blue-600 hover:text-blue-700"
+                            >
+                              {cashflowSourcesExpanded ? <ChevronUpIcon className="h-3 w-3 mr-1" /> : <ChevronDownIcon className="h-3 w-3 mr-1" />}
+                              View sources
+                            </button>
+                          )}
+                          {cashflowSourcesExpanded && dataSummary.cashflow.dataSources && (
+                            <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
+                              {dataSummary.cashflow.dataSources.files.map((file) => (
+                                <div key={file.id} className="bg-gray-50 rounded p-1 text-xs">
+                                  <div className="flex items-center">
+                                    <DocumentIcon className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                    <span className="text-gray-700 truncate">{file.filename}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-gray-500 mt-0.5">
+                                    <span>{file.yearRange}</span>
+                                    <span>{file.monthsCount} mo</span>
+                                  </div>
+                                  {file.tags && file.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                      {file.tags.slice(0, 2).map((tag, idx) => (
+                                        <span key={idx} className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+                                          <TagIcon className="h-2 w-2 mr-0.5" />
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1">
                             <div className="flex items-center text-xs">
                               {dataSummary.cashflow.metrics.cashPosition ? (
@@ -402,6 +502,23 @@ export const AnalysisPage: React.FC = () => {
                 ) : (
                   <p className="text-xs text-gray-500">Loading...</p>
                 )}
+              </div>
+
+              {/* Manage Data Sources Link */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-200">
+                <Link
+                  to="/data-management"
+                  className="flex items-center justify-between text-sm hover:opacity-80 transition-opacity"
+                >
+                  <div className="flex items-center">
+                    <FolderOpenIcon className="h-4 w-4 text-purple-600 mr-2" />
+                    <span className="text-purple-700 font-medium">Manage Data Sources</span>
+                  </div>
+                  <ChevronRightIcon className="h-4 w-4 text-purple-500" />
+                </Link>
+                <p className="text-xs text-purple-600 mt-1">
+                  Upload multiple files, organize with tags
+                </p>
               </div>
 
               {/* Compact Suggested Queries */}
