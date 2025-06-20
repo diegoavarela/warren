@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Tooltip } from 'react-tooltip'
 
 interface HeatMapData {
@@ -22,6 +22,22 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
   title,
   type
 }) => {
+  const [selectedCell, setSelectedCell] = useState<HeatMapData | null>(null)
+  
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedCell(null)
+      }
+    }
+    
+    if (selectedCell) {
+      window.addEventListener('keydown', handleEsc)
+      return () => window.removeEventListener('keydown', handleEsc)
+    }
+  }, [selectedCell])
+  
   const heatMapData = useMemo(() => {
     if (!data?.chartData) return []
 
@@ -126,6 +142,7 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
                     ${getColorIntensity(item.value, allValues)}
                     ${!item.value ? 'opacity-50' : ''}
                   `}
+                  onClick={() => setSelectedCell(item)}
                   data-tooltip-id={`heatmap-${item.date}`}
                   data-tooltip-content={`${item.month}: ${item.displayValue}`}
                 >
@@ -163,6 +180,74 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
           {metric === 'margin' ? 'Based on margin %' : 'Relative to period range'}
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {selectedCell && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCell(null)}>
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Performance Details</h3>
+              <button
+                onClick={() => setSelectedCell(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-600 mb-1">Period</p>
+                <p className="text-lg font-semibold text-gray-900">{selectedCell.month}</p>
+              </div>
+              
+              <div className={`rounded-lg p-4 ${getColorIntensity(selectedCell.value, allValues)} bg-opacity-20`}>
+                <p className="text-sm text-gray-600 mb-1">{metric.charAt(0).toUpperCase() + metric.slice(1)}</p>
+                <p className="text-2xl font-bold text-gray-900">{selectedCell.displayValue}</p>
+              </div>
+              
+              {/* Additional context based on metric */}
+              <div className="space-y-2">
+                {metric === 'margin' && (
+                  <div className="text-sm text-gray-600">
+                    <p>• Industry average: 15-20%</p>
+                    <p>• Target: {selectedCell.value > 20 ? '✓ Above target' : '↑ Below target'}</p>
+                  </div>
+                )}
+                {metric === 'cashflow' && (
+                  <div className="text-sm text-gray-600">
+                    <p>• Status: {selectedCell.value > 0 ? '✓ Positive' : '⚠️ Negative'}</p>
+                    <p>• Trend: {selectedCell.value > allValues[allValues.length - 2] ? '↑ Improving' : '↓ Declining'}</p>
+                  </div>
+                )}
+                {metric === 'revenue' && (
+                  <div className="text-sm text-gray-600">
+                    <p>• Growth: {getGrowthContext(selectedCell, heatMapData)}</p>
+                    <p>• Ranking: {getRanking(selectedCell.value, allValues)} of {allValues.length} months</p>
+                  </div>
+                )}
+                {metric === 'profit' && (
+                  <div className="text-sm text-gray-600">
+                    <p>• Profitability: {selectedCell.value > 0 ? '✓ Profitable' : '⚠️ Loss'}</p>
+                    <p>• Performance: {getPerformanceLevel(selectedCell.value, allValues)}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  Click outside or press ESC to close
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -187,4 +272,29 @@ function formatCompactValue(value: number): string {
   } else {
     return value.toFixed(1)
   }
+}
+
+function getGrowthContext(current: HeatMapData, allData: HeatMapData[]): string {
+  const currentIndex = allData.findIndex(d => d.date === current.date)
+  if (currentIndex <= 0) return 'First month'
+  
+  const previous = allData[currentIndex - 1]
+  const growth = ((current.value - previous.value) / previous.value * 100).toFixed(1)
+  return `${growth}% vs previous month`
+}
+
+function getRanking(value: number, allValues: number[]): number {
+  const sorted = [...allValues].sort((a, b) => b - a)
+  return sorted.indexOf(value) + 1
+}
+
+function getPerformanceLevel(value: number, allValues: number[]): string {
+  const sorted = [...allValues].sort((a, b) => b - a)
+  const rank = sorted.indexOf(value) + 1
+  const percentile = (1 - rank / allValues.length) * 100
+  
+  if (percentile >= 75) return '🌟 Top performer'
+  if (percentile >= 50) return '✓ Above average'
+  if (percentile >= 25) return '→ Average'
+  return '↓ Below average'
 }
