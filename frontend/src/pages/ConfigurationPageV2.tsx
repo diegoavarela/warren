@@ -159,7 +159,7 @@ export const ConfigurationPageV2: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-pulse space-y-8">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
           <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -178,7 +178,7 @@ export const ConfigurationPageV2: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20">
         {/* Header */}
         <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center">
@@ -230,9 +230,17 @@ export const ConfigurationPageV2: React.FC = () => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-medium"
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </span>
+              ) : 'Save Changes'}
             </button>
           </div>
         </div>
@@ -240,44 +248,70 @@ export const ConfigurationPageV2: React.FC = () => {
         {/* Form Content */}
         <div className="p-8 space-y-8">
           {/* Company Logo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-4">Company Logo</label>
-            <div className="flex items-center space-x-4">
-              {formData.logo && (
-                <img 
-                  src={formData.logo} 
-                  alt="Company logo preview"
-                  className="h-20 w-20 object-cover rounded-xl border-2 border-gray-200"
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 mb-8 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <PhotoIcon className="h-5 w-5 mr-2 text-violet-600" />
+              Company Logo
+            </h3>
+            <div className="flex items-center space-x-8">
+              <div className="flex-shrink-0">
+                {formData.logo ? (
+                  <div className="relative group">
+                    <img 
+                      src={formData.logo} 
+                      alt="Company logo"
+                      className="h-32 w-32 object-cover rounded-2xl shadow-lg border-2 border-white group-hover:shadow-xl transition-all duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-2xl transition-all duration-300"></div>
+                  </div>
+                ) : (
+                  <div className="h-32 w-32 bg-white rounded-2xl shadow-inner border-2 border-dashed border-gray-300 flex flex-col items-center justify-center group hover:border-violet-400 transition-all">
+                    <PhotoIcon className="h-12 w-12 text-gray-400 group-hover:text-violet-500 transition-colors mb-2" />
+                    <span className="text-xs text-gray-500">No logo</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                  id="logo-upload"
                 />
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className="hidden"
-                id="logo-upload"
-              />
-              <label
-                htmlFor="logo-upload"
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 cursor-pointer transition-colors"
-              >
-                <PhotoIcon className="h-5 w-5" />
-                <span>{formData.logo ? 'Change Logo' : 'Upload Logo'}</span>
-              </label>
-              {formData.logo && (
-                <button
-                  onClick={() => setFormData(prev => ({ ...prev, logo: '' }))}
-                  className="text-sm text-red-600 hover:text-red-700"
-                >
-                  Remove
-                </button>
-              )}
+                <div className="flex items-center space-x-3">
+                  <label
+                    htmlFor="logo-upload"
+                    className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-lg cursor-pointer transition-all border border-gray-300 shadow-md hover:scale-105"
+                  >
+                    <ArrowUpTrayIcon className="h-5 w-5 text-violet-600" />
+                    <span className="font-medium">{formData.logo ? 'Change Logo' : 'Upload Logo'}</span>
+                  </label>
+                  {formData.logo && (
+                    <button
+                      onClick={() => setFormData(prev => ({ ...prev, logo: '' }))}
+                      className="px-4 py-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="mt-4 bg-blue-50 rounded-lg p-3 border border-blue-100">
+                  <p className="text-xs text-blue-700 flex items-start">
+                    <ExclamationTriangleIcon className="h-4 w-4 mr-1.5 flex-shrink-0 mt-0.5" />
+                    <span>Recommended: Square image (1:1 ratio), minimum 200x200px, PNG or JPG format</span>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Basic Information */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <BuildingOfficeIcon className="h-5 w-5 mr-2 text-violet-600" />
+              Basic Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
@@ -285,7 +319,7 @@ export const ConfigurationPageV2: React.FC = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                   placeholder="Enter company name"
                 />
               </div>
@@ -295,7 +329,7 @@ export const ConfigurationPageV2: React.FC = () => {
                   type="text"
                   value={formData.industry}
                   onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                   placeholder="e.g., Technology, Finance"
                 />
               </div>
@@ -305,23 +339,26 @@ export const ConfigurationPageV2: React.FC = () => {
 
           {/* Module-Specific Settings */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Module-Specific Settings</h3>
-            <div className="bg-gray-50 p-6 rounded-xl space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <Cog6ToothIcon className="h-5 w-5 mr-2 text-violet-600" />
+              Module-Specific Settings
+            </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* P&L Settings */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-base font-medium text-gray-900 mb-4 flex items-center">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
                   <CalculatorIcon className="h-5 w-5 mr-2 text-emerald-600" />
                   P&L Dashboard Settings
                 </h4>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Data Currency</label>
                       <select
                         value={formData.pnlCurrency}
                         onChange={(e) => setFormData(prev => ({ ...prev, pnlCurrency: e.target.value as Currency }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white transition-all"
                       >
                         {Object.entries(CURRENCIES).map(([code, info]) => (
                           <option key={code} value={code}>
@@ -329,14 +366,14 @@ export const ConfigurationPageV2: React.FC = () => {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-1 text-xs text-gray-500">Currency of your P&L data in Excel</p>
+                      <p className="mt-1.5 text-xs text-gray-500 italic">Currency of your P&L data in Excel</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Data Unit Scale</label>
                       <select
                         value={formData.pnlUnit}
                         onChange={(e) => setFormData(prev => ({ ...prev, pnlUnit: e.target.value as Unit }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white transition-all"
                       >
                         {Object.entries(UNITS).map(([key, info]) => (
                           <option key={key} value={key}>
@@ -344,16 +381,16 @@ export const ConfigurationPageV2: React.FC = () => {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-1 text-xs text-gray-500">Unit scale of your P&L data in Excel</p>
+                      <p className="mt-1.5 text-xs text-gray-500 italic">Unit scale of your P&L data in Excel</p>
                     </div>
                   </div>
-                  <div className="bg-emerald-50 rounded-lg p-3 space-y-2">
+                  <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-4 space-y-3 border border-emerald-100">
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={formData.enableCurrencyConversion}
                         onChange={(e) => setFormData(prev => ({ ...prev, enableCurrencyConversion: e.target.checked }))}
-                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded transition-all"
                       />
                       <span className="ml-2 text-sm text-gray-700">Enable currency conversion</span>
                     </label>
@@ -362,7 +399,7 @@ export const ConfigurationPageV2: React.FC = () => {
                         type="checkbox"
                         checked={formData.showCurrencySelector}
                         onChange={(e) => setFormData(prev => ({ ...prev, showCurrencySelector: e.target.checked }))}
-                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded transition-all"
                       />
                       <span className="ml-2 text-sm text-gray-700">Show currency/unit selector</span>
                     </label>
@@ -371,19 +408,19 @@ export const ConfigurationPageV2: React.FC = () => {
               </div>
 
               {/* Cash Flow Settings */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-base font-medium text-gray-900 mb-4 flex items-center">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
                   <CurrencyDollarIcon className="h-5 w-5 mr-2 text-violet-600" />
                   Cash Flow Dashboard Settings
                 </h4>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Data Currency</label>
                       <select
                         value={formData.cashflowCurrency}
                         onChange={(e) => setFormData(prev => ({ ...prev, cashflowCurrency: e.target.value as Currency }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                       >
                         {Object.entries(CURRENCIES).map(([code, info]) => (
                           <option key={code} value={code}>
@@ -391,14 +428,14 @@ export const ConfigurationPageV2: React.FC = () => {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-1 text-xs text-gray-500">Currency of your Cash Flow data in Excel</p>
+                      <p className="mt-1.5 text-xs text-gray-500 italic">Currency of your Cash Flow data in Excel</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Data Unit Scale</label>
                       <select
                         value={formData.cashflowUnit}
                         onChange={(e) => setFormData(prev => ({ ...prev, cashflowUnit: e.target.value as Unit }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                       >
                         {Object.entries(UNITS).map(([key, info]) => (
                           <option key={key} value={key}>
@@ -406,16 +443,16 @@ export const ConfigurationPageV2: React.FC = () => {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-1 text-xs text-gray-500">Unit scale of your Cash Flow data in Excel</p>
+                      <p className="mt-1.5 text-xs text-gray-500 italic">Unit scale of your Cash Flow data in Excel</p>
                     </div>
                   </div>
-                  <div className="bg-violet-50 rounded-lg p-3 space-y-2">
+                  <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl p-4 space-y-3 border border-violet-100">
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={formData.enableCurrencyConversion}
                         onChange={(e) => setFormData(prev => ({ ...prev, enableCurrencyConversion: e.target.checked }))}
-                        className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded transition-all"
                       />
                       <span className="ml-2 text-sm text-gray-700">Enable currency conversion</span>
                     </label>
@@ -424,7 +461,7 @@ export const ConfigurationPageV2: React.FC = () => {
                         type="checkbox"
                         checked={formData.showCurrencySelector}
                         onChange={(e) => setFormData(prev => ({ ...prev, showCurrencySelector: e.target.checked }))}
-                        className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded transition-all"
                       />
                       <span className="ml-2 text-sm text-gray-700">Show currency/unit selector</span>
                     </label>
@@ -436,132 +473,159 @@ export const ConfigurationPageV2: React.FC = () => {
           </div>
 
           {/* Contact Information */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <PhoneIcon className="h-5 w-5 mr-2 text-violet-600" />
+              Contact Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <GlobeAltIcon className="inline h-4 w-4 mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <GlobeAltIcon className="h-4 w-4 mr-1.5 text-gray-400" />
                   Website
                 </label>
                 <input
                   type="url"
                   value={formData.website}
                   onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                   placeholder="https://company.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <EnvelopeIcon className="inline h-4 w-4 mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <EnvelopeIcon className="h-4 w-4 mr-1.5 text-gray-400" />
                   Email
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                   placeholder="contact@company.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <PhoneIcon className="inline h-4 w-4 mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <PhoneIcon className="h-4 w-4 mr-1.5 text-gray-400" />
                   Phone
                 </label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <MapPinIcon className="inline h-4 w-4 mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <MapPinIcon className="h-4 w-4 mr-1.5 text-gray-400" />
                   Address
                 </label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all"
                   placeholder="123 Business St, City, Country"
                 />
               </div>
             </div>
           </div>
 
-          {/* Brand Colors */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Brand Colors</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
-                <div className="flex space-x-3">
-                  <input
-                    type="color"
-                    value={formData.primaryColor}
-                    onChange={(e) => setFormData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                    className="h-10 w-20 border border-gray-300 rounded-lg cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={formData.primaryColor}
-                    onChange={(e) => setFormData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all font-mono"
-                    placeholder="#7CB342"
-                  />
+          {/* Brand Colors & Description */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Brand Colors */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <SparklesIcon className="h-5 w-5 mr-2 text-violet-600" />
+                Brand Colors
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Primary Color</label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="color"
+                      value={formData.primaryColor}
+                      onChange={(e) => setFormData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      className="h-12 w-12 rounded-lg cursor-pointer border-2 border-gray-200 shadow-sm"
+                    />
+                    <input
+                      type="text"
+                      value={formData.primaryColor}
+                      onChange={(e) => setFormData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all font-mono text-sm"
+                      placeholder="#7CB342"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
-                <div className="flex space-x-3">
-                  <input
-                    type="color"
-                    value={formData.secondaryColor}
-                    onChange={(e) => setFormData(prev => ({ ...prev, secondaryColor: e.target.value }))}
-                    className="h-10 w-20 border border-gray-300 rounded-lg cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={formData.secondaryColor}
-                    onChange={(e) => setFormData(prev => ({ ...prev, secondaryColor: e.target.value }))}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all font-mono"
-                    placeholder="#2E7D32"
-                  />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Secondary Color</label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="color"
+                      value={formData.secondaryColor}
+                      onChange={(e) => setFormData(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                      className="h-12 w-12 rounded-lg cursor-pointer border-2 border-gray-200 shadow-sm"
+                    />
+                    <input
+                      type="text"
+                      value={formData.secondaryColor}
+                      onChange={(e) => setFormData(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all font-mono text-sm"
+                      placeholder="#2E7D32"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Company Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-              placeholder="Brief description of your company..."
-            />
+            {/* Company Description */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <DocumentIcon className="h-5 w-5 mr-2 text-violet-600" />
+                Company Description
+              </h3>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                rows={5}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:bg-white transition-all resize-none"
+                placeholder="Brief description of your company, mission, and values..."
+              />
+              <p className="mt-2 text-xs text-gray-500">Maximum 500 characters</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Help Text */}
-      <div className="mt-8 bg-violet-50 rounded-xl p-6">
+      <div className="mt-8 bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-6 border border-violet-100 shadow-sm">
         <div className="flex items-start">
-          <SparklesIcon className="h-6 w-6 text-violet-600 mr-3 flex-shrink-0" />
+          <div className="p-2 bg-violet-100 rounded-xl mr-4">
+            <SparklesIcon className="h-6 w-6 text-violet-600" />
+          </div>
           <div>
-            <h4 className="text-sm font-medium text-violet-900 mb-1">Configuration Tips</h4>
-            <ul className="text-xs text-violet-700 space-y-1">
-              <li>• Upload your company logo for a personalized experience</li>
-              <li>• Configure Excel structure to enable automatic data import</li>
-              <li>• Set your preferred currency and unit display options</li>
-              <li>• All changes are saved automatically when you click "Save Changes"</li>
+            <h4 className="text-base font-semibold text-violet-900 mb-3">Configuration Tips</h4>
+            <ul className="text-sm text-violet-700 space-y-2">
+              <li className="flex items-start">
+                <span className="text-violet-400 mr-2">•</span>
+                <span>Upload your company logo for a personalized experience across all dashboards</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-violet-400 mr-2">•</span>
+                <span>Configure module-specific currency and unit settings for accurate data display</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-violet-400 mr-2">•</span>
+                <span>Set your brand colors to customize the visual appearance of your dashboards</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-violet-400 mr-2">•</span>
+                <span>All changes are saved automatically when you click "Save Changes"</span>
+              </li>
             </ul>
           </div>
         </div>

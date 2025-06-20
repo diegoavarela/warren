@@ -39,6 +39,18 @@
   ::selection {
     @apply bg-purple-500/20 text-purple-900;
   }
+
+  /* PDF Export Styles */
+  .pdf-hide {
+    display: none !important;
+  }
+  
+  /* Hide elements during PDF generation */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
 }
 
 @layer components {

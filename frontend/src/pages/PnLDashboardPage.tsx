@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { pnlService } from '../services/pnlService'
 import { ProfessionalPDFService } from '../services/professionalPdfService'
+import { PremiumPDFExport } from '../components/PremiumPDFExport'
 import { configurationService } from '../services/configurationService'
 import { FileUploadSection } from '../components/FileUploadSection'
 import { CurrencySelector } from '../components/CurrencySelector'
@@ -262,7 +263,7 @@ export const PnLDashboardPage: React.FC = () => {
     if (!currencyLoading) {
       // If source data unit matches display unit, format without conversion
       if (baseUnit === displayUnit) {
-        console.log('Formatting with matching units:', { baseUnit, displayUnit, amount: convertedAmount })
+        // Units match - apply conversion if needed
         // Data is already in the display unit, so format as units but add the suffix
         const formatted = currencyService.formatCurrency(convertedAmount, displayCurrency, 'units')
         if (displayUnit === 'thousands') {
@@ -574,7 +575,7 @@ export const PnLDashboardPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto" id="pnl-dashboard-content">
       {/* Demo Mode Banner */}
       {isDemoMode && (
         <div className="mb-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-xl shadow-lg">
@@ -597,14 +598,11 @@ export const PnLDashboardPage: React.FC = () => {
             <p className="text-gray-600 mt-2">Financial performance analysis and insights</p>
           </div>
           {data?.hasData && (
-            <button
-              onClick={exportToPDF}
-              disabled={exporting}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-xl hover:from-violet-700 hover:via-purple-700 hover:to-fuchsia-700 transition-all duration-200 shadow-lg hover:shadow-2xl transform hover:scale-105 disabled:opacity-50 disabled:transform-none backdrop-blur-sm"
-            >
-              <DocumentArrowDownIcon className="h-5 w-5" />
-              <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
-            </button>
+            <PremiumPDFExport
+              data={data}
+              type="pnl"
+              title="P&L Financial Report"
+            />
           )}
         </div>
       </div>

@@ -16,6 +16,7 @@ import {
 import { cashflowService } from '../services/cashflowService'
 import { configurationService } from '../services/configurationService'
 import { ProfessionalPDFService } from '../services/professionalPdfService'
+import { PremiumPDFExport } from '../components/PremiumPDFExport'
 import { FileUploadSection } from '../components/FileUploadSection'
 import { CashflowChart } from '../components/CashflowChart'
 import { CashRunwayWidget } from '../components/CashRunwayWidget'
@@ -352,7 +353,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto" id="cashflow-dashboard-content">
         {/* Demo Mode Banner */}
         {isDemoMode && (
           <div className="mb-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-xl shadow-lg">
@@ -375,14 +376,11 @@ export const DashboardPage: React.FC = () => {
               <p className="text-gray-600 mt-2">Monitor cash movements and financial health</p>
             </div>
             {data?.hasData && (
-              <button
-                onClick={exportToPDF}
-                disabled={exporting}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-xl hover:shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
-              >
-                <DocumentArrowDownIcon className="h-5 w-5" />
-                <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
-              </button>
+              <PremiumPDFExport
+                data={data}
+                type="cashflow"
+                title="Cash Flow Financial Report"
+              />
             )}
           </div>
         </div>

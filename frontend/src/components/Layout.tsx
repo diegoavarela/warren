@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex flex-col">
       {/* Unified Navbar */}
       <Navbar />
 
@@ -33,7 +33,7 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pt-16 flex flex-col min-h-0 overflow-hidden">
+      <main className="flex-1 pt-16 flex flex-col">
         {children}
       </main>
 

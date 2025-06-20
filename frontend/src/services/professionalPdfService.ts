@@ -522,22 +522,36 @@ export class ProfessionalPDFService {
       pdf.setDrawColor(...this.hexToRgb(theme.primary))
       
       let prevX = startX
-      let prevY = startY - (chartData[0].income / Math.max(...chartData.map((d: any) => d.income)) * 50)
+      const firstValue = chartData[0]?.revenue || chartData[0]?.income || chartData[0]?.netIncome || 0
+      const maxValue = Math.max(...chartData.map((d: any) => 
+        d.revenue || d.income || d.netIncome || 0
+      ))
+      let prevY = startY - (firstValue / (maxValue || 1) * 50)
       
       chartData.forEach((point: any, index: number) => {
         const x = startX + (index * stepX)
-        const y = startY - (point.income / Math.max(...chartData.map((d: any) => d.income)) * 50)
         
-        if (index > 0) {
-          pdf.line(prevX, prevY, x, y)
+        // Handle both P&L (revenue) and cashflow (income) data structures
+        const value = point.revenue || point.income || point.netIncome || 0
+        const maxValue = Math.max(...chartData.map((d: any) => 
+          d.revenue || d.income || d.netIncome || 0
+        ))
+        const y = startY - (value / (maxValue || 1) * 50)
+        
+        // Validate coordinates
+        if (!isNaN(x) && !isNaN(y) && isFinite(x) && isFinite(y)) {
+          if (index > 0 && !isNaN(prevX) && !isNaN(prevY)) {
+            pdf.line(prevX, prevY, x, y)
+          }
+          
+          // Draw data point (using rect as a workaround for circle)
+          pdf.setFillColor(...this.hexToRgb(theme.primary))
+          const radius = 1.5
+          pdf.rect(x - radius, y - radius, radius * 2, radius * 2, 'F')
+          
+          prevX = x
+          prevY = y
         }
-        
-        // Draw data point
-        pdf.setFillColor(...this.hexToRgb(theme.primary))
-        pdf.circle(x, y, 1.5, 'F')
-        
-        prevX = x
-        prevY = y
       })
     }
 
