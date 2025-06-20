@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -11,7 +12,8 @@ import {
   DocumentArrowDownIcon,
   XCircleIcon,
   QuestionMarkCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  FolderOpenIcon
 } from '@heroicons/react/24/outline'
 import { cashflowService } from '../services/cashflowService'
 import { configurationService } from '../services/configurationService'
@@ -348,6 +350,17 @@ export const DashboardPage: React.FC = () => {
               isRealData={false}
               variant="cashflow"
             />
+            
+            {/* Link to Data Management */}
+            <div className="mt-4 text-center">
+              <Link
+                to="/data-management"
+                className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-500 font-medium"
+              >
+                <FolderOpenIcon className="h-4 w-4 mr-1" />
+                Manage Multiple Files
+              </Link>
+            </div>
           </div>
         </div>
       </div>

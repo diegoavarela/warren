@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ChartBarIcon,
   ArrowTrendingUpIcon,
@@ -10,7 +11,8 @@ import {
   DocumentArrowDownIcon,
   QuestionMarkCircleIcon,
   XMarkIcon,
-  SparklesIcon
+  SparklesIcon,
+  FolderOpenIcon
 } from '@heroicons/react/24/outline'
 import { pnlService } from '../services/pnlService'
 import { ProfessionalPDFService } from '../services/professionalPdfService'
@@ -570,6 +572,17 @@ export const PnLDashboardPage: React.FC = () => {
               isRealData={false}
               variant="pnl"
             />
+            
+            {/* Link to Data Management */}
+            <div className="mt-4 text-center">
+              <Link
+                to="/data-management"
+                className="inline-flex items-center text-sm text-teal-600 hover:text-teal-500 font-medium"
+              >
+                <FolderOpenIcon className="h-4 w-4 mr-1" />
+                Manage Multiple Files
+              </Link>
+            </div>
           </div>
         </div>
       </div>
