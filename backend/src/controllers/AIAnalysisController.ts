@@ -165,7 +165,8 @@ export class AIAnalysisController {
       }
     })
     
-    if (earliestDate !== null && latestDate !== null) {
+    // Type guard to ensure both dates are not null
+    if (earliestDate instanceof Date && latestDate instanceof Date) {
       return {
         start: earliestDate.toISOString().split('T')[0],
         end: latestDate.toISOString().split('T')[0]
