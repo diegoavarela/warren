@@ -152,13 +152,14 @@ export const PnLDashboardPage: React.FC = () => {
     currency: displayCurrency, 
     unit: displayUnit, 
     baseCurrency,
+    baseUnit,
     settings,
     setCurrency: setDisplayCurrency, 
     setUnit: setDisplayUnit,
     convertAmount,
     formatAmount,
     loading: currencyLoading
-  } = useCurrency()
+  } = useCurrency('pnl')
   
   // Keep legacy states for backward compatibility
   const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
@@ -177,16 +178,25 @@ export const PnLDashboardPage: React.FC = () => {
   const legacyDisplayUnit = convertToLegacyUnit(displayUnit)
 
   useEffect(() => {
-    loadDashboard()
-  }, [])
+    // Only load dashboard after currency settings are loaded
+    if (!currencyLoading) {
+      loadDashboard()
+    }
+  }, [currencyLoading])
 
-  // Fetch exchange rate when currency changes - always use USD as baseline
+
+
+
+  // Fetch exchange rate when currency changes - use baseCurrency as baseline
   useEffect(() => {
     if (settings.enableCurrencyConversion) {
-      // Always convert from USD to display currency
-      if (displayCurrency !== 'USD') {
-        currencyService.getExchangeRate('USD', displayCurrency)
-          .then(rate => setCurrentExchangeRate(rate))
+      // Convert from baseCurrency to display currency
+      if (displayCurrency !== baseCurrency) {
+        currencyService.getExchangeRate(baseCurrency, displayCurrency)
+          .then(rate => {
+            console.log(`P&L page: Setting exchange rate ${baseCurrency} -> ${displayCurrency}: ${rate}`)
+            setCurrentExchangeRate(rate)
+          })
           .catch(err => console.error('Failed to fetch exchange rate:', err))
       } else {
         setCurrentExchangeRate(null)
@@ -194,7 +204,15 @@ export const PnLDashboardPage: React.FC = () => {
     } else {
       setCurrentExchangeRate(null)
     }
-  }, [displayCurrency, settings.enableCurrencyConversion])
+  }, [displayCurrency, baseCurrency, settings.enableCurrencyConversion])
+
+  // Force re-render when exchange rate changes to update all displayed values
+  useEffect(() => {
+    if (currentExchangeRate !== null) {
+      console.log(`P&L page: Exchange rate updated, triggering re-render with rate: ${currentExchangeRate}`)
+      // This effect will cause the component to re-render and apply the new exchange rate
+    }
+  }, [currentExchangeRate])
 
   const loadDashboard = async () => {
     try {
@@ -209,7 +227,14 @@ export const PnLDashboardPage: React.FC = () => {
         return
       } else {
         const response = await pnlService.getDashboard()
-        setData(response.data.data)
+        
+        // Check if the response has actual data or is just an empty/default response
+        if (response.data.data && response.data.data.hasData) {
+          setData(response.data.data)
+        } else {
+          // No data uploaded yet, show upload screen
+          setData({ hasData: false })
+        }
       }
     } catch (err: any) {
       if (isScreenshotMode || isDemoMode) {
@@ -225,57 +250,52 @@ export const PnLDashboardPage: React.FC = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    // Use the new formatAmount function from the currency hook
+    // Apply exchange rate conversion if enabled and rate is available
+    let convertedAmount = amount
+    if (settings.enableCurrencyConversion && currentExchangeRate && baseCurrency !== displayCurrency) {
+      // Convert from baseCurrency to displayCurrency
+      convertedAmount = amount * currentExchangeRate
+      console.log(`Converting P&L amount: ${amount} ${baseCurrency} -> ${convertedAmount} ${displayCurrency} (rate: ${currentExchangeRate})`)
+    }
+    
+    // Format the amount considering the source data unit
     if (!currencyLoading) {
-      return formatAmount(amount)
-    }
-    
-    // Fallback to legacy formatting while currency settings load
-    let adjustedAmount = amount
-    let unitSuffix = ''
-    
-    switch (displayUnitLegacy) {
-      case 'thousands':
-        adjustedAmount = amount / 1000
-        unitSuffix = 'K'
-        break
-      case 'millions':
-        adjustedAmount = amount / 1000000
-        unitSuffix = 'M'
-        break
-      case 'billions':
-        adjustedAmount = amount / 1000000000
-        unitSuffix = 'B'
-        break
-    }
-
-    // Get locale based on currency
-    const getLocale = () => {
-      switch (currency) {
-        case 'USD': return 'en-US'
-        case 'EUR': return 'en-GB'
-        case 'BRL': return 'pt-BR'
-        default: return 'es-AR'
+      // If source data unit matches display unit, format without conversion
+      if (baseUnit === displayUnit) {
+        console.log('Formatting with matching units:', { baseUnit, displayUnit, amount: convertedAmount })
+        // Data is already in the display unit, so format as units but add the suffix
+        const formatted = currencyService.formatCurrency(convertedAmount, displayCurrency, 'units')
+        if (displayUnit === 'thousands') {
+          return formatted.replace(/\s*$/, ' K')
+        } else if (displayUnit === 'millions') {
+          return formatted.replace(/\s*$/, ' M')
+        }
+        return formatted
+      } else {
+        // Need to convert between units
+        let adjustedAmount = convertedAmount
+        
+        // Convert from source unit to display unit
+        if (baseUnit === 'thousands' && displayUnit === 'millions') {
+          adjustedAmount = convertedAmount / 1000
+        } else if (baseUnit === 'thousands' && displayUnit === 'units') {
+          adjustedAmount = convertedAmount * 1000
+        } else if (baseUnit === 'millions' && displayUnit === 'thousands') {
+          adjustedAmount = convertedAmount * 1000
+        } else if (baseUnit === 'millions' && displayUnit === 'units') {
+          adjustedAmount = convertedAmount * 1000000
+        } else if (baseUnit === 'units' && displayUnit === 'thousands') {
+          adjustedAmount = convertedAmount / 1000
+        } else if (baseUnit === 'units' && displayUnit === 'millions') {
+          adjustedAmount = convertedAmount / 1000000
+        }
+        
+        return currencyService.formatCurrency(adjustedAmount, displayCurrency, displayUnit)
       }
     }
-
-    const formatted = new Intl.NumberFormat(getLocale(), {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: legacyDisplayUnit === 'actual' ? 0 : 1,
-      maximumFractionDigits: legacyDisplayUnit === 'actual' ? 0 : 2,
-    }).format(adjustedAmount)
-
-    // Add unit suffix for non-actual displays
-    if (legacyDisplayUnit !== 'actual' && unitSuffix) {
-      // Insert suffix before currency symbol if it's at the end
-      const parts = formatted.match(/^([^0-9]*)([0-9,.\s]+)(.*)$/)
-      if (parts) {
-        return `${parts[1]}${parts[2]}${unitSuffix}${parts[3]}`
-      }
-    }
-
-    return formatted
+    
+    // Fallback
+    return '$0'
   }
 
   const formatPercentage = (value: number) => {
@@ -501,18 +521,22 @@ export const PnLDashboardPage: React.FC = () => {
     }
   }
 
-  if (loading) {
+  if (loading || currencyLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl p-6 shadow">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl p-6 shadow">
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                    <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
@@ -521,31 +545,36 @@ export const PnLDashboardPage: React.FC = () => {
 
   if (!data?.hasData) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-            <ChartBarIcon className="h-8 w-8 mr-3 text-emerald-600" />
-            Profit & Loss Dashboard
-          </h1>
-          <p className="text-gray-600 mt-2">Upload your P&L statement to view financial insights</p>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <ChartBarIcon className="h-8 w-8 mr-3 text-emerald-600" />
+                Profit & Loss Dashboard
+              </h1>
+              <p className="text-gray-600 mt-2">Upload your P&L statement to view financial insights</p>
+            </div>
 
-        {/* File Upload Section */}
-        <FileUploadSection
-          onFileUpload={handleUpload}
-          title="Upload P&L Statement"
-          description="Import your Profit & Loss Excel file to analyze financial performance"
-          uploadedFileName={data?.uploadedFileName}
-          isRealData={false}
-          variant="pnl"
-        />
+            {/* File Upload Section */}
+            <FileUploadSection
+              onFileUpload={handleUpload}
+              title="Upload P&L Statement"
+              description="Import your Profit & Loss Excel file to analyze financial performance"
+              uploadedFileName={data?.uploadedFileName}
+              isRealData={false}
+              variant="pnl"
+            />
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
       {/* Demo Mode Banner */}
       {isDemoMode && (
         <div className="mb-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-xl shadow-lg">
@@ -673,14 +702,14 @@ export const PnLDashboardPage: React.FC = () => {
                   {data.currentMonth.month} P&L Overview
                 </h2>
                 {/* Exchange Rate Display */}
-                {settings.enableCurrencyConversion && displayCurrency !== 'USD' && currentExchangeRate && (
+                {settings.enableCurrencyConversion && displayCurrency !== baseCurrency && currentExchangeRate && (
                   <div className="mt-2 flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg max-w-md">
                     <div className="flex items-center space-x-2">
                       <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
                       <p className="text-xs text-gray-700">
-                        Exchange Rate (USD baseline): 
+                        Exchange Rate: 
                         <span className="ml-1 font-semibold text-gray-900">
-                          1 USD = {currentExchangeRate.toFixed(2)} {displayCurrency}
+                          1 {baseCurrency} = {currentExchangeRate.toFixed(2)} {displayCurrency}
                         </span>
                       </p>
                     </div>
@@ -745,10 +774,7 @@ export const PnLDashboardPage: React.FC = () => {
                   </div>
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Revenue</h3>
                   <p className="text-xl font-bold text-gray-900">
-                    <CurrencyValue 
-                      amount={data.currentMonth.revenue} 
-                      fromCurrency={baseCurrency}
-                    />
+                    {formatCurrency(data.currentMonth.revenue)}
                   </p>
                 </div>
               </div>
@@ -790,10 +816,7 @@ export const PnLDashboardPage: React.FC = () => {
                   </div>
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Gross Profit</h3>
                   <p className="text-xl font-bold text-gray-900">
-                    <CurrencyValue 
-                      amount={data.currentMonth.grossProfit} 
-                      fromCurrency={baseCurrency}
-                    />
+                    {formatCurrency(data.currentMonth.grossProfit)}
                   </p>
                 </div>
               </div>
@@ -835,10 +858,7 @@ export const PnLDashboardPage: React.FC = () => {
                   </div>
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Operating Income</h3>
                   <p className="text-xl font-bold text-gray-900">
-                    <CurrencyValue 
-                      amount={data.currentMonth.operatingIncome} 
-                      fromCurrency={baseCurrency}
-                    />
+                    {formatCurrency(data.currentMonth.operatingIncome)}
                   </p>
                 </div>
               </div>
@@ -2489,7 +2509,8 @@ export const PnLDashboardPage: React.FC = () => {
           }}
         />
       )}
-    </div>
+        </div>
+      </div>
     </div>
   )
 }

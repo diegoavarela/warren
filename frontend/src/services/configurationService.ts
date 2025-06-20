@@ -55,6 +55,19 @@ export interface CompanyConfig {
   defaultCurrency?: Currency
   defaultUnit?: Unit
   currencySettings?: CurrencySettings
+  // Module-specific settings
+  pnlSettings?: {
+    currency: Currency
+    unit: Unit
+    enableCurrencyConversion?: boolean
+    showCurrencySelector?: boolean
+  }
+  cashflowSettings?: {
+    currency: Currency
+    unit: Unit
+    enableCurrencyConversion?: boolean
+    showCurrencySelector?: boolean
+  }
 }
 
 export interface ExcelStructure {

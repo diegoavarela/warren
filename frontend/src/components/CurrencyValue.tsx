@@ -7,15 +7,31 @@ interface CurrencyValueProps {
   fromCurrency?: Currency
   className?: string
   showSign?: boolean
+  module?: 'pnl' | 'cashflow'
+  formatAmountOverride?: (amount: number) => string
+  convertAmountOverride?: (amount: number, from?: Currency) => Promise<number>
 }
 
 export const CurrencyValue: React.FC<CurrencyValueProps> = ({
   amount,
   fromCurrency,
   className = '',
-  showSign = false
+  showSign = false,
+  module,
+  formatAmountOverride,
+  convertAmountOverride
 }) => {
-  const { convertAmount, formatAmount, currency, settings } = useCurrency()
+  const currencyHook = useCurrency(module)
+  const { 
+    convertAmount: defaultConvertAmount, 
+    formatAmount: defaultFormatAmount, 
+    currency, 
+    unit, 
+    settings 
+  } = currencyHook
+  
+  const convertAmount = convertAmountOverride || defaultConvertAmount
+  const formatAmount = formatAmountOverride || defaultFormatAmount
   const [displayValue, setDisplayValue] = useState<string>('--')
   const [loading, setLoading] = useState(false)
 
@@ -52,7 +68,7 @@ export const CurrencyValue: React.FC<CurrencyValueProps> = ({
     }
 
     updateValue()
-  }, [amount, fromCurrency, currency, settings.enableCurrencyConversion, convertAmount, formatAmount, showSign])
+  }, [amount, fromCurrency, currency, unit, settings.enableCurrencyConversion, convertAmount, formatAmount, showSign])
 
   if (loading) {
     return <span className={`${className} opacity-50`}>...</span>

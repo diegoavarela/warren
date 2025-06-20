@@ -106,7 +106,7 @@ export const DashboardPage: React.FC = () => {
     convertAmount,
     formatAmount,
     loading: currencyLoading
-  } = useCurrency()
+  } = useCurrency('cashflow')
   
   // Keep legacy states for backward compatibility
   const [currency, setCurrency] = useState<'ARS' | 'USD' | 'EUR' | 'BRL'>('ARS')
@@ -126,12 +126,12 @@ export const DashboardPage: React.FC = () => {
     loadDashboard()
   }, [])
 
-  // Fetch exchange rate when currency changes - always use USD as baseline
+  // Fetch exchange rate when currency changes - use baseCurrency as baseline
   useEffect(() => {
     if (settings.enableCurrencyConversion) {
-      // Always convert from USD to display currency
-      if (displayCurrency !== 'USD') {
-        currencyService.getExchangeRate('USD', displayCurrency)
+      // Convert from baseCurrency to display currency
+      if (displayCurrency !== baseCurrency) {
+        currencyService.getExchangeRate(baseCurrency, displayCurrency)
           .then(rate => setCurrentExchangeRate(rate))
           .catch(err => console.error('Failed to fetch exchange rate:', err))
       } else {
@@ -140,7 +140,7 @@ export const DashboardPage: React.FC = () => {
     } else {
       setCurrentExchangeRate(null)
     }
-  }, [displayCurrency, settings.enableCurrencyConversion])
+  }, [displayCurrency, baseCurrency, settings.enableCurrencyConversion])
 
   const loadDashboard = async () => {
     try {
@@ -157,7 +157,14 @@ export const DashboardPage: React.FC = () => {
       } else {
         const response = await cashflowService.getDashboard()
         console.log('Dashboard response:', response.data.data)
-        setData(response.data.data)
+        
+        // Check if the response has actual data or is just an empty/default response
+        if (response.data.data && response.data.data.hasData) {
+          setData(response.data.data)
+        } else {
+          // No data uploaded yet, show upload screen
+          setData({ hasData: false })
+        }
       }
     } catch (err: any) {
       if (isScreenshotMode || isDemoMode) {
@@ -316,31 +323,36 @@ export const DashboardPage: React.FC = () => {
   // Show upload page if no data
   if (!data?.hasData) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent flex items-center">
-            <BanknotesIcon className="h-8 w-8 mr-3 text-violet-600" />
-            Cash Flow Dashboard
-          </h1>
-          <p className="text-gray-600 mt-2">Upload your cash flow data to view financial insights</p>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent flex items-center">
+                <BanknotesIcon className="h-8 w-8 mr-3 text-violet-600" />
+                Cash Flow Dashboard
+              </h1>
+              <p className="text-gray-600 mt-2">Upload your cash flow data to view financial insights</p>
+            </div>
 
-        {/* File Upload Section */}
-        <FileUploadSection
-          onFileUpload={handleUpload}
-          title="Upload Cash Flow Data"
-          description="Import your Excel file to analyze cash movements and financial health"
-          uploadedFileName={data?.uploadedFileName}
-          isRealData={false}
-          variant="cashflow"
-        />
+            {/* File Upload Section */}
+            <FileUploadSection
+              onFileUpload={handleUpload}
+              title="Upload Cash Flow Data"
+              description="Import your Excel file to analyze cash movements and financial health"
+              uploadedFileName={data?.uploadedFileName}
+              isRealData={false}
+              variant="cashflow"
+            />
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 overflow-y-auto py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
         {/* Demo Mode Banner */}
         {isDemoMode && (
           <div className="mb-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-xl shadow-lg">
@@ -1509,6 +1521,7 @@ export const DashboardPage: React.FC = () => {
             }}
           />
         )}
+        </div>
       </div>
     </div>
   )

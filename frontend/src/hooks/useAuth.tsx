@@ -64,6 +64,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear local storage and state
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      
+      // Clear any cached data
+      localStorage.removeItem('cashflow_data')
+      localStorage.removeItem('pnl_data')
+      localStorage.removeItem('uploaded_file')
+      
+      // Clear session storage as well
+      sessionStorage.clear()
+      
       setUser(null)
     }
   }

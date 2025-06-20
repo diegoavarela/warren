@@ -29,32 +29,32 @@ export const LandingPage: React.FC = () => {
       icon: SparklesIcon,
       title: 'AI-Powered Excel Import',
       description: 'Our intelligent system automatically understands any Excel format, eliminating manual configuration',
-      screenshot: '/screenshots/landing-ai-analysis.png',
-      screenshotAlt: 'AI-powered Excel mapping and analysis interface',
+      screenshot: '/screenshots/cashflow-dashboard-full.png',
+      screenshotAlt: 'AI-powered financial dashboard with comprehensive metrics and analysis',
       benefits: ['Any Excel format', 'Auto-detection', 'Manual corrections']
     },
     {
       icon: ChartBarIcon,
       title: 'Real-Time Cash Flow Analysis',
       description: 'Monitor your company\'s financial health with live data updates and intelligent forecasting',
-      screenshot: '/screenshots/landing-hero-dashboard.png',
-      screenshotAlt: 'Real-time cash flow dashboard showing inflow/outflow trends',
+      screenshot: '/screenshots/cashflow-overview.png',
+      screenshotAlt: 'Real-time cash flow overview with monthly breakdown',
       benefits: ['Instant insights', 'Predictive analytics', 'Custom alerts']
     },
     {
       icon: BanknotesIcon,
       title: 'Smart Financial Planning',
       description: 'Scenario planning tools that help you make data-driven decisions for sustainable growth',
-      screenshot: '/screenshots/landing-wide-dashboard.png',
-      screenshotAlt: 'Wide view financial planning dashboard',
+      screenshot: '/screenshots/scenario-planning.png',
+      screenshotAlt: 'Scenario planning tools for financial forecasting',
       benefits: ['What-if scenarios', 'Risk assessment', 'Growth modeling']
     },
     {
       icon: DocumentChartBarIcon,
       title: 'Executive Dashboards',
       description: 'Beautiful, intuitive dashboards designed for C-level executives and board presentations',
-      screenshot: '/screenshots/landing-pnl-dashboard.png',
-      screenshotAlt: 'Executive P&L dashboard with key financial metrics',
+      screenshot: '/screenshots/pnl-dashboard-full.png',
+      screenshotAlt: 'Executive P&L dashboard with revenue and cost analysis',
       benefits: ['One-click reports', 'Board-ready visuals', 'Export to PDF']
     }
   ]
@@ -167,9 +167,9 @@ export const LandingPage: React.FC = () => {
             <div className="relative bg-white rounded-2xl shadow-2xl p-2 border border-gray-100">
               <div className="aspect-video bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg overflow-hidden">
                 <img 
-                  src="/screenshots/landing-hero-dashboard.png" 
+                  src="/screenshots/cashflow-dashboard-hero.png" 
                   alt="Warren Dashboard Preview"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     // Fallback to placeholder if screenshot doesn't exist
                     e.currentTarget.style.display = 'none';
@@ -219,39 +219,39 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
+          <div className="grid lg:grid-cols-5 gap-8 items-center">
+            <div className="lg:col-span-3 space-y-4">
               {features.map((feature, index) => (
                 <div
                   key={index}
                   onClick={() => setActiveFeature(index)}
-                  className={`p-6 rounded-2xl cursor-pointer transition-all duration-300 ${
+                  className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
                     activeFeature === index
-                      ? 'bg-gradient-to-r from-violet-50 to-indigo-50 border-2 border-violet-200'
+                      ? 'bg-gradient-to-r from-violet-50 to-indigo-50 border-2 border-violet-300 shadow-lg'
                       : 'bg-white border-2 border-gray-100 hover:border-gray-200'
                   }`}
                 >
-                  <div className="flex items-start space-x-4">
-                    <div className={`p-3 rounded-xl ${
+                  <div className="flex items-start space-x-3">
+                    <div className={`p-2 rounded-lg flex-shrink-0 ${
                       activeFeature === index
                         ? 'bg-gradient-to-r from-violet-600 to-indigo-600'
                         : 'bg-gray-100'
                     }`}>
-                      <feature.icon className={`h-6 w-6 ${
+                      <feature.icon className={`h-5 w-5 ${
                         activeFeature === index ? 'text-white' : 'text-gray-600'
                       }`} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
                         {feature.title}
                       </h3>
-                      <p className="text-gray-600 mb-3">
+                      <p className="text-sm text-gray-600 mb-2">
                         {feature.description}
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
                         {feature.benefits.map((benefit, bIndex) => (
-                          <div key={bIndex} className="flex items-center text-sm text-gray-500">
-                            <CheckIcon className="h-4 w-4 text-green-500 mr-1" />
+                          <div key={bIndex} className="flex items-center text-xs text-gray-500">
+                            <CheckIcon className="h-3 w-3 text-green-500 mr-1" />
                             {benefit}
                           </div>
                         ))}
@@ -262,14 +262,14 @@ export const LandingPage: React.FC = () => {
               ))}
             </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-400 to-indigo-400 blur-3xl opacity-20"></div>
-              <div className="relative bg-white rounded-2xl shadow-2xl p-2 border border-gray-100">
-                <div className="aspect-video bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg overflow-hidden">
+            <div className="lg:col-span-2 relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-400 to-indigo-400 blur-2xl opacity-20"></div>
+              <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+                <div className="h-64 lg:h-80 overflow-hidden">
                   <img 
                     src={features[activeFeature].screenshot}
                     alt={features[activeFeature].screenshotAlt}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover object-top scale-125"
                   />
                 </div>
               </div>
@@ -465,7 +465,7 @@ export const LandingPage: React.FC = () => {
               See Warren in Action
             </h2>
             <p className="text-xl text-gray-600">
-              Real dashboards with real data visualization
+              Real dashboards from our live application
             </p>
           </div>
           
@@ -478,11 +478,11 @@ export const LandingPage: React.FC = () => {
                   Cash Flow Dashboard
                 </h3>
               </div>
-              <div className="aspect-video bg-gray-100">
+              <div className="h-64 bg-gray-100 overflow-hidden">
                 <img 
-                  src="/screenshots/landing-hero-dashboard.png"
-                  alt="Cash Flow Dashboard"
-                  className="w-full h-full object-contain"
+                  src="/screenshots/cashflow-dashboard-hero.png"
+                  alt="Cash Flow Dashboard with comprehensive metrics"
+                  className="w-full object-cover object-top transform scale-110 origin-top"
                   onError={(e) => {
                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgZmlsbD0iI2Y5ZmFmYiIvPgogIDx0ZXh0IHg9IjQwMCIgeT0iMjI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2YjcyODAiPkNhc2ggRmxvdyBEYXNoYm9hcmQgUHJldmlldzwvdGV4dD4KPC9zdmc+';
                   }}
@@ -498,11 +498,11 @@ export const LandingPage: React.FC = () => {
                   P&L Dashboard
                 </h3>
               </div>
-              <div className="aspect-video bg-gray-100">
+              <div className="h-64 bg-gray-100 overflow-hidden">
                 <img 
-                  src="/screenshots/landing-pnl-dashboard.png"
-                  alt="P&L Dashboard"
-                  className="w-full h-full object-contain"
+                  src="/screenshots/pnl-dashboard-full.png"
+                  alt="Profit & Loss Dashboard showing revenue, costs, and profit margins"
+                  className="w-full object-cover object-top"
                   onError={(e) => {
                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgZmlsbD0iI2Y5ZmFmYiIvPgogIDx0ZXh0IHg9IjQwMCIgeT0iMjI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2YjcyODAiPlAmYW1wO0wgRGFzaGJvYXJkIFByZXZpZXc8L3RleHQ+Cjwvc3ZnPg==';
                   }}
@@ -514,20 +514,12 @@ export const LandingPage: React.FC = () => {
           {/* Feature Screenshots Grid */}
           <div className="grid md:grid-cols-3 gap-6 mt-12">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-10.png"
-                alt="Key Metrics"
-                className="w-full h-48 object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <div className="hidden w-full h-48 bg-gradient-to-br from-violet-50 to-indigo-50 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <ChartPieIcon className="h-12 w-12 text-violet-600 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Key Metrics View</p>
-                </div>
+              <div className="h-48 bg-gradient-to-br from-violet-50 to-indigo-50 overflow-hidden rounded-t-xl">
+                <img 
+                  src="/screenshots/cashflow-dashboard-hero.png"
+                  alt="Real-time Financial Metrics"
+                  className="w-full h-full object-cover object-[center_20%] scale-150"
+                />
               </div>
               <div className="p-4">
                 <h4 className="font-semibold text-gray-900">Real-time Metrics</h4>
@@ -536,134 +528,189 @@ export const LandingPage: React.FC = () => {
             </div>
             
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-3.png"
-                alt="Scenario Planning"
-                className="w-full h-48 object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <div className="hidden w-full h-48 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <ClockIcon className="h-12 w-12 text-emerald-600 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Cash Runway Analysis</p>
-                </div>
+              <div className="h-48 bg-gradient-to-br from-emerald-50 to-teal-50 overflow-hidden rounded-t-xl">
+                <img 
+                  src="/screenshots/cashflow-dashboard-full.png"
+                  alt="Cash Flow Composition Analysis"
+                  className="w-full object-cover object-[center_30%] scale-125"
+                />
               </div>
               <div className="p-4">
-                <h4 className="font-semibold text-gray-900">Scenario Planning</h4>
-                <p className="text-sm text-gray-600 mt-1">Model different business scenarios and outcomes</p>
+                <h4 className="font-semibold text-gray-900">Cash Flow Composition</h4>
+                <p className="text-sm text-gray-600 mt-1">Detailed breakdown of cash inflows and outflows</p>
               </div>
             </div>
             
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-4.png"
-                alt="Cash Flow Analysis Chart"
-                className="w-full h-48 object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <div className="hidden w-full h-48 bg-gradient-to-br from-rose-50 to-pink-50 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <ArrowTrendingUpIcon className="h-12 w-12 text-rose-600 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Burn Rate Trends</p>
-                </div>
+              <div className="h-48 bg-gradient-to-br from-rose-50 to-pink-50 overflow-hidden rounded-t-xl">
+                <img 
+                  src="/screenshots/pnl-dashboard-full.png"
+                  alt="Financial Analysis Dashboard"
+                  className="w-full object-cover object-[center_15%] scale-125"
+                />
               </div>
               <div className="p-4">
                 <h4 className="font-semibold text-gray-900">Financial Forecasting</h4>
-                <p className="text-sm text-gray-600 mt-1">12-month cash flow projections with trends</p>
+                <p className="text-sm text-gray-600 mt-1">12-month cash flow projections with key insights</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Advanced Analytics Section */}
+
+      {/* Comprehensive Dashboard Gallery */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Advanced Financial Analytics
+              Complete Financial Intelligence Suite
             </h2>
             <p className="text-xl text-gray-600">
-              Deep insights from your financial data
+              Every tool you need to master your company's finances
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Cash Flow Analysis */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-5.png"
-                alt="Banking Overview"
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h4 className="font-semibold text-gray-900">Banking Overview</h4>
-                <p className="text-sm text-gray-600 mt-1">Monitor banking transactions and balances</p>
+              <div className="h-48 bg-gray-50 overflow-hidden">
+                <img 
+                  src="/screenshots/cashflow-dashboard-full.png"
+                  alt="Cash Flow Analysis Dashboard"
+                  className="w-full object-cover object-[center_40%] scale-150"
+                />
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Cash Flow Analysis</h4>
+                <p className="text-gray-600">Advanced analytics with scenario planning capabilities</p>
               </div>
             </div>
             
+            {/* Revenue Analysis */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-8.png"
-                alt="Investment Portfolio"
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h4 className="font-semibold text-gray-900">Investment Portfolio</h4>
-                <p className="text-sm text-gray-600 mt-1">Track investment performance and allocation</p>
+              <div className="h-48 bg-gray-50 overflow-hidden">
+                <img 
+                  src="/screenshots/pnl-dashboard-full.png"
+                  alt="Revenue Analysis"
+                  className="w-full object-cover object-[center_20%] scale-150"
+                />
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Revenue Tracking</h4>
+                <p className="text-gray-600">Monitor revenue streams and growth patterns</p>
               </div>
             </div>
             
+            {/* Year-over-Year Analysis */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-11.png"
-                alt="Operational Analysis"
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h4 className="font-semibold text-gray-900">Operational Analysis</h4>
-                <p className="text-sm text-gray-600 mt-1">Analyze operational costs and efficiency</p>
+              <div className="h-48 bg-gray-50 overflow-hidden">
+                <img 
+                  src="/screenshots/cashflow-dashboard-hero.png"
+                  alt="Year-over-Year Analysis"
+                  className="w-full object-cover object-[center_50%] scale-150"
+                />
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">YoY Analysis</h4>
+                <p className="text-gray-600">Compare performance across different time periods</p>
               </div>
             </div>
             
+            {/* Financial Metrics */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-9.png"
-                alt="Tax Overview"
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h4 className="font-semibold text-gray-900">Tax Management</h4>
-                <p className="text-sm text-gray-600 mt-1">Track tax obligations and planning</p>
+              <div className="h-48 bg-gray-50 overflow-hidden">
+                <img 
+                  src="/screenshots/cashflow-dashboard-full.png"
+                  alt="Financial Metrics"
+                  className="w-full object-cover object-top scale-125"
+                />
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Key Metrics</h4>
+                <p className="text-gray-600">Track essential KPIs and financial indicators</p>
               </div>
             </div>
             
+            {/* Data Upload */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard-2.png"
-                alt="Cash Flow Composition"
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h4 className="font-semibold text-gray-900">Flow Composition</h4>
-                <p className="text-sm text-gray-600 mt-1">Detailed breakdown of cash flows</p>
+              <div className="h-48 bg-gray-50 overflow-hidden">
+                <img 
+                  src="/screenshots/cashflow-dashboard-hero.png"
+                  alt="Data Upload Interface"
+                  className="w-full object-cover object-top scale-110"
+                />
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Easy Data Import</h4>
+                <p className="text-gray-600">Upload Excel files with automatic AI processing</p>
               </div>
             </div>
             
+            {/* Export & Reports */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-              <img 
-                src="/screenshots/Warren_by_Vortex_-_Financial_Dashboard.png"
-                alt="Year to Date Summary"
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h4 className="font-semibold text-gray-900">YTD Summary</h4>
-                <p className="text-sm text-gray-600 mt-1">Year-to-date financial performance</p>
+              <div className="h-48 bg-gray-50 overflow-hidden">
+                <img 
+                  src="/screenshots/pnl-dashboard-hero.png"
+                  alt="Export & Reports"
+                  className="w-full object-cover object-top scale-110"
+                />
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Export Reports</h4>
+                <p className="text-gray-600">Generate PDF reports for stakeholders</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile Responsive Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-violet-50 to-indigo-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Access Your Finances Anywhere
+            </h2>
+            <p className="text-xl text-gray-600">
+              Fully responsive design works seamlessly on all devices
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="order-2 md:order-1">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                Mobile-First Design
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Warren is designed to work beautifully on any device. Whether you're checking your 
+                cash flow on your phone during a meeting or presenting to the board on a large display, 
+                the interface adapts perfectly to provide the best experience.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-start">
+                  <CheckIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                  <span className="text-gray-700">Touch-optimized interface for mobile devices</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                  <span className="text-gray-700">Full functionality on tablets and iPads</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                  <span className="text-gray-700">High-resolution displays support</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div className="order-1 md:order-2 flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-400 to-indigo-400 blur-2xl opacity-30"></div>
+                <img 
+                  src="/screenshots/cashflow-dashboard-hero.png"
+                  alt="Warren Mobile Dashboard View"
+                  className="relative rounded-3xl shadow-2xl w-full max-w-md"
+                />
               </div>
             </div>
           </div>

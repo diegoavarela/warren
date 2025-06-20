@@ -8,6 +8,7 @@ interface UseCurrencyReturn {
   currency: Currency
   unit: Unit
   baseCurrency: Currency
+  baseUnit: Unit // The unit in which source data is stored
   settings: CurrencySettings
   setCurrency: (currency: Currency) => void
   setUnit: (unit: Unit) => void
@@ -17,10 +18,11 @@ interface UseCurrencyReturn {
   loading: boolean
 }
 
-export const useCurrency = (): UseCurrencyReturn => {
+export const useCurrency = (module?: 'pnl' | 'cashflow'): UseCurrencyReturn => {
   const [currency, setCurrency] = useState<Currency>('ARS')
   const [unit, setUnit] = useState<Unit>('thousands')
   const [baseCurrency, setBaseCurrency] = useState<Currency>('ARS')
+  const [baseUnit, setBaseUnit] = useState<Unit>('thousands')
   const [settings, setSettings] = useState<CurrencySettings>({
     defaultCurrency: 'ARS',
     defaultUnit: 'thousands',
@@ -31,7 +33,7 @@ export const useCurrency = (): UseCurrencyReturn => {
 
   useEffect(() => {
     loadCompanySettings()
-  }, [])
+  }, [module])
 
   const loadCompanySettings = async () => {
     try {
@@ -40,6 +42,7 @@ export const useCurrency = (): UseCurrencyReturn => {
         setBaseCurrency('ARS')
         setCurrency('ARS')
         setUnit('thousands')
+        setBaseUnit('thousands')
         setSettings({
           defaultCurrency: 'ARS',
           defaultUnit: 'thousands',
@@ -58,9 +61,8 @@ export const useCurrency = (): UseCurrencyReturn => {
         const defaultUnit = company.defaultUnit || company.scale as Unit || 'thousands'
         
         setBaseCurrency(defaultCurrency)
-        setCurrency(defaultCurrency)
-        setUnit(defaultUnit)
         
+        // First set defaults from company.currencySettings if available
         if (company.currencySettings) {
           setSettings(company.currencySettings)
         } else {
@@ -70,6 +72,43 @@ export const useCurrency = (): UseCurrencyReturn => {
             enableCurrencyConversion: true,
             showCurrencySelector: true
           })
+        }
+        
+        // Then override with module-specific settings if available
+        if (module === 'pnl' && company.pnlSettings) {
+          console.log('Loading P&L settings from company:', company.pnlSettings)
+          setCurrency(company.pnlSettings.currency)
+          setUnit(company.pnlSettings.unit)
+          setBaseCurrency(company.pnlSettings.currency) // P&L data comes in this currency
+          setBaseUnit(company.pnlSettings.unit) // P&L data comes in this unit
+          
+          // Override currency settings with module-specific ones
+          setSettings(prev => ({
+            ...prev,
+            defaultCurrency: company.pnlSettings.currency,
+            defaultUnit: company.pnlSettings.unit,
+            enableCurrencyConversion: company.pnlSettings.enableCurrencyConversion ?? prev.enableCurrencyConversion,
+            showCurrencySelector: company.pnlSettings.showCurrencySelector ?? prev.showCurrencySelector
+          }))
+        } else if (module === 'cashflow' && company.cashflowSettings) {
+          console.log('Loading Cash Flow settings from company:', company.cashflowSettings)
+          setCurrency(company.cashflowSettings.currency)
+          setUnit(company.cashflowSettings.unit)
+          setBaseCurrency(company.cashflowSettings.currency) // Cashflow data comes in this currency
+          setBaseUnit(company.cashflowSettings.unit) // Cashflow data comes in this unit
+          
+          // Override currency settings with module-specific ones
+          setSettings(prev => ({
+            ...prev,
+            defaultCurrency: company.cashflowSettings.currency,
+            defaultUnit: company.cashflowSettings.unit,
+            enableCurrencyConversion: company.cashflowSettings.enableCurrencyConversion ?? prev.enableCurrencyConversion,
+            showCurrencySelector: company.cashflowSettings.showCurrencySelector ?? prev.showCurrencySelector
+          }))
+        } else {
+          setCurrency(defaultCurrency)
+          setUnit(defaultUnit)
+          setBaseUnit(defaultUnit)
         }
       }
     } catch (error) {
@@ -111,6 +150,7 @@ export const useCurrency = (): UseCurrencyReturn => {
     currency,
     unit,
     baseCurrency,
+    baseUnit,
     settings,
     setCurrency,
     setUnit,

@@ -44,10 +44,13 @@ export const ConfigurationPageV2: React.FC = () => {
     primaryColor: '#7CB342',
     secondaryColor: '#2E7D32',
     logo: '',
-    defaultCurrency: 'ARS' as Currency,
-    defaultUnit: 'thousands' as Unit,
     enableCurrencyConversion: true,
-    showCurrencySelector: true
+    showCurrencySelector: true,
+    // Module-specific settings
+    pnlCurrency: 'ARS' as Currency,
+    pnlUnit: 'thousands' as Unit,
+    cashflowCurrency: 'ARS' as Currency,
+    cashflowUnit: 'units' as Unit
   })
 
   useEffect(() => {
@@ -73,10 +76,13 @@ export const ConfigurationPageV2: React.FC = () => {
           primaryColor: activeCompany.primaryColor || '#7CB342',
           secondaryColor: activeCompany.secondaryColor || '#2E7D32',
           logo: activeCompany.logo || '',
-          defaultCurrency: activeCompany.defaultCurrency || activeCompany.currency as Currency || 'ARS',
-          defaultUnit: activeCompany.defaultUnit || activeCompany.scale as Unit || 'thousands',
           enableCurrencyConversion: activeCompany.currencySettings?.enableCurrencyConversion ?? true,
-          showCurrencySelector: activeCompany.currencySettings?.showCurrencySelector ?? true
+          showCurrencySelector: activeCompany.currencySettings?.showCurrencySelector ?? true,
+          // Module-specific settings
+          pnlCurrency: activeCompany.pnlSettings?.currency || 'ARS',
+          pnlUnit: activeCompany.pnlSettings?.unit || 'thousands',
+          cashflowCurrency: activeCompany.cashflowSettings?.currency || 'ARS',
+          cashflowUnit: activeCompany.cashflowSettings?.unit || 'units'
         })
       } else {
         // Create a default company
@@ -106,8 +112,20 @@ export const ConfigurationPageV2: React.FC = () => {
       const updateData = {
         ...formData,
         currencySettings: {
-          defaultCurrency: formData.defaultCurrency,
-          defaultUnit: formData.defaultUnit,
+          defaultCurrency: formData.pnlCurrency, // Use P&L as default for now
+          defaultUnit: formData.pnlUnit,
+          enableCurrencyConversion: formData.enableCurrencyConversion,
+          showCurrencySelector: formData.showCurrencySelector
+        },
+        pnlSettings: {
+          currency: formData.pnlCurrency,
+          unit: formData.pnlUnit,
+          enableCurrencyConversion: formData.enableCurrencyConversion,
+          showCurrencySelector: formData.showCurrencySelector
+        },
+        cashflowSettings: {
+          currency: formData.cashflowCurrency,
+          unit: formData.cashflowUnit,
           enableCurrencyConversion: formData.enableCurrencyConversion,
           showCurrencySelector: formData.showCurrencySelector
         }
@@ -284,73 +302,138 @@ export const ConfigurationPageV2: React.FC = () => {
             </div>
           </div>
 
-          {/* Financial Settings */}
+
+          {/* Module-Specific Settings */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <CurrencyDollarIcon className="h-5 w-5 mr-2 text-violet-600" />
-              Financial Display Settings
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Default Currency</label>
-                  <select
-                    value={formData.defaultCurrency}
-                    onChange={(e) => setFormData(prev => ({ ...prev, defaultCurrency: e.target.value as Currency }))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-                  >
-                    {Object.entries(CURRENCIES).map(([code, info]) => (
-                      <option key={code} value={code}>
-                        {info.name} ({code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Default Unit</label>
-                  <select
-                    value={formData.defaultUnit}
-                    onChange={(e) => setFormData(prev => ({ ...prev, defaultUnit: e.target.value as Unit }))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-                  >
-                    {Object.entries(UNITS).map(([unit, info]) => (
-                      <option key={unit} value={unit}>
-                        {info.label} {info.suffix && `(${info.suffix})`}
-                      </option>
-                    ))}
-                  </select>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Module-Specific Settings</h3>
+            <div className="bg-gray-50 p-6 rounded-xl space-y-6">
+              
+              {/* P&L Settings */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="text-base font-medium text-gray-900 mb-4 flex items-center">
+                  <CalculatorIcon className="h-5 w-5 mr-2 text-emerald-600" />
+                  P&L Dashboard Settings
+                </h4>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Currency</label>
+                      <select
+                        value={formData.pnlCurrency}
+                        onChange={(e) => setFormData(prev => ({ ...prev, pnlCurrency: e.target.value as Currency }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      >
+                        {Object.entries(CURRENCIES).map(([code, info]) => (
+                          <option key={code} value={code}>
+                            {info.name} ({code})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">Currency of your P&L data in Excel</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Unit Scale</label>
+                      <select
+                        value={formData.pnlUnit}
+                        onChange={(e) => setFormData(prev => ({ ...prev, pnlUnit: e.target.value as Unit }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      >
+                        {Object.entries(UNITS).map(([key, info]) => (
+                          <option key={key} value={key}>
+                            {info.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">Unit scale of your P&L data in Excel</p>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 rounded-lg p-3 space-y-2">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.enableCurrencyConversion}
+                        onChange={(e) => setFormData(prev => ({ ...prev, enableCurrencyConversion: e.target.checked }))}
+                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Enable currency conversion</span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.showCurrencySelector}
+                        onChange={(e) => setFormData(prev => ({ ...prev, showCurrencySelector: e.target.checked }))}
+                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Show currency/unit selector</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-violet-50 rounded-xl p-4 space-y-3">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.enableCurrencyConversion}
-                    onChange={(e) => setFormData(prev => ({ ...prev, enableCurrencyConversion: e.target.checked }))}
-                    className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
-                  />
-                  <span className="ml-3 text-sm text-gray-700">
-                    Enable currency conversion in dashboards
-                  </span>
-                </label>
-                
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.showCurrencySelector}
-                    onChange={(e) => setFormData(prev => ({ ...prev, showCurrencySelector: e.target.checked }))}
-                    className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
-                  />
-                  <span className="ml-3 text-sm text-gray-700">
-                    Show currency selector in dashboards
-                  </span>
-                </label>
+              {/* Cash Flow Settings */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="text-base font-medium text-gray-900 mb-4 flex items-center">
+                  <CurrencyDollarIcon className="h-5 w-5 mr-2 text-violet-600" />
+                  Cash Flow Dashboard Settings
+                </h4>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Currency</label>
+                      <select
+                        value={formData.cashflowCurrency}
+                        onChange={(e) => setFormData(prev => ({ ...prev, cashflowCurrency: e.target.value as Currency }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                      >
+                        {Object.entries(CURRENCIES).map(([code, info]) => (
+                          <option key={code} value={code}>
+                            {info.name} ({code})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">Currency of your Cash Flow data in Excel</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Unit Scale</label>
+                      <select
+                        value={formData.cashflowUnit}
+                        onChange={(e) => setFormData(prev => ({ ...prev, cashflowUnit: e.target.value as Unit }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                      >
+                        {Object.entries(UNITS).map(([key, info]) => (
+                          <option key={key} value={key}>
+                            {info.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">Unit scale of your Cash Flow data in Excel</p>
+                    </div>
+                  </div>
+                  <div className="bg-violet-50 rounded-lg p-3 space-y-2">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.enableCurrencyConversion}
+                        onChange={(e) => setFormData(prev => ({ ...prev, enableCurrencyConversion: e.target.checked }))}
+                        className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Enable currency conversion</span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.showCurrencySelector}
+                        onChange={(e) => setFormData(prev => ({ ...prev, showCurrencySelector: e.target.checked }))}
+                        className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Show currency/unit selector</span>
+                    </label>
+                  </div>
+                </div>
               </div>
+              
             </div>
           </div>
-
 
           {/* Contact Information */}
           <div>

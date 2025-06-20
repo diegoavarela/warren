@@ -70,7 +70,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         >
           {Object.entries(UNITS).map(([unit, info]) => (
             <option key={unit} value={unit}>
-              {info.suffix || info.label}
+              {unit === 'units' ? info.label : (info.suffix || info.label)}
             </option>
           ))}
         </select>

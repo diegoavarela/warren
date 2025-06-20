@@ -168,15 +168,15 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
   return (
     <div className="mb-8">
-      <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-gray-100">
         {/* Collapsible Header */}
         <div 
-          className="p-6 flex items-center justify-between cursor-pointer bg-gradient-to-r from-transparent via-gray-50/50 to-transparent hover:via-gray-100/50 transition-all duration-300"
+          className="p-4 sm:p-5 flex items-center justify-between cursor-pointer bg-gradient-to-r from-transparent via-gray-50/50 to-transparent hover:via-gray-100/50 transition-all duration-300"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
-          <div className="flex items-center space-x-4">
-            <div className={`p-3 rounded-2xl bg-gradient-to-br ${isRealData ? 'from-emerald-500 via-teal-500 to-cyan-500' : 'from-amber-500 via-orange-500 to-red-500'} shadow-lg transform hover:scale-105 transition-transform`}>
-              <CloudArrowUpIcon className="h-8 w-8 text-white drop-shadow-md" />
+          <div className="flex items-center space-x-3">
+            <div className={`p-2.5 rounded-xl bg-gradient-to-br ${isRealData ? 'from-emerald-500 via-teal-500 to-cyan-500' : 'from-amber-500 via-orange-500 to-red-500'} shadow-lg transform hover:scale-105 transition-transform`}>
+              <CloudArrowUpIcon className="h-6 w-6 text-white drop-shadow-md" />
             </div>
             <div>
               <h3 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{title}</h3>
@@ -208,11 +208,11 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
         {/* Collapsible Content */}
         {!isCollapsed && (
-          <div className="p-8 border-t border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
-            <div className="max-w-2xl mx-auto">
+          <div className="p-6 border-t border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
+            <div className="max-w-3xl mx-auto">
               {/* Drop Zone */}
               <div
-                className={`relative border-2 border-dashed rounded-3xl p-16 text-center transition-all duration-300 ${
+                className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all duration-300 ${
                   dragActive
                     ? `${colors.primary.border} ${colors.primary.bg} scale-[1.02] shadow-xl`
                     : 'border-gray-300 hover:border-gray-400 bg-gradient-to-br from-gray-50 to-white hover:shadow-lg'
@@ -230,96 +230,99 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                   className="hidden"
                 />
                 
-                <div className={`mx-auto mb-6 w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br ${
-                  file ? 'from-emerald-400 to-teal-500' : colors.primary.gradient
-                } shadow-2xl transform hover:scale-110 transition-all duration-300`}>
-                  <CloudArrowUpIcon className="h-10 w-10 text-white drop-shadow-lg" />
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br ${
+                    file ? 'from-emerald-400 to-teal-500' : colors.primary.gradient
+                  } shadow-xl transform hover:scale-110 transition-all duration-300`}>
+                    <CloudArrowUpIcon className="h-8 w-8 text-white drop-shadow-lg" />
+                  </div>
+                  
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                      {file ? 'File selected!' : 'Drag and drop your Excel file here'}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {file ? file.name : `or click to browse (${acceptedFormats})`}
+                    </p>
+                  </div>
+                  
+                  {!file && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`mt-6 sm:mt-0 px-6 py-3 bg-gradient-to-r ${colors.primary.buttonGradient} text-white font-semibold rounded-xl ${colors.primary.buttonGradientHover} shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300`}
+                    >
+                      Select File
+                    </button>
+                  )}
                 </div>
-                
-                <p className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
-                  {file ? 'File selected!' : 'Drag and drop your Excel file here'}
-                </p>
-                <p className="text-sm text-gray-600 mb-6">
-                  {file ? file.name : `or click to browse (${acceptedFormats})`}
-                </p>
-                
-                {!file && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`px-8 py-4 bg-gradient-to-r ${colors.primary.buttonGradient} text-white font-semibold rounded-2xl ${colors.primary.buttonGradientHover} shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 transition-all duration-300`}
-                  >
-                    Select File
-                  </button>
-                )}
               </div>
 
-              {/* File Preview */}
+              {/* File Preview and Upload Button */}
               {file && (
-                <div className={`mt-8 p-6 ${colors.primary.bg} rounded-2xl border ${colors.primary.border} shadow-xl backdrop-blur-sm`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg">
-                        <DocumentIcon className={`h-8 w-8 ${colors.primary.text}`} />
+                <div className={`mt-4 p-4 ${colors.primary.bg} rounded-xl border ${colors.primary.border} shadow-lg backdrop-blur-sm`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-white/80 backdrop-blur-sm rounded-lg shadow">
+                        <DocumentIcon className={`h-6 w-6 ${colors.primary.text}`} />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">{file.name}</p>
-                        <p className="text-sm text-gray-600">{formatFileSize(file.size)}</p>
+                        <p className="font-medium text-gray-900 text-sm">{file.name}</p>
+                        <p className="text-xs text-gray-600">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => setFile(null)}
-                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
                     >
-                      <XCircleIcon className="h-6 w-6" />
+                      <XCircleIcon className="h-5 w-5" />
                     </button>
                   </div>
+                  
+                  {/* Upload Button - Always visible when file is selected */}
+                  {!uploadSuccess && (
+                    <button
+                      onClick={handleUpload}
+                      disabled={uploading}
+                      className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-300 ${
+                        uploading
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : `bg-gradient-to-r ${colors.primary.buttonGradient} ${colors.primary.buttonGradientHover} shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`
+                      }`}
+                    >
+                      {uploading ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Processing...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center space-x-2">
+                          <CloudArrowUpIcon className="h-5 w-5" />
+                          <span>Process Excel</span>
+                        </div>
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
 
               {/* Status Messages */}
               {uploadError && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl flex items-start space-x-3 shadow-lg">
-                  <XCircleIcon className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-red-700 font-medium">{uploadError}</p>
+                <div className="mt-4 p-3 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl flex items-start space-x-2 shadow">
+                  <XCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-red-700 text-sm font-medium">{uploadError}</p>
                 </div>
               )}
 
               {uploadSuccess && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl flex items-start space-x-3 shadow-lg">
-                  <CheckCircleIcon className="h-6 w-6 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-emerald-700 font-medium">File uploaded and processed successfully!</p>
+                <div className="mt-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl flex items-start space-x-2 shadow">
+                  <CheckCircleIcon className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-emerald-700 text-sm font-medium">File uploaded and processed successfully!</p>
                 </div>
               )}
 
-              {/* Single Upload Button */}
-              {file && !uploadSuccess && (
-                <div className="mt-8">
-                  <button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className={`w-full py-5 px-6 rounded-2xl font-bold text-white transition-all duration-300 ${
-                      uploading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : `bg-gradient-to-r ${colors.primary.buttonGradient} ${colors.primary.buttonGradientHover} shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.02]`
-                    }`}
-                  >
-                    {uploading ? (
-                      <div className="flex items-center justify-center space-x-3">
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Processing...</span>
-                      </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <CloudArrowUpIcon className="h-6 w-6" />
-                      <span>Process Excel</span>
-                    </div>
-                  )}
-                </button>
-              </div>
-            )}
             </div>
           </div>
         )}
