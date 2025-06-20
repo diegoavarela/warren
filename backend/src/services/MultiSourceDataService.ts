@@ -224,7 +224,7 @@ export class MultiSourceDataService {
         values
       );
       
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       logger.error('Error updating data source:', error);
       throw error;
@@ -304,7 +304,7 @@ export class MultiSourceDataService {
         fileUploadIds,
         'failed',
         null,
-        error.message
+        error instanceof Error ? error.message : 'Unknown error'
       );
       
       throw error;

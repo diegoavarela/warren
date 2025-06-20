@@ -194,7 +194,7 @@ export class MultiSourceController {
             filename: file.originalname,
             size: file.size,
             status: 'error',
-            message: error.message
+            message: error instanceof Error ? error.message : 'Unknown error'
           });
         }
       }
