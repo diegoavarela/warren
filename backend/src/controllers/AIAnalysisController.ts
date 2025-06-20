@@ -165,7 +165,7 @@ export class AIAnalysisController {
       }
     })
     
-    if (earliestDate && latestDate) {
+    if (earliestDate !== null && latestDate !== null) {
       return {
         start: earliestDate.toISOString().split('T')[0],
         end: latestDate.toISOString().split('T')[0]
