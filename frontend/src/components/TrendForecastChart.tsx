@@ -65,7 +65,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
               value = item.netIncome || 0
               break
             case 'expenses':
-              value = item.cogs + item.operatingExpenses || 0
+              value = (item.cogs || 0) + (item.operatingExpenses || 0)
               break
           }
         } else {

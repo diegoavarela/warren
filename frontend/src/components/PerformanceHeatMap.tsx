@@ -25,7 +25,7 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
   const heatMapData = useMemo(() => {
     if (!data?.chartData) return []
 
-    return data.chartData.map((item: any) => {
+    return data.chartData.map((item: any, index: number) => {
       let value = 0
       let displayValue = ''
 
@@ -57,8 +57,11 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
         }
       }
 
+      // Handle both date formats - cashflow has 'date', P&L only has 'month'
+      const date = item.date || `2025-${String(index + 1).padStart(2, '0')}`
+      
       return {
-        date: item.date,
+        date,
         month: item.month,
         value,
         metric,
@@ -99,7 +102,7 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
 
   // Group by year
   const dataByYear = heatMapData.reduce((acc: any, item: HeatMapData) => {
-    const year = item.date.substring(0, 4)
+    const year = item.date ? item.date.substring(0, 4) : '2025'
     if (!acc[year]) acc[year] = []
     acc[year].push(item)
     return acc
