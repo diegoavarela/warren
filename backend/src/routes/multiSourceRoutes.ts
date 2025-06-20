@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth';
 import { MultiSourceController } from '../controllers/MultiSourceController';
 import multer from 'multer';
 
@@ -25,7 +25,7 @@ const upload = multer({
 });
 
 // Apply authentication middleware to all routes
-router.use(authenticate);
+router.use(authMiddleware);
 
 // Data source management
 router.get('/sources', multiSourceController.getDataSources.bind(multiSourceController));
