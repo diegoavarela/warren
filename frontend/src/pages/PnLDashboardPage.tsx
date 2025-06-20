@@ -24,6 +24,8 @@ import { Currency, Unit } from '../interfaces/currency'
 import { mockPnlData } from '../services/mockDataService'
 import { currencyService } from '../services/currencyService'
 import { ExchangeRateModal } from '../components/ExchangeRateModal'
+import { PerformanceHeatMap } from '../components/PerformanceHeatMap'
+import { TrendForecastChart } from '../components/TrendForecastChart'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -1285,6 +1287,50 @@ export const PnLDashboardPage: React.FC = () => {
                 </ul>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Overview Section */}
+      {data.chartData && data.chartData.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Performance Overview</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PerformanceHeatMap 
+              data={data}
+              metric="revenue"
+              title="Monthly Revenue Performance"
+              type="pnl"
+            />
+            <PerformanceHeatMap 
+              data={data}
+              metric="margin"
+              title="Monthly Net Margin Performance"
+              type="pnl"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Trend Analysis & Forecasts Section */}
+      {data.chartData && data.chartData.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Trend Analysis & Forecasts</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TrendForecastChart
+              data={data}
+              metric="revenue"
+              title="Revenue Trend & 6-Month Forecast"
+              type="pnl"
+              forecastMonths={6}
+            />
+            <TrendForecastChart
+              data={data}
+              metric="profit"
+              title="Net Income Trend & 6-Month Forecast"
+              type="pnl"
+              forecastMonths={6}
+            />
           </div>
         </div>
       )}

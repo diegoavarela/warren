@@ -1,0 +1,31 @@
+--- a/src/services/ExtendedFinancialService.ts
++++ b/src/services/ExtendedFinancialService.ts
+@@ -337,9 +337,23 @@ export class ExtendedFinancialService {
+         };
+         
+         // Set some reasonable defaults for other fields
+-        bank.checkingBalance = 0; // Not available in current Excel structure
+-        bank.savingsBalance = 0;  // Not available in current Excel structure
+-        bank.interestEarned = 0;  // Not available in current Excel structure
++        // OPTION: If you have bank balance data in specific rows, update here:
++        // Example: Row 100-102 for bank balances
++        // bank.checkingBalance = this.getCellValue(worksheet, 100, dateInfo.columnIndex) || 0;
++        // bank.savingsBalance = this.getCellValue(worksheet, 101, dateInfo.columnIndex) || 0;
++        // const moneyMarket = this.getCellValue(worksheet, 102, dateInfo.columnIndex) || 0;
++        
++        // For now, we'll use the cash position from row 11 as a proxy for total bank balance
++        const cashPosition = this.getCellValue(worksheet, 11, dateInfo.columnIndex) || 0;
++        
++        // Distribute cash position across accounts (you can adjust these percentages)
++        bank.checkingBalance = cashPosition * 0.6;  // 60% in checking
++        bank.savingsBalance = cashPosition * 0.3;   // 30% in savings
++        bank.moneyMarketBalance = cashPosition * 0.1; // 10% in money market
++        
++        // Interest earned could come from a specific row if available
++        bank.interestEarned = 0;  // Update if you have this data
++        
++        // Credit line info if available
++        bank.creditLineAvailable = 0;  // Update if you have this data
++        bank.creditLineUsed = 0;       // Update if you have this data
+         
+         banks.push(bank);

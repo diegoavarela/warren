@@ -34,6 +34,8 @@ import { Currency, Unit } from '../interfaces/currency'
 import { mockCashflowData } from '../services/mockDataService'
 import { currencyService } from '../services/currencyService'
 import { ExchangeRateModal } from '../components/ExchangeRateModal'
+import { PerformanceHeatMap } from '../components/PerformanceHeatMap'
+import { TrendForecastChart } from '../components/TrendForecastChart'
 
 interface DashboardData {
   hasData: boolean
@@ -595,6 +597,50 @@ export const DashboardPage: React.FC = () => {
                   <p className="text-sm text-purple-600 mt-2">Capital deployed year to date</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Performance Overview Section */}
+        {data.chartData && data.chartData.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Performance Overview</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PerformanceHeatMap 
+                data={data}
+                metric="cashflow"
+                title="Monthly Cash Flow Performance"
+                type="cashflow"
+              />
+              <PerformanceHeatMap 
+                data={data}
+                metric="revenue"
+                title="Monthly Revenue Heat Map"
+                type="cashflow"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Trend Analysis & Forecasts Section */}
+        {data.chartData && data.chartData.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Trend Analysis & Forecasts</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TrendForecastChart
+                data={data}
+                metric="cashflow"
+                title="Cash Flow Trend & 6-Month Forecast"
+                type="cashflow"
+                forecastMonths={6}
+              />
+              <TrendForecastChart
+                data={data}
+                metric="revenue"
+                title="Revenue Trend & 6-Month Forecast"
+                type="cashflow"
+                forecastMonths={6}
+              />
             </div>
           </div>
         )}
