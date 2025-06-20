@@ -165,11 +165,13 @@ export class AIAnalysisController {
       }
     })
     
-    // Type guard to ensure both dates are not null
-    if (earliestDate instanceof Date && latestDate instanceof Date) {
+    // Explicit null checks and type assertion
+    if (earliestDate && latestDate) {
+      const startDate = earliestDate as Date
+      const endDate = latestDate as Date
       return {
-        start: earliestDate.toISOString().split('T')[0],
-        end: latestDate.toISOString().split('T')[0]
+        start: startDate.toISOString().split('T')[0],
+        end: endDate.toISOString().split('T')[0]
       }
     }
     
