@@ -146,6 +146,8 @@ export const PnLDashboardPage: React.FC = () => {
   const [showMarginsChartHelpModal, setShowMarginsChartHelpModal] = useState(false)
   const [showRevenueChartHelpModal, setShowRevenueChartHelpModal] = useState(false)
   const [showComparisonHelpModal, setShowComparisonHelpModal] = useState(false)
+  const [showPerformanceHelpModal, setShowPerformanceHelpModal] = useState(false)
+  const [showTrendForecastHelpModal, setShowTrendForecastHelpModal] = useState(false)
   const [comparisonPeriod, setComparisonPeriod] = useState<'month' | 'quarter' | 'year'>('month')
   const [currentExchangeRate, setCurrentExchangeRate] = useState<number | null>(null)
   const [showExchangeRateModal, setShowExchangeRateModal] = useState(false)
@@ -1294,7 +1296,16 @@ export const PnLDashboardPage: React.FC = () => {
       {/* Performance Overview Section */}
       {data.chartData && data.chartData.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Performance Overview</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Performance Overview</h2>
+            <button
+              onClick={() => setShowPerformanceHelpModal(true)}
+              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Understanding performance heat maps"
+            >
+              <QuestionMarkCircleIcon className="h-5 w-5" />
+            </button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PerformanceHeatMap 
               data={data}
@@ -1315,7 +1326,16 @@ export const PnLDashboardPage: React.FC = () => {
       {/* Trend Analysis & Forecasts Section */}
       {data.chartData && data.chartData.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Trend Analysis & Forecasts</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Trend Analysis & Forecasts</h2>
+            <button
+              onClick={() => setShowTrendForecastHelpModal(true)}
+              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Understanding trend forecasts"
+            >
+              <QuestionMarkCircleIcon className="h-5 w-5" />
+            </button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <TrendForecastChart
               data={data}
@@ -2552,6 +2572,191 @@ export const PnLDashboardPage: React.FC = () => {
             currencyService.setExchangeRate('USD', displayCurrency, rate)
           }}
         />
+      )}
+
+      {/* Performance Heat Map Help Modal */}
+      {showPerformanceHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Understanding Performance Heat Maps</h2>
+                <button
+                  onClick={() => setShowPerformanceHelpModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 What are Performance Heat Maps?</h3>
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    Heat maps provide a visual representation of your P&L performance across months, 
+                    using color intensity to show relative performance levels.
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    <strong>Darker/brighter colors</strong> = Better performance<br/>
+                    <strong>Lighter/faded colors</strong> = Lower performance
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 P&L Specific Metrics</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border-l-4 border-blue-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Revenue Performance</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Monthly revenue levels showing sales trends and seasonality
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Net Margin Heat Map</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Profitability percentage showing efficiency improvements
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Margin Thresholds</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span>Net Margin &gt; 20%</span>
+                    <span className="font-semibold text-green-700">Excellent</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                    <span>Net Margin 10-20%</span>
+                    <span className="font-semibold text-yellow-700">Good</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-orange-50 rounded">
+                    <span>Net Margin 5-10%</span>
+                    <span className="font-semibold text-orange-700">Acceptable</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-red-50 rounded">
+                    <span>Net Margin &lt; 5%</span>
+                    <span className="font-semibold text-red-700">Needs Improvement</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Strategic Insights</h3>
+                <div className="bg-yellow-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">Use P&L heat maps to:</p>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li>• <strong>Revenue patterns:</strong> Identify peak sales months</li>
+                    <li>• <strong>Margin analysis:</strong> Track profitability improvements</li>
+                    <li>• <strong>Cost management:</strong> Spot months with margin pressure</li>
+                    <li>• <strong>Strategic planning:</strong> Focus on low-performance periods</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trend Forecast Help Modal */}
+      {showTrendForecastHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Understanding P&L Trend Forecasts</h2>
+                <button
+                  onClick={() => setShowTrendForecastHelpModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 P&L Forecasting</h3>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    P&L forecasts project your future revenue and profitability based on 
+                    historical performance trends and growth patterns.
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Forecasts help you set realistic targets and prepare for different scenarios.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Key Forecast Metrics</h3>
+                <div className="space-y-3">
+                  <div className="border-l-4 border-green-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Revenue Forecast</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Projects future sales based on historical growth rates and seasonality
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Net Income Forecast</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Estimates future profitability considering revenue and expense trends
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Growth Rate Analysis</h3>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">The forecast considers:</p>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li>• <strong>Historical growth:</strong> Average month-over-month changes</li>
+                    <li>• <strong>Seasonality:</strong> Recurring patterns in your business</li>
+                    <li>• <strong>Trend momentum:</strong> Acceleration or deceleration</li>
+                    <li>• <strong>Volatility:</strong> Consistency of performance</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📉 Confidence Levels</h3>
+                <div className="space-y-2">
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <p className="text-sm font-semibold text-green-900">High Confidence (1-2 months)</p>
+                    <p className="text-xs text-green-700">Based on recent trends, most accurate</p>
+                  </div>
+                  <div className="bg-yellow-50 p-3 rounded-lg">
+                    <p className="text-sm font-semibold text-yellow-900">Medium Confidence (3-4 months)</p>
+                    <p className="text-xs text-yellow-700">Reasonable projections with some uncertainty</p>
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded-lg">
+                    <p className="text-sm font-semibold text-orange-900">Lower Confidence (5-6 months)</p>
+                    <p className="text-xs text-orange-700">Directional guidance, higher uncertainty</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Using P&L Forecasts</h3>
+                <div className="bg-purple-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 mb-3">Apply forecasts for:</p>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li>• <strong>Revenue targets:</strong> Set achievable sales goals</li>
+                    <li>• <strong>Cost planning:</strong> Budget for expected expense levels</li>
+                    <li>• <strong>Profitability goals:</strong> Plan margin improvements</li>
+                    <li>• <strong>Investment timing:</strong> Schedule expansions wisely</li>
+                    <li>• <strong>Scenario planning:</strong> Prepare for different outcomes</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
         </div>
       </div>

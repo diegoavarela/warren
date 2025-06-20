@@ -95,6 +95,8 @@ export const DashboardPage: React.FC = () => {
   const [showCurrentMonthHelpModal, setShowCurrentMonthHelpModal] = useState(false)
   const [showYTDHelpModal, setShowYTDHelpModal] = useState(false)
   const [showChartHelpModal, setShowChartHelpModal] = useState(false)
+  const [showPerformanceHelpModal, setShowPerformanceHelpModal] = useState(false)
+  const [showTrendForecastHelpModal, setShowTrendForecastHelpModal] = useState(false)
   const [currentExchangeRate, setCurrentExchangeRate] = useState<number | null>(null)
   const [showExchangeRateModal, setShowExchangeRateModal] = useState(false)
   
@@ -604,7 +606,16 @@ export const DashboardPage: React.FC = () => {
         {/* Performance Overview Section */}
         {data.chartData && data.chartData.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Performance Overview</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Performance Overview</h2>
+              <button
+                onClick={() => setShowPerformanceHelpModal(true)}
+                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Understanding performance heat maps"
+              >
+                <QuestionMarkCircleIcon className="h-5 w-5" />
+              </button>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <PerformanceHeatMap 
                 data={data}
@@ -615,7 +626,7 @@ export const DashboardPage: React.FC = () => {
               <PerformanceHeatMap 
                 data={data}
                 metric="revenue"
-                title="Monthly Revenue Heat Map"
+                title="Monthly Inflow Heat Map"
                 type="cashflow"
               />
             </div>
@@ -625,7 +636,16 @@ export const DashboardPage: React.FC = () => {
         {/* Trend Analysis & Forecasts Section */}
         {data.chartData && data.chartData.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Trend Analysis & Forecasts</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Trend Analysis & Forecasts</h2>
+              <button
+                onClick={() => setShowTrendForecastHelpModal(true)}
+                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Understanding trend forecasts"
+              >
+                <QuestionMarkCircleIcon className="h-5 w-5" />
+              </button>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <TrendForecastChart
                 data={data}
@@ -1564,6 +1584,243 @@ export const DashboardPage: React.FC = () => {
               currencyService.setExchangeRate('USD', displayCurrency, rate)
             }}
           />
+        )}
+
+        {/* Performance Heat Map Help Modal */}
+        {showPerformanceHelpModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900">Understanding Performance Heat Maps</h2>
+                  <button
+                    onClick={() => setShowPerformanceHelpModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 What are Performance Heat Maps?</h3>
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 mb-2">
+                      Heat maps provide a visual representation of your financial performance across months, 
+                      using color intensity to show relative performance levels.
+                    </p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      <strong>Darker/brighter colors</strong> = Better performance<br/>
+                      <strong>Lighter/faded colors</strong> = Lower performance
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 Color Coding</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-8 bg-green-500 rounded"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Green (Excellent)</p>
+                        <p className="text-sm text-gray-600">Top performance, above targets</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-8 bg-yellow-400 rounded"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Yellow (Good)</p>
+                        <p className="text-sm text-gray-600">Acceptable performance, meeting expectations</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-8 bg-red-300 rounded"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Red (Needs Attention)</p>
+                        <p className="text-sm text-gray-600">Below targets, requires improvement</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🖱️ Interactive Features</h3>
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li>• <strong>Hover</strong> over any cell to see quick details</li>
+                      <li>• <strong>Click</strong> on any month to see comprehensive metrics</li>
+                      <li>• <strong>Compare</strong> months visually at a glance</li>
+                      <li>• <strong>Identify</strong> seasonal patterns and trends</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Available Metrics</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="border-l-4 border-blue-500 pl-4">
+                      <h4 className="text-sm font-semibold text-gray-900">Cash Flow Performance</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Monthly cash generation or burn, showing liquidity trends
+                      </p>
+                    </div>
+                    <div className="border-l-4 border-purple-500 pl-4">
+                      <h4 className="text-sm font-semibold text-gray-900">Inflow Heat Map</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Income patterns to identify your strongest inflow months
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 How to Use</h3>
+                  <div className="bg-yellow-50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 mb-3">Use heat maps to:</p>
+                    <ul className="space-y-2 text-sm text-gray-600">
+                      <li>• <strong>Spot patterns:</strong> Identify seasonal trends in your business</li>
+                      <li>• <strong>Compare performance:</strong> See which months are strongest/weakest</li>
+                      <li>• <strong>Plan ahead:</strong> Use historical patterns for future planning</li>
+                      <li>• <strong>Quick assessment:</strong> Get instant visual overview of annual performance</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Trend Forecast Help Modal */}
+        {showTrendForecastHelpModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900">Understanding Trend Analysis & Forecasts</h2>
+                  <button
+                    onClick={() => setShowTrendForecastHelpModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 What are Trend Forecasts?</h3>
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 mb-2">
+                      Trend forecasts use statistical analysis of your historical data to project 
+                      future performance, helping you plan and make informed decisions.
+                    </p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Our system uses <strong>linear regression</strong> to identify trends and 
+                      project them forward with confidence intervals.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Chart Elements</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-1 bg-green-500 rounded"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Solid Line</p>
+                        <p className="text-sm text-gray-600">Actual historical data</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-1 bg-blue-500 border-dashed border-b-2 border-blue-500"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Dashed Line</p>
+                        <p className="text-sm text-gray-600">Forecast projection</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-8 bg-blue-200 opacity-50 rounded"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Shaded Area</p>
+                        <p className="text-sm text-gray-600">95% confidence interval</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📐 How Forecasting Works</h3>
+                  <div className="space-y-3">
+                    <div className="border-l-4 border-purple-500 pl-4">
+                      <h4 className="text-sm font-semibold text-gray-900">1. Trend Analysis</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Analyzes historical data points to identify the overall direction and rate of change
+                      </p>
+                    </div>
+                    <div className="border-l-4 border-indigo-500 pl-4">
+                      <h4 className="text-sm font-semibold text-gray-900">2. Linear Regression</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Calculates the best-fit line through your data to project future values
+                      </p>
+                    </div>
+                    <div className="border-l-4 border-blue-500 pl-4">
+                      <h4 className="text-sm font-semibold text-gray-900">3. Confidence Intervals</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Shows the range where future values are likely to fall (95% probability)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📉 Summary Cards</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600">Current Trend</p>
+                      <p className="text-sm font-semibold">Monthly growth rate</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600">6-Month Forecast</p>
+                      <p className="text-sm font-semibold">Projected end value</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600">Confidence Range</p>
+                      <p className="text-sm font-semibold">Forecast uncertainty</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">⚠️ Important Considerations</h3>
+                  <div className="bg-yellow-50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 mb-3">Keep in mind:</p>
+                    <ul className="space-y-2 text-sm text-gray-600">
+                      <li>• <strong>Near-term accuracy:</strong> Forecasts are most reliable for 1-2 months ahead</li>
+                      <li>• <strong>Linear assumption:</strong> Assumes trends continue at the same rate</li>
+                      <li>• <strong>External factors:</strong> Cannot predict market changes or disruptions</li>
+                      <li>• <strong>Historical basis:</strong> Relies on past patterns continuing</li>
+                      <li>• <strong>Regular updates:</strong> Re-run forecasts monthly for best results</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Strategic Use</h3>
+                  <div className="bg-purple-50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 mb-3">Use forecasts to:</p>
+                    <ul className="space-y-2 text-sm text-gray-600">
+                      <li>• <strong>Budget planning:</strong> Set realistic financial targets</li>
+                      <li>• <strong>Cash management:</strong> Prepare for projected shortfalls</li>
+                      <li>• <strong>Growth planning:</strong> Identify when to invest or expand</li>
+                      <li>• <strong>Risk assessment:</strong> Understand potential scenarios</li>
+                      <li>• <strong>Investor communication:</strong> Share data-driven projections</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         </div>
       </div>

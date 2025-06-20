@@ -7,6 +7,7 @@ interface HeatMapData {
   value: number
   metric: string
   displayValue: string
+  isActual: boolean
 }
 
 interface PerformanceHeatMapProps {
@@ -81,7 +82,8 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
         month: item.month,
         value,
         metric,
-        displayValue
+        displayValue,
+        isActual: item.isActual !== false  // Default to true if not specified
       }
     })
   }, [data, metric, type])
@@ -141,44 +143,65 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
                     hover:scale-110 hover:z-10 hover:shadow-lg
                     ${getColorIntensity(item.value, allValues)}
                     ${!item.value ? 'opacity-50' : ''}
+                    ${!item.isActual ? 'opacity-40' : ''}
                   `}
                   onClick={() => setSelectedCell(item)}
-                  data-tooltip-id={`heatmap-${item.date}`}
-                  data-tooltip-content={`${item.month}: ${item.displayValue}`}
+                  data-tooltip-id="heatmap-tooltip"
+                  data-tooltip-content={`${item.month}: ${item.displayValue}${!item.isActual ? ' (Forecast)' : ''}`}
                 >
+                  {!item.isActual && (
+                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-[8px] px-1 rounded-bl rounded-tr">
+                      F
+                    </div>
+                  )}
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-1">
-                    <span className="text-xs font-semibold text-white">
+                    <span className={`text-xs font-semibold ${!item.isActual ? 'text-gray-900' : 'text-white'}`}>
                       {item.month.substring(0, 3)}
                     </span>
-                    <span className="text-xs text-white opacity-90">
+                    <span className={`text-xs ${!item.isActual ? 'text-gray-900' : 'text-white opacity-90'}`}>
                       {formatCompactValue(item.value)}
                     </span>
                   </div>
-                  <Tooltip id={`heatmap-${item.date}`} />
                 </div>
               ))}
             </div>
           </div>
         ))}
       </div>
+      
+      {/* Single tooltip for all cells */}
+      <Tooltip id="heatmap-tooltip" />
 
       {/* Legend */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-600">Poor</span>
-          <div className="flex space-x-1">
-            <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <div className="w-4 h-4 bg-red-300 rounded"></div>
-            <div className="w-4 h-4 bg-yellow-300 rounded"></div>
-            <div className="w-4 h-4 bg-yellow-400 rounded"></div>
-            <div className="w-4 h-4 bg-green-300 rounded"></div>
-            <div className="w-4 h-4 bg-green-500 rounded"></div>
+      <div className="mt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-gray-600">Poor</span>
+            <div className="flex space-x-1">
+              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <div className="w-4 h-4 bg-red-300 rounded"></div>
+              <div className="w-4 h-4 bg-yellow-300 rounded"></div>
+              <div className="w-4 h-4 bg-yellow-400 rounded"></div>
+              <div className="w-4 h-4 bg-green-300 rounded"></div>
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+            </div>
+            <span className="text-xs text-gray-600">Excellent</span>
           </div>
-          <span className="text-xs text-gray-600">Excellent</span>
+          <div className="text-xs text-gray-500">
+            {metric === 'margin' ? 'Based on margin %' : 'Relative to period range'}
+          </div>
         </div>
-        <div className="text-xs text-gray-500">
-          {metric === 'margin' ? 'Based on margin %' : 'Relative to period range'}
-        </div>
+        {/* Forecast indicator */}
+        {heatMapData.some(d => !d.isActual) && (
+          <div className="mt-2 flex items-center justify-end space-x-4 text-xs text-gray-500">
+            <div className="flex items-center space-x-1">
+              <div className="w-4 h-4 bg-gray-400 rounded opacity-40 relative">
+                <div className="absolute top-0 right-0 bg-blue-500 text-white text-[6px] px-0.5 rounded-bl rounded-tr">F</div>
+              </div>
+              <span>Forecast data</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}
@@ -203,7 +226,12 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-sm text-gray-600 mb-1">Period</p>
-                <p className="text-lg font-semibold text-gray-900">{selectedCell.month}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {selectedCell.month}
+                  {!selectedCell.isActual && (
+                    <span className="ml-2 text-sm font-normal text-blue-600">(Forecast)</span>
+                  )}
+                </p>
               </div>
               
               <div className={`rounded-lg p-4 ${getColorIntensity(selectedCell.value, allValues)} bg-opacity-20`}>
