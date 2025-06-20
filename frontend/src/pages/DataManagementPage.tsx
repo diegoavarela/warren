@@ -11,8 +11,8 @@ import { Link } from 'react-router-dom';
 import { MultiFileUpload } from '../components/MultiFileUpload';
 import { DataSourceManager } from '../components/DataSourceManager';
 import { FileUploadSection } from '../components/FileUploadSection';
-import { dashboardService } from '../services/dashboardService';
-import { pnlDashboardService } from '../services/pnlDashboardService';
+import { cashflowService } from '../services/cashflowService';
+import { pnlService } from '../services/pnlService';
 
 export const DataManagementPage: React.FC = () => {
   const { t } = useTranslation();
@@ -22,9 +22,9 @@ export const DataManagementPage: React.FC = () => {
 
   const handleFileUpload = async (file: File) => {
     if (dataType === 'cashflow') {
-      await dashboardService.uploadCashflowFile(file);
+      await cashflowService.uploadFile(file);
     } else {
-      await pnlDashboardService.uploadPnLFile(file);
+      await pnlService.uploadFile(file);
     }
     setRefreshKey(prev => prev + 1);
   };
