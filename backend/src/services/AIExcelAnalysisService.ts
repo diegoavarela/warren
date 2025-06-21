@@ -97,11 +97,17 @@ export class AIExcelAnalysisService {
         return this.analyzeWithPatternMatching(sampleData, mappingType);
       }
 
-      // Send to AI for analysis
-      const aiResult = await this.callAI(sampleData, mappingType);
-      
-      // Convert AI result to ExcelMapping
-      return this.convertToMapping(aiResult, sampleData.worksheetName, mappingType);
+      try {
+        // Send to AI for analysis
+        const aiResult = await this.callAI(sampleData, mappingType);
+        
+        // Convert AI result to ExcelMapping
+        return this.convertToMapping(aiResult, sampleData.worksheetName, mappingType);
+      } catch (aiError: any) {
+        // If AI fails (rate limit, etc), fall back to pattern matching
+        logger.warn('AI analysis failed, using pattern matching fallback:', aiError.message);
+        return this.analyzeWithPatternMatching(sampleData, mappingType);
+      }
     } catch (error) {
       logger.error('Error in AI Excel analysis:', error);
       throw error;
@@ -127,8 +133,9 @@ export class AIExcelAnalysisService {
       rows: []
     };
 
-    // Extract first 30 rows for analysis
-    const maxRows = Math.min(30, worksheet.rowCount);
+    // Reduce sample size to avoid API rate limits
+    // Extract first 15 rows for analysis (reduced from 30)
+    const maxRows = Math.min(15, worksheet.rowCount);
     
     for (let rowNum = 1; rowNum <= maxRows; rowNum++) {
       const row = worksheet.getRow(rowNum);
@@ -137,8 +144,8 @@ export class AIExcelAnalysisService {
         cells: [] as any[]
       };
 
-      // Extract first 20 columns
-      const maxCols = Math.min(20, worksheet.columnCount);
+      // Extract first 12 columns (reduced from 20)
+      const maxCols = Math.min(12, worksheet.columnCount);
       
       for (let colNum = 1; colNum <= maxCols; colNum++) {
         const cell = row.getCell(colNum);
@@ -174,41 +181,37 @@ export class AIExcelAnalysisService {
    * Build prompt for AI analysis
    */
   private buildPrompt(sampleData: ExcelSample, mappingType: 'cashflow' | 'pnl'): string {
-    const typeSpecificInstructions = mappingType === 'cashflow' ? `
-      - Total Income/Revenue/Collections rows
-      - Total Expenses/Costs/Outflows rows
-      - Balance rows (Initial, Final, Lowest)
-      - Cash generation/flow rows
-      - Bank account balances
-      - Investment values
-    ` : `
-      - Revenue/Sales rows
-      - Cost of Goods Sold (COGS) rows
-      - Gross Profit and Gross Margin rows
-      - Operating Expenses rows
-      - EBITDA rows
-      - Net Income/Profit rows
-      - Margin percentage rows
-    `;
+    // Simplify the data to reduce tokens
+    const simplifiedRows = sampleData.rows.map(row => ({
+      r: row.rowNumber,
+      c: row.cells.map(cell => ({
+        v: cell.value,
+        t: cell.type
+      }))
+    }));
 
-    return `Analyze this Excel financial data and identify the structure.
+    const metrics = mappingType === 'cashflow' ? 
+      ['totalIncome', 'totalExpense', 'finalBalance', 'lowestBalance', 'monthlyGeneration'] :
+      ['revenue', 'cogs', 'grossProfit', 'operatingExpenses', 'ebitda', 'netIncome'];
 
-Excel Info:
-- Worksheet: ${sampleData.worksheetName}
-- Total Rows: ${sampleData.totalRows}
-- Total Columns: ${sampleData.totalColumns}
+    return `Analyze Excel ${mappingType} data. Find date row/columns and these metrics: ${metrics.join(', ')}.
 
-Sample Data (first 30 rows):
-${JSON.stringify(sampleData.rows, null, 2)}
+Data: ${JSON.stringify(simplifiedRows)}
 
-Please identify:
-1. Which row contains dates (month headers)?
-2. Which columns contain the date values?
-3. What currency/unit is being used?
-4. Find these ${mappingType} metrics:
-${typeSpecificInstructions}
-
-Return a JSON object with the structure and your confidence level (0-100) for each identification.`;
+Return JSON: {
+  "dateRow": number,
+  "dateColumns": [numbers],
+  "currencyUnit": string,
+  "mappings": {
+    "metricName": {
+      "row": number,
+      "description": string,
+      "dataType": "currency"|"percentage"|"number",
+      "confidence": 0-100
+    }
+  },
+  "insights": []
+}`;
   }
 
   /**
@@ -245,99 +248,173 @@ Return a JSON object with the structure and your confidence level (0-100) for ea
   }
 
   /**
-   * Call OpenAI API
+   * Call OpenAI API with retry logic for rate limits
    */
   private async callOpenAI(prompt: string): Promise<AIAnalysisResult> {
-    try {
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a financial data analyst expert at understanding Excel structures. Always respond with valid JSON.'
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const response = await axios.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            model: 'gpt-3.5-turbo-1106', // Use gpt-3.5-turbo for lower rate limits
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a financial data analyst. Respond only with valid JSON.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            response_format: { type: 'json_object' },
+            max_tokens: 1000, // Limit response size
+            temperature: 0.3 // Lower temperature for more consistent results
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json'
             },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          response_format: { type: 'json_object' }
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            timeout: 30000 // 30 second timeout
+          }
+        );
+
+        const content = response.data.choices[0].message.content;
+        return JSON.parse(content);
+      } catch (error: any) {
+        if (error.response?.status === 429) {
+          // Rate limit error - wait and retry
+          retryCount++;
+          const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
+          logger.warn(`OpenAI rate limit hit. Retrying in ${waitTime}ms (attempt ${retryCount}/${maxRetries})`);
+          
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
           }
         }
-      );
-
-      const content = response.data.choices[0].message.content;
-      return JSON.parse(content);
-    } catch (error) {
-      logger.error('OpenAI API error:', error);
-      throw new Error('Failed to analyze with OpenAI API');
+        
+        logger.error('OpenAI API error:', error.response?.data || error.message);
+        
+        // If all retries failed or it's not a rate limit error, fall back to pattern matching
+        logger.info('Falling back to pattern matching due to API error');
+        throw new Error('OpenAI API unavailable - using pattern matching');
+      }
     }
+    
+    throw new Error('Failed to analyze with OpenAI API after retries');
   }
 
   /**
    * Fallback pattern matching when no AI API is available
    */
   private analyzeWithPatternMatching(sampleData: ExcelSample, mappingType: 'cashflow' | 'pnl'): ExcelMapping {
-    logger.info('Using pattern matching for Excel analysis (no AI API)');
+    logger.info('Using enhanced pattern matching for Excel analysis');
     
     const mapping: ExcelMapping = {
       fileName: '',
       mappingType,
       structure: {
-        metricMappings: {}
+        metricMappings: {},
+        currencyUnit: 'units' // Default to units
       },
       aiGenerated: false,
-      confidence: 50
+      confidence: 70
     };
 
-    // Find date row
+    // Find date row - look for rows with multiple date values
+    let dateRowFound = false;
     for (const row of sampleData.rows) {
       const dateCount = row.cells.filter(cell => cell.type === 'date').length;
-      if (dateCount >= 3) {
+      const monthPatternCount = row.cells.filter(cell => 
+        /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i.test(String(cell.value))
+      ).length;
+      
+      if (dateCount >= 3 || monthPatternCount >= 3) {
         mapping.structure.dateRow = row.rowNumber;
         mapping.structure.dateColumns = row.cells
-          .map((cell, idx) => cell.type === 'date' ? idx + 1 : null)
+          .map((cell, idx) => (cell.type === 'date' || /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(String(cell.value))) ? idx + 1 : null)
           .filter(col => col !== null) as number[];
+        dateRowFound = true;
         break;
       }
     }
 
-    // Pattern matching for common terms
+    // If no date row found, try to find it in the first few rows
+    if (!dateRowFound) {
+      for (let i = 0; i < Math.min(5, sampleData.rows.length); i++) {
+        const row = sampleData.rows[i];
+        if (row.cells.some(cell => cell.type === 'date' || /\d{4}/.test(String(cell.value)))) {
+          mapping.structure.dateRow = row.rowNumber;
+          mapping.structure.dateColumns = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]; // Common date columns
+          break;
+        }
+      }
+    }
+
+    // Enhanced pattern matching for common terms
     const patterns = mappingType === 'cashflow' ? {
-      totalIncome: /total.*(?:income|revenue|collection|cobros)/i,
-      totalExpense: /total.*(?:expense|cost|egreso)/i,
-      finalBalance: /(?:final|ending).*balance|balance.*final/i,
-      lowestBalance: /lowest.*balance|balance.*(?:low|min)/i,
-      monthlyGeneration: /monthly.*(?:generation|flow)|cash.*generation/i
+      totalIncome: /total.*(?:income|revenue|collection|cobros|ingresos|entrada)/i,
+      totalExpense: /total.*(?:expense|cost|egreso|gasto|salida)/i,
+      finalBalance: /(?:final|ending|cierre).*(?:balance|saldo)|(?:balance|saldo).*(?:final|cierre)/i,
+      lowestBalance: /(?:lowest|minimum|minimo).*(?:balance|saldo)|(?:balance|saldo).*(?:low|min)/i,
+      monthlyGeneration: /(?:monthly|mensual).*(?:generation|generacion|flow|flujo)|cash.*(?:generation|generacion)/i,
+      initialBalance: /(?:initial|beginning|inicial|apertura).*(?:balance|saldo)|(?:balance|saldo).*(?:initial|inicial)/i
     } : {
-      revenue: /^(?:total.*)?(?:revenue|sales|ingresos)/i,
-      cogs: /(?:cost.*goods|cogs|costo.*venta)/i,
-      grossProfit: /gross.*profit|utilidad.*bruta/i,
-      operatingExpenses: /operating.*expense|gastos.*operac/i,
-      netIncome: /net.*(?:income|profit)|utilidad.*neta/i
+      revenue: /^(?:total.*)?(?:revenue|sales|ingresos|ventas|facturacion)/i,
+      cogs: /(?:cost.*goods|cogs|costo.*venta|cmv)/i,
+      grossProfit: /gross.*(?:profit|margin)|(?:utilidad|margen).*brut[ao]/i,
+      grossMargin: /gross.*margin.*%|margen.*brut[ao].*%/i,
+      operatingExpenses: /(?:operating|operational).*expense|gastos.*operac/i,
+      ebitda: /ebitda/i,
+      netIncome: /net.*(?:income|profit)|(?:utilidad|resultado).*net[ao]/i
     };
 
     // Search for patterns in rows
     for (const row of sampleData.rows) {
-      const firstCellValue = row.cells[0]?.value?.toString() || '';
-      
-      for (const [key, pattern] of Object.entries(patterns)) {
-        if (pattern.test(firstCellValue)) {
-          mapping.structure.metricMappings[key] = {
-            row: row.rowNumber,
-            description: firstCellValue,
-            dataType: 'currency'
-          };
+      // Check first few cells for labels
+      for (let cellIdx = 0; cellIdx < Math.min(3, row.cells.length); cellIdx++) {
+        const cellValue = row.cells[cellIdx]?.value?.toString().trim() || '';
+        
+        if (cellValue) {
+          for (const [key, pattern] of Object.entries(patterns)) {
+            if (pattern.test(cellValue)) {
+              mapping.structure.metricMappings[key] = {
+                row: row.rowNumber,
+                description: cellValue,
+                dataType: key.includes('margin') || key.includes('Margin') ? 'percentage' : 'currency'
+              };
+              break; // Found match for this row
+            }
+          }
         }
       }
     }
+
+    // Detect currency unit from cell values
+    for (const row of sampleData.rows) {
+      for (const cell of row.cells) {
+        const value = String(cell.value);
+        if (value.includes('000') || value.includes('miles') || value.includes('thousands')) {
+          mapping.structure.currencyUnit = 'thousands';
+          break;
+        } else if (value.includes('000000') || value.includes('millones') || value.includes('millions')) {
+          mapping.structure.currencyUnit = 'millions';
+          break;
+        }
+      }
+    }
+
+    // Set confidence based on findings
+    const foundMetrics = Object.keys(mapping.structure.metricMappings).length;
+    const expectedMetrics = mappingType === 'cashflow' ? 4 : 5;
+    mapping.confidence = Math.min(90, 50 + (foundMetrics / expectedMetrics) * 40);
+
+    logger.info(`Pattern matching found ${foundMetrics} metrics with ${mapping.confidence}% confidence`);
 
     return mapping;
   }

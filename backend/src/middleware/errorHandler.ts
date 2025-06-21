@@ -26,6 +26,7 @@ export const errorHandler = (
 
   res.status(statusCode).json({
     success: false,
+    error: message, // Add error field for frontend compatibility
     message: process.env.NODE_ENV === 'production' && statusCode === 500 
       ? 'Internal Server Error' 
       : message,
