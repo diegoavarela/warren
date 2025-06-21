@@ -19,6 +19,12 @@ export class ExcelAnalysisController {
    */
   async analyzeExcel(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      logger.info('Excel analysis request received', {
+        hasFile: !!req.file,
+        fileName: req.file?.originalname,
+        fileSize: req.file?.size,
+        mappingType: req.body?.mappingType
+      });
       if (!req.file) {
         return res.status(400).json({
           success: false,
