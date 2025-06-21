@@ -149,11 +149,15 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       }, 2000)
     } catch (err: any) {
       // If standard parsing fails, check if it's a structure issue
+      console.log('Upload error:', err)
+      console.log('Error response:', err.response)
       const errorMessage = err.message || err.response?.data?.error || ''
+      console.log('Error message:', errorMessage)
       const isStructureError = errorMessage.toLowerCase().includes('no data') || 
                               errorMessage.toLowerCase().includes('structure') ||
                               errorMessage.toLowerCase().includes('format') ||
-                              errorMessage.toLowerCase().includes('row')
+                              errorMessage.toLowerCase().includes('row') ||
+                              errorMessage.toLowerCase().includes('wizard')
       
       if (isStructureError && !showMappingWizard) {
         // Automatically show AI mapping wizard for structure errors

@@ -286,9 +286,14 @@ export const DashboardPage: React.FC = () => {
     // Skip upload in screenshot/demo mode
     if (isScreenshotMode || isDemoMode) return
     
-    await cashflowService.uploadFile(uploadedFile)
-    // Reload dashboard data
-    await loadDashboard()
+    try {
+      await cashflowService.uploadFile(uploadedFile)
+      // Reload dashboard data
+      await loadDashboard()
+    } catch (error: any) {
+      // Re-throw the error so FileUploadSection can handle it
+      throw error
+    }
   }
 
   if (loading) {
