@@ -94,7 +94,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
       formData.append('mappingType', mappingType);
 
       const response = await axios.post(
-        `${API_BASE_URL}/api/excel/analyze`,
+        `${API_BASE_URL}/excel/analyze`,
         formData,
         {
           headers: {
@@ -112,12 +112,32 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
           setSampleData(response.data.data.sampleData);
         }
         setCurrentStep('review');
+        
+        // If pattern matching was used, show a notice
+        if (response.data.data.message?.includes('Pattern matching')) {
+          setError('AI analysis unavailable. Using pattern matching to detect Excel structure.');
+        }
       } else {
         throw new Error(response.data.error || 'Analysis failed');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to analyze file');
-      setCurrentStep('upload');
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to analyze file';
+      
+      // Check if it's a rate limit or API issue but service is still working
+      if (err.response?.data?.fallbackUsed) {
+        // Don't go back to upload, stay in analyzing and show message
+        setError(errorMessage);
+        // Still try to get results if pattern matching worked
+        if (err.response?.data?.mapping) {
+          setMapping(err.response.data.mapping);
+          setCurrentStep('review');
+        } else {
+          setCurrentStep('upload');
+        }
+      } else {
+        setError(errorMessage);
+        setCurrentStep('upload');
+      }
     } finally {
       setLoading(false);
     }
@@ -135,7 +155,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
       formData.append('mapping', JSON.stringify(mapping));
 
       const response = await axios.post(
-        `${API_BASE_URL}/api/excel/preview`,
+        `${API_BASE_URL}/excel/preview`,
         formData,
         {
           headers: {
@@ -166,7 +186,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
 
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/api/excel/mappings`,
+        `${API_BASE_URL}/excel/mappings`,
         { mapping },
         {
           headers: {

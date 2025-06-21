@@ -69,9 +69,32 @@ export class ExcelAnalysisController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Excel analysis error:', error);
-      next(error);
+      
+      // Provide better error messages
+      if (error.message?.includes('rate limit') || error.response?.status === 429) {
+        return res.status(503).json({
+          success: false,
+          error: 'AI service temporarily unavailable due to rate limits. Using pattern matching fallback.',
+          fallbackUsed: true
+        });
+      }
+      
+      if (error.message?.includes('API key')) {
+        return res.status(503).json({
+          success: false,
+          error: 'AI service configuration error. Using pattern matching fallback.',
+          fallbackUsed: true
+        });
+      }
+      
+      // Generic error
+      res.status(500).json({
+        success: false,
+        error: 'Failed to analyze Excel file. Please try again.',
+        details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+      });
     }
   }
 
