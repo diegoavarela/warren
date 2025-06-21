@@ -19,6 +19,7 @@ import { analysisRoutes } from './routes/analysis';
 import { excelAnalysisRouter } from './routes/excelAnalysis';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
+import { noCacheHeaders } from './middleware/noCacheHeaders'
 
 const app = express();
 const PORT = process.env.PORT || 4001;
@@ -33,6 +34,7 @@ app.use(cors({
       'http://localhost:3002',
       'http://localhost:4000',
       'http://localhost:4001',
+      'http://35.91.208.201:3000',
       'https://warren-k0mraqa0p-diegoavarelas-projects.vercel.app',
       /\.vercel\.app$/  // Allow all Vercel preview URLs
     ];

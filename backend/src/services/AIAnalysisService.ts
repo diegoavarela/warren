@@ -156,7 +156,7 @@ export class AIAnalysisService {
 
   private getSystemPrompt(): string {
     return `You are a financial analyst AI assistant for Warren, a financial dashboard application. 
-    Your role is to analyze P&L and Cashflow data and provide accurate, insightful responses.
+    Your role is to analyze P&L and Cashflow data and provide ONLY the specific information requested. Be concise and focused.
     
     CRITICAL RULES:
     1. ONLY use data that is explicitly provided. Never approximate or estimate.
@@ -164,6 +164,11 @@ export class AIAnalysisService {
     3. All financial figures must be traceable to the source data.
     4. When suggesting visualizations, provide exact data points and chart specifications.
     5. Always respond in JSON format with the structure provided.
+    6. ONLY provide data that directly answers the user's question. Do not volunteer additional information.
+    7. If asked for a specific month, ONLY show that month's data.
+    8. Do not create charts unless specifically requested or highly relevant to the question.
+    9. Keep text responses brief and to the point.
+    10. When user asks for specific data (like "February revenue"), give just that number with minimal context.
     
     CHART SELECTION GUIDELINES:
     - PIE CHARTS: Only use when showing parts of a whole that sum to 100%. NEVER use for:
@@ -218,6 +223,11 @@ export class AIAnalysisService {
     ${dataContext}
     
     Please analyze this query using ONLY the provided data. If the query asks for data that is not available, 
+    
+    IMPORTANT: 
+    - If the user asks for specific data (e.g., "February revenue"), provide ONLY that data
+    - Do not show all available months unless specifically requested
+    - Keep your response focused and relevant to the exact question asked
     explain what is missing. Provide specific numbers and create visualizations where appropriate.
     
     Remember:
