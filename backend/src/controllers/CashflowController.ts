@@ -60,9 +60,19 @@ export class CashflowController {
       const metrics = this.cashflowService.parseWorksheet(worksheet, req.file.originalname);
       logger.info(`Cashflow file uploaded by user ${req.user?.email}, ${metrics.length} months processed`);
 
+      // Check if no data was found
+      if (metrics.length === 0) {
+        throw new Error("Unable to detect data structure in the Excel file. Please use the AI wizard to map your custom format.");
+      }
+
       // Also parse extended financial data (operational costs, banks, taxes)
       const extendedData = this.extendedFinancialService.parseExtendedFinancialData(worksheet);
       logger.info(`Extended financial data parsed: ${extendedData.operational.length} operational months processed`);
+
+      // Check if no data was found
+      if (metrics.length === 0) {
+        throw new Error("Unable to detect data structure in the Excel file. Please use the AI wizard to map your custom format.");
+      }
 
       // Calculate date range
       const periodStart = metrics.length > 0 ? new Date(metrics[0].date) : null;
