@@ -59,6 +59,11 @@ export class PnLController {
       const metrics = this.pnlService.getStoredMetrics();
       const summary = this.pnlService.getSummary();
       
+      // Check if any data was detected - trigger AI wizard if not
+      if (metrics.length === 0) {
+        throw new Error("Unable to detect data structure in the Excel file. Please use the AI wizard to map your custom format.");
+      }
+      
       // Calculate date range with proper validation
       let periodStart: Date | null = null;
       let periodEnd: Date | null = null;
