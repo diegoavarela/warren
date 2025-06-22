@@ -310,7 +310,11 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
                 <h4 className="font-medium text-yellow-800 mb-2">Validation Issues:</h4>
                 <ul className="list-disc list-inside text-sm text-yellow-700">
                   {validation.issues.map((issue, idx) => (
-                    <li key={idx}>{issue}</li>
+                    <li key={idx}>
+                      {issue === 'Failed to validate mapping' 
+                        ? 'The AI needs more information to accurately detect your Excel structure. You can edit the mapping manually.'
+                        : issue}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -320,8 +324,15 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Date Configuration</h4>
                 <p className="text-sm text-gray-600">
-                  Row {mapping?.structure.dateRow || 'Not found'}, 
-                  Columns: {mapping?.structure.dateColumns?.join(', ') || 'Not found'}
+                  <span className="font-medium">Row:</span> {mapping?.structure.dateRow || 'Not detected'}
+                  <br />
+                  <span className="font-medium">Columns:</span> {
+                    mapping?.structure.dateColumns && mapping.structure.dateColumns.length > 0
+                      ? mapping.structure.dateColumns
+                          .filter(col => col > 0 && col <= 100) // Filter out invalid column numbers
+                          .join(', ') || 'Invalid column detection'
+                      : 'Not detected'
+                  }
                 </p>
               </div>
 
@@ -330,12 +341,30 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
                 <div className="space-y-2">
                   {Object.entries(mapping?.structure.metricMappings || {}).map(([key, config]) => (
                     <div key={key} className="flex justify-between text-sm">
-                      <span className="text-gray-600">{config.description}</span>
-                      <span className="font-medium">Row {config.row}</span>
+                      <span className="text-gray-600">
+                        {config.description || key.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                      <span className={`font-medium ${config.row === 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                        {config.row === 0 ? 'Not found' : `Row ${config.row}`}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
+              
+              {mapping?.insights && mapping.insights.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">AI Insights</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {mapping.insights.map((insight, idx) => (
+                      <li key={idx} className="flex items-start">
+                        <span className="text-purple-500 mr-2">•</span>
+                        {insight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between">

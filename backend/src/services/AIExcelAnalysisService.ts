@@ -209,23 +209,54 @@ export class AIExcelAnalysisService {
       ['totalIncome', 'totalExpense', 'finalBalance', 'lowestBalance', 'monthlyGeneration'] :
       ['revenue', 'cogs', 'grossProfit', 'operatingExpenses', 'ebitda', 'netIncome'];
 
-    return `Analyze Excel ${mappingType} data. Find date row/columns and these metrics: ${metrics.join(', ')}.
+    const metricDescriptions = mappingType === 'cashflow' ? {
+      totalIncome: 'Total income/revenue/collections/inflows for the month',
+      totalExpense: 'Total expenses/costs/outflows for the month',
+      finalBalance: 'Final cash balance/ending balance at month end',
+      lowestBalance: 'Lowest cash balance during the month',
+      monthlyGeneration: 'Monthly cash generation/net cash flow'
+    } : {
+      revenue: 'Total revenue/sales/income',
+      cogs: 'Cost of goods sold/direct costs',
+      grossProfit: 'Gross profit (revenue - COGS)',
+      operatingExpenses: 'Operating expenses/OPEX/SG&A',
+      ebitda: 'EBITDA/operating income',
+      netIncome: 'Net income/profit/earnings'
+    };
 
-Data: ${JSON.stringify(simplifiedRows)}
+    return `Analyze this Excel ${mappingType} financial data structure.
 
-Return JSON: {
-  "dateRow": number,
-  "dateColumns": [numbers],
-  "currencyUnit": string,
+IMPORTANT RULES:
+1. Dates are typically in row 2, 3, or 7 (headers above)
+2. Look for month names (Jan, January, Enero) or date values
+3. Metrics are usually labeled in the first 1-3 columns
+4. Common Spanish terms: Ingresos=Income, Gastos/Egresos=Expenses, Saldo=Balance
+5. Row numbers start at 1, column numbers start at 1
+6. Return actual row numbers where data is found, never 0
+
+Look for these specific metrics:
+${Object.entries(metricDescriptions).map(([key, desc]) => `- ${key}: ${desc}`).join('\n')}
+
+Excel Data (first ${sampleData.rows.length} rows):
+${simplifiedRows.slice(0, 30).map(row => 
+  `Row ${row.r}: ${row.c.slice(0, 10).map((cell, idx) => 
+    `Col${idx + 1}=${cell.v || 'empty'}`).join(', ')}`
+).join('\n')}
+
+Return this exact JSON structure:
+{
+  "dateRow": <actual row number with dates>,
+  "dateColumns": [<list of column numbers with dates>],
+  "currencyUnit": "units|thousands|millions",
   "mappings": {
-    "metricName": {
-      "row": number,
-      "description": string,
-      "dataType": "currency"|"percentage"|"number",
-      "confidence": 0-100
+    "${Object.keys(metricDescriptions).join('"|"')}": {
+      "row": <actual row number>,
+      "description": "<what was found in Excel>",
+      "dataType": "currency",
+      "confidence": <0-100>
     }
   },
-  "insights": []
+  "insights": ["<helpful observations about the data structure>"]
 }`;
   }
 
@@ -278,7 +309,15 @@ Return JSON: {
             messages: [
               {
                 role: 'system',
-                content: 'You are a financial data analyst. Respond only with valid JSON.'
+                content: `You are an expert financial data analyst specializing in Excel cashflow and P&L statements. 
+You understand both English and Spanish financial terms.
+Common patterns:
+- Dates are usually in rows 2-7, as month names or date values
+- Financial metrics have labels in columns A-C
+- Data values start after the label columns
+- Spanish: Ingresos=Income, Egresos/Gastos=Expenses, Saldo=Balance, Flujo=Flow
+- Always return actual row/column numbers (starting from 1), never 0
+Respond only with valid JSON.`
               },
               {
                 role: 'user',
