@@ -127,10 +127,14 @@ export class PnLService {
         }
 
         const revenue = getValue(config.metricRows.revenue || 8)
-        if (revenue > 0) {
+        const cogs = getValue(config.metricRows.costOfRevenue || 18)
+        const grossProfit = getValue(config.metricRows.grossProfit || 19)
+        
+        // Validate that the data makes sense
+        // Revenue should be positive and typically larger than individual cost components
+        // Gross profit should be positive and less than revenue
+        if (revenue > 0 && revenue > cogs && grossProfit > 0 && grossProfit < revenue) {
           validDataCount++;
-          const cogs = getValue(config.metricRows.costOfRevenue || 18)
-          const grossProfit = getValue(config.metricRows.grossProfit || 19)
           const operatingExpenses = getValue(config.metricRows.operatingExpenses || 52)
           const ebitda = getValue(config.metricRows.ebitda || 65)
           const netIncome = getValue(config.metricRows.netIncome || 81)
@@ -306,16 +310,16 @@ export class PnLService {
         }
 
         const revenue = getValue(keyRows.revenue)
+        const cogs = getValue(keyRows.costOfRevenue)
+        const grossProfit = getValue(keyRows.grossProfit)
         
-        // Skip months with no revenue or invalid data
-        if (revenue <= 0) {
+        // Validate that the data makes sense
+        // Skip months with no revenue or where data relationships don't make sense
+        if (revenue <= 0 || revenue <= cogs || grossProfit <= 0 || grossProfit >= revenue) {
           return;
         }
         
         validDataCount++;
-        
-        const cogs = getValue(keyRows.costOfRevenue)
-        const grossProfit = getValue(keyRows.grossProfit)
         const operatingExpenses = getValue(keyRows.operatingExpenses)
         const ebitda = getValue(keyRows.ebitda)
         const netIncome = getValue(keyRows.netIncome)
