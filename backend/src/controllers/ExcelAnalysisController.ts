@@ -124,7 +124,11 @@ export class ExcelAnalysisController {
         });
       }
 
-      logger.info(`Previewing data extraction for user ${req.user?.email}`);
+      logger.info(`Previewing data extraction for user ${req.user?.email}`, {
+        mappingType: mapping.type,
+        dateRow: mapping.structure?.dateRow,
+        dateColumns: mapping.structure?.dateColumns
+      });
 
       // Parse mapping if it's a string
       const parsedMapping = typeof mapping === 'string' ? JSON.parse(mapping) : mapping;
@@ -226,25 +230,59 @@ export class ExcelAnalysisController {
       
       for (const col of mapping.structure.dateColumns) {
         const dateValue = dateRow.getCell(col).value;
+        logger.info(`Processing column ${col}, raw value:`, { value: dateValue, type: typeof dateValue });
+        let processedDate: Date | null = null;
+        let monthName = '';
+        
+        // Try different date formats
         if (dateValue instanceof Date) {
-          const monthData: any = {
-            date: dateValue,
-            month: dateValue.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-            data: {}
-          };
-
-          // Extract metrics for this month
-          for (const [key, config] of Object.entries(mapping.structure.metricMappings)) {
-            const metricConfig = config as any;
-            const value = worksheet.getRow(metricConfig.row).getCell(col).value;
-            monthData.data[key] = {
-              value: this.getCellValue(value),
-              description: metricConfig.description
-            };
+          processedDate = dateValue;
+          monthName = dateValue.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        } else if (typeof dateValue === 'number') {
+          // Excel date serial number
+          try {
+            processedDate = new Date((dateValue - 25569) * 86400 * 1000);
+            monthName = processedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          } catch {
+            // If date conversion fails, use column number as month
+            monthName = `Month ${col}`;
           }
-
-          result.months.push(monthData);
+        } else if (typeof dateValue === 'string') {
+          // Try to parse string date
+          try {
+            processedDate = new Date(dateValue);
+            if (!isNaN(processedDate.getTime())) {
+              monthName = processedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            } else {
+              // Use the string as is for month name
+              monthName = dateValue;
+            }
+          } catch {
+            monthName = dateValue;
+          }
+        } else {
+          // Fallback to column-based naming
+          monthName = `Column ${col}`;
         }
+        
+        // Always create month data, even if date parsing failed
+        const monthData: any = {
+          date: processedDate,
+          month: monthName,
+          data: {}
+        };
+
+        // Extract metrics for this month
+        for (const [key, config] of Object.entries(mapping.structure.metricMappings)) {
+          const metricConfig = config as any;
+          const value = worksheet.getRow(metricConfig.row).getCell(col).value;
+          monthData.data[key] = {
+            value: this.getCellValue(value),
+            description: metricConfig.description
+          };
+        }
+
+        result.months.push(monthData);
       }
     }
 
