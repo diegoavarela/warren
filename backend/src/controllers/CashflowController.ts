@@ -427,3 +427,5 @@ export class CashflowController {
     return recommendations;
   }
 }
+
+export const cashflowController = new CashflowController();

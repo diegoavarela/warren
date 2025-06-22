@@ -121,9 +121,10 @@ export class PnLService {
       );
       
       // Check for standard P&L structure by looking at key rows
-      // Row 2 should have "Revenue"
-      // Row 3 should have "Cost of Goods Sold" or "COGS"
-      // Row 4 should have "Gross Profit"
+      // Row 2 (index 1 in Excel) should have "Revenue"
+      // Row 3 (index 2 in Excel) should have "Cost of Goods Sold" or "COGS"
+      // Row 4 (index 3 in Excel) should have "Gross Profit"
+      // Note: Excel rows are 1-based, but row 1 is headers, so data starts at row 2
       const row2Label = String(worksheet.getRow(2).getCell(1).value || '').toLowerCase();
       const row3Label = String(worksheet.getRow(3).getCell(1).value || '').toLowerCase();
       const row4Label = String(worksheet.getRow(4).getCell(1).value || '').toLowerCase();

@@ -257,8 +257,24 @@ export class ExcelAnalysisController {
         return pnlController.uploadPnL(req, res, next);
       } else if (parsedMapping.mappingType === 'cashflow') {
         // Store in Cashflow service
-        const cashflowController = require('./CashflowController').cashflowController;
-        return cashflowController.uploadFile(req, res, next);
+        const cashflowService = require('../services/CashflowServiceV2').CashflowServiceV2;
+        const cashflowServiceInstance = new cashflowService();
+        
+        // Process the extracted data and store it
+        await cashflowServiceInstance.processExtractedData(extractedData, req.file.originalname);
+        
+        // Generate dashboard data to return
+        const dashboardData = cashflowServiceInstance.generateDashboard();
+        
+        // Return success response
+        return res.json({
+          success: true,
+          message: 'Cashflow file processed successfully with custom mapping',
+          data: {
+            monthsProcessed: extractedData.months?.length || 0,
+            dashboard: dashboardData
+          }
+        });
       }
 
       res.json({

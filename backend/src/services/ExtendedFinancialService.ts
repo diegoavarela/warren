@@ -80,6 +80,19 @@ export class ExtendedFinancialService {
   }
   
   /**
+   * Clear stored extended financial data
+   */
+  clearStoredData(): void {
+    this.storedExtendedData = {
+      operational: [],
+      investments: [],
+      banks: [],
+      taxes: []
+    };
+    logger.info('Extended financial data cleared');
+  }
+  
+  /**
    * Parse operational data from specific rows using actual Excel structure
    */
   private parseOperationalData(worksheet: ExcelJS.Worksheet, dates: Array<{columnIndex: number, date: Date, monthName: string}>): OperationalData[] {

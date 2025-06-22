@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 import { ExtendedFinancialService } from './ExtendedFinancialService';
+import { logger } from '../utils/logger';
 
 interface MonthlyMetrics {
   date: Date;
@@ -448,5 +449,97 @@ export class CashflowServiceV2 {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Math.abs(amount));
+  }
+
+  /**
+   * Process extracted data from AI mapping
+   */
+  async processExtractedData(extractedData: any, originalFilename: string): Promise<void> {
+    logger.info(`Processing extracted cashflow data from ${originalFilename}`);
+    
+    // Clear existing data
+    parsedMetrics = [];
+    uploadedFileName = originalFilename;
+    
+    // Process and store the extracted metrics
+    if (extractedData.months && Array.isArray(extractedData.months)) {
+      const metrics: MonthlyMetrics[] = extractedData.months.map((month: any, index: number) => {
+        // Extract values from the mapped data
+        const totalInflow = month.data.totalIncome?.value || 
+                           month.data.totalInflow?.value || 
+                           month.data.revenue?.value || 0;
+        
+        const totalOutflow = Math.abs(month.data.totalExpense?.value || 
+                                     month.data.totalOutflow?.value || 
+                                     month.data.expenses?.value || 0);
+        
+        const finalBalance = month.data.finalBalance?.value || 
+                            month.data.endingBalance?.value || 
+                            month.data.cashBalance?.value || 0;
+        
+        const lowestBalance = month.data.lowestBalance?.value || 
+                             month.data.minimumBalance?.value || 
+                             finalBalance;
+        
+        const monthlyGeneration = month.data.monthlyGeneration?.value || 
+                                 month.data.cashGeneration?.value || 
+                                 month.data.netCashFlow?.value || 
+                                 (totalInflow - totalOutflow);
+        
+        // Handle date parsing
+        let date = new Date();
+        if (month.date instanceof Date) {
+          date = month.date;
+        } else if (typeof month.date === 'string') {
+          date = new Date(month.date);
+        } else {
+          // If no valid date, create one based on month name or index
+          const currentYear = new Date().getFullYear();
+          const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June',
+                             'July', 'August', 'September', 'October', 'November', 'December']
+                             .indexOf(month.month);
+          if (monthIndex !== -1) {
+            date = new Date(currentYear, monthIndex, 1);
+          } else {
+            // Fallback: use index to create sequential dates
+            date = new Date(currentYear, index, 1);
+          }
+        }
+        
+        return {
+          date,
+          month: month.month || format(date, 'MMMM'),
+          columnIndex: index + 2, // Start from column B (2)
+          columnLetter: this.getColumnLetter(index + 2),
+          totalInflow,
+          totalOutflow: -Math.abs(totalOutflow), // Ensure negative
+          finalBalance,
+          lowestBalance,
+          monthlyGeneration
+        };
+      });
+      
+      parsedMetrics = metrics;
+      
+      // Also process extended financial data if available
+      const extendedService = ExtendedFinancialService.getInstance();
+      if (extractedData.extendedData) {
+        // Process operational, banks, taxes, investments data if mapped
+        // This would require extending the AI mapping to include these categories
+        // For now, we'll just clear the extended data
+        extendedService.clearStoredData();
+      }
+      
+      logger.info(`Stored ${metrics.length} months of cashflow data from custom mapping`);
+    }
+  }
+
+  /**
+   * Clear all stored data
+   */
+  clearStoredData(): void {
+    parsedMetrics = [];
+    uploadedFileName = '';
+    logger.info('Cashflow stored data cleared');
   }
 }
