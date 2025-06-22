@@ -58,6 +58,7 @@ export class PnLService {
   private storedData: PnLRow[] = []
   private storedMetrics: PnLMetrics[] = []
   private lastUploadDate: Date | null = null
+  private lastUploadedFileName: string | null = null
   private configService: ConfigurationService
 
   private constructor() {
@@ -538,6 +539,15 @@ export class PnLService {
     this.storedData = []
     this.storedMetrics = []
     this.lastUploadDate = null
+    this.lastUploadedFileName = null
     logger.info('P&L stored data cleared')
+  }
+
+  setUploadedFileName(filename: string): void {
+    this.lastUploadedFileName = filename
+  }
+
+  getUploadedFileName(): string | null {
+    return this.lastUploadedFileName
   }
 }

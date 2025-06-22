@@ -104,6 +104,9 @@ export class PnLController {
         recordsCount: metrics.length
       });
 
+      // Store the uploaded filename
+      this.pnlService.setUploadedFileName(req.file.originalname);
+
       res.json({
         success: true,
         message: 'P&L file processed successfully',
@@ -181,6 +184,7 @@ export class PnLController {
         success: true,
         data: {
           hasData: true,
+          uploadedFileName: this.pnlService.getUploadedFileName(),
           currentMonth,
           previousMonth,
           yearToDate,
