@@ -111,6 +111,7 @@ export class PnLService {
 
       // Use configured structure
       const metrics: PnLMetrics[] = []
+      let validDataCount = 0;
       
       Object.entries(config.monthColumns).forEach(([month, col]: [string, any]) => {
         const getValue = (rowNum: number): number => {
@@ -127,6 +128,7 @@ export class PnLService {
 
         const revenue = getValue(config.metricRows.revenue || 8)
         if (revenue > 0) {
+          validDataCount++;
           const cogs = getValue(config.metricRows.costOfRevenue || 18)
           const grossProfit = getValue(config.metricRows.grossProfit || 19)
           const operatingExpenses = getValue(config.metricRows.operatingExpenses || 52)
@@ -185,10 +187,16 @@ export class PnLService {
         }
       })
 
+      // Check if we found valid data
+      if (validDataCount === 0 || metrics.length === 0) {
+        logger.warn('No valid P&L data found using current configuration');
+        throw new Error('Unable to detect data structure in the Excel file. Please use the AI wizard to map your custom format.');
+      }
+
       this.storedMetrics = metrics
       this.lastUploadDate = new Date()
 
-      logger.info(`P&L processing complete using configuration. Processed ${metrics.length} months of data`)
+      logger.info(`P&L processing complete using configuration. Processed ${metrics.length} months with ${validDataCount} valid entries`)
 
       const activeCompany = this.configService.getActiveCompany()
       return {
@@ -281,6 +289,7 @@ export class PnLService {
 
       // Extract metrics for each month
       const metrics: PnLMetrics[] = []
+      let validDataCount = 0;
       
       Object.entries(monthColumns).forEach(([month, col]) => {
         const getValue = (rowNum: number): number => {
@@ -297,6 +306,14 @@ export class PnLService {
         }
 
         const revenue = getValue(keyRows.revenue)
+        
+        // Skip months with no revenue or invalid data
+        if (revenue <= 0) {
+          return;
+        }
+        
+        validDataCount++;
+        
         const cogs = getValue(keyRows.costOfRevenue)
         const grossProfit = getValue(keyRows.grossProfit)
         const operatingExpenses = getValue(keyRows.operatingExpenses)
@@ -372,11 +389,17 @@ export class PnLService {
         }
       })
 
+      // Check if we found valid data
+      if (validDataCount === 0 || metrics.length === 0) {
+        logger.warn('No valid P&L data found using default structure');
+        throw new Error('Unable to detect data structure in the Excel file. Please use the AI wizard to map your custom format.');
+      }
+
       // Store metrics
       this.storedMetrics = metrics
       this.lastUploadDate = new Date()
 
-      logger.info(`P&L processing complete. Processed ${metrics.length} months of data`)
+      logger.info(`P&L processing complete. Processed ${metrics.length} months with ${validDataCount} valid entries`)
 
       return {
         success: true,
