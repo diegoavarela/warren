@@ -9,6 +9,8 @@ import {
   SparklesIcon
 } from '@heroicons/react/24/outline'
 import { ExcelMappingWizard } from './ExcelMappingWizard'
+import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
 interface FileUploadSectionProps {
   onFileUpload: (file: File) => Promise<void>
@@ -349,15 +351,46 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           initialFile={file}
           onMappingComplete={async (mapping) => {
             setShowMappingWizard(false)
-            // TODO: In the future, use the mapping to process the file
-            // For now, show success message
-            setUploadSuccess(true)
-            setFile(null)
             
-            // Auto-collapse after successful mapping
-            setTimeout(() => {
-              setIsCollapsed(true)
-            }, 2000)
+            // Process the file with the mapping
+            if (file) {
+              try {
+                setUploading(true)
+                const formData = new FormData()
+                formData.append('file', file)
+                formData.append('mapping', JSON.stringify(mapping))
+                
+                const response = await axios.post(
+                  `${API_BASE_URL}/excel/process-with-mapping`,
+                  formData,
+                  {
+                    headers: {
+                      'Content-Type': 'multipart/form-data',
+                      Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                  }
+                )
+                
+                if (response.data.success) {
+                  setUploadSuccess(true)
+                  setFile(null)
+                  
+                  // Notify parent component of successful upload
+                  onFileUpload(file)
+                  
+                  // Auto-collapse after successful mapping
+                  setTimeout(() => {
+                    setIsCollapsed(true)
+                  }, 3000)
+                } else {
+                  throw new Error(response.data.error || 'Failed to process file with mapping')
+                }
+              } catch (error: any) {
+                console.error('Error processing file with mapping:', error)
+                setUploadError(error.response?.data?.error || error.message || 'Failed to process file')
+                setUploading(false)
+              }
+            }
           }}
         />
       )}

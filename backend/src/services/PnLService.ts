@@ -634,4 +634,45 @@ export class PnLService {
   getUploadedFileName(): string | null {
     return this.lastUploadedFileName
   }
+
+  async processExtractedData(extractedData: any, originalFilename: string): Promise<void> {
+    logger.info(`Processing extracted P&L data from ${originalFilename}`)
+    
+    // Clear existing data
+    this.clearStoredData()
+    
+    // Process and store the extracted metrics
+    if (extractedData.months && Array.isArray(extractedData.months)) {
+      const metrics: PnLMetrics[] = extractedData.months.map((month: any) => {
+        const revenue = month.data.revenue?.value || 0
+        const cogs = Math.abs(month.data.cogs?.value || month.data.costOfGoodsSold?.value || 0)
+        const grossProfit = month.data.grossProfit?.value || (revenue - cogs)
+        const operatingExpenses = Math.abs(month.data.operatingExpenses?.value || month.data.totalOperatingExpenses?.value || 0)
+        const netIncome = month.data.netIncome?.value || 0
+        const ebitda = month.data.ebitda?.value || (grossProfit - operatingExpenses)
+        
+        return {
+          month: month.month,
+          revenue,
+          cogs,
+          grossProfit,
+          grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
+          operatingExpenses,
+          operatingIncome: grossProfit - operatingExpenses,
+          operatingMargin: revenue > 0 ? ((grossProfit - operatingExpenses) / revenue) * 100 : 0,
+          otherIncomeExpenses: 0,
+          netIncome,
+          netMargin: revenue > 0 ? (netIncome / revenue) * 100 : 0,
+          ebitda,
+          ebitdaMargin: revenue > 0 ? (ebitda / revenue) * 100 : 0
+        }
+      })
+      
+      this.storedMetrics = metrics
+      this.lastUploadDate = new Date()
+      this.lastUploadedFileName = originalFilename
+      
+      logger.info(`Stored ${metrics.length} months of P&L data from custom mapping`)
+    }
+  }
 }

@@ -56,4 +56,11 @@ router.get(
   excelAnalysisController.getMappings.bind(excelAnalysisController)
 );
 
+// Process file with mapping
+router.post(
+  '/process-with-mapping',
+  upload.single('file'),
+  excelAnalysisController.processWithMapping.bind(excelAnalysisController)
+);
+
 export const excelAnalysisRouter = router;

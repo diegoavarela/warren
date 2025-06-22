@@ -242,3 +242,5 @@ export class PnLController {
     }
   }
 }
+
+export const pnlController = new PnLController()

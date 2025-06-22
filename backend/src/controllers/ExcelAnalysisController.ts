@@ -212,6 +212,70 @@ export class ExcelAnalysisController {
   }
 
   /**
+   * Process file with mapping and store data
+   */
+  async processWithMapping(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'No file provided'
+        });
+      }
+
+      const { mapping } = req.body;
+      
+      if (!mapping || typeof mapping === 'string') {
+        // Parse mapping if it's a string
+        const parsedMapping = typeof mapping === 'string' ? JSON.parse(mapping) : mapping;
+        
+        if (!parsedMapping) {
+          return res.status(400).json({
+            success: false,
+            error: 'No mapping provided'
+          });
+        }
+      }
+
+      const parsedMapping = typeof mapping === 'string' ? JSON.parse(mapping) : mapping;
+
+      logger.info(`Processing ${parsedMapping.mappingType} file with custom mapping for user ${req.user?.email}`);
+
+      // Extract data using the mapping
+      const extractedData = await this.extractDataWithMapping(req.file.buffer, parsedMapping);
+
+      // Process the extracted data based on type
+      if (parsedMapping.mappingType === 'pnl') {
+        // Store in P&L service
+        const pnlService = require('../services/PnLService').PnLService.getInstance();
+        const pnlController = require('./PnLController').pnlController;
+        
+        // Process the extracted data and store it
+        await pnlService.processExtractedData(extractedData, req.file.originalname);
+        
+        // Call the regular upload endpoint to complete the flow
+        return pnlController.uploadPnL(req, res, next);
+      } else if (parsedMapping.mappingType === 'cashflow') {
+        // Store in Cashflow service
+        const cashflowController = require('./CashflowController').cashflowController;
+        return cashflowController.uploadFile(req, res, next);
+      }
+
+      res.json({
+        success: true,
+        message: 'File processed successfully with custom mapping',
+        data: {
+          monthsProcessed: extractedData.months?.length || 0
+        }
+      });
+
+    } catch (error) {
+      logger.error('Process with mapping error:', error);
+      next(error);
+    }
+  }
+
+  /**
    * Helper: Extract data using a mapping
    */
   private async extractDataWithMapping(buffer: Buffer, mapping: any): Promise<any> {
