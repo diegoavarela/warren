@@ -113,32 +113,45 @@ export class PnLService {
       
       // Check for Vortex standard markers:
       // 1. Look for "Combined Pesos" or similar worksheet name
-      // 2. Check if row 8 contains "Total Revenue" or similar
-      // 3. Check if row 18 contains "Total Cost" or similar
+      // 2. Check if file has standard P&L structure
       
       const hasVortexSheet = workbook.worksheets.some(ws => 
         ws.name.toLowerCase().includes('combined') || 
         ws.name.toLowerCase().includes('pesos')
       );
       
-      // Check specific cells for expected labels
-      const row8LabelCell = worksheet.getRow(8).getCell(1).value;
-      const row18LabelCell = worksheet.getRow(18).getCell(1).value;
+      // Check for standard P&L structure by looking at key rows
+      // Row 2 should have "Revenue"
+      // Row 3 should have "Cost of Goods Sold" or "COGS"
+      // Row 4 should have "Gross Profit"
+      const row2Label = String(worksheet.getRow(2).getCell(1).value || '').toLowerCase();
+      const row3Label = String(worksheet.getRow(3).getCell(1).value || '').toLowerCase();
+      const row4Label = String(worksheet.getRow(4).getCell(1).value || '').toLowerCase();
       
-      const row8Label = String(row8LabelCell || '').toLowerCase();
-      const row18Label = String(row18LabelCell || '').toLowerCase();
-      
-      const hasRevenueLabel = row8Label.includes('revenue') || 
-                             row8Label.includes('ingreso') || 
-                             row8Label.includes('total revenue');
+      const hasRevenueLabel = row2Label.includes('revenue') || 
+                             row2Label.includes('ingreso') || 
+                             row2Label.includes('sales') ||
+                             row2Label.includes('ventas');
                              
-      const hasCostLabel = row18Label.includes('cost') || 
-                          row18Label.includes('costo') || 
-                          row18Label.includes('cogs');
+      const hasCOGSLabel = row3Label.includes('cost of goods') || 
+                          row3Label.includes('cogs') || 
+                          row3Label.includes('costo');
+                          
+      const hasGrossProfitLabel = row4Label.includes('gross profit') || 
+                                 row4Label.includes('utilidad bruta') || 
+                                 row4Label.includes('ganancia bruta');
       
-      logger.info(`Format check - Sheet: ${hasVortexSheet}, Revenue: ${hasRevenueLabel}, Cost: ${hasCostLabel}`);
+      // Also check original Vortex format (rows 8 and 18)
+      const row8Label = String(worksheet.getRow(8).getCell(1).value || '').toLowerCase();
+      const row18Label = String(worksheet.getRow(18).getCell(1).value || '').toLowerCase();
       
-      return hasVortexSheet || (hasRevenueLabel && hasCostLabel);
+      const hasVortexRevenue = row8Label.includes('total revenue') || row8Label.includes('revenue');
+      const hasVortexCost = row18Label.includes('total cost') || row18Label.includes('cost of revenue');
+      
+      logger.info(`Format check - Sheet: ${hasVortexSheet}, Standard P&L: ${hasRevenueLabel && hasCOGSLabel}, Vortex P&L: ${hasVortexRevenue && hasVortexCost}`);
+      
+      // Accept either standard P&L format or Vortex format
+      return hasVortexSheet || (hasRevenueLabel && hasCOGSLabel && hasGrossProfitLabel) || (hasVortexRevenue && hasVortexCost);
     } catch (error) {
       logger.error('Error checking format:', error);
       return false;
@@ -284,7 +297,30 @@ export class PnLService {
         logger.info(`Using worksheet: ${worksheet.name}`)
       }
 
+      // Check if this is standard P&L format (Revenue in row 2) or Vortex format (Revenue in row 8)
+      const row2Label = String(worksheet.getRow(2).getCell(1).value || '').toLowerCase();
+      const isStandardFormat = row2Label.includes('revenue') || row2Label.includes('sales');
+      
+      logger.info(`Detected format: ${isStandardFormat ? 'Standard P&L' : 'Vortex P&L'}`);
+
       // Based on the structure:
+      // Standard P&L format:
+      // Row 1: Headers
+      // Row 2: Revenue
+      // Row 3: Cost of Goods Sold
+      // Row 4: Gross Profit
+      // Row 5: Gross Margin %
+      // Row 8: Sales & Marketing
+      // Row 9: General & Administrative
+      // Row 10: Research & Development
+      // Row 11: Total Operating Expenses
+      // Row 13: EBITDA
+      // Row 14: EBITDA Margin %
+      // Row 17: Tax Expense
+      // Row 18: Net Income
+      // Row 19: Net Margin %
+      
+      // Vortex format:
       // Row 4 has date headers in even columns (B=2, D=4, F=6, etc.)
       // Row 8: Total Revenue
       // Row 18: Total Cost of Goods Sold  
@@ -295,7 +331,35 @@ export class PnLService {
       // Row 81: Net Income
       // Row 82: Net Income Margin %
 
-      const keyRows = {
+      const keyRows = isStandardFormat ? {
+        // Standard P&L format row mappings
+        revenue: 2,
+        costOfRevenue: 3,
+        grossProfit: 4,
+        grossMargin: 5,
+        operatingExpenses: 11,
+        ebitda: 13,
+        ebitdaMargin: 14,
+        netIncome: 18,
+        netIncomeMargin: 19,
+        // Personnel Cost Details - not in standard format
+        personnelSalariesCoR: 0,
+        payrollTaxesCoR: 0,
+        personnelSalariesOp: 0,
+        payrollTaxesOp: 0,
+        healthCoverageCoR: 0,
+        healthCoverageOp: 0,
+        personnelBenefits: 0,
+        // Other Cost Categories
+        contractServicesCoR: 0,
+        contractServicesOp: 0,
+        businessDevelopment: 8, // Sales & Marketing
+        marketingPromotion: 0,
+        accountingServices: 9, // General & Administrative
+        legalServices: 0,
+        officeRent: 0
+      } : {
+        // Vortex format row mappings
         revenue: 8,
         costOfRevenue: 18,
         grossProfit: 19,
@@ -323,21 +387,41 @@ export class PnLService {
         officeRent: 38
       }
 
-      // Extract month columns from row 4
+      // Extract month columns from header row
       const monthColumns: { [key: string]: number } = {}
       const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
                          'July', 'August', 'September', 'October', 'November', 'December']
       
-      const headerRow = worksheet.getRow(4)
+      const headerRow = isStandardFormat ? worksheet.getRow(1) : worksheet.getRow(4)
       let monthIndex = 0
       
-      // Even columns contain values (2, 4, 6, 8, etc.)
-      for (let col = 2; col <= 24; col += 2) {
-        const cellValue = headerRow.getCell(col).value
-        
-        if (cellValue && monthIndex < monthNames.length) {
-          monthColumns[monthNames[monthIndex]] = col
-          monthIndex++
+      if (isStandardFormat) {
+        // Standard format: months are in consecutive columns starting from column 2
+        for (let col = 2; col <= 12; col++) {
+          const cellValue = headerRow.getCell(col).value
+          
+          if (cellValue && monthIndex < monthNames.length) {
+            // The cell value might be the month name directly
+            const cellString = String(cellValue);
+            const monthFound = monthNames.find(month => cellString.includes(month));
+            if (monthFound) {
+              monthColumns[monthFound] = col;
+            } else if (monthIndex < monthNames.length) {
+              // If not found, use sequential assignment
+              monthColumns[monthNames[monthIndex]] = col;
+            }
+            monthIndex++
+          }
+        }
+      } else {
+        // Vortex format: even columns contain values (2, 4, 6, 8, etc.)
+        for (let col = 2; col <= 24; col += 2) {
+          const cellValue = headerRow.getCell(col).value
+          
+          if (cellValue && monthIndex < monthNames.length) {
+            monthColumns[monthNames[monthIndex]] = col
+            monthIndex++
+          }
         }
       }
 
