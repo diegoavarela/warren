@@ -75,21 +75,72 @@ export class PnLService {
     try {
       logger.info('Starting P&L Excel file processing')
       
-      // Get active company configuration
-      const activeCompany = this.configService.getActiveCompany()
-      if (!activeCompany?.excelStructure) {
-        logger.info('No active company configuration found, using default structure')
-        return this.processWithDefaultStructure(buffer)
-      }
+      // First, check if this is our standard Vortex format
+      const isStandardFormat = await this.checkIfStandardFormat(buffer);
+      
+      if (isStandardFormat) {
+        logger.info('Detected standard Vortex P&L format')
+        // Get active company configuration
+        const activeCompany = this.configService.getActiveCompany()
+        if (!activeCompany?.excelStructure) {
+          logger.info('No active company configuration found, using default structure')
+          return this.processWithDefaultStructure(buffer)
+        }
 
-      logger.info(`Using configuration for company: ${activeCompany.name}`)
-      return this.processWithConfiguration(buffer, activeCompany.excelStructure)
+        logger.info(`Using configuration for company: ${activeCompany.name}`)
+        return this.processWithConfiguration(buffer, activeCompany.excelStructure)
+      } else {
+        logger.info('Non-standard P&L format detected, triggering AI analysis')
+        // Trigger AI analysis for non-standard format
+        throw new Error('Unable to detect standard Vortex format. Please use the AI wizard to map your custom format.');
+      }
     } catch (error) {
       logger.error('Error processing P&L Excel file:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       }
+    }
+  }
+  
+  private async checkIfStandardFormat(buffer: Buffer): Promise<boolean> {
+    try {
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(buffer)
+      
+      const worksheet = workbook.worksheets[0]
+      
+      // Check for Vortex standard markers:
+      // 1. Look for "Combined Pesos" or similar worksheet name
+      // 2. Check if row 8 contains "Total Revenue" or similar
+      // 3. Check if row 18 contains "Total Cost" or similar
+      
+      const hasVortexSheet = workbook.worksheets.some(ws => 
+        ws.name.toLowerCase().includes('combined') || 
+        ws.name.toLowerCase().includes('pesos')
+      );
+      
+      // Check specific cells for expected labels
+      const row8LabelCell = worksheet.getRow(8).getCell(1).value;
+      const row18LabelCell = worksheet.getRow(18).getCell(1).value;
+      
+      const row8Label = String(row8LabelCell || '').toLowerCase();
+      const row18Label = String(row18LabelCell || '').toLowerCase();
+      
+      const hasRevenueLabel = row8Label.includes('revenue') || 
+                             row8Label.includes('ingreso') || 
+                             row8Label.includes('total revenue');
+                             
+      const hasCostLabel = row18Label.includes('cost') || 
+                          row18Label.includes('costo') || 
+                          row18Label.includes('cogs');
+      
+      logger.info(`Format check - Sheet: ${hasVortexSheet}, Revenue: ${hasRevenueLabel}, Cost: ${hasCostLabel}`);
+      
+      return hasVortexSheet || (hasRevenueLabel && hasCostLabel);
+    } catch (error) {
+      logger.error('Error checking format:', error);
+      return false;
     }
   }
 

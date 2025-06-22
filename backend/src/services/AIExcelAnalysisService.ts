@@ -148,9 +148,9 @@ export class AIExcelAnalysisService {
       rows: []
     };
 
-    // Reduce sample size to avoid API rate limits
-    // Extract first 15 rows for analysis (reduced from 30)
-    const maxRows = Math.min(15, worksheet.rowCount);
+    // Extract more rows to get complete picture
+    // For financial data, we need to see at least 50-100 rows
+    const maxRows = Math.min(50, worksheet.rowCount);
     
     for (let rowNum = 1; rowNum <= maxRows; rowNum++) {
       const row = worksheet.getRow(rowNum);
@@ -159,8 +159,8 @@ export class AIExcelAnalysisService {
         cells: [] as any[]
       };
 
-      // Extract first 12 columns (reduced from 20)
-      const maxCols = Math.min(12, worksheet.columnCount);
+      // Extract first 20 columns to see all months
+      const maxCols = Math.min(20, worksheet.columnCount);
       
       for (let colNum = 1; colNum <= maxCols; colNum++) {
         const cell = row.getCell(colNum);
@@ -227,12 +227,17 @@ export class AIExcelAnalysisService {
     return `Analyze this Excel ${mappingType} financial data structure.
 
 IMPORTANT RULES:
-1. Dates are typically in row 2, 3, or 7 (headers above)
-2. Look for month names (Jan, January, Enero) or date values
-3. Metrics are usually labeled in the first 1-3 columns
-4. Common Spanish terms: Ingresos=Income, Gastos/Egresos=Expenses, Saldo=Balance
-5. Row numbers start at 1, column numbers start at 1
-6. Return actual row numbers where data is found, never 0
+1. Analyze ALL rows provided - financial metrics can be anywhere
+2. Dates/months can be in any row (commonly 1-10) and any format
+3. First column usually contains metric labels/descriptions
+4. Look for ALL financial terms in Spanish/English throughout the file
+5. Common patterns:
+   - Dates: Jan-24, Enero 2024, 01/2024, Q1-2024, etc.
+   - Revenue: Ingresos, Ventas, Sales, Revenue, Facturación
+   - Costs: Costos, Gastos, Egresos, Expenses, COGS
+   - Profit: Utilidad, Ganancia, Profit, Resultado
+6. Return EXACT row numbers where each metric is found
+7. Include ALL metrics you find, not just the requested ones
 
 Look for these specific metrics:
 ${Object.entries(metricDescriptions).map(([key, desc]) => `- ${key}: ${desc}`).join('\n')}
