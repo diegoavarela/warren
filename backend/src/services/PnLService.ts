@@ -80,16 +80,9 @@ export class PnLService {
       const isStandardFormat = await this.checkIfStandardFormat(buffer);
       
       if (isStandardFormat) {
-        logger.info('Detected standard Vortex P&L format')
-        // Get active company configuration
-        const activeCompany = this.configService.getActiveCompany()
-        if (!activeCompany?.excelStructure) {
-          logger.info('No active company configuration found, using default structure')
-          return this.processWithDefaultStructure(buffer)
-        }
-
-        logger.info(`Using configuration for company: ${activeCompany.name}`)
-        return this.processWithConfiguration(buffer, activeCompany.excelStructure)
+        logger.info('Detected standard P&L format')
+        // Use default structure processing for standard P&L files
+        return this.processWithDefaultStructure(buffer)
       } else {
         logger.info('Non-standard P&L format detected, triggering AI analysis')
         // Trigger AI analysis for non-standard format
