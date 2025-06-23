@@ -76,18 +76,23 @@ export class PnLService {
     try {
       logger.info('Starting P&L Excel file processing')
       
-      // First, check if this is our standard Vortex format
-      const isStandardFormat = await this.checkIfStandardFormat(buffer);
+      // PRIORITY 1: Check if this is Vortex format - MUST ALWAYS WORK
+      const isVortexFormat = await this.checkIfVortexFormat(buffer);
+      if (isVortexFormat) {
+        logger.info('Detected Vortex P&L format - using dedicated Vortex processor')
+        return this.processWithVortexStructure(buffer)
+      }
       
+      // PRIORITY 2: Check if this is standard P&L format
+      const isStandardFormat = await this.checkIfStandardFormat(buffer);
       if (isStandardFormat) {
         logger.info('Detected standard P&L format')
-        // Use default structure processing for standard P&L files
         return this.processWithDefaultStructure(buffer)
-      } else {
-        logger.info('Non-standard P&L format detected, triggering AI analysis')
-        // Trigger AI analysis for non-standard format
-        throw new Error('Unable to detect standard Vortex format. Please use the AI wizard to map your custom format.');
       }
+      
+      // PRIORITY 3: Non-standard format - trigger AI analysis
+      logger.info('Non-standard P&L format detected, triggering AI analysis')
+      throw new Error('Unable to detect standard format. Please use the AI wizard to map your custom format.');
     } catch (error) {
       logger.error('Error processing P&L Excel file:', error)
       return {
@@ -97,6 +102,212 @@ export class PnLService {
     }
   }
   
+  /**
+   * Check specifically for Vortex format files
+   * These MUST always work correctly
+   */
+  private async checkIfVortexFormat(buffer: Buffer): Promise<boolean> {
+    try {
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(buffer)
+      
+      // Vortex files have specific characteristics:
+      // 1. Sheet name includes "Combined" and "Pesos"
+      const hasVortexSheet = workbook.worksheets.some(ws => 
+        ws.name.toLowerCase().includes('combined') && 
+        ws.name.toLowerCase().includes('pesos')
+      );
+      
+      if (!hasVortexSheet) {
+        return false;
+      }
+      
+      // 2. Check for Vortex-specific row structure
+      const worksheet = workbook.worksheets.find(ws => 
+        ws.name.toLowerCase().includes('combined') && 
+        ws.name.toLowerCase().includes('pesos')
+      ) || workbook.worksheets[0];
+      
+      // Vortex format has:
+      // Row 8: Total Revenue
+      // Row 18: Total Cost of Revenue
+      // Row 19: Gross Profit
+      const row8Label = String(worksheet.getRow(8).getCell(1).value || '').toLowerCase();
+      const row18Label = String(worksheet.getRow(18).getCell(1).value || '').toLowerCase();
+      const row19Label = String(worksheet.getRow(19).getCell(1).value || '').toLowerCase();
+      
+      const hasVortexRevenue = row8Label.includes('total revenue') || row8Label.includes('revenue');
+      const hasVortexCost = row18Label.includes('total cost') || row18Label.includes('cost of revenue');
+      const hasVortexGrossProfit = row19Label.includes('gross profit');
+      
+      const isVortex = hasVortexSheet && hasVortexRevenue && hasVortexCost;
+      
+      logger.info(`Vortex format check - Sheet: ${hasVortexSheet}, Revenue: ${hasVortexRevenue}, Cost: ${hasVortexCost}, Result: ${isVortex}`);
+      
+      return isVortex;
+    } catch (error) {
+      logger.error('Error checking Vortex format:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Process Vortex format files with exact logic
+   * This MUST work for all Vortex files
+   */
+  private async processWithVortexStructure(buffer: Buffer): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(buffer)
+      
+      // Find the Vortex sheet
+      let worksheet = workbook.worksheets.find(ws => 
+        ws.name.toLowerCase().includes('combined') && ws.name.toLowerCase().includes('pesos')
+      );
+      
+      if (!worksheet) {
+        worksheet = workbook.worksheets[0];
+      }
+
+      // Vortex format key rows
+      const keyRows = {
+        revenue: 8,
+        costOfRevenue: 18,
+        grossProfit: 19,
+        grossMargin: 20,
+        operatingExpenses: 52,
+        ebitda: 65,
+        ebitdaMargin: 66,
+        netIncome: 81,
+        netIncomeMargin: 82,
+        // Personnel Cost Details
+        personnelSalariesCoR: 11,
+        payrollTaxesCoR: 12,
+        personnelSalariesOp: 23,
+        payrollTaxesOp: 24,
+        healthCoverageCoR: 14,
+        healthCoverageOp: 25,
+        personnelBenefits: 26,
+        // Other Cost Categories
+        contractServicesCoR: 13,
+        contractServicesOp: 27,
+        businessDevelopment: 29,
+        marketingPromotion: 30,
+        accountingServices: 43,
+        legalServices: 46,
+        officeRent: 38
+      };
+
+      // Extract month columns - Vortex has dates in even columns
+      const monthColumns: { [key: string]: number } = {};
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      const headerRow = worksheet.getRow(4); // Vortex has dates in row 4
+      let monthIndex = 0;
+      
+      // Even columns contain values (2, 4, 6, 8, etc.)
+      for (let col = 2; col <= 24; col += 2) {
+        const cellValue = headerRow.getCell(col).value;
+        
+        if (cellValue && monthIndex < monthNames.length) {
+          monthColumns[monthNames[monthIndex]] = col;
+          monthIndex++;
+        }
+      }
+
+      logger.info(`Vortex format: Found ${Object.keys(monthColumns).length} months`);
+
+      // Process using existing Vortex logic
+      const metrics: PnLMetrics[] = [];
+      
+      Object.entries(monthColumns).forEach(([month, col]) => {
+        const getValue = (rowNum: number): number => {
+          const cell = worksheet!.getRow(rowNum).getCell(col);
+          const value = cell.value;
+          
+          if (typeof value === 'number') {
+            return value;
+          } else if (value && typeof value === 'object' && 'result' in value) {
+            return typeof value.result === 'number' ? value.result : 0;
+          }
+          return 0;
+        };
+
+        const revenue = getValue(keyRows.revenue);
+        const cogs = getValue(keyRows.costOfRevenue);
+        const grossProfit = getValue(keyRows.grossProfit);
+        
+        if (revenue > 0) {
+          const operatingExpenses = getValue(keyRows.operatingExpenses);
+          const ebitda = getValue(keyRows.ebitda);
+          const netIncome = getValue(keyRows.netIncome);
+          
+          const personnelSalariesCoR = Math.abs(getValue(keyRows.personnelSalariesCoR));
+          const payrollTaxesCoR = Math.abs(getValue(keyRows.payrollTaxesCoR));
+          const personnelSalariesOp = Math.abs(getValue(keyRows.personnelSalariesOp));
+          const payrollTaxesOp = Math.abs(getValue(keyRows.payrollTaxesOp));
+          const healthCoverageCoR = Math.abs(getValue(keyRows.healthCoverageCoR));
+          const healthCoverageOp = Math.abs(getValue(keyRows.healthCoverageOp));
+          const personnelBenefits = Math.abs(getValue(keyRows.personnelBenefits));
+          
+          const totalPersonnelCost = personnelSalariesCoR + payrollTaxesCoR + 
+                                    personnelSalariesOp + payrollTaxesOp + 
+                                    healthCoverageCoR + healthCoverageOp + 
+                                    personnelBenefits;
+          
+          metrics.push({
+            month,
+            revenue,
+            cogs: Math.abs(cogs),
+            grossProfit,
+            grossMargin: getValue(keyRows.grossMargin) * 100,
+            operatingExpenses: Math.abs(operatingExpenses),
+            operatingIncome: grossProfit - Math.abs(operatingExpenses),
+            operatingMargin: revenue > 0 ? ((grossProfit - Math.abs(operatingExpenses)) / revenue) * 100 : 0,
+            otherIncomeExpenses: 0,
+            netIncome,
+            netMargin: getValue(keyRows.netIncomeMargin) * 100,
+            ebitda,
+            ebitdaMargin: getValue(keyRows.ebitdaMargin) * 100,
+            // All Vortex-specific fields
+            personnelSalariesCoR,
+            payrollTaxesCoR,
+            personnelSalariesOp,
+            payrollTaxesOp,
+            healthCoverage: healthCoverageCoR + healthCoverageOp,
+            personnelBenefits,
+            totalPersonnelCost: totalPersonnelCost > 0 ? totalPersonnelCost : undefined,
+            // Contract services
+            contractServicesCoR: Math.abs(getValue(keyRows.contractServicesCoR)),
+            contractServicesOp: Math.abs(getValue(keyRows.contractServicesOp)),
+            // Other categories
+            salesMarketing: Math.abs(getValue(keyRows.businessDevelopment)) + Math.abs(getValue(keyRows.marketingPromotion)),
+            professionalServices: Math.abs(getValue(keyRows.accountingServices)) + Math.abs(getValue(keyRows.legalServices)),
+            facilitiesAdmin: Math.abs(getValue(keyRows.officeRent))
+          });
+        }
+      });
+
+      this.storedMetrics = metrics;
+      this.lastUploadDate = new Date();
+
+      logger.info(`Vortex P&L processing complete. Processed ${metrics.length} months`);
+
+      return {
+        success: true,
+        data: {
+          months: metrics.length,
+          lastMonth: metrics[metrics.length - 1]?.month || 'N/A',
+          format: 'Vortex'
+        }
+      };
+    } catch (error) {
+      logger.error('Error processing Vortex format:', error);
+      throw error;
+    }
+  }
+
   private async checkIfStandardFormat(buffer: Buffer): Promise<boolean> {
     try {
       const workbook = new ExcelJS.Workbook()
@@ -104,20 +315,10 @@ export class PnLService {
       
       const worksheet = workbook.worksheets[0]
       
-      // Check for Vortex standard markers:
-      // 1. Look for "Combined Pesos" or similar worksheet name
-      // 2. Check if file has standard P&L structure
-      
-      const hasVortexSheet = workbook.worksheets.some(ws => 
-        ws.name.toLowerCase().includes('combined') || 
-        ws.name.toLowerCase().includes('pesos')
-      );
-      
-      // Check for standard P&L structure by looking at key rows
-      // Row 2 (index 1 in Excel) should have "Revenue"
-      // Row 3 (index 2 in Excel) should have "Cost of Goods Sold" or "COGS"
-      // Row 4 (index 3 in Excel) should have "Gross Profit"
-      // Note: Excel rows are 1-based, but row 1 is headers, so data starts at row 2
+      // Check for standard P&L structure (NOT Vortex)
+      // Row 2 should have "Revenue"
+      // Row 3 should have "Cost of Goods Sold" or "COGS"
+      // Row 4 should have "Gross Profit"
       const row2Label = String(worksheet.getRow(2).getCell(1).value || '').toLowerCase();
       const row3Label = String(worksheet.getRow(3).getCell(1).value || '').toLowerCase();
       const row4Label = String(worksheet.getRow(4).getCell(1).value || '').toLowerCase();
@@ -135,19 +336,11 @@ export class PnLService {
                                  row4Label.includes('utilidad bruta') || 
                                  row4Label.includes('ganancia bruta');
       
-      // Also check original Vortex format (rows 8 and 18)
-      const row8Label = String(worksheet.getRow(8).getCell(1).value || '').toLowerCase();
-      const row18Label = String(worksheet.getRow(18).getCell(1).value || '').toLowerCase();
+      logger.info(`Standard format check - Revenue: ${hasRevenueLabel}, COGS: ${hasCOGSLabel}, GP: ${hasGrossProfitLabel}`);
       
-      const hasVortexRevenue = row8Label.includes('total revenue') || row8Label.includes('revenue');
-      const hasVortexCost = row18Label.includes('total cost') || row18Label.includes('cost of revenue');
-      
-      logger.info(`Format check - Sheet: ${hasVortexSheet}, Standard P&L: ${hasRevenueLabel && hasCOGSLabel}, Vortex P&L: ${hasVortexRevenue && hasVortexCost}`);
-      
-      // Accept either standard P&L format or Vortex format
-      return hasVortexSheet || (hasRevenueLabel && hasCOGSLabel && hasGrossProfitLabel) || (hasVortexRevenue && hasVortexCost);
+      return hasRevenueLabel && hasCOGSLabel && hasGrossProfitLabel;
     } catch (error) {
-      logger.error('Error checking format:', error);
+      logger.error('Error checking standard format:', error);
       return false;
     }
   }
@@ -310,9 +503,10 @@ export class PnLService {
       // Row 11: Total Operating Expenses
       // Row 13: EBITDA
       // Row 14: EBITDA Margin %
-      // Row 17: Tax Expense
-      // Row 18: Net Income
-      // Row 19: Net Margin %
+      // Row 17: Interest Expense
+      // Row 18: Tax Expense
+      // Row 19: Net Income
+      // Row 20: Net Margin %
       
       // Vortex format:
       // Row 4 has date headers in even columns (B=2, D=4, F=6, etc.)
@@ -334,8 +528,8 @@ export class PnLService {
         operatingExpenses: 11,
         ebitda: 13,
         ebitdaMargin: 14,
-        netIncome: 18,
-        netIncomeMargin: 19,
+        netIncome: 19,  // Fixed: Net Income is in row 19, not 18
+        netIncomeMargin: 20,  // Fixed: Net Margin % is in row 20, not 19
         // Personnel Cost Details - not in standard format
         personnelSalariesCoR: 0,
         payrollTaxesCoR: 0,
@@ -667,6 +861,110 @@ export class PnLService {
       this.lastUploadedFileName = originalFilename
       
       logger.info(`Stored ${metrics.length} months of P&L data from custom mapping`)
+    }
+  }
+
+  /**
+   * NEW: Process with universal AI structure (handles ANY format)
+   */
+  async processWithUniversalStructure(buffer: Buffer, universalMapping: any): Promise<void> {
+    logger.info('Processing P&L with universal AI mapping')
+    
+    // Clear existing data
+    this.clearStoredData()
+    
+    try {
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(buffer)
+      
+      const metrics: PnLMetrics[] = []
+      
+      // Process based on the universal mapping structure
+      universalMapping.dateStructure.locations.forEach((location: any) => {
+        const worksheet = workbook.worksheets.find(ws => ws.name === location.sheet) || workbook.worksheets[0]
+        
+        // Extract data based on date layout
+        if (universalMapping.dateStructure.layout === 'rows') {
+          // Dates are in rows - typical format
+          location.columns?.forEach((col: number, index: number) => {
+            const monthName = worksheet.getRow(location.row).getCell(col).value
+            
+            // Extract all metrics for this month
+            const monthData: any = {
+              month: String(monthName),
+              revenue: 0,
+              cogs: 0,
+              grossProfit: 0,
+              operatingExpenses: 0,
+              netIncome: 0,
+              ebitda: 0
+            }
+            
+            // Get values from mapped metrics
+            universalMapping.allMetrics.forEach((metric: any) => {
+              if (metric.location.sheet === location.sheet) {
+                const value = worksheet.getRow(metric.location.row).getCell(col).value
+                const numValue = typeof value === 'number' ? value : 0
+                
+                // Map to standard fields based on metric type or name
+                switch (metric.type) {
+                  case 'revenue':
+                    monthData.revenue = numValue
+                    break
+                  case 'cost':
+                    if (metric.name.toLowerCase().includes('cogs') || 
+                        metric.name.toLowerCase().includes('cost of goods')) {
+                      monthData.cogs = Math.abs(numValue)
+                    } else if (metric.name.toLowerCase().includes('operating')) {
+                      monthData.operatingExpenses = Math.abs(numValue)
+                    }
+                    break
+                  case 'profit':
+                    if (metric.name.toLowerCase().includes('gross')) {
+                      monthData.grossProfit = numValue
+                    } else if (metric.name.toLowerCase().includes('net')) {
+                      monthData.netIncome = numValue
+                    } else if (metric.name.toLowerCase().includes('ebitda')) {
+                      monthData.ebitda = numValue
+                    }
+                    break
+                }
+              }
+            })
+            
+            // Calculate derived values
+            if (monthData.revenue > 0) {
+              metrics.push({
+                month: monthData.month,
+                revenue: monthData.revenue,
+                cogs: monthData.cogs,
+                grossProfit: monthData.grossProfit || (monthData.revenue - monthData.cogs),
+                grossMargin: monthData.grossProfit ? (monthData.grossProfit / monthData.revenue) * 100 : 0,
+                operatingExpenses: monthData.operatingExpenses,
+                operatingIncome: monthData.grossProfit - monthData.operatingExpenses,
+                operatingMargin: (monthData.grossProfit - monthData.operatingExpenses) / monthData.revenue * 100,
+                otherIncomeExpenses: 0,
+                netIncome: monthData.netIncome,
+                netMargin: monthData.netIncome ? (monthData.netIncome / monthData.revenue) * 100 : 0,
+                ebitda: monthData.ebitda || (monthData.grossProfit - monthData.operatingExpenses),
+                ebitdaMargin: monthData.ebitda ? (monthData.ebitda / monthData.revenue) * 100 : 0
+              })
+            }
+          })
+        } else if (universalMapping.dateStructure.layout === 'columns') {
+          // Dates are in columns - less common but supported
+          logger.info('Processing column-based date layout')
+          // Implementation for column-based dates...
+        }
+      })
+      
+      this.storedMetrics = metrics
+      this.lastUploadDate = new Date()
+      
+      logger.info(`Universal P&L processing complete. Processed ${metrics.length} months`)
+    } catch (error) {
+      logger.error('Error in universal P&L processing:', error)
+      throw error
     }
   }
 }

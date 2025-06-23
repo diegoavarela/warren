@@ -162,6 +162,8 @@ export const DashboardPage: React.FC = () => {
       } else {
         const response = await cashflowService.getDashboard()
         console.log('Dashboard response:', response.data.data)
+        console.log('Dashboard hasData:', response.data.data?.hasData)
+        console.log('Dashboard uploadedFileName:', response.data.data?.uploadedFileName)
         
         // Check if the response has actual data or is just an empty/default response
         if (response.data.data && response.data.data.hasData) {
@@ -288,6 +290,8 @@ export const DashboardPage: React.FC = () => {
     
     try {
       await cashflowService.uploadFile(uploadedFile)
+      // Add a small delay to ensure backend has processed the file
+      await new Promise(resolve => setTimeout(resolve, 500))
       // Reload dashboard data
       await loadDashboard()
     } catch (error: any) {

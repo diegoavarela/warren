@@ -7,6 +7,7 @@ import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
 import { ExtendedFinancialService } from '../services/ExtendedFinancialService';
 import { InvestmentDiagnosticService } from '../services/InvestmentDiagnosticService';
 import { FileUploadService } from '../services/FileUploadService';
+import { ExtendedFinancialData } from '../interfaces/FinancialData';
 import { pool } from '../config/database';
 import { logger } from '../utils/logger';
 
@@ -48,30 +49,43 @@ export class CashflowController {
       // Mark processing as started
       await this.fileUploadService.markProcessingStarted(fileUploadId);
 
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(req.file.buffer);
-
-      const worksheet = workbook.getWorksheet(1);
-      if (!worksheet) {
-        await this.fileUploadService.markProcessingFailed(fileUploadId, 'No worksheet found in Excel file');
-        return next(createError('No worksheet found in Excel file', 400));
+      // Process file based on format detection
+      let metrics: any[];
+      let format: string;
+      
+      try {
+        const result = await this.cashflowService.processExcelFile(req.file.buffer, req.file.originalname);
+        metrics = result.metrics;
+        format = result.format;
+        logger.info(`Cashflow file uploaded by user ${req.user?.email}, format: ${format}, ${metrics.length} months processed`);
+      } catch (error: any) {
+        if (error.message.includes('AI wizard')) {
+          // Format not detected, return error that triggers AI wizard
+          await this.fileUploadService.markProcessingFailed(fileUploadId, error.message);
+          return res.status(400).json({
+            success: false,
+            error: error.message,
+            requiresMapping: true
+          });
+        }
+        throw error;
       }
-
-      const metrics = this.cashflowService.parseWorksheet(worksheet, req.file.originalname);
-      logger.info(`Cashflow file uploaded by user ${req.user?.email}, ${metrics.length} months processed`);
 
       // Check if no data was found
       if (metrics.length === 0) {
         throw new Error("Unable to detect data structure in the Excel file. Please use the AI wizard to map your custom format.");
       }
 
-      // Also parse extended financial data (operational costs, banks, taxes)
-      const extendedData = this.extendedFinancialService.parseExtendedFinancialData(worksheet);
-      logger.info(`Extended financial data parsed: ${extendedData.operational.length} operational months processed`);
-
-      // Check if no data was found
-      if (metrics.length === 0) {
-        throw new Error("Unable to detect data structure in the Excel file. Please use the AI wizard to map your custom format.");
+      // For Vortex format, also parse extended financial data
+      let extendedData: ExtendedFinancialData = { operational: [], banks: [], taxes: [], investments: [] };
+      if (format === 'Vortex') {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+        const worksheet = workbook.getWorksheet(1);
+        if (worksheet) {
+          extendedData = this.extendedFinancialService.parseExtendedFinancialData(worksheet);
+          logger.info(`Extended financial data parsed: ${extendedData.operational.length} operational months processed`);
+        }
       }
 
       // Calculate date range
@@ -88,7 +102,8 @@ export class CashflowController {
         extendedData: {
           operational: extendedData.operational.length,
           banks: extendedData.banks.length,
-          taxes: extendedData.taxes.length
+          taxes: extendedData.taxes.length,
+          investments: extendedData.investments.length
         },
         metrics: {
           totalInflows: metrics.reduce((sum, m) => sum + m.totalInflow, 0),

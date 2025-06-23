@@ -434,4 +434,61 @@ export class ExcelAnalysisController {
 
     return sample;
   }
+
+  /**
+   * NEW: Universal Excel analysis that can handle ANY format
+   */
+  async analyzeUniversal(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      logger.info('Universal Excel analysis request received', {
+        hasFile: !!req.file,
+        fileName: req.file?.originalname,
+        fileSize: req.file?.size,
+        mappingType: req.body?.mappingType
+      });
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'No file uploaded'
+        });
+      }
+
+      const { mappingType } = req.body;
+      if (!mappingType || !['cashflow', 'pnl'].includes(mappingType)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid mapping type. Must be "cashflow" or "pnl"'
+        });
+      }
+
+      logger.info(`Starting UNIVERSAL analysis for ${mappingType} Excel file`);
+
+      // Use the new universal analyzer
+      const result = await this.aiService.analyzeUniversalStructure(
+        req.file.buffer,
+        mappingType as 'cashflow' | 'pnl'
+      );
+
+      // Add file info
+      result.mapping.fileName = req.file.originalname;
+
+      res.json({
+        success: true,
+        data: {
+          ...result,
+          message: 'Universal analysis completed - found ' + result.allMetrics.length + ' metrics'
+        }
+      });
+
+    } catch (error: any) {
+      logger.error('Universal Excel analysis error:', error);
+      
+      res.status(500).json({
+        success: false,
+        error: 'Failed to perform universal Excel analysis',
+        details: error.message
+      });
+    }
+  }
 }

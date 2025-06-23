@@ -63,4 +63,11 @@ router.post(
   excelAnalysisController.processWithMapping.bind(excelAnalysisController)
 );
 
+// NEW: Universal Excel analysis
+router.post(
+  '/analyze-universal',
+  upload.single('file'),
+  excelAnalysisController.analyzeUniversal.bind(excelAnalysisController)
+);
+
 export const excelAnalysisRouter = router;

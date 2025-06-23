@@ -21,6 +21,186 @@ let uploadedFileName: string = '';
 
 export class CashflowServiceV2 {
   /**
+   * Check if this is a Vortex format cashflow file
+   */
+  async checkIfVortexFormat(buffer: Buffer): Promise<boolean> {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) return false;
+      
+      // Vortex cashflow has specific characteristics:
+      // 1. Dates in row 3
+      // 2. TOTAL INCOME in row 24
+      // 3. TOTAL EXPENSE in row 100
+      // 4. Final Balance in row 104
+      
+      const row24 = worksheet.getRow(24).getCell(1).value;
+      const row100 = worksheet.getRow(100).getCell(1).value;
+      const row104 = worksheet.getRow(104).getCell(1).value;
+      
+      const hasIncome = String(row24 || '').toLowerCase().includes('total income');
+      const hasExpense = String(row100 || '').toLowerCase().includes('total expense');
+      const hasBalance = String(row104 || '').toLowerCase().includes('final balance');
+      
+      const isVortex = hasIncome && hasExpense && hasBalance;
+      
+      logger.info(`Vortex cashflow format check - Income: ${hasIncome}, Expense: ${hasExpense}, Balance: ${hasBalance}, Result: ${isVortex}`);
+      
+      return isVortex;
+    } catch (error) {
+      logger.error('Error checking Vortex format:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if this is a standard cashflow format
+   */
+  async checkIfStandardFormat(buffer: Buffer): Promise<boolean> {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) return false;
+      
+      // Standard cashflow format:
+      // Row 1: Headers with months
+      // Row 2: Beginning Balance
+      // Row 3: Total Income
+      // Row 4: Total Expenses
+      
+      const row2Label = String(worksheet.getRow(2).getCell(1).value || '').toLowerCase();
+      const row3Label = String(worksheet.getRow(3).getCell(1).value || '').toLowerCase();
+      const row4Label = String(worksheet.getRow(4).getCell(1).value || '').toLowerCase();
+      
+      // Check for exact labels first, then fuzzy match
+      const hasBeginning = row2Label === 'beginning balance' || row2Label.includes('beginning') || row2Label.includes('inicial');
+      const hasIncome = row3Label === 'total income' || row3Label.includes('income') || row3Label.includes('ingreso');
+      const hasExpenses = row4Label === 'total expenses' || row4Label.includes('expense') || row4Label.includes('egreso');
+      
+      logger.info(`Standard cashflow format check - Row2: '${row2Label}', Row3: '${row3Label}', Row4: '${row4Label}'`);
+      logger.info(`Standard cashflow format check - Beginning: ${hasBeginning}, Income: ${hasIncome}, Expenses: ${hasExpenses}`);
+      
+      return hasBeginning && hasIncome && hasExpenses;
+    } catch (error) {
+      logger.error('Error checking standard format:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Process file based on detected format
+   */
+  async processExcelFile(buffer: Buffer, filename?: string): Promise<{ metrics: MonthlyMetrics[], format: string }> {
+    // PRIORITY 1: Check if this is Vortex format - MUST ALWAYS WORK
+    const isVortexFormat = await this.checkIfVortexFormat(buffer);
+    if (isVortexFormat) {
+      logger.info('Detected Vortex cashflow format - using dedicated processor');
+      return this.processVortexFormat(buffer, filename);
+    }
+    
+    // PRIORITY 2: Check if this is standard format
+    const isStandardFormat = await this.checkIfStandardFormat(buffer);
+    if (isStandardFormat) {
+      logger.info('Detected standard cashflow format');
+      return this.processStandardFormat(buffer, filename);
+    }
+    
+    // PRIORITY 3: Non-standard format - trigger AI analysis
+    logger.info('Non-standard cashflow format detected');
+    throw new Error('Unable to detect standard format. Please use the AI wizard to map your custom format.');
+  }
+
+  /**
+   * Process Vortex format (current implementation)
+   */
+  private async processVortexFormat(buffer: Buffer, filename?: string): Promise<{ metrics: MonthlyMetrics[], format: string }> {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      throw new Error('No worksheet found');
+    }
+    
+    const metrics = this.parseWorksheet(worksheet, filename);
+    return { metrics, format: 'Vortex' };
+  }
+
+  /**
+   * Process standard format files
+   */
+  private async processStandardFormat(buffer: Buffer, filename?: string): Promise<{ metrics: MonthlyMetrics[], format: string }> {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      throw new Error('No worksheet found');
+    }
+    
+    // Clear previous data and store filename
+    parsedMetrics = [];
+    if (filename) {
+      uploadedFileName = filename;
+    }
+    
+    // Parse standard format
+    const metrics: MonthlyMetrics[] = [];
+    
+    // Get months from header row
+    const headerRow = worksheet.getRow(1);
+    const monthColumns: Array<{col: number, month: string}> = [];
+    
+    logger.info(`Processing header row, total columns: ${headerRow.cellCount}`);
+    
+    for (let col = 2; col <= 13; col++) {
+      const cellValue = headerRow.getCell(col).value;
+      logger.info(`Column ${col} value: ${cellValue}`);
+      if (cellValue) {
+        monthColumns.push({
+          col,
+          month: String(cellValue).split(' ')[0] // Extract month name
+        });
+      }
+    }
+    
+    logger.info(`Found ${monthColumns.length} month columns`);
+    
+    // Extract values for each month
+    for (const monthInfo of monthColumns) {
+      const beginningBalance = this.toNumber(worksheet.getRow(2).getCell(monthInfo.col).value);
+      const totalIncome = this.toNumber(worksheet.getRow(3).getCell(monthInfo.col).value);
+      const totalExpenses = this.toNumber(worksheet.getRow(4).getCell(monthInfo.col).value);
+      const netCashFlow = this.toNumber(worksheet.getRow(5).getCell(monthInfo.col).value);
+      const endingBalance = this.toNumber(worksheet.getRow(6).getCell(monthInfo.col).value);
+      const lowestBalance = this.toNumber(worksheet.getRow(7).getCell(monthInfo.col).value);
+      
+      metrics.push({
+        date: new Date(`${monthInfo.month} 1, 2024`),
+        month: monthInfo.month,
+        columnIndex: monthInfo.col,
+        columnLetter: this.getColumnLetter(monthInfo.col),
+        totalInflow: totalIncome,
+        totalOutflow: -Math.abs(totalExpenses), // Ensure expenses are negative
+        finalBalance: endingBalance,
+        lowestBalance: lowestBalance,
+        monthlyGeneration: netCashFlow
+      });
+    }
+    
+    // Store the metrics globally for dashboard generation
+    parsedMetrics = metrics;
+    logger.info(`Standard cashflow format: Stored ${metrics.length} months`);
+    
+    return { metrics, format: 'Standard' };
+  }
+
+  /**
    * Parse the Excel worksheet and extract monthly metrics
    */
   parseWorksheet(worksheet: ExcelJS.Worksheet, filename?: string): MonthlyMetrics[] {
