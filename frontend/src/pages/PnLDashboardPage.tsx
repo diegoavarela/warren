@@ -26,6 +26,7 @@ import { currencyService } from '../services/currencyService'
 import { ExchangeRateModal } from '../components/ExchangeRateModal'
 import { PerformanceHeatMap } from '../components/PerformanceHeatMap'
 import { TrendForecastChart } from '../components/TrendForecastChart'
+import { KeyInsights } from '../components/KeyInsights'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -39,6 +40,7 @@ import {
   Legend,
   Filler
 } from 'chart.js'
+import { useTranslation } from 'react-i18next'
 
 ChartJS.register(
   CategoryScale,
@@ -127,6 +129,7 @@ interface PnLDashboardData {
 }
 
 export const PnLDashboardPage: React.FC = () => {
+  const { t } = useTranslation()
   const [data, setData] = useState<PnLDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -449,23 +452,48 @@ export const PnLDashboardPage: React.FC = () => {
   const getRevenueChartData = () => {
     if (!data?.chartData) return null
 
+    // Calculate month-over-month growth for revenue
+    const revenueGrowths = data.chartData.map((d, idx) => {
+      if (idx === 0) return 0
+      const prevRevenue = data.chartData[idx - 1].revenue
+      if (!prevRevenue || prevRevenue === 0) return 0
+      return ((d.revenue - prevRevenue) / prevRevenue) * 100
+    })
+
+    // Get traffic light colors based on growth
+    const revenueColors = revenueGrowths.map(growth => {
+      if (growth > 5) return '#10B981' // Green - strong growth
+      if (growth >= 0) return '#F59E0B' // Yellow/Amber - flat/slight growth
+      return '#EF4444' // Red - negative growth
+    })
+
     return {
-      labels: data.chartData.map(d => d.month),
+      labels: data.chartData.map((d, idx) => {
+        if (idx === 0) return d.month
+        const growth = revenueGrowths[idx]
+        return `${d.month} (${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%)`
+      }),
       datasets: [
         {
           label: 'Revenue',
           data: data.chartData.map(d => d.revenue),
-          backgroundColor: '#059669'
+          backgroundColor: revenueColors,
+          borderColor: revenueColors,
+          borderWidth: 2
         },
         {
           label: 'Gross Profit',
           data: data.chartData.map(d => d.grossProfit),
-          backgroundColor: '#2563EB'
+          backgroundColor: 'rgba(37, 99, 235, 0.6)',
+          borderColor: '#2563EB',
+          borderWidth: 1
         },
         {
           label: 'Net Income',
           data: data.chartData.map(d => d.netIncome),
-          backgroundColor: '#7C3AED'
+          backgroundColor: 'rgba(124, 58, 237, 0.6)',
+          borderColor: '#7C3AED',
+          borderWidth: 1
         }
       ]
     }
@@ -556,16 +584,16 @@ export const PnLDashboardPage: React.FC = () => {
             <div className="mb-6">
               <h1 className="text-3xl font-bold text-gray-900 flex items-center">
                 <ChartBarIcon className="h-8 w-8 mr-3 text-emerald-600" />
-                Profit & Loss Dashboard
+                {t('pnl.dashboard.title')}
               </h1>
-              <p className="text-gray-600 mt-2">Upload your P&L statement to view financial insights</p>
+              <p className="text-gray-600 mt-2">{t('pnl.dashboard.subtitle')}</p>
             </div>
 
             {/* File Upload Section */}
             <FileUploadSection
               onFileUpload={handleUpload}
-              title="Upload P&L Statement"
-              description="Import your Profit & Loss Excel file to analyze financial performance"
+              title={t('pnl.upload.title')}
+              description={t('pnl.upload.description')}
               uploadedFileName={data?.uploadedFileName}
               isRealData={false}
               variant="pnl"
@@ -585,8 +613,8 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="mb-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-xl shadow-lg">
           <div className="flex items-center justify-center">
             <SparklesIcon className="h-5 w-5 mr-2" />
-            <span className="font-medium">Demo Mode</span>
-            <span className="ml-2 text-emerald-100">- This is sample P&L data for demonstration purposes</span>
+            <span className="font-medium">{t('pnl.demoMode.title')}</span>
+            <span className="ml-2 text-emerald-100">- {t('pnl.demoMode.description')}</span>
           </div>
         </div>
       )}
@@ -597,15 +625,15 @@ export const PnLDashboardPage: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
               <ChartBarIcon className="h-8 w-8 mr-3 text-emerald-600" />
-              Profit & Loss Dashboard
+              {t('pnl.dashboard.title')}
             </h1>
-            <p className="text-gray-600 mt-2">Financial performance analysis and insights</p>
+            <p className="text-gray-600 mt-2">{t('pnl.dashboard.financialPerformance')}</p>
           </div>
           {data?.hasData && (
             <PremiumPDFExport
               data={data}
               type="pnl"
-              title="P&L Financial Report"
+              title={t('pnl.pdf.title')}
             />
           )}
         </div>
@@ -615,8 +643,8 @@ export const PnLDashboardPage: React.FC = () => {
       {!isDemoMode ? (
         <FileUploadSection
           onFileUpload={handleUpload}
-          title="Upload P&L Statement"
-          description="Import your Profit & Loss Excel file to analyze financial performance"
+          title={t('pnl.upload.title')}
+          description={t('pnl.upload.description')}
           uploadedFileName={data?.uploadedFileName}
           isRealData={data?.hasData}
           variant="pnl"
@@ -626,8 +654,8 @@ export const PnLDashboardPage: React.FC = () => {
           <div className="flex items-center">
             <SparklesIcon className="h-6 w-6 text-emerald-600 mr-3" />
             <div>
-              <h3 className="text-lg font-semibold text-emerald-800">Demo Mode Active</h3>
-              <p className="text-emerald-600">File upload is disabled in demo mode. The P&L data shown below is sample data for demonstration purposes.</p>
+              <h3 className="text-lg font-semibold text-emerald-800">{t('pnl.demoMode.active')}</h3>
+              <p className="text-emerald-600">{t('pnl.demoMode.uploadDisabled')}</p>
             </div>
           </div>
         </div>
@@ -639,11 +667,11 @@ export const PnLDashboardPage: React.FC = () => {
           <div className="flex items-center justify-center mb-2">
             <div className="inline-flex items-center bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-1">
               <span className="px-3 py-2 text-sm font-medium text-gray-600 flex items-center">
-                Compare against:
+                {t('pnl.comparison.compareAgainst')}
                 <button
                   onClick={() => setShowComparisonHelpModal(true)}
                   className="ml-1.5 p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-                  title="Learn about comparison periods"
+                  title={t('pnl.comparison.helpTitle')}
                 >
                   <QuestionMarkCircleIcon className="h-4 w-4" />
                 </button>
@@ -656,7 +684,7 @@ export const PnLDashboardPage: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                Previous Month
+                {t('pnl.comparison.previousMonth')}
               </button>
               <button
                 onClick={() => setComparisonPeriod('quarter')}
@@ -666,7 +694,7 @@ export const PnLDashboardPage: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                Previous Quarter
+                {t('pnl.comparison.previousQuarter')}
               </button>
               <button
                 onClick={() => setComparisonPeriod('year')}
@@ -676,7 +704,7 @@ export const PnLDashboardPage: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                Same Period Last Year
+                {t('pnl.comparison.sameLastYear')}
               </button>
             </div>
           </div>
@@ -687,7 +715,7 @@ export const PnLDashboardPage: React.FC = () => {
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                Historic year-over-year data not available. Showing month-over-month comparison.
+                {t('pnl.comparison.noYearData')}
               </p>
             </div>
           )}
@@ -701,7 +729,7 @@ export const PnLDashboardPage: React.FC = () => {
             <div className="flex items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {data.currentMonth.month} P&L Overview
+                  {data.currentMonth.month} {t('pnl.overview.title')}
                 </h2>
                 {/* Exchange Rate Display */}
                 {settings.enableCurrencyConversion && displayCurrency !== baseCurrency && currentExchangeRate && (
@@ -709,7 +737,7 @@ export const PnLDashboardPage: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
                       <p className="text-xs text-gray-700">
-                        Exchange Rate: 
+                        {t('pnl.exchangeRate.label')} 
                         <span className="ml-1 font-semibold text-gray-900">
                           1 {baseCurrency} = {currentExchangeRate.toFixed(2)} {displayCurrency}
                         </span>
@@ -719,7 +747,7 @@ export const PnLDashboardPage: React.FC = () => {
                       onClick={() => setShowExchangeRateModal(true)}
                       className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
                     >
-                      Edit
+                      {t('common.edit')}
                     </button>
                   </div>
                 )}
@@ -740,7 +768,7 @@ export const PnLDashboardPage: React.FC = () => {
               <button
                 onClick={() => setShowCurrentPnLHelpModal(true)}
                 className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Understanding P&L metrics"
+                title={t('pnl.help.understandingMetrics')}
               >
                 <QuestionMarkCircleIcon className="h-5 w-5" />
               </button>
@@ -774,7 +802,7 @@ export const PnLDashboardPage: React.FC = () => {
                       )
                     })()}
                   </div>
-                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Revenue</h3>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('pnl.revenue')}</h3>
                   <p className="text-xl font-bold text-gray-900">
                     {formatCurrency(data.currentMonth.revenue)}
                   </p>
@@ -813,10 +841,10 @@ export const PnLDashboardPage: React.FC = () => {
                       <div className="text-sm font-semibold text-blue-600">
                         {formatPercentage(data.currentMonth.grossMargin)}
                       </div>
-                      <div className="text-xs text-gray-500">of sales</div>
+                      <div className="text-xs text-gray-500">{t('pnl.ofSales')}</div>
                     </div>
                   </div>
-                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Gross Profit</h3>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('pnl.grossProfit')}</h3>
                   <p className="text-xl font-bold text-gray-900">
                     {formatCurrency(data.currentMonth.grossProfit)}
                   </p>
@@ -855,10 +883,10 @@ export const PnLDashboardPage: React.FC = () => {
                       <div className="text-sm font-semibold text-indigo-600">
                         {formatPercentage(data.currentMonth.operatingMargin)}
                       </div>
-                      <div className="text-xs text-gray-500">of sales</div>
+                      <div className="text-xs text-gray-500">{t('pnl.ofSales')}</div>
                     </div>
                   </div>
-                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Operating Income</h3>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('pnl.operatingIncome')}</h3>
                   <p className="text-xl font-bold text-gray-900">
                     {formatCurrency(data.currentMonth.operatingIncome)}
                   </p>
@@ -897,10 +925,10 @@ export const PnLDashboardPage: React.FC = () => {
                       <div className="text-sm font-semibold text-purple-600">
                         {formatPercentage(data.currentMonth.ebitdaMargin)}
                       </div>
-                      <div className="text-xs text-gray-500">of sales</div>
+                      <div className="text-xs text-gray-500">{t('pnl.ofSales')}</div>
                     </div>
                   </div>
-                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">EBITDA</h3>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('pnl.ebitda')}</h3>
                   <p className="text-xl font-bold text-gray-900">
                     {formatCurrency(data.currentMonth.ebitda)}
                   </p>
@@ -945,10 +973,10 @@ export const PnLDashboardPage: React.FC = () => {
                       }`}>
                         {formatPercentage(data.currentMonth.netMargin)}
                       </div>
-                      <div className="text-xs text-gray-500">of sales</div>
+                      <div className="text-xs text-gray-500">{t('pnl.ofSales')}</div>
                     </div>
                   </div>
-                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Net Income</h3>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('pnl.netIncome')}</h3>
                   <p className={`text-xl font-bold ${
                     data.currentMonth.netIncome >= 0 ? 'text-gray-900' : 'text-red-600'
                   }`}>
@@ -962,26 +990,44 @@ export const PnLDashboardPage: React.FC = () => {
         </div>
       )}
 
+      {/* Key Insights Section */}
+      {data?.hasData && <KeyInsights data={data} type="pnl" />}
+
       {/* Revenue Growth Analysis */}
       {data.chartData && data.chartData.length > 1 && (
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Revenue Growth Analysis</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('pnl.revenueGrowth.title')}</h3>
             <button
               onClick={() => setShowRevenueGrowthHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Understanding revenue growth metrics"
+              title={t('pnl.help.revenueGrowth')}
             >
               <QuestionMarkCircleIcon className="h-5 w-5" />
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Month over Month Growth */}
-            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
-              <p className="text-sm text-gray-600 mb-2">Month-over-Month Growth</p>
+            <div className={`text-center p-4 rounded-xl ${
+              (() => {
+                const current = data.chartData[data.chartData.length - 1].revenue;
+                const previous = data.chartData[data.chartData.length - 2].revenue;
+                const growth = ((current - previous) / previous) * 100;
+                if (growth > 5) return 'bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200';
+                if (growth >= 0) return 'bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200';
+                return 'bg-gradient-to-br from-red-50 to-rose-50 border border-red-200';
+              })()}
+            }`}>
+              <p className="text-sm text-gray-600 mb-2">{t('pnl.revenueGrowth.monthOverMonth')}</p>
               <p className={`text-2xl font-bold ${
-                data.chartData[data.chartData.length - 1].revenue > data.chartData[data.chartData.length - 2].revenue
-                  ? 'text-green-600' : 'text-red-600'
+                (() => {
+                  const current = data.chartData[data.chartData.length - 1].revenue;
+                  const previous = data.chartData[data.chartData.length - 2].revenue;
+                  const growth = ((current - previous) / previous) * 100;
+                  if (growth > 5) return 'text-emerald-600';
+                  if (growth >= 0) return 'text-amber-600';
+                  return 'text-red-600';
+                })()}
               }`}>
                 {(() => {
                   const current = data.chartData[data.chartData.length - 1].revenue;
@@ -990,11 +1036,14 @@ export const PnLDashboardPage: React.FC = () => {
                   return `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
                 })()}
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {t('dashboard.comparison', { previousMonth: data.chartData[data.chartData.length - 2].month })}
+              </p>
             </div>
             
             {/* Average Monthly Revenue */}
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-              <p className="text-sm text-gray-600 mb-2">Average Monthly Revenue</p>
+              <p className="text-sm text-gray-600 mb-2">{t('pnl.revenueGrowth.averageMonthly')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(
                   data.chartData.reduce((sum, d) => sum + d.revenue, 0) / data.chartData.length
@@ -1003,11 +1052,38 @@ export const PnLDashboardPage: React.FC = () => {
             </div>
             
             {/* Revenue Trend */}
-            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
-              <p className="text-sm text-gray-600 mb-2">Revenue Trend</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {data.chartData[data.chartData.length - 1].revenue > data.chartData[0].revenue
-                  ? '↑ Growing' : '↓ Declining'}
+            <div className={`text-center p-4 rounded-xl ${
+              (() => {
+                const firstRevenue = data.chartData[0].revenue;
+                const lastRevenue = data.chartData[data.chartData.length - 1].revenue;
+                const totalGrowth = ((lastRevenue - firstRevenue) / firstRevenue) * 100;
+                if (totalGrowth > 20) return 'bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200';
+                if (totalGrowth > 0) return 'bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200';
+                return 'bg-gradient-to-br from-red-50 to-rose-50 border border-red-200';
+              })()}
+            }`}>
+              <p className="text-sm text-gray-600 mb-2">{t('pnl.revenueGrowth.trend')}</p>
+              <p className={`text-2xl font-bold ${
+                (() => {
+                  const firstRevenue = data.chartData[0].revenue;
+                  const lastRevenue = data.chartData[data.chartData.length - 1].revenue;
+                  const totalGrowth = ((lastRevenue - firstRevenue) / firstRevenue) * 100;
+                  if (totalGrowth > 20) return 'text-emerald-600';
+                  if (totalGrowth > 0) return 'text-blue-600';
+                  return 'text-red-600';
+                })()}
+              }`}>
+                {(() => {
+                  const firstRevenue = data.chartData[0].revenue;
+                  const lastRevenue = data.chartData[data.chartData.length - 1].revenue;
+                  const totalGrowth = ((lastRevenue - firstRevenue) / firstRevenue) * 100;
+                  const arrow = totalGrowth >= 0 ? '↑' : '↓';
+                  const text = totalGrowth >= 0 ? t('pnl.revenueGrowth.growing') : t('pnl.revenueGrowth.declining');
+                  return `${arrow} ${Math.abs(totalGrowth).toFixed(1)}%`;
+                })()}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {t('pnl.revenueGrowth.vsFirstMonth', { month: data.chartData[0].month })}
               </p>
             </div>
           </div>
@@ -1018,11 +1094,11 @@ export const PnLDashboardPage: React.FC = () => {
       {data.currentMonth && data.currentMonth.totalPersonnelCost && (
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Personnel Cost Analysis</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('pnl.personnel.title')}</h3>
             <button
               onClick={() => setShowPersonnelHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Understanding personnel cost metrics"
+              title={t('pnl.help.personnelCost')}
             >
               <QuestionMarkCircleIcon className="h-5 w-5" />
             </button>
@@ -1031,45 +1107,45 @@ export const PnLDashboardPage: React.FC = () => {
           {/* Summary Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl">
-              <p className="text-sm text-gray-600 mb-2">Total Personnel Cost</p>
+              <p className="text-sm text-gray-600 mb-2">{t('pnl.personnel.totalCost')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.currentMonth.totalPersonnelCost)}
               </p>
               <p className="text-sm text-indigo-600 mt-1">
-                {((data.currentMonth.totalPersonnelCost / data.currentMonth.revenue) * 100).toFixed(1)}% of Revenue
+                {((data.currentMonth.totalPersonnelCost / data.currentMonth.revenue) * 100).toFixed(1)}% {t('pnl.personnel.ofRevenue')}
               </p>
             </div>
             
             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
-              <p className="text-sm text-gray-600 mb-2">Personnel Efficiency</p>
+              <p className="text-sm text-gray-600 mb-2">{t('pnl.personnel.efficiency')}</p>
               <p className="text-2xl font-bold text-purple-600">
                 {formatCurrency(data.currentMonth.revenue / (data.currentMonth.totalPersonnelCost / 1000))}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Revenue per Personnel ARS</p>
+              <p className="text-sm text-gray-500 mt-1">{t('pnl.personnel.revenuePerArs')}</p>
             </div>
             
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-              <p className="text-sm text-gray-600 mb-2">Personnel vs OpEx</p>
+              <p className="text-sm text-gray-600 mb-2">{t('pnl.personnel.vsOpex')}</p>
               <p className="text-2xl font-bold text-green-600">
                 {((data.currentMonth.totalPersonnelCost / data.currentMonth.operatingExpenses) * 100).toFixed(1)}%
               </p>
-              <p className="text-sm text-gray-500 mt-1">of Operating Expenses</p>
+              <p className="text-sm text-gray-500 mt-1">{t('pnl.personnel.ofOperatingExpenses')}</p>
             </div>
           </div>
           
           {/* Detailed Breakdown */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-700">Cost Breakdown</h4>
+              <h4 className="text-sm font-medium text-gray-700">{t('pnl.personnel.costBreakdown')}</h4>
               <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-                Total = Salaries + Payroll Taxes + Benefits
+                {t('pnl.personnel.totalFormula')}
               </div>
             </div>
             
             <div className="space-y-2">
               {/* Salaries */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
-                <span className="text-sm text-gray-600">Total Salaries</span>
+                <span className="text-sm text-gray-600">{t('pnl.personnel.totalSalaries')}</span>
                 <div className="text-right relative">
                   <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.personnelSalariesOp || 0))}
@@ -1078,7 +1154,7 @@ export const PnLDashboardPage: React.FC = () => {
                     ({(((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.personnelSalariesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
                   </span>
                   <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                    Percentage of total personnel cost
+                    {t('pnl.personnel.percentageOfTotal')}
                     <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                   </div>
                 </div>
@@ -1086,7 +1162,7 @@ export const PnLDashboardPage: React.FC = () => {
               
               {/* Payroll Taxes */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
-                <span className="text-sm text-gray-600">Payroll Taxes</span>
+                <span className="text-sm text-gray-600">{t('pnl.personnel.payrollTaxes')}</span>
                 <div className="text-right relative">
                   <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency((data.currentMonth.payrollTaxesCoR || 0) + (data.currentMonth.payrollTaxesOp || 0))}
@@ -1095,7 +1171,7 @@ export const PnLDashboardPage: React.FC = () => {
                     ({(((data.currentMonth.payrollTaxesCoR || 0) + (data.currentMonth.payrollTaxesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
                   </span>
                   <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                    Percentage of total personnel cost
+                    {t('pnl.personnel.percentageOfTotal')}
                     <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                   </div>
                 </div>
@@ -1103,7 +1179,7 @@ export const PnLDashboardPage: React.FC = () => {
               
               {/* Health & Benefits */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
-                <span className="text-sm text-gray-600">Health Coverage & Benefits</span>
+                <span className="text-sm text-gray-600">{t('pnl.personnel.healthBenefits')}</span>
                 <div className="text-right relative">
                   <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency((data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0))}
@@ -1112,7 +1188,7 @@ export const PnLDashboardPage: React.FC = () => {
                     ({(((data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%)
                   </span>
                   <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                    Percentage of total personnel cost
+                    {t('pnl.personnel.percentageOfTotal')}
                     <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                   </div>
                 </div>
@@ -1122,7 +1198,7 @@ export const PnLDashboardPage: React.FC = () => {
             {/* Total verification */}
             <div className="mt-3 p-3 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-blue-900">Total Personnel Cost</span>
+                <span className="text-sm font-medium text-blue-900">{t('pnl.personnel.totalCost')}</span>
                 <div className="text-right">
                   <span className="text-sm font-bold text-blue-900">
                     {formatCurrency(data.currentMonth.totalPersonnelCost)}
@@ -1136,16 +1212,16 @@ export const PnLDashboardPage: React.FC = () => {
             
             {/* CoR vs Operating Split */}
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Personnel Allocation</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">{t('pnl.personnel.allocation')}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Cost of Revenue</p>
+                  <p className="text-xs text-gray-600">{t('pnl.personnel.costOfRevenue')}</p>
                   <p className="text-lg font-semibold text-blue-600">
                     {(((data.currentMonth.personnelSalariesCoR || 0) + (data.currentMonth.payrollTaxesCoR || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Operating Expenses</p>
+                  <p className="text-xs text-gray-600">{t('pnl.operatingExpenses')}</p>
                   <p className="text-lg font-semibold text-purple-600">
                     {(((data.currentMonth.personnelSalariesOp || 0) + (data.currentMonth.payrollTaxesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%
                   </p>
@@ -1159,17 +1235,17 @@ export const PnLDashboardPage: React.FC = () => {
       {/* Cost Structure Visualization */}
       {data.currentMonth && (
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Cost Structure Analysis</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('pnl.costStructure.title')}</h3>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Cost Categories Breakdown */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-4">Major Cost Categories</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-4">{t('pnl.costStructure.majorCategories')}</h4>
               <div className="space-y-3">
                 {/* Personnel Costs */}
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-600">Personnel Costs</span>
+                    <span className="text-sm text-gray-600">{t('pnl.costStructure.personnelCosts')}</span>
                     <span className="text-sm font-medium text-gray-900">
                       {formatCurrency(data.currentMonth.totalPersonnelCost || 0)}
                     </span>
@@ -1189,7 +1265,7 @@ export const PnLDashboardPage: React.FC = () => {
                 {/* Contract Services */}
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-600">Contract Services</span>
+                    <span className="text-sm text-gray-600">{t('pnl.costStructure.contractServices')}</span>
                     <span className="text-sm font-medium text-gray-900">
                       {formatCurrency((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0))}
                     </span>
@@ -1209,7 +1285,7 @@ export const PnLDashboardPage: React.FC = () => {
                 {/* Other Costs */}
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-600">Other Costs</span>
+                    <span className="text-sm text-gray-600">{t('pnl.costStructure.otherCosts')}</span>
                     <span className="text-sm font-medium text-gray-900">
                       {formatCurrency(
                         data.currentMonth.cogs + data.currentMonth.operatingExpenses - 
@@ -1243,36 +1319,36 @@ export const PnLDashboardPage: React.FC = () => {
             {/* Cost Efficiency Metrics */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-gray-700">Cost Efficiency Metrics</h4>
+                <h4 className="text-sm font-medium text-gray-700">{t('pnl.costEfficiency.title')}</h4>
                 <button
                   onClick={() => setShowCostEfficiencyHelpModal(true)}
                   className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Understanding cost efficiency metrics"
+                  title={t('pnl.help.costEfficiency')}
                 >
                   <QuestionMarkCircleIcon className="h-4 w-4" />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">Cost of Revenue %</p>
+                  <p className="text-xs text-gray-600 mb-1">{t('pnl.costEfficiency.corPercent')}</p>
                   <p className="text-xl font-bold text-orange-600">
                     {((data.currentMonth.cogs / data.currentMonth.revenue) * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div className="text-center p-3 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">OpEx %</p>
+                  <p className="text-xs text-gray-600 mb-1">{t('pnl.costEfficiency.opexPercent')}</p>
                   <p className="text-xl font-bold text-yellow-600">
                     {((data.currentMonth.operatingExpenses / data.currentMonth.revenue) * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div className="text-center p-3 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">Total Cost %</p>
+                  <p className="text-xs text-gray-600 mb-1">{t('pnl.costEfficiency.totalCostPercent')}</p>
                   <p className="text-xl font-bold text-teal-600">
                     {(((data.currentMonth.cogs + data.currentMonth.operatingExpenses) / data.currentMonth.revenue) * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div className="text-center p-3 bg-gradient-to-br from-pink-50 to-rose-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">Cost per Revenue ARS</p>
+                  <p className="text-xs text-gray-600 mb-1">{t('pnl.costEfficiency.costPerRevenue')}</p>
                   <p className="text-xl font-bold text-pink-600">
                     {(((data.currentMonth.cogs + data.currentMonth.operatingExpenses) / data.currentMonth.revenue)).toFixed(2)}
                   </p>
@@ -1281,11 +1357,11 @@ export const PnLDashboardPage: React.FC = () => {
               
               {/* Additional Insights */}
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h5 className="text-xs font-medium text-gray-700 mb-2">Key Insights</h5>
+                <h5 className="text-xs font-medium text-gray-700 mb-2">{t('pnl.keyInsights')}</h5>
                 <ul className="space-y-1 text-xs text-gray-600">
-                  <li>• Personnel costs represent {(((data.currentMonth.totalPersonnelCost || 0) / data.currentMonth.revenue) * 100).toFixed(1)}% of revenue</li>
-                  <li>• Contract services account for {((((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0)) / data.currentMonth.revenue) * 100).toFixed(1)}% of revenue</li>
-                  <li>• Total cost structure is {((data.currentMonth.cogs + data.currentMonth.operatingExpenses) / data.currentMonth.revenue * 100).toFixed(1)}% of revenue</li>
+                  <li>• {t('pnl.insights.personnelCosts', { percentage: (((data.currentMonth.totalPersonnelCost || 0) / data.currentMonth.revenue) * 100).toFixed(1) })}</li>
+                  <li>• {t('pnl.insights.contractServices', { percentage: ((((data.currentMonth.contractServicesCoR || 0) + (data.currentMonth.contractServicesOp || 0)) / data.currentMonth.revenue) * 100).toFixed(1) })}</li>
+                  <li>• {t('pnl.insights.totalCostStructure', { percentage: ((data.currentMonth.cogs + data.currentMonth.operatingExpenses) / data.currentMonth.revenue * 100).toFixed(1) })}</li>
                 </ul>
               </div>
             </div>
@@ -1297,11 +1373,11 @@ export const PnLDashboardPage: React.FC = () => {
       {data.chartData && data.chartData.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Performance Overview</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('pnl.performance.title')}</h2>
             <button
               onClick={() => setShowPerformanceHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Understanding performance heat maps"
+              title={t('pnl.help.performanceHeatMaps')}
             >
               <QuestionMarkCircleIcon className="h-5 w-5" />
             </button>
@@ -1310,13 +1386,13 @@ export const PnLDashboardPage: React.FC = () => {
             <PerformanceHeatMap 
               data={data}
               metric="revenue"
-              title="Monthly Revenue Performance"
+              title={t('pnl.performance.monthlyRevenue')}
               type="pnl"
             />
             <PerformanceHeatMap 
               data={data}
               metric="margin"
-              title="Monthly Net Margin Performance"
+              title={t('pnl.performance.monthlyNetMargin')}
               type="pnl"
             />
           </div>
@@ -1327,11 +1403,11 @@ export const PnLDashboardPage: React.FC = () => {
       {data.chartData && data.chartData.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Trend Analysis & Forecasts</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('pnl.trends.title')}</h2>
             <button
               onClick={() => setShowTrendForecastHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Understanding trend forecasts"
+              title={t('pnl.help.trendForecasts')}
             >
               <QuestionMarkCircleIcon className="h-5 w-5" />
             </button>
@@ -1340,14 +1416,14 @@ export const PnLDashboardPage: React.FC = () => {
             <TrendForecastChart
               data={data}
               metric="revenue"
-              title="Revenue Trend & 6-Month Forecast"
+              title={t('pnl.trends.revenueForecast')}
               type="pnl"
               forecastMonths={6}
             />
             <TrendForecastChart
               data={data}
               metric="profit"
-              title="Net Income Trend & 6-Month Forecast"
+              title={t('pnl.trends.netIncomeForecast')}
               type="pnl"
               forecastMonths={6}
             />
@@ -1360,11 +1436,11 @@ export const PnLDashboardPage: React.FC = () => {
         {/* Margins Chart */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Profit Margins Trend</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('pnl.charts.profitMarginsTrend')}</h3>
             <button
               onClick={() => setShowMarginsChartHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Understanding profit margins chart"
+              title={t('pnl.help.profitMarginsChart')}
             >
               <QuestionMarkCircleIcon className="h-5 w-5" />
             </button>
@@ -1379,14 +1455,29 @@ export const PnLDashboardPage: React.FC = () => {
         {/* Revenue Breakdown */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Revenue & Profitability</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('pnl.charts.revenueProfitability')}</h3>
             <button
               onClick={() => setShowRevenueChartHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Understanding revenue and profitability chart"
+              title={t('pnl.help.revenueProfitabilityChart')}
             >
               <QuestionMarkCircleIcon className="h-5 w-5" />
             </button>
+          </div>
+          {/* Traffic Light Legend */}
+          <div className="flex items-center justify-center space-x-4 mb-3 text-xs">
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-green-500 rounded"></div>
+              <span className="text-gray-600">{t('pnl.charts.growthHigh')}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+              <span className="text-gray-600">{t('pnl.charts.growthMedium')}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-red-500 rounded"></div>
+              <span className="text-gray-600">{t('pnl.charts.growthNegative')}</span>
+            </div>
           </div>
           <div className="h-64">
             {getRevenueChartData() && (
@@ -1401,17 +1492,17 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Year to Date Summary</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('pnl.ytd.title')}</h3>
               {!hasYearOverYearData() && (
                 <p className="text-sm text-amber-600 mt-1">
-                  Upload 12+ months of data to see year-over-year comparisons
+                  {t('pnl.ytd.uploadMoreData')}
                 </p>
               )}
             </div>
             <button
               onClick={() => setShowYTDSummaryHelpModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Understanding YTD financial summary"
+              title={t('pnl.help.ytdSummary')}
             >
               <QuestionMarkCircleIcon className="h-5 w-5" />
             </button>
@@ -1419,7 +1510,7 @@ export const PnLDashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {/* Revenue */}
             <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl relative">
-              <p className="text-sm font-medium text-green-600 mb-2">Total Revenue</p>
+              <p className="text-sm font-medium text-green-600 mb-2">{t('pnl.ytd.totalRevenue')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalRevenue)}
               </p>
@@ -1431,7 +1522,7 @@ export const PnLDashboardPage: React.FC = () => {
                   <div className={`mt-2 text-sm font-medium ${
                     change.isPositive ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% {t('pnl.ytd.vsLastYear')}
                   </div>
                 )
               })()}
@@ -1439,12 +1530,12 @@ export const PnLDashboardPage: React.FC = () => {
             
             {/* Gross Profit */}
             <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
-              <p className="text-sm font-medium text-blue-600 mb-2">Gross Profit</p>
+              <p className="text-sm font-medium text-blue-600 mb-2">{t('pnl.grossProfit')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalGrossProfit)}
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                {formatPercentage(data.summary.avgGrossMargin)} margin
+                {formatPercentage(data.summary.avgGrossMargin)} {t('pnl.margin')}
               </p>
               {hasYearOverYearData() && (() => {
                 const ytdComparison = getYearToDateComparison()
@@ -1454,7 +1545,7 @@ export const PnLDashboardPage: React.FC = () => {
                   <div className={`mt-2 text-sm font-medium ${
                     change.isPositive ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% {t('pnl.ytd.vsLastYear')}
                   </div>
                 )
               })()}
@@ -1462,12 +1553,12 @@ export const PnLDashboardPage: React.FC = () => {
             
             {/* Operating Income */}
             <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
-              <p className="text-sm font-medium text-purple-600 mb-2">Operating Income</p>
+              <p className="text-sm font-medium text-purple-600 mb-2">{t('pnl.operatingIncome')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.summary.totalOperatingIncome)}
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                {formatPercentage(data.summary.avgOperatingMargin)} margin
+                {formatPercentage(data.summary.avgOperatingMargin)} {t('pnl.margin')}
               </p>
               {hasYearOverYearData() && (() => {
                 const ytdComparison = getYearToDateComparison()
@@ -1477,7 +1568,7 @@ export const PnLDashboardPage: React.FC = () => {
                   <div className={`mt-2 text-sm font-medium ${
                     change.isPositive ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% {t('pnl.ytd.vsLastYear')}
                   </div>
                 )
               })()}
@@ -1485,7 +1576,7 @@ export const PnLDashboardPage: React.FC = () => {
             
             {/* EBITDA */}
             <div className="text-center p-6 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl">
-              <p className="text-sm font-medium text-indigo-600 mb-2">Total EBITDA</p>
+              <p className="text-sm font-medium text-indigo-600 mb-2">{t('pnl.ytd.totalEbitda')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(data.chartData?.reduce((sum, month) => {
                   // Calculate EBITDA as Operating Income + estimated D&A (assuming 3-5% of revenue)
@@ -1497,7 +1588,7 @@ export const PnLDashboardPage: React.FC = () => {
                 {data.chartData && formatPercentage(((data.chartData.reduce((sum, month) => {
                   const monthlyEBITDA = month.operatingIncome + (month.revenue * 0.04);
                   return sum + monthlyEBITDA;
-                }, 0)) / data.summary.totalRevenue) * 100)} margin
+                }, 0)) / data.summary.totalRevenue) * 100)} {t('pnl.margin')}
               </p>
             </div>
             
@@ -1509,14 +1600,14 @@ export const PnLDashboardPage: React.FC = () => {
             }`}>
               <p className={`text-sm font-medium mb-2 ${
                 data.summary.totalNetIncome >= 0 ? 'text-emerald-600' : 'text-red-600'
-              }`}>Net Income</p>
+              }`}>{t('pnl.netIncome')}</p>
               <p className={`text-2xl font-bold ${
                 data.summary.totalNetIncome >= 0 ? 'text-gray-900' : 'text-red-600'
               }`}>
                 {formatCurrency(data.summary.totalNetIncome)}
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                {formatPercentage(data.summary.avgNetMargin)} margin
+                {formatPercentage(data.summary.avgNetMargin)} {t('pnl.margin')}
               </p>
               {hasYearOverYearData() && (() => {
                 const ytdComparison = getYearToDateComparison()
@@ -1526,7 +1617,7 @@ export const PnLDashboardPage: React.FC = () => {
                   <div className={`mt-2 text-sm font-medium ${
                     change.isPositive ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% vs last year
+                    {change.isPositive ? '↑' : '↓'} {Math.abs(change.percentage).toFixed(1)}% {t('pnl.ytd.vsLastYear')}
                   </div>
                 )
               })()}
@@ -1536,19 +1627,19 @@ export const PnLDashboardPage: React.FC = () => {
           {/* Additional Metrics Row */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-600">Total COGS</p>
+              <p className="text-sm text-gray-600">{t('pnl.ytd.totalCogs')}</p>
               <p className="text-xl font-semibold text-gray-900">
                 {formatCurrency(data.summary.totalCOGS)}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-600">Total Operating Expenses</p>
+              <p className="text-sm text-gray-600">{t('pnl.ytd.totalOpex')}</p>
               <p className="text-xl font-semibold text-gray-900">
                 {formatCurrency(data.summary.totalOperatingExpenses)}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-600">Expense Ratio</p>
+              <p className="text-sm text-gray-600">{t('pnl.ytd.expenseRatio')}</p>
               <p className="text-xl font-semibold text-gray-900">
                 {formatPercentage((data.summary.totalOperatingExpenses / data.summary.totalRevenue) * 100)}
               </p>
@@ -1562,7 +1653,7 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Understanding Personnel Cost Analysis</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.personnel.title')}</h2>
               <button
                 onClick={() => setShowPersonnelHelpModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1573,30 +1664,30 @@ export const PnLDashboardPage: React.FC = () => {
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">👥 What is Personnel Cost Analysis?</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">👥 {t('pnl.help.personnel.whatIs')}</h3>
                 <div className="bg-blue-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    Personnel costs are typically the largest expense for most companies. This analysis helps you understand:
+                    {t('pnl.help.personnel.description')}
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                    <li>Total cost of your workforce</li>
-                    <li>How efficiently you're utilizing personnel</li>
-                    <li>The breakdown of personnel-related expenses</li>
-                    <li>Personnel costs as a percentage of revenue</li>
+                    <li>{t('pnl.help.personnel.point1')}</li>
+                    <li>{t('pnl.help.personnel.point2')}</li>
+                    <li>{t('pnl.help.personnel.point3')}</li>
+                    <li>{t('pnl.help.personnel.point4')}</li>
                   </ul>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Your Current Personnel Metrics</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('pnl.help.personnel.currentMetrics')}</h3>
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-600">Total Personnel Cost</p>
+                      <p className="text-xs text-gray-600">{t('pnl.personnel.totalCost')}</p>
                       <p className="text-sm font-semibold text-gray-900">{formatCurrency(data?.currentMonth?.totalPersonnelCost || 0)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">% of Revenue</p>
+                      <p className="text-xs text-gray-600">{t('pnl.help.personnel.percentOfRevenue')}</p>
                       <p className="text-sm font-semibold text-indigo-600">
                         {((data?.currentMonth?.totalPersonnelCost || 0) / (data?.currentMonth?.revenue || 1) * 100).toFixed(1)}%
                       </p>
@@ -1604,67 +1695,64 @@ export const PnLDashboardPage: React.FC = () => {
                   </div>
                   <div className="pt-3 border-t border-gray-200">
                     <p className="text-xs text-gray-500">
-                      This includes salaries, payroll taxes, health coverage, and benefits
+                      {t('pnl.help.personnel.includesText')}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Key Metrics Explained</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 {t('pnl.help.personnel.keyMetrics')}</h3>
                 <div className="space-y-3">
                   <div className="border-l-4 border-indigo-500 pl-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Total Personnel Cost</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t('pnl.personnel.totalCost')}</h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      Sum of all employee-related expenses including salaries, taxes, and benefits.
-                      Industry benchmark: 20-50% of revenue depending on business type.
+                      {t('pnl.help.personnel.totalCostDesc')}
                     </p>
                   </div>
                   
                   <div className="border-l-4 border-purple-500 pl-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Personnel Efficiency</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t('pnl.personnel.efficiency')}</h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      Revenue generated per ARS spent on personnel. Higher is better.
-                      Formula: Revenue ÷ Personnel Cost
+                      {t('pnl.help.personnel.efficiencyDesc')}
                     </p>
                   </div>
                   
                   <div className="border-l-4 border-green-500 pl-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Personnel vs OpEx</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t('pnl.personnel.vsOpex')}</h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      Shows what portion of operating expenses goes to personnel.
-                      Typically 50-70% for service companies, lower for product companies.
+                      {t('pnl.help.personnel.vsOpexDesc')}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📋 Cost Breakdown Components</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📋 {t('pnl.help.personnel.costBreakdownComponents')}</h3>
                 <div className="bg-yellow-50 rounded-xl p-4">
                   <ul className="space-y-2 text-sm text-gray-600">
                     <li className="flex items-start">
                       <span className="text-gray-500 mr-2">•</span>
                       <div>
-                        <strong>Salaries:</strong> Base compensation for employees
+                        <strong>{t('pnl.help.personnel.salaries')}</strong> {t('pnl.help.personnel.salariesDesc')}
                       </div>
                     </li>
                     <li className="flex items-start">
                       <span className="text-gray-500 mr-2">•</span>
                       <div>
-                        <strong>Payroll Taxes:</strong> Employer-paid taxes on wages
+                        <strong>{t('pnl.help.personnel.payrollTaxes')}</strong> {t('pnl.help.personnel.payrollTaxesDesc')}
                       </div>
                     </li>
                     <li className="flex items-start">
                       <span className="text-gray-500 mr-2">•</span>
                       <div>
-                        <strong>Health Coverage:</strong> Medical, dental, vision insurance
+                        <strong>{t('pnl.help.personnel.healthCoverage')}</strong> {t('pnl.help.personnel.healthCoverageDesc')}
                       </div>
                     </li>
                     <li className="flex items-start">
                       <span className="text-gray-500 mr-2">•</span>
                       <div>
-                        <strong>Benefits:</strong> Retirement, PTO, other perks
+                        <strong>{t('pnl.help.personnel.benefits')}</strong> {t('pnl.help.personnel.benefitsDesc')}
                       </div>
                     </li>
                   </ul>
@@ -1672,37 +1760,37 @@ export const PnLDashboardPage: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Personnel Allocation</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('pnl.help.personnel.personnelAllocation')}</h3>
                 <div className="bg-purple-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-3">
-                    Understanding where your personnel costs are allocated:
+                    {t('pnl.help.personnel.understandingAllocation')}
                   </p>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-3 bg-white rounded-lg">
-                      <p className="text-xs text-gray-600">Cost of Revenue</p>
-                      <p className="text-sm font-medium text-blue-600">Direct Production</p>
-                      <p className="text-xs text-gray-500 mt-1">Staff directly generating revenue</p>
+                      <p className="text-xs text-gray-600">{t('pnl.help.personnel.costOfRevenue')}</p>
+                      <p className="text-sm font-medium text-blue-600">{t('pnl.help.personnel.directProduction')}</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('pnl.help.personnel.staffGeneratingRevenue')}</p>
                     </div>
                     <div className="text-center p-3 bg-white rounded-lg">
-                      <p className="text-xs text-gray-600">Operating Expenses</p>
-                      <p className="text-sm font-medium text-purple-600">Support Functions</p>
-                      <p className="text-xs text-gray-500 mt-1">Admin, sales, management</p>
+                      <p className="text-xs text-gray-600">{t('pnl.help.personnel.operatingExpenses')}</p>
+                      <p className="text-sm font-medium text-purple-600">{t('pnl.help.personnel.supportFunctions')}</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('pnl.help.personnel.adminSalesManagement')}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">⚡ Optimization Tips</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">⚡ {t('pnl.help.personnel.optimizationTips')}</h3>
                 <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                  <p className="text-sm text-gray-700 font-medium">Ways to improve personnel efficiency:</p>
+                  <p className="text-sm text-gray-700 font-medium">{t('pnl.help.personnel.waysToImprove')}</p>
                   <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                    <li>Track revenue per employee over time</li>
-                    <li>Compare personnel costs to industry benchmarks</li>
-                    <li>Analyze productivity metrics by department</li>
-                    <li>Consider automation for repetitive tasks</li>
-                    <li>Invest in training to increase productivity</li>
-                    <li>Review benefit costs regularly for savings</li>
+                    <li>{t('pnl.help.personnel.trackRevenuePerEmployee')}</li>
+                    <li>{t('pnl.help.personnel.compareIndustryBenchmarks')}</li>
+                    <li>{t('pnl.help.personnel.analyzeProductivityMetrics')}</li>
+                    <li>{t('pnl.help.personnel.considerAutomation')}</li>
+                    <li>{t('pnl.help.personnel.investInTraining')}</li>
+                    <li>{t('pnl.help.personnel.reviewBenefitCosts')}</li>
                   </ul>
                 </div>
               </div>
@@ -1716,7 +1804,7 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Understanding Cost Efficiency Metrics</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.costEfficiency.title')}</h2>
               <button
                 onClick={() => setShowCostEfficiencyHelpModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1727,20 +1815,19 @@ export const PnLDashboardPage: React.FC = () => {
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 What are Cost Efficiency Metrics?</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('pnl.help.costEfficiency.whatAre')}</h3>
                 <div className="bg-blue-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    Cost efficiency metrics help you understand how effectively your company 
-                    converts revenue into profit by analyzing cost structure and ratios.
+                    {t('pnl.help.costEfficiency.description')}
                   </p>
                   <p className="text-sm text-gray-600 mt-2">
-                    Lower percentages generally indicate better efficiency and higher profitability.
+                    {t('pnl.help.costEfficiency.lowerBetter')}
                   </p>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Your Current Efficiency Metrics</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('pnl.help.costEfficiency.currentMetrics')}</h3>
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-3 bg-white rounded-lg">
@@ -1880,7 +1967,7 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Understanding Revenue Growth Analysis</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.revenueGrowth.title')}</h2>
               <button
                 onClick={() => setShowRevenueGrowthHelpModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1940,80 +2027,77 @@ export const PnLDashboardPage: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Growth Metrics Explained</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('pnl.help.revenueGrowth.growthMetricsExplained')}</h3>
                 <div className="space-y-3">
                   <div className="border-l-4 border-blue-500 pl-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Month-over-Month Growth</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t('pnl.revenueGrowth.monthOverMonth')}</h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      Compares current month revenue to previous month. Shows immediate momentum.
-                      Target: 5-20% monthly growth for healthy businesses.
+                      {t('pnl.help.revenueGrowth.monthOverMonthGrowthDesc')}
                     </p>
                   </div>
                   
                   <div className="border-l-4 border-green-500 pl-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Average Monthly Revenue</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t('pnl.revenueGrowth.averageMonthly')}</h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      Your baseline revenue performance across all analyzed months.
-                      Used for budgeting and forecasting future periods.
+                      {t('pnl.help.revenueGrowth.averageMonthlyRevenueDesc')}
                     </p>
                   </div>
                   
                   <div className="border-l-4 border-purple-500 pl-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Revenue Trend</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t('pnl.revenueGrowth.trend')}</h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      Overall direction comparing first and last month in the period.
-                      Growing trends indicate business expansion and market success.
+                      {t('pnl.help.revenueGrowth.revenueTrendDesc')}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Growth Benchmarks</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('pnl.help.revenueGrowth.growthBenchmarks')}</h3>
                 <div className="bg-yellow-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-700 mb-3">How does your growth compare?</p>
+                  <p className="text-sm text-gray-700 mb-3">{t('pnl.help.revenueGrowth.howDoesYourGrowthCompare')}</p>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Excellent Growth:</span>
-                      <span className="font-medium text-green-600">&gt;15% monthly</span>
+                      <span className="text-gray-600">{t('pnl.help.revenueGrowth.excellentGrowth')}</span>
+                      <span className="font-medium text-green-600">{t('pnl.help.revenueGrowth.excellentGrowthRange')}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Good Growth:</span>
-                      <span className="font-medium text-blue-600">5-15% monthly</span>
+                      <span className="text-gray-600">{t('pnl.help.revenueGrowth.goodGrowth')}</span>
+                      <span className="font-medium text-blue-600">{t('pnl.help.revenueGrowth.goodGrowthRange')}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Stable:</span>
-                      <span className="font-medium text-gray-600">0-5% monthly</span>
+                      <span className="text-gray-600">{t('pnl.help.revenueGrowth.stable')}</span>
+                      <span className="font-medium text-gray-600">{t('pnl.help.revenueGrowth.stableRange')}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Declining:</span>
-                      <span className="font-medium text-red-600">&lt;0% monthly</span>
+                      <span className="text-gray-600">{t('pnl.help.revenueGrowth.declining')}</span>
+                      <span className="font-medium text-red-600">{t('pnl.help.revenueGrowth.decliningRange')}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">🚀 Growth Strategies</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🚀 {t('pnl.help.revenueGrowth.growthStrategies')}</h3>
                 <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                  <p className="text-sm text-gray-700 font-medium">Ways to accelerate revenue growth:</p>
+                  <p className="text-sm text-gray-700 font-medium">{t('pnl.help.revenueGrowth.waysToAccelerateGrowth')}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                     <div>
-                      <p className="text-xs font-medium text-gray-700 mb-1">Customer Acquisition:</p>
+                      <p className="text-xs font-medium text-gray-700 mb-1">{t('pnl.help.revenueGrowth.customerAcquisition')}</p>
                       <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Improve marketing campaigns</li>
-                        <li>• Expand to new markets</li>
-                        <li>• Enhance product offerings</li>
-                        <li>• Referral programs</li>
+                        <li>• {t('pnl.help.revenueGrowth.improveMarketingCampaigns')}</li>
+                        <li>• {t('pnl.help.revenueGrowth.expandToNewMarkets')}</li>
+                        <li>• {t('pnl.help.revenueGrowth.enhanceProductOfferings')}</li>
+                        <li>• {t('pnl.help.revenueGrowth.referralPrograms')}</li>
                       </ul>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-700 mb-1">Customer Retention:</p>
+                      <p className="text-xs font-medium text-gray-700 mb-1">{t('pnl.help.revenueGrowth.customerRetention')}</p>
                       <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Upsell existing customers</li>
-                        <li>• Improve customer service</li>
-                        <li>• Loyalty programs</li>
-                        <li>• Regular value delivery</li>
+                        <li>• {t('pnl.help.revenueGrowth.upsellExistingCustomers')}</li>
+                        <li>• {t('pnl.help.revenueGrowth.improveCustomerService')}</li>
+                        <li>• {t('pnl.help.revenueGrowth.loyaltyPrograms')}</li>
+                        <li>• {t('pnl.help.revenueGrowth.regularValueDelivery')}</li>
                       </ul>
                     </div>
                   </div>
@@ -2021,24 +2105,24 @@ export const PnLDashboardPage: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Reading Growth Patterns</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('pnl.help.revenueGrowth.readingGrowthPatterns')}</h3>
                 <div className="bg-purple-50 rounded-xl p-4">
                   <ul className="space-y-2 text-sm text-gray-600">
                     <li className="flex items-start">
                       <span className="text-green-500 mr-2">•</span>
-                      <span><strong>Consistent Growth:</strong> Steady month-over-month increases</span>
+                      <span><strong>{t('pnl.help.revenueGrowth.consistentGrowth')}</strong> {t('pnl.help.revenueGrowth.consistentGrowthDesc')}</span>
                     </li>
                     <li className="flex items-start">
                       <span className="text-blue-500 mr-2">•</span>
-                      <span><strong>Seasonal Patterns:</strong> Regular ups and downs throughout the year</span>
+                      <span><strong>{t('pnl.help.revenueGrowth.seasonalPatterns')}</strong> {t('pnl.help.revenueGrowth.seasonalPatternsDesc')}</span>
                     </li>
                     <li className="flex items-start">
                       <span className="text-orange-500 mr-2">•</span>
-                      <span><strong>Volatility:</strong> Large swings may indicate external factors</span>
+                      <span><strong>{t('pnl.help.revenueGrowth.volatility')}</strong> {t('pnl.help.revenueGrowth.volatilityDesc')}</span>
                     </li>
                     <li className="flex items-start">
                       <span className="text-red-500 mr-2">•</span>
-                      <span><strong>Declining Trend:</strong> May require immediate strategic action</span>
+                      <span><strong>{t('pnl.help.revenueGrowth.decliningTrend')}</strong> {t('pnl.help.revenueGrowth.decliningTrendDesc')}</span>
                     </li>
                   </ul>
                 </div>
@@ -2326,16 +2410,16 @@ export const PnLDashboardPage: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Using P&L Metrics</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 {t('pnl.help.costEfficiency.strategicUse.title')}</h3>
                 <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                  <p className="text-sm text-gray-700 font-medium">Use these metrics to:</p>
+                  <p className="text-sm text-gray-700 font-medium">{t('pnl.help.costEfficiency.strategicUse.description')}</p>
                   <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                    <li>Compare performance month-over-month</li>
-                    <li>Benchmark against industry standards</li>
-                    <li>Identify areas for cost optimization</li>
-                    <li>Track progress toward profitability goals</li>
-                    <li>Make pricing and investment decisions</li>
-                    <li>Communicate performance to stakeholders</li>
+                    <li>{t('pnl.help.costEfficiency.strategicUse.comparePerformance')}</li>
+                    <li>{t('pnl.help.costEfficiency.strategicUse.benchmark')}</li>
+                    <li>{t('pnl.help.costEfficiency.strategicUse.identifyOptimization')}</li>
+                    <li>{t('pnl.help.costEfficiency.strategicUse.trackProgress')}</li>
+                    <li>{t('pnl.help.costEfficiency.strategicUse.makePricingDecisions')}</li>
+                    <li>{t('pnl.help.costEfficiency.strategicUse.communicateStakeholders')}</li>
                   </ul>
                 </div>
               </div>
@@ -2349,7 +2433,7 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Understanding Profit Margins Trend</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.profitMargins.title')}</h2>
               <button
                 onClick={() => setShowMarginsChartHelpModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2360,43 +2444,42 @@ export const PnLDashboardPage: React.FC = () => {
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Profit Margins Trend Chart</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('pnl.help.profitMargins.profitMarginsTrendChart')}</h3>
                 <div className="bg-blue-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    This chart tracks your gross and net profit margins over time, showing how efficiently 
-                    your business converts revenue into profit across different months.
+                    {t('pnl.help.profitMargins.chartDescription')}
                   </p>
                   <p className="text-sm text-gray-600 mt-2">
-                    Margins are more important than absolute dollar amounts because they show profitability efficiency.
+                    {t('pnl.help.profitMargins.marginsImportance')}
                   </p>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 Reading the Chart</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 {t('pnl.help.profitMargins.readingTheChart')}</h3>
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-green-500 rounded mt-0.5"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Gross Margin % (Green Line)</p>
-                      <p className="text-sm text-gray-600">Shows what percentage of revenue remains after direct costs</p>
+                      <p className="text-sm font-medium text-gray-900">{t('pnl.help.profitMargins.grossMarginGreenLine')}</p>
+                      <p className="text-sm text-gray-600">{t('pnl.help.profitMargins.grossMarginDesc')}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-purple-500 rounded mt-0.5"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Net Margin % (Purple Line)</p>
-                      <p className="text-sm text-gray-600">Shows what percentage of revenue becomes final profit</p>
+                      <p className="text-sm font-medium text-gray-900">{t('pnl.help.profitMargins.netMarginPurpleLine')}</p>
+                      <p className="text-sm text-gray-600">{t('pnl.help.profitMargins.netMarginDesc')}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Strategic Actions</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 {t('pnl.help.profitMargins.strategicActions')}</h3>
                 <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                  <p className="text-sm text-gray-700 font-medium">Use margin trends to optimize profitability and make data-driven business decisions.</p>
+                  <p className="text-sm text-gray-700 font-medium">{t('pnl.help.profitMargins.useMarginTrends')}</p>
                 </div>
               </div>
             </div>
@@ -2409,7 +2492,7 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Understanding Revenue & Profitability Chart</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.revenueProfitability.title')}</h2>
               <button
                 onClick={() => setShowRevenueChartHelpModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2420,51 +2503,50 @@ export const PnLDashboardPage: React.FC = () => {
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Revenue & Profitability Chart</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('pnl.help.revenueProfitability.chartTitle')}</h3>
                 <div className="bg-blue-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    This bar chart compares revenue, gross profit, and net income across months, 
-                    showing the "profit waterfall" from top-line revenue to bottom-line profit.
+                    {t('pnl.help.revenueProfitability.chartDescription')}
                   </p>
                   <p className="text-sm text-gray-600 mt-2">
-                    Each bar shows absolute dollar amounts, helping you see both growth trends and profit efficiency.
+                    {t('pnl.help.revenueProfitability.absoluteAmounts')}
                   </p>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 Reading the Chart</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 {t('pnl.help.revenueProfitability.readingTheChart')}</h3>
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-green-700 rounded mt-0.5"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Revenue (Green Bars)</p>
-                      <p className="text-sm text-gray-600">Total income from sales - your "top line" number</p>
+                      <p className="text-sm font-medium text-gray-900">{t('pnl.help.revenueProfitability.revenueGreenBars')}</p>
+                      <p className="text-sm text-gray-600">{t('pnl.help.revenueProfitability.revenueDesc')}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-blue-600 rounded mt-0.5"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Gross Profit (Blue Bars)</p>
-                      <p className="text-sm text-gray-600">Revenue minus direct costs - what's left after production</p>
+                      <p className="text-sm font-medium text-gray-900">{t('pnl.help.revenueProfitability.grossProfitBlueBars')}</p>
+                      <p className="text-sm text-gray-600">{t('pnl.help.revenueProfitability.grossProfitDesc')}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <div className="w-4 h-4 bg-purple-600 rounded mt-0.5"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Net Income (Purple Bars)</p>
-                      <p className="text-sm text-gray-600">Final profit after all expenses - your "bottom line"</p>
+                      <p className="text-sm font-medium text-gray-900">{t('pnl.help.revenueProfitability.netIncomePurpleBars')}</p>
+                      <p className="text-sm text-gray-600">{t('pnl.help.revenueProfitability.netIncomeDesc')}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Strategic Insights</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('pnl.help.revenueProfitability.strategicInsights')}</h3>
                 <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                  <p className="text-sm text-gray-700 font-medium">Use this chart to track business growth and profitability trends over time.</p>
+                  <p className="text-sm text-gray-700 font-medium">{t('pnl.help.revenueProfitability.useChartTo')}</p>
                 </div>
               </div>
             </div>
@@ -2477,7 +2559,7 @@ export const PnLDashboardPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Understanding Comparison Periods</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.comparisonPeriods.title')}</h2>
               <button
                 onClick={() => setShowComparisonHelpModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2488,42 +2570,42 @@ export const PnLDashboardPage: React.FC = () => {
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 What are Comparison Periods?</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('pnl.help.comparisonPeriods.whatAre')}</h3>
                 <div className="bg-blue-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    Comparison periods help you understand how your business performance changes over time. Each metric shows a percentage change compared to the selected period.
+                    {t('pnl.help.comparisonPeriods.description')}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-emerald-50 rounded-xl p-4">
-                  <h4 className="font-semibold text-emerald-900 mb-2">Previous Month</h4>
+                  <h4 className="font-semibold text-emerald-900 mb-2">{t('pnl.help.comparisonPeriods.previousMonth')}</h4>
                   <p className="text-sm text-gray-700">
-                    Compares current month metrics to the immediately preceding month. Useful for tracking short-term trends and seasonal variations.
+                    {t('pnl.help.comparisonPeriods.previousMonthDesc')}
                   </p>
                   <div className="mt-3 text-xs text-emerald-700">
-                    <strong>Example:</strong> May vs April
+                    <strong>{t('pnl.help.comparisonPeriods.example')}</strong> May vs April
                   </div>
                 </div>
 
                 <div className="bg-blue-50 rounded-xl p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">Previous Quarter</h4>
+                  <h4 className="font-semibold text-blue-900 mb-2">{t('pnl.help.comparisonPeriods.previousQuarter')}</h4>
                   <p className="text-sm text-gray-700">
-                    Compares current month to the same month in the previous quarter. Helps identify quarterly patterns and growth.
+                    {t('pnl.help.comparisonPeriods.previousQuarterDesc')}
                   </p>
                   <div className="mt-3 text-xs text-blue-700">
-                    <strong>Example:</strong> May vs February
+                    <strong>{t('pnl.help.comparisonPeriods.example')}</strong> May vs February
                   </div>
                 </div>
 
                 <div className="bg-purple-50 rounded-xl p-4">
-                  <h4 className="font-semibold text-purple-900 mb-2">Same Period Last Year</h4>
+                  <h4 className="font-semibold text-purple-900 mb-2">{t('pnl.help.comparisonPeriods.samePeriodLastYear')}</h4>
                   <p className="text-sm text-gray-700">
-                    Compares current month to the same month last year. Best for understanding year-over-year growth and eliminating seasonal effects.
+                    {t('pnl.help.comparisonPeriods.samePeriodLastYearDesc')}
                   </p>
                   <div className="mt-3 text-xs text-purple-700">
-                    <strong>Example:</strong> May 2025 vs May 2024
+                    <strong>{t('pnl.help.comparisonPeriods.example')}</strong> May 2025 vs May 2024
                   </div>
                 </div>
               </div>
@@ -2580,7 +2662,7 @@ export const PnLDashboardPage: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Understanding Performance Heat Maps</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.performanceHeatMap.title')}</h2>
                 <button
                   onClick={() => setShowPerformanceHelpModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2592,11 +2674,10 @@ export const PnLDashboardPage: React.FC = () => {
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 What are Performance Heat Maps?</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 {t('pnl.help.performanceHeatMap.whatAre')}</h3>
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    Heat maps provide a visual representation of your P&L performance across months, 
-                    using color intensity to show relative performance levels.
+                    {t('pnl.help.performanceHeatMap.description')}
                   </p>
                   <p className="text-sm text-gray-600 mt-2">
                     <strong>Darker/brighter colors</strong> = Better performance<br/>
@@ -2668,7 +2749,7 @@ export const PnLDashboardPage: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Understanding P&L Trend Forecasts</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('pnl.help.trendForecast.title')}</h2>
                 <button
                   onClick={() => setShowTrendForecastHelpModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2680,10 +2761,10 @@ export const PnLDashboardPage: React.FC = () => {
             
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 P&L Forecasting</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('pnl.help.trendForecast.pnlForecasting')}</h3>
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4">
                   <p className="text-sm text-gray-700 mb-2">
-                    P&L forecasts project your future revenue and profitability based on 
+                    {t('pnl.help.trendForecast.forecastDescription')} 
                     historical performance trends and growth patterns.
                   </p>
                   <p className="text-sm text-gray-600 mt-2">

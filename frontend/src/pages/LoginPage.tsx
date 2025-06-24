@@ -45,10 +45,10 @@ export function LoginPage() {
   }
 
   const features = [
-    'Cash flow visualization',
-    'Excel data import',
-    'Executive dashboards',
-    'Scenario planning tools'
+    t('auth.features.cashflow'),
+    t('auth.features.excelImport'),
+    t('auth.features.dashboards'),
+    t('auth.features.scenarioPlanning')
   ]
 
   return (
@@ -62,7 +62,7 @@ export function LoginPage() {
             className="flex items-center text-gray-600 hover:text-gray-900 mb-8 transition-colors"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
-            Back to home
+            {t('auth.backToHome')}
           </button>
 
           {/* Logo and Title */}
@@ -82,12 +82,12 @@ export function LoginPage() {
             </div>
             
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              {isSignUp ? 'Create your account' : 'Welcome back'}
+              {isSignUp ? t('auth.createAccount') : t('auth.welcomeBack')}
             </h2>
             <p className="text-gray-600">
               {isSignUp 
-                ? 'Create an account to access the demo'
-                : 'Sign in to access your financial dashboard'
+                ? t('auth.createAccountSubtitle')
+                : t('auth.signInSubtitle')
               }
             </p>
           </div>
@@ -109,7 +109,7 @@ export function LoginPage() {
               {/* Email Input */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email address
+                  {t('auth.email')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -122,7 +122,7 @@ export function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-                    placeholder="you@company.com"
+                    placeholder={t('auth.emailPlaceholder')}
                   />
                 </div>
               </div>
@@ -130,7 +130,7 @@ export function LoginPage() {
               {/* Password Input */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
+                  {t('auth.password')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -143,7 +143,7 @@ export function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-                    placeholder="Enter your password"
+                    placeholder={t('auth.passwordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -170,7 +170,7 @@ export function LoginPage() {
                     className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                    Remember me
+                    {t('auth.rememberMe')}
                   </label>
                 </div>
 
@@ -179,7 +179,7 @@ export function LoginPage() {
                     type="button"
                     className="text-sm text-violet-600 hover:text-violet-700 font-medium"
                   >
-                    Forgot password?
+                    {t('auth.forgotPassword')}
                   </button>
                 )}
               </div>
@@ -194,11 +194,11 @@ export function LoginPage() {
               {loading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {isSignUp ? 'Creating account...' : 'Signing in...'}
+                  {isSignUp ? t('auth.creatingAccount') : t('auth.signingIn')}
                 </div>
               ) : (
                 <>
-                  {isSignUp ? 'Create account' : 'Sign in'}
+                  {isSignUp ? t('auth.createAccountButton') : t('auth.signIn')}
                   <ArrowRightIcon className="h-5 w-5 ml-2" />
                 </>
               )}
@@ -208,7 +208,7 @@ export function LoginPage() {
             {/* Toggle Sign In/Sign Up */}
             <div className="text-center">
               <span className="text-sm text-gray-600">
-                {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+                {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.dontHaveAccount')}
               </span>
               <button
                 type="button"
@@ -218,7 +218,7 @@ export function LoginPage() {
                 }}
                 className="ml-2 text-sm font-medium text-violet-600 hover:text-violet-700"
               >
-                {isSignUp ? 'Sign in' : 'Create account'}
+                {isSignUp ? t('auth.signIn') : t('auth.createAccountButton')}
               </button>
             </div>
 
@@ -230,10 +230,10 @@ export function LoginPage() {
                     <SparklesIcon className="h-5 w-5 text-blue-600" />
                   </div>
                   <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-blue-900">Demo Account</p>
+                    <p className="text-sm font-medium text-blue-900">{t('auth.demoAccount')}</p>
                     <div className="mt-2 text-sm text-blue-700">
-                      <p><span className="font-medium">Email:</span> demo@warren.vortex.com</p>
-                      <p><span className="font-medium">Password:</span> WarrenDemo2024!</p>
+                      <p><span className="font-medium">{t('auth.email')}:</span> demo@warren.vortex.com</p>
+                      <p><span className="font-medium">{t('auth.password')}:</span> WarrenDemo2024!</p>
                     </div>
                   </div>
                 </div>
@@ -255,10 +255,10 @@ export function LoginPage() {
         <div className="relative z-10 flex flex-col justify-center px-12 text-white">
           <div className="max-w-lg">
             <h2 className="text-4xl font-bold mb-6">
-              Transform Your Financial Management
+              {t('auth.transformTitle')}
             </h2>
             <p className="text-xl text-violet-100 mb-8">
-              Transform your Excel financial data into beautiful dashboards and actionable insights.
+              {t('auth.transformSubtitle')}
             </p>
             
             {/* Feature List */}
@@ -276,12 +276,11 @@ export function LoginPage() {
             {/* Demo Info */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
               <p className="text-violet-100 mb-4">
-                <strong>Try the demo:</strong> Experience Warren's dashboard with pre-loaded sample financial data. 
-                No Excel upload required for the demo.
+                <strong>{t('auth.tryDemo')}:</strong> {t('auth.demoDescription')}
               </p>
               <div className="flex items-center text-violet-200">
                 <SparklesIcon className="h-5 w-5 mr-2" />
-                <span className="text-sm">Demo credentials provided on the login form</span>
+                <span className="text-sm">{t('auth.demoCredentialsProvided')}</span>
               </div>
             </div>
           </div>

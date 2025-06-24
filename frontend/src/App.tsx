@@ -21,6 +21,7 @@ import { AnalysisPage } from './pages/AnalysisPage'
 import { AnalysisPageTest } from './pages/AnalysisPageTest'
 import { AnalysisPageFixed } from './pages/AnalysisPageFixed'
 import { AnalysisPageDemo } from './pages/AnalysisPageDemo'
+import './i18n/config'
 
 function App() {
   return (

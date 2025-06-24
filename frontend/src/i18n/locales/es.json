@@ -1,4 +1,15 @@
 {
+  "nav": {
+    "home": "Inicio",
+    "dashboard": "Panel de Control",
+    "cashflow": "Flujo de Caja",
+    "pnl": "PyG",
+    "configuration": "Configuración",
+    "dataManagement": "Gestión de Datos",
+    "logout": "Cerrar Sesión",
+    "aiAnalysis": "Análisis IA",
+    "upload": "Subir Datos"
+  },
   "navigation": {
     "dashboard": "Panel",
     "upload": "Subir Datos"
@@ -7,17 +18,52 @@
     "welcome": "Bienvenido a Warren",
     "subtitle": "Panel de Flujo de Efectivo de Vortex",
     "email": "Correo electrónico",
-    "emailPlaceholder": "Ingresa tu correo",
+    "emailPlaceholder": "tu@empresa.com",
     "password": "Contraseña",
     "passwordPlaceholder": "Ingresa tu contraseña",
     "signIn": "Iniciar sesión",
     "logout": "Cerrar sesión",
     "loginError": "Credenciales inválidas",
-    "demoCredentials": "Credenciales de Demo:"
+    "demoCredentials": "Credenciales de Demo:",
+    "backToHome": "Volver al inicio",
+    "welcomeBack": "Bienvenido de nuevo",
+    "createAccount": "Crea tu cuenta",
+    "signInSubtitle": "Inicia sesión para acceder a tu panel financiero",
+    "createAccountSubtitle": "Crea una cuenta para acceder a la demo",
+    "rememberMe": "Recuérdame",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "signingIn": "Iniciando sesión...",
+    "creatingAccount": "Creando cuenta...",
+    "createAccountButton": "Crear cuenta",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "dontHaveAccount": "¿No tienes una cuenta?",
+    "demoAccount": "Cuenta Demo",
+    "transformTitle": "Transforma tu Gestión Financiera",
+    "transformSubtitle": "Convierte tus datos financieros de Excel en hermosos tableros y análisis accionables.",
+    "tryDemo": "Prueba la demo",
+    "demoDescription": "Experimenta el panel de Warren con datos financieros de muestra precargados. No se requiere cargar Excel para la demo.",
+    "demoCredentialsProvided": "Credenciales de demo proporcionadas en el formulario de inicio de sesión",
+    "features": {
+      "cashflow": "Visualización de flujo de caja",
+      "excelImport": "Importación de datos Excel",
+      "dashboards": "Tableros ejecutivos",
+      "scenarioPlanning": "Herramientas de planificación de escenarios"
+    }
   },
   "dashboard": {
     "title": "Panel Financiero",
     "subtitle": "Resumen de tus métricas de flujo de efectivo",
+    "cashflowOverview": "Resumen de Flujo de Caja",
+    "pnlOverview": "Resumen de PyG",
+    "monthlyMetrics": "Métricas Mensuales",
+    "yearToDate": "Año hasta la Fecha",
+    "currentMonth": "Mes Actual",
+    "previousMonth": "Mes Anterior",
+    "comparison": "vs {{previousMonth}}",
+    "keyInsights": "Puntos Clave",
+    "performanceOverview": "Resumen de Rendimiento",
+    "trendAnalysis": "Análisis de Tendencias y Pronósticos",
+    "projections": "Proyecciones",
     "metrics": {
       "lowestCash": "Efectivo Mínimo (6M)",
       "highestCash": "Efectivo Máximo (6M)",
@@ -38,21 +84,1056 @@
       "inflow": "Entrada",
       "outflow": "Salida",
       "cashflow": "Flujo Neto"
+    },
+    "help": {
+      "keyInsights": {
+        "title": "Comprendiendo las Perspectivas Financieras Clave",
+        "whatAre": "¿Qué son las Perspectivas Clave?",
+        "description": "Las perspectivas clave analizan sus últimos 3 meses de datos financieros para identificar patrones importantes, tendencias y eventos notables que impactan su flujo de caja.",
+        "purpose": "Estas perspectivas le ayudan a entender qué sucedió en su negocio y por qué.",
+        "currentInsights": "Sus Perspectivas Actuales",
+        "noInsights": "Aún no hay perspectivas disponibles. Cargue más datos para ver las perspectivas.",
+        "typesOfInsights": {
+          "title": "Tipos de Perspectivas",
+          "cashFlow": {
+            "title": "Patrones de Flujo de Caja",
+            "description": "Identifique meses con fuerte generación de efectivo vs. períodos de consumo de caja. Ayuda a entender los ciclos comerciales y las tendencias estacionales."
+          },
+          "income": {
+            "title": "Tendencias de Ingresos",
+            "description": "Rastree el crecimiento, declive o estabilidad de los ingresos durante el período analizado. Destaca los meses con mejor y peor rendimiento."
+          },
+          "outflow": {
+            "title": "Análisis de Salidas",
+            "description": "Detecte picos inusuales de salidas, éxitos en el control de costos o patrones de gastos. Identifica oportunidades para la optimización de costos."
+          },
+          "balance": {
+            "title": "Movimientos de Saldo",
+            "description": "Destaca cambios significativos en la posición de efectivo, puntos de saldo más bajo y períodos de recuperación después de déficits de efectivo."
+          }
+        },
+        "howGenerated": {
+          "title": "Cómo se Generan las Perspectivas",
+          "description": "Nuestra IA analiza sus datos financieros usando estos métodos:",
+          "methods": {
+            "trendDetection": {
+              "title": "Detección de Tendencias",
+              "description": "Identifica patrones de crecimiento, declive o estabilidad"
+            },
+            "anomalySpotting": {
+              "title": "Detección de Anomalías",
+              "description": "Encuentra picos o caídas inusuales en el flujo de caja"
+            },
+            "comparative": {
+              "title": "Análisis Comparativo",
+              "description": "Compara meses para identificar los mejores/peores rendimientos"
+            },
+            "riskAssessment": {
+              "title": "Evaluación de Riesgos",
+              "description": "Destaca posibles preocupaciones de flujo de caja"
+            }
+          }
+        },
+        "decisionMaking": {
+          "title": "Usando Perspectivas para Tomar Decisiones",
+          "subtitle": "Las perspectivas clave le ayudan a:",
+          "benefits": {
+            "understand": "Entender qué impulsó el buen o mal desempeño financiero",
+            "patterns": "Identificar patrones estacionales en su negocio",
+            "problems": "Detectar problemas potenciales antes de que se vuelvan críticos",
+            "strategies": "Reconocer estrategias exitosas que vale la pena repetir",
+            "datadriven": "Tomar decisiones basadas en datos sobre gastos e inversiones",
+            "prepare": "Prepararse para situaciones similares en el futuro"
+          }
+        },
+        "examples": {
+          "title": "Ejemplos de Perspectivas",
+          "subtitle": "Perspectivas comunes que podría ver:",
+          "positive": {
+            "title": "Perspectivas Positivas:",
+            "cashGeneration": "Marzo mostró la generación de efectivo más fuerte con un aumento de +$45K",
+            "expenseDecrease": "Los gastos operativos disminuyeron 12% comparado con el trimestre anterior",
+            "revenueGrowth": "El crecimiento de ingresos promedió 8% mes a mes"
+          },
+          "attention": {
+            "title": "Áreas de Atención:",
+            "lowestBalance": "Mayo experimentó el saldo de efectivo más bajo de $12K",
+            "expenseSpike": "Los gastos aumentaron 25% en abril debido a compras de equipos",
+            "cashDecline": "La generación de efectivo disminuyó por dos meses consecutivos"
+          }
+        }
+      },
+      "projections": {
+        "title": "Comprendiendo las Proyecciones de Flujo de Caja",
+        "whatAre": "¿Qué son las Proyecciones de Flujo de Caja?",
+        "description": "Las proyecciones de flujo de caja pronostican su posición financiera durante los próximos 6 meses basándose en patrones históricos, tendencias e inteligencia empresarial.",
+        "purpose": "Estas proyecciones le ayudan a planificar con anticipación y tomar decisiones financieras proactivas.",
+        "currentProjections": "Sus Proyecciones Actuales",
+        "noProjections": "Aún no hay proyecciones disponibles. Cargue más datos para ver pronósticos.",
+        "howWork": {
+          "title": "Cómo Funcionan las Proyecciones",
+          "trendAnalysis": {
+            "title": "Análisis de Tendencias",
+            "description1": "Analiza 3-6 meses de datos históricos para identificar patrones en ingresos,",
+            "description2": "gastos y generación de efectivo que probablemente continuarán."
+          },
+          "seasonal": {
+            "title": "Patrones Estacionales",
+            "description": "Identifica patrones mensuales o trimestrales recurrentes en su negocio para predecir comportamientos similares en el futuro."
+          },
+          "growthRates": {
+            "title": "Tasas de Crecimiento",
+            "description": "Calcula las tasas de crecimiento promedio para ingresos y gastos para proyectar el rendimiento futuro basado en la trayectoria actual."
+          },
+          "riskScenarios": {
+            "title": "Escenarios de Riesgo",
+            "description": "Modela desafíos potenciales como déficits de efectivo, necesidades de financiamiento u oportunidades para inversión en crecimiento."
+          }
+        },
+        "accuracy": {
+          "title": "Precisión de las Proyecciones",
+          "subtitle": "Consideraciones importantes sobre la precisión de las proyecciones:",
+          "nearTerm": {
+            "title": "Precisión a corto plazo",
+            "description": "1-2 meses adelante son los más confiables"
+          },
+          "dataQuality": {
+            "title": "La calidad de datos importa",
+            "description": "Más datos históricos = mejores proyecciones"
+          },
+          "externalFactors": {
+            "title": "Factores externos",
+            "description": "Los cambios del mercado no se consideran automáticamente"
+          },
+          "businessChanges": {
+            "title": "Cambios del negocio",
+            "description": "Nuevos productos/servicios pueden alterar las proyecciones"
+          }
+        },
+        "strategic": {
+          "title": "Usando Proyecciones Estratégicamente",
+          "subtitle": "Use las proyecciones para:",
+          "financialPlanning": {
+            "title": "Planificación Financiera:",
+            "shortfalls": "Planificar para déficits de efectivo",
+            "purchases": "Programar compras importantes",
+            "fundraising": "Programar recaudación de fondos",
+            "budgets": "Establecer presupuestos realistas"
+          },
+          "businessDecisions": {
+            "title": "Decisiones Empresariales:",
+            "hiring": "Planes de contratación y personal",
+            "investment": "Momento de inversión",
+            "inventory": "Gestión de inventario",
+            "growth": "Estrategias de crecimiento"
+          }
+        },
+        "examples": {
+          "title": "Ejemplos de Proyecciones",
+          "subtitle": "Proyecciones comunes que podría ver:",
+          "positive": {
+            "title": "Perspectiva Positiva:",
+            "balanceGrowth": "Se espera que el saldo de efectivo crezca 15% en los próximos 6 meses",
+            "positiveCashFlow": "Se proyecta mantener flujo de caja positivo hasta el Q2",
+            "revenueForecast": "El pronóstico de ingresos muestra una tendencia de crecimiento mensual del 8%"
+          },
+          "alerts": {
+            "title": "Alertas de Planificación:",
+            "lowBalance": "El saldo de efectivo puede caer por debajo de $20K en agosto",
+            "fundraising": "Considere recaudar fondos para septiembre para mantener la duración",
+            "expenseGrowth": "El crecimiento de gastos supera los ingresos - monitoree de cerca"
+          }
+        },
+        "updating": {
+          "title": "Actualizando Proyecciones",
+          "description": "Las proyecciones se actualizan automáticamente cuando carga nuevos datos financieros. Las actualizaciones regulares mejoran la precisión y mantienen los pronósticos relevantes.",
+          "review": "Revise las proyecciones mensualmente y compare los resultados reales con los pronósticos para validar la precisión."
+        }
+      },
+      "currentMonth": {
+        "title": "Comprendiendo las Métricas del Mes Actual",
+        "overview": {
+          "title": "Resumen del Mes Actual",
+          "currentMonth": "el mes actual",
+          "description": "Estas métricas muestran su rendimiento financiero para {{month}}, dándole una instantánea de la salud de su flujo de caja.",
+          "importance": "Estos son los números más importantes para monitorear para la gestión inmediata del flujo de caja."
+        },
+        "currentNumbers": "Sus Números Actuales",
+        "metrics": {
+          "totalInflow": "Entrada Total",
+          "totalOutflow": "Salida Total",
+          "finalBalance": "Saldo Final",
+          "cashGeneration": "Generación de Efectivo"
+        },
+        "explained": {
+          "title": "Métricas Explicadas",
+          "inflow": {
+            "title": "Entrada Total",
+            "description": "Todo el dinero que ingresa a su negocio este mes por ventas, servicios y otras fuentes de ingresos. Este es su número de \"línea superior\"."
+          },
+          "outflow": {
+            "title": "Salida Total",
+            "description": "Todo el dinero que sale de su negocio este mes incluyendo costos operacionales, salarios, alquiler y otras salidas empresariales."
+          },
+          "finalBalance": {
+            "title": "Balance Final",
+            "description": "Su posición de efectivo al final del mes. Fórmula: Balance Inicial + Entradas - Salidas"
+          },
+          "lowestBalance": {
+            "title": "Balance Mínimo",
+            "description": "El punto más bajo que alcanzó su balance de efectivo durante el mes. Importante para entender el momento del flujo de caja y evitar sobregiros."
+          },
+          "cashGeneration": {
+            "title": "Generación de Efectivo",
+            "description": "Flujo de caja neto del mes (Entradas - Salidas). Positivo significa que generó efectivo, negativo significa que consumió efectivo."
+          }
+        },
+        "healthIndicators": {
+          "title": "Indicadores de Salud",
+          "subtitle": "Lo que sus números le dicen:",
+          "positiveCashGeneration": "Generación de Efectivo Positiva:",
+          "negativeCashGeneration": "Generación de Efectivo Negativa:",
+          "lowFinalBalance": "Balance Final Bajo:",
+          "veryLowLowestBalance": "Balance Mínimo Muy Bajo:",
+          "healthyCashFlow": "Flujo de caja saludable",
+          "monitorExpenses": "Monitorear gastos",
+          "considerFunding": "Considerar financiamiento",
+          "cashFlowTimingRisk": "Riesgo de tiempo de flujo de caja"
+        },
+        "quickActions": {
+          "title": "Acciones Rápidas",
+          "subtitle": "Use estas métricas para:",
+          "action1": "Rastrear el rendimiento mensual vs objetivos",
+          "action2": "Identificar si tiene efectivo positivo o negativo",
+          "action3": "Detectar problemas potenciales de flujo de caja temprano",
+          "action4": "Tomar decisiones sobre gastos e inversiones",
+          "action5": "Planificar las necesidades de efectivo próximas",
+          "action6": "Comunicar la salud financiera a las partes interesadas"
+        }
+      },
+      "ytd": {
+        "title": "Comprendiendo el Resumen de Flujo de Caja Año hasta la Fecha",
+        "overview": {
+          "title": "Flujo de Caja Año hasta la Fecha",
+          "description": "Año hasta la Fecha muestra su rendimiento acumulado de flujo de caja desde el 1 de enero hasta el mes actual.",
+          "purpose": "Estos números le ayudan a entender su trayectoria financiera general para el año."
+        },
+        "performance": {
+          "title": "Su Rendimiento Año hasta la Fecha"
+        },
+        "strategic": {
+          "title": "Planificación Estratégica",
+          "subtitle": "Use los datos año hasta la fecha para:",
+          "uses": {
+            "compare": "Comparar contra metas y presupuestos anuales",
+            "project": "Proyectar el rendimiento del año completo",
+            "identify": "Identificar tendencias y patrones estacionales",
+            "adjust": "Hacer ajustes estratégicos a mitad de año",
+            "prepare": "Prepararse para los próximos trimestres",
+            "communicate": "Comunicar el progreso a inversores/partes interesadas"
+          }
+        },
+        "monthlyAverage": {
+          "title": "Promedio Mensual",
+          "subtitle": "Basado en sus datos año hasta la fecha:"
+        },
+        "metricsExplained": {
+          "title": "Métricas Explicadas",
+          "totalInflow": {
+            "title": "Entrada Total (YTD)",
+            "description": "Suma de todos los ingresos desde enero hasta el mes actual. Esto muestra su capacidad de generación de ingresos para el año."
+          },
+          "totalOutflow": {
+            "title": "Salida Total (YTD)",
+            "description": "Suma de todos los gastos desde enero hasta el mes actual. Ayuda a rastrear patrones de gastos y control de costos."
+          },
+          "netBalance": {
+            "title": "Saldo Neto (YTD)",
+            "description": "Su generación acumulada de efectivo para el año (Entrada Total - Salidas Totales). Muestra si es rentable año hasta la fecha."
+          }
+        },
+        "performanceAnalysis": {
+          "title": "Análisis de Rendimiento",
+          "subtitle": "Su rendimiento YTD indica:",
+          "positiveNetBalance": "Saldo Neto Positivo:",
+          "negativeNetBalance": "Saldo Neto Negativo:",
+          "growingIncome": "Ingresos Crecientes:",
+          "highExpenseRatio": "Ratio de Gastos Alto:",
+          "profitableYear": "Año rentable hasta ahora",
+          "operatingAtLoss": "Operando con pérdidas YTD",
+          "businessExpanding": "Negocio en expansión",
+          "reviewCostStructure": "Revisar estructura de costos"
+        },
+        "labels": {
+          "totalInflow": "Entrada Total",
+          "totalOutflow": "Salida Total",
+          "netBalance": "Saldo Neto",
+          "averageMonthlyIncome": "Ingreso Mensual Promedio",
+          "averageMonthlyExpense": "Gasto Mensual Promedio"
+        }
+      },
+      "fullYear": {
+        "title": "Comprendiendo el Gráfico de Flujo de Caja del Año Completo",
+        "overview": {
+          "title": "Resumen del Año Completo 2025",
+          "description": "Este gráfico muestra su rendimiento mensual de flujo de caja durante todo el año, combinando datos históricos reales con pronósticos proyectados.",
+          "purpose": "Le ayuda a visualizar tendencias, estacionalidad y planificar futuras necesidades de efectivo."
+        },
+        "reading": {
+          "title": "Leyendo el Gráfico",
+          "actual": {
+            "label": "Datos Reales (Más Oscuro)",
+            "description": "Flujo de caja real de meses que ya han ocurrido"
+          },
+          "forecast": {
+            "label": "Pronóstico (Más Claro)",
+            "description": "Flujo de caja proyectado para meses futuros basado en tendencias"
+          }
+        },
+        "chartData": {
+          "title": "Lo que Muestra el Gráfico",
+          "dataPoints": "Puntos de Datos",
+          "actualMonths": "Meses Reales",
+          "forecastedMonths": "Meses Pronosticados",
+          "monthsOfData": "{{count}} meses de datos",
+          "completed": "{{count}} completados",
+          "projected": "{{count}} proyectados"
+        },
+        "patterns": {
+          "title": "Patrones Clave a Buscar",
+          "upward": {
+            "title": "Tendencia Ascendente",
+            "description": "El flujo de caja mejora con el tiempo - indica crecimiento empresarial y mejor salud financiera."
+          },
+          "seasonal": {
+            "title": "Patrones Estacionales",
+            "description": "Altibajos regulares que se repiten anualmente - ayuda a predecir necesidades de efectivo durante períodos lentos."
+          },
+          "volatility": {
+            "title": "Volatilidad",
+            "description": "Grandes fluctuaciones mes a mes pueden indicar ingresos inconsistentes o gastos irregulares."
+          },
+          "declining": {
+            "title": "Tendencia Declinante",
+            "description": "Flujo de caja empeorando consistentemente - puede requerir intervención estratégica inmediata."
+          }
+        },
+        "strategicInsights": {
+          "title": "Perspectivas Estratégicas",
+          "description": "Usa este gráfico para:",
+          "planReserves": "Planificar reservas de efectivo:",
+          "planReservesDesc": "Identificar períodos de bajo flujo de caja para preparar financiamiento",
+          "timeExpenses": "Programar gastos importantes:",
+          "timeExpensesDesc": "Programar compras grandes durante meses de alto flujo de caja",
+          "setGoals": "Establecer metas realistas:",
+          "setGoalsDesc": "Basar objetivos en rendimiento histórico y tendencias",
+          "communicate": "Comunicar con inversores:",
+          "communicateDesc": "Mostrar trayectoria del negocio y proyecciones futuras"
+        },
+        "forecastAccuracy": {
+          "title": "Precisión del Pronóstico",
+          "description": "Notas importantes sobre las proyecciones:",
+          "nearTerm": "Pronósticos a corto plazo",
+          "nearTermDesc": "(1-2 meses) son más confiables",
+          "longer": "Proyecciones más largas",
+          "longerDesc": "se vuelven menos precisas debido a cambios del mercado",
+          "historical": "Patrones históricos",
+          "historicalDesc": "se usan para generar pronósticos",
+          "external": "Factores externos",
+          "externalDesc": "(cambios del mercado, nueva competencia) no se predicen",
+          "regular": "Actualizaciones regulares",
+          "regularDesc": "mejoran la precisión del pronóstico con el tiempo"
+        }
+      },
+      "trendForecast": {
+        "title": "Comprendiendo el Análisis de Tendencias y Pronósticos",
+        "whatAre": {
+          "title": "¿Qué son los Pronósticos de Tendencias?",
+          "description": "Los pronósticos de tendencias usan análisis estadístico de sus datos históricos para proyectar el rendimiento futuro, ayudándole a planificar y tomar decisiones informadas.",
+          "method": "Nuestro sistema usa ",
+          "methodLinearRegression": "regresión lineal",
+          "methodEnd": " para identificar tendencias y proyectarlas con intervalos de confianza."
+        },
+        "chartElements": {
+          "title": "Elementos del Gráfico",
+          "solidLine": {
+            "label": "Línea Sólida",
+            "description": "Datos históricos reales"
+          },
+          "dashedLine": {
+            "label": "Línea Punteada",
+            "description": "Proyección de pronóstico"
+          },
+          "shadedArea": {
+            "label": "Área Sombreada",
+            "description": "Intervalo de confianza del 95%"
+          }
+        },
+        "howItWorks": {
+          "title": "Cómo Funciona el Pronóstico",
+          "trendAnalysis": {
+            "title": "1. Análisis de Tendencias",
+            "description": "Analiza puntos de datos históricos para identificar la dirección general y tasa de cambio"
+          },
+          "linearRegression": {
+            "title": "2. Regresión Lineal",
+            "description": "Calcula la línea de mejor ajuste a través de sus datos para proyectar valores futuros"
+          },
+          "confidenceIntervals": {
+            "title": "3. Intervalos de Confianza",
+            "description": "Muestra el rango donde es probable que caigan los valores futuros (95% de probabilidad)"
+          }
+        },
+        "summaryCards": {
+          "title": "Tarjetas de Resumen",
+          "currentTrend": {
+            "label": "Tendencia Actual",
+            "description": "Tasa de crecimiento mensual"
+          },
+          "sixMonthForecast": {
+            "label": "Pronóstico a 6 Meses",
+            "description": "Valor final proyectado"
+          },
+          "confidenceRange": {
+            "label": "Rango de Confianza",
+            "description": "Incertidumbre del pronóstico"
+          }
+        },
+        "considerations": {
+          "title": "Consideraciones Importantes",
+          "description": "Tenga en cuenta:",
+          "nearTermAccuracy": "Precisión a corto plazo:",
+          "nearTermAccuracyDesc": "Los pronósticos son más confiables para 1-2 meses adelante",
+          "linearAssumption": "Suposición lineal:",
+          "linearAssumptionDesc": "Asume que las tendencias continúan al mismo ritmo",
+          "externalFactors": "Factores externos:",
+          "externalFactorsDesc": "No puede predecir cambios del mercado o disrupciones",
+          "historicalBasis": "Base histórica:",
+          "historicalBasisDesc": "Se basa en que los patrones pasados continúen",
+          "regularUpdates": "Actualizaciones regulares:",
+          "regularUpdatesDesc": "Vuelva a ejecutar pronósticos mensualmente para mejores resultados"
+        },
+        "strategicUse": {
+          "title": "Uso Estratégico",
+          "description": "Use los pronósticos para:",
+          "budgetPlanning": "Planificación presupuestaria:",
+          "budgetPlanningDesc": "Establecer objetivos financieros realistas",
+          "cashManagement": "Gestión de efectivo:",
+          "cashManagementDesc": "Prepararse para déficits proyectados",
+          "growthPlanning": "Planificación de crecimiento:",
+          "growthPlanningDesc": "Identificar cuándo invertir o expandirse",
+          "riskAssessment": "Evaluación de riesgos:",
+          "riskAssessmentDesc": "Comprender escenarios potenciales",
+          "investorCommunication": "Comunicación con inversores:",
+          "investorCommunicationDesc": "Compartir proyecciones basadas en datos"
+        }
+      },
+      "heatMap": {
+        "title": "Comprendiendo los Mapas de Calor de Rendimiento",
+        "whatAre": {
+          "title": "¿Qué son los Mapas de Calor de Rendimiento?",
+          "description": "Los mapas de calor proporcionan una representación visual de su rendimiento financiero a través de los meses, usando intensidad de color para mostrar niveles de rendimiento relativo.",
+          "colorIntensity": {
+            "darker": "Colores más oscuros/brillantes",
+            "lighter": "Colores más claros/desvanecidos",
+            "darkerMeaning": "Mejor rendimiento",
+            "lighterMeaning": "Menor rendimiento"
+          }
+        },
+        "colorCoding": {
+          "title": "Codificación de Colores",
+          "green": {
+            "label": "Verde (Excelente)",
+            "description": "Rendimiento superior, por encima de los objetivos"
+          },
+          "yellow": {
+            "label": "Amarillo (Bueno)",
+            "description": "Rendimiento aceptable, cumpliendo expectativas"
+          },
+          "red": {
+            "label": "Rojo (Necesita Atención)",
+            "description": "Por debajo de objetivos, requiere mejora"
+          }
+        },
+        "interactive": {
+          "title": "Características Interactivas",
+          "hover": "Pase el cursor",
+          "hoverDesc": "sobre cualquier celda para ver detalles rápidos",
+          "click": "Haga clic",
+          "clickDesc": "en cualquier mes para ver métricas completas",
+          "compare": "Compare",
+          "compareDesc": "meses visualmente de un vistazo",
+          "identify": "Identifique",
+          "identifyDesc": "patrones estacionales y tendencias"
+        },
+        "availableMetrics": {
+          "title": "Métricas Disponibles",
+          "cashFlow": {
+            "title": "Rendimiento de Flujo de Caja",
+            "description": "Generación o consumo mensual de efectivo, mostrando tendencias de liquidez"
+          },
+          "inflowHeatMap": {
+            "title": "Mapa de Calor de Entradas",
+            "description": "Patrones de ingresos para identificar sus meses de entrada más fuertes"
+          }
+        },
+        "howToUse": {
+          "title": "Cómo Usar",
+          "description": "Use mapas de calor para:",
+          "spotPatterns": "Detectar patrones:",
+          "spotPatternsDesc": "Identificar tendencias estacionales en su negocio",
+          "comparePerformance": "Comparar rendimiento:",
+          "comparePerformanceDesc": "Ver qué meses son más fuertes/débiles",
+          "planAhead": "Planificar con anticipación:",
+          "planAheadDesc": "Usar patrones históricos para planificación futura",
+          "quickAssessment": "Evaluación rápida:",
+          "quickAssessmentDesc": "Obtener vista general visual instantánea del rendimiento anual"
+        }
+      }
+    }
+  },
+  "cashflow": {
+    "totalIncome": "Ingresos Totales",
+    "totalExpense": "Gastos Totales",
+    "finalBalance": "Saldo Final",
+    "lowestBalance": "Saldo Más Bajo",
+    "monthlyGeneration": "Generación Mensual",
+    "cashInflows": "Entradas de Caja",
+    "cashOutflows": "Salidas de Caja",
+    "netCashFlow": "Flujo de Caja Neto",
+    "cashRunway": "Duración de Caja",
+    "burnRate": "Tasa de Consumo",
+    "yearToDateSummary": "Resumen Año hasta la Fecha",
+    "totalInflow": "Entrada Total",
+    "totalOutflow": "Salida Total",
+    "totalIncomeAccumulated": "Ingresos totales acumulados",
+    "totalOutflowIncurred": "Salidas totales incurridas",
+    "pdfTitle": "Reporte Financiero de Flujo de Caja",
+    "uploadTitle": "Subir Datos de Flujo de Caja",
+    "uploadDescription": "Importa tu archivo Excel para analizar movimientos de caja y salud financiera",
+    "demoModeTitle": "Modo Demo Activo",
+    "demoModeDescription": "La carga de archivos está deshabilitada en modo demo. Los datos mostrados son datos de muestra con fines demostrativos.",
+    "netBalance": "Saldo Neto",
+    "netPositionYTD": "Posición neta año hasta la fecha",
+    "totalInvestment": "Inversión Total",
+    "capitalDeployedYTD": "Capital desplegado año hasta la fecha",
+    "monthlyCashflowPerformance": "Rendimiento Mensual de Flujo de Caja",
+    "monthlyInflowHeatMap": "Mapa de Calor de Entradas Mensuales",
+    "fullYearOverview": "Resumen Año Completo 2025",
+    "actualData": "Datos Reales",
+    "forecast": "Pronóstico",
+    "cashflowAnalysis": "Análisis de Flujo de Caja",
+    "advancedAnalytics": "Análisis Avanzado",
+    "extendedFinancialAnalysis": "Análisis Financiero Extendido",
+    "exchangeRateBaseline": "Tipo de Cambio (base USD)",
+    "helpCurrentMonth": "Entendiendo las métricas del mes actual",
+    "helpYTD": "Entendiendo el resumen de flujo de caja YTD",
+    "helpPerformance": "Entendiendo los mapas de calor de rendimiento",
+    "helpChart": "Entendiendo el gráfico de flujo de caja del año completo",
+    "helpProjections": "Entendiendo las proyecciones de flujo de caja",
+    "helpKeyInsights": "Entendiendo los puntos clave financieros"
+  },
+  "pnl": {
+    "revenue": "Ingresos",
+    "cogs": "Costo de Ventas",
+    "grossProfit": "Utilidad Bruta",
+    "grossMargin": "Margen Bruto",
+    "operatingExpenses": "Gastos Operativos",
+    "operatingIncome": "Resultado Operativo",
+    "operatingMargin": "Margen Operativo",
+    "netIncome": "Utilidad Neta",
+    "netMargin": "Margen Neto",
+    "ebitda": "EBITDA",
+    "ebitdaMargin": "Margen EBITDA",
+    "margin": "margen",
+    "ofSales": "de ventas",
+    "dashboard": {
+      "title": "Panel de Pérdidas y Ganancias",
+      "subtitle": "Sube tu estado de PyG para ver información financiera",
+      "financialPerformance": "Análisis de rendimiento financiero e información"
+    },
+    "upload": {
+      "title": "Subir Estado de PyG",
+      "description": "Importa tu archivo Excel de Pérdidas y Ganancias para analizar el rendimiento financiero"
+    },
+    "pdf": {
+      "title": "Reporte Financiero de PyG"
+    },
+    "demoMode": {
+      "title": "Modo Demo",
+      "description": "Estos son datos de PyG de muestra con fines demostrativos",
+      "active": "Modo Demo Activo",
+      "uploadDisabled": "La carga de archivos está deshabilitada en modo demo. Los datos de PyG mostrados son datos de muestra con fines demostrativos."
+    },
+    "comparison": {
+      "compareAgainst": "Comparar contra:",
+      "helpTitle": "Aprende sobre períodos de comparación",
+      "previousMonth": "Mes Anterior",
+      "previousQuarter": "Trimestre Anterior",
+      "sameLastYear": "Mismo Período Año Anterior",
+      "noYearData": "Datos históricos año tras año no disponibles. Mostrando comparación mes tras mes."
+    },
+    "overview": {
+      "title": "Resumen de PyG"
+    },
+    "exchangeRate": {
+      "label": "Tipo de Cambio:"
+    },
+    "help": {
+      "understandingMetrics": "Entendiendo las métricas de PyG",
+      "revenueGrowth": "Entendiendo las métricas de crecimiento de ingresos",
+      "personnelCost": "Entendiendo las métricas de costos de personal",
+      "costEfficiency": "Entendiendo las métricas de eficiencia de costos",
+      "performanceHeatMaps": "Entendiendo los mapas de calor de rendimiento",
+      "performanceHeatMap": {
+        "title": "Entendiendo los Mapas de Calor de Rendimiento",
+        "whatAre": "¿Qué son los Mapas de Calor de Rendimiento?",
+        "description": "Los mapas de calor proporcionan una representación visual de su rendimiento de PyG en todos los meses, utilizando la intensidad del color para mostrar los niveles de rendimiento relativos."
+      },
+      "trendForecasts": "Entendiendo los pronósticos de tendencias",
+      "trendForecast": {
+        "title": "Entendiendo los Pronósticos de Tendencias de PyG",
+        "pnlForecasting": "Pronóstico de PyG",
+        "forecastDescription": "Los pronósticos de PyG proyectan sus futuros ingresos y rentabilidad basados en"
+      },
+      "profitMarginsChart": "Entendiendo el gráfico de márgenes de ganancia",
+      "profitMargins": {
+        "title": "Entendiendo la Tendencia de Márgenes de Ganancia",
+        "profitMarginsTrendChart": "Gráfico de Tendencia de Márgenes de Ganancia",
+        "chartDescription": "Este gráfico rastrea sus márgenes de ganancia bruta y neta a lo largo del tiempo, mostrando qué tan eficientemente su negocio convierte los ingresos en ganancias en diferentes meses.",
+        "marginsImportance": "Los márgenes son más importantes que los montos absolutos en dólares porque muestran la eficiencia de rentabilidad.",
+        "readingTheChart": "Leyendo el Gráfico",
+        "grossMarginGreenLine": "Margen Bruto % (Línea Verde)",
+        "grossMarginDesc": "Muestra qué porcentaje de ingresos permanece después de los costos directos",
+        "netMarginPurpleLine": "Margen Neto % (Línea Púrpura)",
+        "netMarginDesc": "Muestra qué porcentaje de ingresos se convierte en ganancia final",
+        "strategicActions": "Acciones Estratégicas",
+        "useMarginTrends": "Use las tendencias de márgenes para optimizar la rentabilidad y tomar decisiones comerciales basadas en datos."
+      },
+      "revenueProfitabilityChart": "Entendiendo el gráfico de ingresos y rentabilidad",
+      "revenueProfitability": {
+        "title": "Entendiendo el Gráfico de Ingresos y Rentabilidad",
+        "chartTitle": "Gráfico de Ingresos y Rentabilidad",
+        "chartDescription": "Este gráfico de barras compara ingresos, ganancia bruta e ingreso neto en los meses, mostrando la \"cascada de ganancias\" desde los ingresos principales hasta la ganancia final.",
+        "absoluteAmounts": "Cada barra muestra montos absolutos en dólares, ayudándole a ver tanto las tendencias de crecimiento como la eficiencia de las ganancias.",
+        "readingTheChart": "Leyendo el Gráfico",
+        "revenueGreenBars": "Ingresos (Barras Verdes)",
+        "revenueDesc": "Ingreso total por ventas - su número de \"línea superior\"",
+        "grossProfitBlueBars": "Ganancia Bruta (Barras Azules)",
+        "grossProfitDesc": "Ingresos menos costos directos - lo que queda después de la producción",
+        "netIncomePurpleBars": "Ingreso Neto (Barras Púrpuras)",
+        "netIncomeDesc": "Ganancia final después de todos los gastos - su \"línea inferior\"",
+        "strategicInsights": "Perspectivas Estratégicas",
+        "useChartTo": "Use este gráfico para rastrear el crecimiento del negocio y las tendencias de rentabilidad a lo largo del tiempo."
+      },
+      "ytdSummary": "Entendiendo el resumen financiero YTD",
+      "comparisonPeriods": {
+        "title": "Entendiendo los Períodos de Comparación",
+        "whatAre": "¿Qué son los Períodos de Comparación?",
+        "description": "Los períodos de comparación le ayudan a entender cómo cambia el rendimiento de su negocio con el tiempo. Cada métrica muestra un cambio porcentual comparado con el período seleccionado.",
+        "previousMonth": "Mes Anterior",
+        "previousMonthDesc": "Compara las métricas del mes actual con el mes inmediatamente anterior. Útil para rastrear tendencias a corto plazo y variaciones estacionales.",
+        "example": "Ejemplo:",
+        "previousQuarter": "Trimestre Anterior",
+        "previousQuarterDesc": "Compara el mes actual con el mismo mes del trimestre anterior. Ayuda a identificar patrones trimestrales y crecimiento.",
+        "samePeriodLastYear": "Mismo Período del Año Pasado",
+        "samePeriodLastYearDesc": "Compara el mes actual con el mismo mes del año pasado. Mejor para entender el crecimiento año tras año y eliminar efectos estacionales."
+      },
+      "personnel": {
+        "title": "Entendiendo el Análisis de Costos de Personal",
+        "whatIs": "¿Qué es el Análisis de Costos de Personal?",
+        "description": "Los costos de personal son típicamente el mayor gasto para la mayoría de las empresas. Este análisis te ayuda a entender:",
+        "point1": "Costo total de tu fuerza laboral",
+        "point2": "Qué tan eficientemente estás utilizando el personal",
+        "point3": "El desglose de gastos relacionados con el personal",
+        "point4": "Costos de personal como porcentaje de ingresos",
+        "currentMetrics": "Tus Métricas de Personal Actuales",
+        "percentOfRevenue": "% de Ingresos",
+        "includesText": "Esto incluye salarios, impuestos sobre la nómina, cobertura de salud y beneficios",
+        "keyMetrics": "Métricas Clave Explicadas",
+        "totalCostDesc": "Suma de todos los gastos relacionados con empleados incluyendo salarios, impuestos y beneficios. Referencia de la industria: 20-50% de ingresos dependiendo del tipo de negocio.",
+        "efficiencyDesc": "Ingresos generados por ARS gastado en personal. Más alto es mejor. Fórmula: Ingresos ÷ Costo de Personal",
+        "vsOpexDesc": "Muestra qué porción de los gastos operativos va al personal. Típicamente 50-70% para empresas de servicios, menor para empresas de productos.",
+        "costBreakdownComponents": "Componentes del Desglose de Costos",
+        "salaries": "Salarios:",
+        "salariesDesc": "Compensación base para empleados",
+        "payrollTaxes": "Impuestos sobre Nómina:",
+        "payrollTaxesDesc": "Impuestos pagados por el empleador sobre los salarios",
+        "healthCoverage": "Cobertura de Salud:",
+        "healthCoverageDesc": "Seguro médico, dental, de visión",
+        "benefits": "Beneficios:",
+        "benefitsDesc": "Jubilación, PTO, otros beneficios",
+        "personnelAllocation": "Asignación de Personal",
+        "understandingAllocation": "Entendiendo dónde se asignan sus costos de personal:",
+        "costOfRevenue": "Costo de Ingresos",
+        "directProduction": "Producción Directa",
+        "staffGeneratingRevenue": "Personal que genera ingresos directamente",
+        "operatingExpenses": "Gastos Operativos",
+        "supportFunctions": "Funciones de Apoyo",
+        "adminSalesManagement": "Administración, ventas, gerencia",
+        "optimizationTips": "Consejos de Optimización",
+        "waysToImprove": "Formas de mejorar la eficiencia del personal:",
+        "trackRevenuePerEmployee": "Rastrear ingresos por empleado a lo largo del tiempo",
+        "compareIndustryBenchmarks": "Comparar costos de personal con referencias de la industria",
+        "analyzeProductivityMetrics": "Analizar métricas de productividad por departamento",
+        "considerAutomation": "Considerar automatización para tareas repetitivas",
+        "investInTraining": "Invertir en capacitación para aumentar la productividad",
+        "reviewBenefitCosts": "Revisar regularmente los costos de beneficios para ahorrar"
+      },
+      "costEfficiency": {
+        "title": "Entendiendo las Métricas de Eficiencia de Costos",
+        "whatAre": "¿Qué son las Métricas de Eficiencia de Costos?",
+        "description": "Las métricas de eficiencia de costos le ayudan a entender qué tan efectivamente su empresa convierte los ingresos en ganancias analizando la estructura y proporciones de costos.",
+        "lowerBetter": "Los porcentajes más bajos generalmente indican mejor eficiencia y mayor rentabilidad.",
+        "currentMetrics": "Sus Métricas de Eficiencia Actuales",
+        "metrics": {
+          "costOfRevenuePercent": "Costo de Ingresos %",
+          "operatingExpensePercent": "Gastos Operativos %"
+        },
+        "totalCosts": "Los costos totales son {{percentage}}% de los ingresos",
+        "explained": {
+          "title": "Métricas Explicadas",
+          "cor": {
+            "title": "Costo de Ingresos % (CoR%)",
+            "description": "Costos directos para producir su producto/servicio como % de ingresos. Menor es mejor. Referencias de la industria:",
+            "benchmarks": {
+              "software": "Software: 20-30%",
+              "services": "Servicios: 50-70%",
+              "manufacturing": "Manufactura: 60-80%"
+            }
+          },
+          "opex": {
+            "title": "Gastos Operativos % (OpEx%)",
+            "description": "Costos generales (ventas, administración, I+D) como % de ingresos. Incluye todos los gastos no directamente vinculados a la producción. Objetivo: 20-40% para empresas saludables."
+          }
+        },
+        "strategicUse": {
+          "title": "Usando Métricas de PyG",
+          "description": "Use estas métricas para:",
+          "comparePerformance": "Comparar el rendimiento mes a mes",
+          "benchmark": "Comparar con estándares de la industria",
+          "identifyOptimization": "Identificar áreas para optimización de costos",
+          "trackProgress": "Rastrear el progreso hacia objetivos de rentabilidad",
+          "makePricingDecisions": "Tomar decisiones de precios e inversión",
+          "communicateStakeholders": "Comunicar el desempeño a las partes interesadas"
+        }
+      },
+      "revenueGrowth": {
+        "title": "Entendiendo el Análisis de Crecimiento de Ingresos",
+        "growthMetricsExplained": "Métricas de Crecimiento Explicadas",
+        "monthOverMonthGrowthDesc": "Compara los ingresos del mes actual con el mes anterior. Muestra el impulso inmediato. Objetivo: 5-20% de crecimiento mensual para negocios saludables.",
+        "averageMonthlyRevenueDesc": "Su rendimiento de ingresos base en todos los meses analizados. Utilizado para presupuestar y pronosticar períodos futuros.",
+        "revenueTrendDesc": "Dirección general comparando el primer y último mes del período. Las tendencias crecientes indican expansión comercial y éxito en el mercado.",
+        "growthBenchmarks": "Referencias de Crecimiento",
+        "howDoesYourGrowthCompare": "¿Cómo se compara su crecimiento?",
+        "excellentGrowth": "Crecimiento Excelente:",
+        "excellentGrowthRange": ">15% mensual",
+        "goodGrowth": "Buen Crecimiento:",
+        "goodGrowthRange": "5-15% mensual",
+        "stable": "Estable:",
+        "stableRange": "0-5% mensual",
+        "declining": "Declinando:",
+        "decliningRange": "<0% mensual",
+        "growthStrategies": "Estrategias de Crecimiento",
+        "waysToAccelerateGrowth": "Formas de acelerar el crecimiento de ingresos:",
+        "customerAcquisition": "Adquisición de Clientes:",
+        "improveMarketingCampaigns": "Mejorar campañas de marketing",
+        "expandToNewMarkets": "Expandir a nuevos mercados",
+        "enhanceProductOfferings": "Mejorar ofertas de productos",
+        "referralPrograms": "Programas de referidos",
+        "customerRetention": "Retención de Clientes:",
+        "upsellExistingCustomers": "Vender más a clientes existentes",
+        "improveCustomerService": "Mejorar el servicio al cliente",
+        "loyaltyPrograms": "Programas de lealtad",
+        "regularValueDelivery": "Entrega regular de valor",
+        "readingGrowthPatterns": "Leyendo Patrones de Crecimiento",
+        "consistentGrowth": "Crecimiento Consistente:",
+        "consistentGrowthDesc": "Aumentos constantes mes a mes",
+        "seasonalPatterns": "Patrones Estacionales:",
+        "seasonalPatternsDesc": "Altibajos regulares durante todo el año",
+        "volatility": "Volatilidad:",
+        "volatilityDesc": "Las grandes fluctuaciones pueden indicar factores externos",
+        "decliningTrend": "Tendencia Declinante:",
+        "decliningTrendDesc": "Puede requerir acción estratégica inmediata"
+      }
+    },
+    "revenueGrowth": {
+      "title": "Análisis de Crecimiento de Ingresos",
+      "monthOverMonth": "Crecimiento Mes a Mes",
+      "averageMonthly": "Ingreso Promedio Mensual",
+      "trend": "Tendencia de Ingresos",
+      "growing": "Creciendo",
+      "declining": "Declinando",
+      "vsFirstMonth": "Desde {{month}}"
+    },
+    "personnel": {
+      "title": "Análisis de Costos de Personal",
+      "totalCost": "Costo Total de Personal",
+      "ofRevenue": "de Ingresos",
+      "efficiency": "Eficiencia de Personal",
+      "revenuePerArs": "Ingresos por ARS de Personal",
+      "vsOpex": "Personal vs Gastos Op",
+      "ofOperatingExpenses": "de Gastos Operativos",
+      "costBreakdown": "Desglose de Costos",
+      "totalFormula": "Total = Salarios + Impuestos Nómina + Beneficios",
+      "totalSalaries": "Salarios Totales",
+      "percentageOfTotal": "Porcentaje del costo total de personal",
+      "payrollTaxes": "Impuestos sobre Nómina",
+      "healthBenefits": "Cobertura de Salud y Beneficios",
+      "allocation": "Asignación de Personal",
+      "costOfRevenue": "Costo de Ingresos"
+    },
+    "costStructure": {
+      "title": "Análisis de Estructura de Costos",
+      "majorCategories": "Categorías de Costos Principales",
+      "personnelCosts": "Costos de Personal",
+      "contractServices": "Servicios Contratados",
+      "otherCosts": "Otros Costos"
+    },
+    "costEfficiency": {
+      "title": "Métricas de Eficiencia de Costos",
+      "corPercent": "Costo de Ingresos %",
+      "opexPercent": "Gastos Op %",
+      "totalCostPercent": "Costo Total %",
+      "costPerRevenue": "Costo por ARS de Ingreso"
+    },
+    "keyInsights": "Puntos Clave",
+    "insights": {
+      "personnelCosts": "Los costos de personal representan {{percentage}}% de los ingresos",
+      "contractServices": "Los servicios contratados representan {{percentage}}% de los ingresos",
+      "totalCostStructure": "La estructura de costos total es {{percentage}}% de los ingresos"
+    },
+    "performance": {
+      "title": "Resumen de Rendimiento",
+      "monthlyRevenue": "Rendimiento de Ingresos Mensuales",
+      "monthlyNetMargin": "Rendimiento de Margen Neto Mensual"
+    },
+    "trends": {
+      "title": "Análisis de Tendencias y Pronósticos",
+      "revenueForecast": "Tendencia de Ingresos y Pronóstico a 6 Meses",
+      "netIncomeForecast": "Tendencia de Utilidad Neta y Pronóstico a 6 Meses"
+    },
+    "charts": {
+      "profitMarginsTrend": "Tendencia de Márgenes de Ganancia",
+      "revenueProfitability": "Ingresos y Rentabilidad",
+      "growthHigh": "Crecimiento >5%",
+      "growthMedium": "Crecimiento 0-5%",
+      "growthNegative": "Crecimiento Negativo",
+      "grossMarginPercent": "Margen Bruto %",
+      "netMarginPercent": "Margen Neto %"
+    },
+    "ytd": {
+      "title": "Resumen Año hasta la Fecha",
+      "uploadMoreData": "Sube 12+ meses de datos para ver comparaciones año tras año",
+      "totalRevenue": "Ingresos Totales",
+      "vsLastYear": "vs año anterior",
+      "totalEbitda": "EBITDA Total",
+      "totalCogs": "Costo de Ventas Total",
+      "totalOpex": "Gastos Operativos Totales",
+      "expenseRatio": "Ratio de Gastos"
     }
   },
   "upload": {
     "title": "Subir Datos de Flujo de Efectivo",
     "subtitle": "Sube tu archivo Excel para actualizar el panel",
-    "dragDrop": "Arrastra y suelta tu archivo Excel aquí, o haz clic para seleccionar",
+    "dragDrop": "Arrastra y suelta tu archivo Excel aquí",
     "fileTypes": "Solo se admiten archivos .xlsx",
     "uploading": "Subiendo...",
-    "uploadSuccess": "¡Archivo subido exitosamente!",
-    "uploadError": "Error al subir archivo. Inténtalo de nuevo."
+    "uploadSuccess": "¡Archivo subido y procesado exitosamente!",
+    "uploadError": "Error al subir archivo. Inténtalo de nuevo.",
+    "invalidFileType": "Por favor selecciona un archivo Excel válido (.xlsx o .xls)",
+    "currentlyUsing": "Actualmente usando",
+    "uploadedFile": "Archivo subido",
+    "fileSelected": "¡Archivo seleccionado!",
+    "orClickToBrowse": "o haz clic para buscar ({{formats}})",
+    "selectFile": "Seleccionar Archivo",
+    "processing": "Procesando...",
+    "processExcel": "Procesar Excel",
+    "uploadCancelled": "Carga cancelada"
   },
   "common": {
     "loading": "Cargando...",
     "error": "Ocurrió un error",
     "language": "Idioma",
-    "currency": "$"
+    "currency": "$",
+    "edit": "Editar",
+    "updated": "Actualizado",
+    "poor": "Pobre",
+    "excellent": "Excelente",
+    "forecast": "Pronóstico",
+    "period": "Período",
+    "target": "Objetivo",
+    "status": "Estado",
+    "positive": "✓ Positivo",
+    "negative": "⚠️ Negativo",
+    "trend": "Tendencia",
+    "growth": "Crecimiento",
+    "performance": "Rendimiento",
+    "clickOutsideOrEsc": "Haz clic afuera o presiona ESC para cerrar"
+  },
+  "home": {
+    "hero": {
+      "badge": "Bienvenido a Warren",
+      "title1": "Tu Centro de",
+      "title2": "Control Financiero",
+      "subtitle": "Experimenta análisis financiero de próxima generación con nuestra plataforma impulsada por IA. Toma decisiones basadas en datos con confianza y claridad."
+    },
+    "stats": {
+      "accuracy": "Precisión",
+      "monitoring": "Monitoreo",
+      "response": "Respuesta"
+    },
+    "modules": {
+      "cashflow": {
+        "title": "Gestión de Flujo de Caja",
+        "description": "Rastrea y analiza el flujo de caja de tu empresa, monitorea saldos y pronostica liquidez futura",
+        "features": {
+          "realtime": "Seguimiento de posición de caja en tiempo real",
+          "runway": "Análisis de duración de caja",
+          "scenario": "Planificación de escenarios",
+          "waterfall": "Visualizaciones en cascada"
+        },
+        "stats": {
+          "label": "Usuarios Activos"
+        }
+      },
+      "pnl": {
+        "title": "Análisis de Pérdidas y Ganancias",
+        "description": "Monitorea ingresos, egresos y métricas de rentabilidad con estados de P&G detallados",
+        "features": {
+          "tracking": "Seguimiento de ingresos y egresos",
+          "margin": "Análisis de márgenes",
+          "budget": "Comparación presupuesto vs real",
+          "trends": "Tendencias de rentabilidad"
+        },
+        "stats": {
+          "label": "Reportes Generados"
+        }
+      }
+    },
+    "highlights": {
+      "ai": {
+        "title": "Insights Impulsados por IA",
+        "description": "Obtén recomendaciones inteligentes basadas en los patrones de tus datos financieros"
+      },
+      "visual": {
+        "title": "Análisis Visual",
+        "description": "Hermosos gráficos que hacen fácil entender datos complejos"
+      },
+      "realtime": {
+        "title": "Actualizaciones en Tiempo Real",
+        "description": "Mantente informado con sincronización de datos en vivo y alertas instantáneas"
+      }
+    },
+    "accessModule": "Acceder al Módulo",
+    "whyChoose": "¿Por qué elegir Warren?",
+    "whyChooseSubtitle": "Características poderosas diseñadas para equipos financieros modernos",
+    "platformOverview": "Resumen de la Plataforma",
+    "overview": {
+      "activeModules": "Módulos Activos",
+      "modulesList": "Flujo de Caja y PyG",
+      "lastSync": "Última Sincronización",
+      "live": "En Vivo",
+      "realtimeUpdates": "Actualizaciones en tiempo real",
+      "dataSecurity": "Seguridad de Datos",
+      "enterpriseGrade": "Nivel empresarial"
+    }
+  },
+  "insights": {
+    "generatedFrom": "Los insights se generan basados en los patrones de tus datos financieros y las referencias de la industria",
+    "cashflow": {
+      "positiveCashGeneration": {
+        "title": "Generación Positiva de Caja",
+        "description": "Generó {{amount}} en {{month}}, manteniendo un flujo de caja saludable."
+      },
+      "negativeCashFlow": {
+        "title": "Flujo de Caja Negativo",
+        "description": "Las salidas de caja excedieron las entradas por {{amount}} en {{month}}."
+      },
+      "revenueSurge": {
+        "title": "Aumento de Ingresos",
+        "description": "Las entradas aumentaron un {{percentage}}% comparado con {{month}}."
+      },
+      "revenueDrop": {
+        "title": "Caída de Ingresos",
+        "description": "Las entradas disminuyeron un {{percentage}}% comparado con {{month}}."
+      },
+      "risingExpenses": {
+        "title": "Gastos Crecientes",
+        "description": "Los gastos aumentaron un {{percentage}}% de {{previousMonth}} a {{currentMonth}}."
+      },
+      "lowCashRunway": {
+        "title": "Duración de Caja Baja",
+        "description": "El saldo de caja actual cubre menos de 3 meses de gastos. Considera recaudar fondos o reducir costos."
+      },
+      "aboveSeasonalAverage": {
+        "title": "Por Encima del Promedio Estacional",
+        "description": "El rendimiento de {{month}} está 20% por encima del promedio histórico para este mes."
+      }
+    },
+    "pnl": {
+      "operatingAtLoss": {
+        "title": "Operando con Pérdida",
+        "description": "El margen neto es negativo en {{margin}}%. Enfócate en el crecimiento de ingresos o reducción de costos."
+      },
+      "strongProfitability": {
+        "title": "Rentabilidad Sólida",
+        "description": "Excelente margen neto de {{margin}}%, muy por encima de los estándares de la industria."
+      },
+      "lowGrossMargin": {
+        "title": "Margen Bruto Bajo",
+        "description": "El margen bruto en {{margin}}% puede limitar la rentabilidad. Considera optimizar precios o costos de ventas."
+      },
+      "highOperatingExpenses": {
+        "title": "Gastos Operativos Altos",
+        "description": "Los gastos operativos son {{ratio}}% de los ingresos. Revisa oportunidades de optimización de costos."
+      },
+      "revenueGrowth": {
+        "title": "Crecimiento de Ingresos",
+        "description": "Los ingresos crecieron un {{percentage}}% desde {{month}}."
+      },
+      "revenueDecline": {
+        "title": "Disminución de Ingresos",
+        "description": "Los ingresos disminuyeron un {{percentage}}% desde {{month}}."
+      },
+      "negativeEBITDA": {
+        "title": "EBITDA Negativo",
+        "description": "El rendimiento operativo antes de costos financieros es negativo. Se requiere atención inmediata."
+      },
+      "strongEBITDA": {
+        "title": "EBITDA Sólido",
+        "description": "El margen EBITDA de {{margin}}% indica una eficiencia operativa saludable."
+      }
+    }
+  },
+  "heatmap": {
+    "basedOnMargin": "Basado en margen %",
+    "relativeToPeriod": "Relativo al rango del período",
+    "forecastData": "Datos de pronóstico",
+    "performanceDetails": "Detalles de Rendimiento",
+    "industryAverage": "Promedio de la industria",
+    "aboveTarget": "✓ Por encima del objetivo",
+    "belowTarget": "↑ Por debajo del objetivo",
+    "improving": "↑ Mejorando",
+    "declining": "↓ Declinando",
+    "ranking": "Clasificación",
+    "ofMonths": "de {{count}} meses",
+    "profitability": "Rentabilidad",
+    "profitable": "✓ Rentable",
+    "loss": "⚠️ Pérdida"
+  },
+  "charts": {
+    "actualRevenue": "Ingresos Reales",
+    "actualProfit": "Ganancia Real",
+    "actualExpenses": "Gastos Reales",
+    "actualCashflow": "Flujo de Caja Real",
+    "trendLine": "Línea de Tendencia",
+    "upperConfidence": "Confianza Superior (95%)",
+    "lowerConfidence": "Confianza Inferior (95%)",
+    "noDataForForecasting": "No hay datos disponibles para pronóstico",
+    "currentTrend": "Tendencia Actual",
+    "monthly": "mensual",
+    "monthForecast": "Pronóstico a {{months}} Meses",
+    "confidenceRange": "Rango de Confianza"
   }
 }

@@ -12,6 +12,7 @@ import {
   Filler,
   ChartOptions
 } from 'chart.js'
+import { useTranslation } from 'react-i18next'
 
 ChartJS.register(
   CategoryScale,
@@ -46,6 +47,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
   type,
   forecastMonths = 6
 }) => {
+  const { t } = useTranslation()
   const { chartData, forecastData, confidenceBands } = useMemo(() => {
     if (!data?.chartData || data.chartData.length === 0) {
       return { chartData: null, forecastData: [], trendLine: [], confidenceBands: { upper: [], lower: [] } }
@@ -143,7 +145,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
         labels: [...actualData.map((d: DataPoint) => d.month), ...forecastData.map(d => d.month)],
         datasets: [
           {
-            label: `Actual ${metric.charAt(0).toUpperCase() + metric.slice(1)}`,
+            label: t(`charts.actual${metric.charAt(0).toUpperCase() + metric.slice(1)}`),
             data: [...actualData.map((d: DataPoint) => d.y), ...Array(forecastMonths).fill(null)],
             borderColor: '#10B981',
             backgroundColor: '#10B98120',
@@ -153,7 +155,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
             tension: 0.1
           },
           {
-            label: 'Forecast',
+            label: t('common.forecast'),
             data: [...Array(actualData.length - 1).fill(null), actualData[actualData.length - 1].y, ...forecastData.map(d => d.y)],
             borderColor: '#3B82F6',
             backgroundColor: '#3B82F620',
@@ -164,7 +166,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
             tension: 0.1
           },
           {
-            label: 'Trend Line',
+            label: t('charts.trendLine'),
             data: [...actualTrendLine, ...forecastTrendLine].map(d => d.y),
             borderColor: '#6B7280',
             borderWidth: 1,
@@ -173,7 +175,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
             fill: false
           },
           {
-            label: 'Upper Confidence (95%)',
+            label: t('charts.upperConfidence'),
             data: upperBand.map(d => d.y),
             borderColor: '#3B82F650',
             backgroundColor: '#3B82F610',
@@ -182,7 +184,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
             fill: '+1'
           },
           {
-            label: 'Lower Confidence (95%)',
+            label: t('charts.lowerConfidence'),
             data: lowerBand.map(d => d.y),
             borderColor: '#3B82F650',
             backgroundColor: '#3B82F610',
@@ -256,7 +258,7 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
   if (!chartData) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="text-center text-gray-500">No data available for forecasting</div>
+        <div className="text-center text-gray-500">{t('charts.noDataForForecasting')}</div>
       </div>
     )
   }
@@ -275,19 +277,19 @@ export const TrendForecastChart: React.FC<TrendForecastChartProps> = ({
       {/* Forecast Summary */}
       <div className="mt-6 grid grid-cols-3 gap-4">
         <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Current Trend</p>
+          <p className="text-sm text-gray-600">{t('charts.currentTrend')}</p>
           <p className="text-lg font-semibold text-gray-900">
-            {Number(avgGrowthRate) > 0 ? '↑' : Number(avgGrowthRate) < 0 ? '↓' : '→'} {Math.abs(Number(avgGrowthRate))}% monthly
+            {Number(avgGrowthRate) > 0 ? '↑' : Number(avgGrowthRate) < 0 ? '↓' : '→'} {Math.abs(Number(avgGrowthRate))}% {t('charts.monthly')}
           </p>
         </div>
         <div className="bg-blue-50 rounded-lg p-4">
-          <p className="text-sm text-gray-600">{forecastMonths}-Month Forecast</p>
+          <p className="text-sm text-gray-600">{t('charts.monthForecast', { months: forecastMonths })}</p>
           <p className="text-lg font-semibold text-blue-900">
             {formatValue(forecastData[forecastData.length - 1]?.y || 0, metric)}
           </p>
         </div>
         <div className="bg-green-50 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Confidence Range</p>
+          <p className="text-sm text-gray-600">{t('charts.confidenceRange')}</p>
           <p className="text-lg font-semibold text-green-900">
             ±{((confidenceBands.upper[confidenceBands.upper.length - 1]?.y - confidenceBands.lower[confidenceBands.lower.length - 1]?.y) / 2 / forecastData[forecastData.length - 1]?.y * 100).toFixed(0)}%
           </p>

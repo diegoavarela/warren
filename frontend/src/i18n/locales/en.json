@@ -1,4 +1,15 @@
 {
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "cashflow": "Cash Flow",
+    "pnl": "P&L",
+    "configuration": "Configuration",
+    "dataManagement": "Data Management",
+    "logout": "Logout",
+    "aiAnalysis": "AI Analysis",
+    "upload": "Upload Data"
+  },
   "navigation": {
     "dashboard": "Dashboard",
     "upload": "Upload Data"
@@ -7,17 +18,52 @@
     "welcome": "Welcome to Warren",
     "subtitle": "Vortex Cashflow Management Dashboard",
     "email": "Email address",
-    "emailPlaceholder": "Enter your email",
+    "emailPlaceholder": "you@company.com",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "signIn": "Sign in",
     "logout": "Logout",
     "loginError": "Invalid credentials",
-    "demoCredentials": "Demo Credentials:"
+    "demoCredentials": "Demo Credentials:",
+    "backToHome": "Back to home",
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account",
+    "signInSubtitle": "Sign in to access your financial dashboard",
+    "createAccountSubtitle": "Create an account to access the demo",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "signingIn": "Signing in...",
+    "creatingAccount": "Creating account...",
+    "createAccountButton": "Create account",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "demoAccount": "Demo Account",
+    "transformTitle": "Transform Your Financial Management",
+    "transformSubtitle": "Transform your Excel financial data into beautiful dashboards and actionable insights.",
+    "tryDemo": "Try the demo",
+    "demoDescription": "Experience Warren's dashboard with pre-loaded sample financial data. No Excel upload required for the demo.",
+    "demoCredentialsProvided": "Demo credentials provided on the login form",
+    "features": {
+      "cashflow": "Cash flow visualization",
+      "excelImport": "Excel data import",
+      "dashboards": "Executive dashboards",
+      "scenarioPlanning": "Scenario planning tools"
+    }
   },
   "dashboard": {
     "title": "Financial Dashboard",
     "subtitle": "Overview of your cashflow metrics",
+    "cashflowOverview": "Cashflow Overview",
+    "pnlOverview": "P&L Overview",
+    "monthlyMetrics": "Monthly Metrics",
+    "yearToDate": "Year to Date",
+    "currentMonth": "Current Month",
+    "previousMonth": "Previous Month",
+    "comparison": "vs {{previousMonth}}",
+    "keyInsights": "Key Insights",
+    "performanceOverview": "Performance Overview",
+    "trendAnalysis": "Trend Analysis & Forecasts",
+    "projections": "Projections",
     "metrics": {
       "lowestCash": "Lowest Cash (6M)",
       "highestCash": "Highest Cash (6M)",
@@ -38,21 +84,1056 @@
       "inflow": "Inflow",
       "outflow": "Outflow",
       "cashflow": "Net Cashflow"
+    },
+    "help": {
+      "keyInsights": {
+        "title": "Understanding Key Financial Insights",
+        "whatAre": "What are Key Insights?",
+        "description": "Key insights analyze your past 3 months of financial data to identify important patterns, trends, and notable events that impact your cash flow.",
+        "purpose": "These insights help you understand what happened in your business and why.",
+        "currentInsights": "Your Current Insights",
+        "noInsights": "No insights available yet. Upload more data to see insights.",
+        "typesOfInsights": {
+          "title": "Types of Insights",
+          "cashFlow": {
+            "title": "Cash Flow Patterns",
+            "description": "Identify months with strong cash generation vs. periods of cash burn. Helps understand business cycles and seasonal trends."
+          },
+          "income": {
+            "title": "Income Trends",
+            "description": "Track revenue growth, decline, or stability over the analyzed period. Highlights best and worst performing months."
+          },
+          "outflow": {
+            "title": "Outflow Analysis",
+            "description": "Spot unusual outflow spikes, cost control successes, or spending patterns. Identifies opportunities for cost optimization."
+          },
+          "balance": {
+            "title": "Balance Movements",
+            "description": "Highlights significant changes in cash position, lowest balance points, and recovery periods after cash shortfalls."
+          }
+        },
+        "howGenerated": {
+          "title": "How Insights are Generated",
+          "description": "Our AI analyzes your financial data using these methods:",
+          "methods": {
+            "trendDetection": {
+              "title": "Trend Detection",
+              "description": "Identifies growth, decline, or stability patterns"
+            },
+            "anomalySpotting": {
+              "title": "Anomaly Spotting",
+              "description": "Finds unusual spikes or drops in cash flow"
+            },
+            "comparative": {
+              "title": "Comparative Analysis",
+              "description": "Compares months to identify best/worst performers"
+            },
+            "riskAssessment": {
+              "title": "Risk Assessment",
+              "description": "Highlights potential cash flow concerns"
+            }
+          }
+        },
+        "decisionMaking": {
+          "title": "Using Insights for Decision Making",
+          "subtitle": "Key insights help you:",
+          "benefits": {
+            "understand": "Understand what drove good or bad financial performance",
+            "patterns": "Identify seasonal patterns in your business",
+            "problems": "Spot potential problems before they become critical",
+            "strategies": "Recognize successful strategies worth repeating",
+            "datadriven": "Make data-driven decisions about spending and investment",
+            "prepare": "Prepare for similar situations in the future"
+          }
+        },
+        "examples": {
+          "title": "Example Insights",
+          "subtitle": "Common insights you might see:",
+          "positive": {
+            "title": "Positive Insights:",
+            "cashGeneration": "March showed strongest cash generation with +$45K increase",
+            "expenseDecrease": "Operating expenses decreased 12% compared to previous quarter",
+            "revenueGrowth": "Revenue growth averaged 8% month-over-month"
+          },
+          "attention": {
+            "title": "Areas for Attention:",
+            "lowestBalance": "May experienced lowest cash balance of $12K",
+            "expenseSpike": "Expenses spiked 25% in April due to equipment purchases",
+            "cashDecline": "Cash generation declined for two consecutive months"
+          }
+        }
+      },
+      "projections": {
+        "title": "Understanding Cash Flow Projections",
+        "whatAre": "What are Cash Flow Projections?",
+        "description": "Cash flow projections forecast your financial position over the next 6 months based on historical patterns, trends, and business intelligence.",
+        "purpose": "These projections help you plan ahead and make proactive financial decisions.",
+        "currentProjections": "Your Current Projections",
+        "noProjections": "No projections available yet. Upload more data to see forecasts.",
+        "howWork": {
+          "title": "How Projections Work",
+          "trendAnalysis": {
+            "title": "Trend Analysis",
+            "description1": "Analyzes 3-6 months of historical data to identify patterns in income,",
+            "description2": "expenses, and cash generation that are likely to continue."
+          },
+          "seasonal": {
+            "title": "Seasonal Patterns",
+            "description": "Identifies recurring monthly or quarterly patterns in your business to predict similar behaviors in the future."
+          },
+          "growthRates": {
+            "title": "Growth Rates",
+            "description": "Calculates average growth rates for income and expenses to project future performance based on current trajectory."
+          },
+          "riskScenarios": {
+            "title": "Risk Scenarios",
+            "description": "Models potential challenges like cash shortfalls, funding needs, or opportunities for growth investment."
+          }
+        },
+        "accuracy": {
+          "title": "Projection Accuracy",
+          "subtitle": "Important considerations about projection accuracy:",
+          "nearTerm": {
+            "title": "Near-term accuracy",
+            "description": "1-2 months ahead are most reliable"
+          },
+          "dataQuality": {
+            "title": "Data quality matters",
+            "description": "More historical data = better projections"
+          },
+          "externalFactors": {
+            "title": "External factors",
+            "description": "Market changes aren't automatically considered"
+          },
+          "businessChanges": {
+            "title": "Business changes",
+            "description": "New products/services may alter projections"
+          }
+        },
+        "strategic": {
+          "title": "Using Projections Strategically",
+          "subtitle": "Use projections to:",
+          "financialPlanning": {
+            "title": "Financial Planning:",
+            "shortfalls": "Plan for cash shortfalls",
+            "purchases": "Time major purchases",
+            "fundraising": "Schedule fundraising",
+            "budgets": "Set realistic budgets"
+          },
+          "businessDecisions": {
+            "title": "Business Decisions:",
+            "hiring": "Hiring and staffing plans",
+            "investment": "Investment timing",
+            "inventory": "Inventory management",
+            "growth": "Growth strategies"
+          }
+        },
+        "examples": {
+          "title": "Example Projections",
+          "subtitle": "Common projections you might see:",
+          "positive": {
+            "title": "Positive Outlook:",
+            "balanceGrowth": "Cash balance expected to grow 15% over next 6 months",
+            "positiveCashFlow": "Projected to maintain positive cash flow through Q2",
+            "revenueForecast": "Revenue forecast shows 8% monthly growth trend"
+          },
+          "alerts": {
+            "title": "Planning Alerts:",
+            "lowBalance": "Cash balance may drop below $20K in August",
+            "fundraising": "Consider fundraising by September to maintain runway",
+            "expenseGrowth": "Expense growth outpacing revenue - monitor closely"
+          }
+        },
+        "updating": {
+          "title": "Updating Projections",
+          "description": "Projections automatically update when you upload new financial data. Regular updates improve accuracy and keep forecasts relevant.",
+          "review": "Review projections monthly and compare actual results to forecasts to validate accuracy."
+        }
+      },
+      "currentMonth": {
+        "title": "Understanding Current Month Metrics",
+        "overview": {
+          "title": "Current Month Overview",
+          "currentMonth": "the current month",
+          "description": "These metrics show your financial performance for {{month}}, giving you a snapshot of your cash flow health.",
+          "importance": "These are the most important numbers to monitor for immediate cash flow management."
+        },
+        "currentNumbers": "Your Current Numbers",
+        "metrics": {
+          "totalInflow": "Total Inflow",
+          "totalOutflow": "Total Outflow",
+          "finalBalance": "Final Balance",
+          "cashGeneration": "Cash Generation"
+        },
+        "explained": {
+          "title": "Metrics Explained",
+          "inflow": {
+            "title": "Total Inflow",
+            "description": "All money coming into your business this month from sales, services, and other revenue sources. This is your \"top line\" number."
+          },
+          "outflow": {
+            "title": "Total Outflow",
+            "description": "All money going out of your business this month including operational costs, salaries, rent, and other business outflow."
+          },
+          "finalBalance": {
+            "title": "Final Balance",
+            "description": "Your cash position at the end of the month. Formula: Starting Balance + Inflow - Outflow"
+          },
+          "lowestBalance": {
+            "title": "Lowest Balance",
+            "description": "The lowest your cash balance got during the month. Important for understanding cash flow timing and avoiding overdrafts."
+          },
+          "cashGeneration": {
+            "title": "Cash Generation",
+            "description": "Net cash flow for the month (Inflow - Outflow). Positive means you generated cash, negative means you consumed cash."
+          }
+        },
+        "healthIndicators": {
+          "title": "Health Indicators",
+          "subtitle": "What your numbers tell you:",
+          "positiveCashGeneration": "Positive Cash Generation:",
+          "negativeCashGeneration": "Negative Cash Generation:",
+          "lowFinalBalance": "Low Final Balance:",
+          "veryLowLowestBalance": "Very Low Lowest Balance:",
+          "healthyCashFlow": "Healthy cash flow",
+          "monitorExpenses": "Monitor expenses",
+          "considerFunding": "Consider funding",
+          "cashFlowTimingRisk": "Cash flow timing risk"
+        },
+        "quickActions": {
+          "title": "Quick Actions",
+          "subtitle": "Use these metrics to:",
+          "action1": "Track monthly performance vs targets",
+          "action2": "Identify if you're cash positive or negative",
+          "action3": "Spot potential cash flow problems early",
+          "action4": "Make decisions about expenses and investments",
+          "action5": "Plan for upcoming cash needs",
+          "action6": "Communicate financial health to stakeholders"
+        }
+      },
+      "ytd": {
+        "title": "Understanding YTD Cash Flow Summary",
+        "overview": {
+          "title": "Year to Date Cash Flow",
+          "description": "Year to Date shows your cumulative cash flow performance from January 1st through the current month.",
+          "purpose": "These numbers help you understand your overall financial trajectory for the year."
+        },
+        "performance": {
+          "title": "Your YTD Performance"
+        },
+        "strategic": {
+          "title": "Strategic Planning",
+          "subtitle": "Use YTD data to:",
+          "uses": {
+            "compare": "Compare against annual goals and budgets",
+            "project": "Project full-year performance",
+            "identify": "Identify seasonal trends and patterns",
+            "adjust": "Make mid-year strategy adjustments",
+            "prepare": "Prepare for upcoming quarters",
+            "communicate": "Communicate progress to investors/stakeholders"
+          }
+        },
+        "monthlyAverage": {
+          "title": "Monthly Average",
+          "subtitle": "Based on your YTD data:"
+        },
+        "metricsExplained": {
+          "title": "Metrics Explained",
+          "totalInflow": {
+            "title": "Total Inflow (YTD)",
+            "description": "Sum of all income from January through the current month. This shows your revenue generation capacity for the year."
+          },
+          "totalOutflow": {
+            "title": "Total Outflow (YTD)",
+            "description": "Sum of all expenses from January through the current month. Helps track spending patterns and cost control."
+          },
+          "netBalance": {
+            "title": "Net Balance (YTD)",
+            "description": "Your cumulative cash generation for the year (Total Inflow - Total Outflows). Shows if you're profitable year-to-date."
+          }
+        },
+        "performanceAnalysis": {
+          "title": "Performance Analysis",
+          "subtitle": "Your YTD performance indicates:",
+          "positiveNetBalance": "Positive Net Balance:",
+          "negativeNetBalance": "Negative Net Balance:",
+          "growingIncome": "Growing Income:",
+          "highExpenseRatio": "High Expense Ratio:",
+          "profitableYear": "Profitable year so far",
+          "operatingAtLoss": "Operating at a loss YTD",
+          "businessExpanding": "Business expanding",
+          "reviewCostStructure": "Review cost structure"
+        },
+        "labels": {
+          "totalInflow": "Total Inflow",
+          "totalOutflow": "Total Outflow",
+          "netBalance": "Net Balance",
+          "averageMonthlyIncome": "Average Monthly Income",
+          "averageMonthlyExpense": "Average Monthly Expense"
+        }
+      },
+      "fullYear": {
+        "title": "Understanding Full Year Cash Flow Chart",
+        "overview": {
+          "title": "2025 Full Year Overview",
+          "description": "This chart shows your monthly cash flow performance across the entire year, combining actual historical data with projected forecasts.",
+          "purpose": "It helps you visualize trends, seasonality, and plan for future cash needs."
+        },
+        "reading": {
+          "title": "Reading the Chart",
+          "actual": {
+            "label": "Actual Data (Darker)",
+            "description": "Real cash flow from months that have already occurred"
+          },
+          "forecast": {
+            "label": "Forecast (Lighter)",
+            "description": "Projected cash flow for future months based on trends"
+          }
+        },
+        "chartData": {
+          "title": "What the Chart Shows",
+          "dataPoints": "Data Points",
+          "actualMonths": "Actual Months",
+          "forecastedMonths": "Forecasted Months",
+          "monthsOfData": "{{count}} months of data",
+          "completed": "{{count}} completed",
+          "projected": "{{count}} projected"
+        },
+        "patterns": {
+          "title": "Key Patterns to Look For",
+          "upward": {
+            "title": "Upward Trend",
+            "description": "Cash flow improving over time - indicates business growth and better financial health."
+          },
+          "seasonal": {
+            "title": "Seasonal Patterns",
+            "description": "Regular ups and downs that repeat yearly - helps predict cash needs during slow periods."
+          },
+          "volatility": {
+            "title": "Volatility",
+            "description": "Large month-to-month swings may indicate inconsistent revenue or lumpy expenses."
+          },
+          "declining": {
+            "title": "Declining Trend",
+            "description": "Consistently worsening cash flow - may require immediate strategic intervention."
+          }
+        },
+        "strategicInsights": {
+          "title": "Strategic Insights",
+          "description": "Use this chart to:",
+          "planReserves": "Plan cash reserves:",
+          "planReservesDesc": "Identify low cash flow periods to prepare funding",
+          "timeExpenses": "Time major expenses:",
+          "timeExpensesDesc": "Schedule large purchases during high cash flow months",
+          "setGoals": "Set realistic goals:",
+          "setGoalsDesc": "Base targets on historical performance and trends",
+          "communicate": "Communicate with investors:",
+          "communicateDesc": "Show business trajectory and future projections"
+        },
+        "forecastAccuracy": {
+          "title": "Forecast Accuracy",
+          "description": "Important notes about projections:",
+          "nearTerm": "Near-term forecasts",
+          "nearTermDesc": "(1-2 months) are most reliable",
+          "longer": "Longer projections",
+          "longerDesc": "become less accurate due to market changes",
+          "historical": "Historical patterns",
+          "historicalDesc": "are used to generate forecasts",
+          "external": "External factors",
+          "externalDesc": "(market changes, new competition) aren't predicted",
+          "regular": "Regular updates",
+          "regularDesc": "improve forecast accuracy over time"
+        }
+      },
+      "trendForecast": {
+        "title": "Understanding Trend Analysis & Forecasts",
+        "whatAre": {
+          "title": "What are Trend Forecasts?",
+          "description": "Trend forecasts use statistical analysis of your historical data to project future performance, helping you plan and make informed decisions.",
+          "method": "Our system uses ",
+          "methodLinearRegression": "linear regression",
+          "methodEnd": " to identify trends and project them forward with confidence intervals."
+        },
+        "chartElements": {
+          "title": "Chart Elements",
+          "solidLine": {
+            "label": "Solid Line",
+            "description": "Actual historical data"
+          },
+          "dashedLine": {
+            "label": "Dashed Line",
+            "description": "Forecast projection"
+          },
+          "shadedArea": {
+            "label": "Shaded Area",
+            "description": "95% confidence interval"
+          }
+        },
+        "howItWorks": {
+          "title": "How Forecasting Works",
+          "trendAnalysis": {
+            "title": "1. Trend Analysis",
+            "description": "Analyzes historical data points to identify the overall direction and rate of change"
+          },
+          "linearRegression": {
+            "title": "2. Linear Regression",
+            "description": "Calculates the best-fit line through your data to project future values"
+          },
+          "confidenceIntervals": {
+            "title": "3. Confidence Intervals",
+            "description": "Shows the range where future values are likely to fall (95% probability)"
+          }
+        },
+        "summaryCards": {
+          "title": "Summary Cards",
+          "currentTrend": {
+            "label": "Current Trend",
+            "description": "Monthly growth rate"
+          },
+          "sixMonthForecast": {
+            "label": "6-Month Forecast",
+            "description": "Projected end value"
+          },
+          "confidenceRange": {
+            "label": "Confidence Range",
+            "description": "Forecast uncertainty"
+          }
+        },
+        "considerations": {
+          "title": "Important Considerations",
+          "description": "Keep in mind:",
+          "nearTermAccuracy": "Near-term accuracy:",
+          "nearTermAccuracyDesc": "Forecasts are most reliable for 1-2 months ahead",
+          "linearAssumption": "Linear assumption:",
+          "linearAssumptionDesc": "Assumes trends continue at the same rate",
+          "externalFactors": "External factors:",
+          "externalFactorsDesc": "Cannot predict market changes or disruptions",
+          "historicalBasis": "Historical basis:",
+          "historicalBasisDesc": "Relies on past patterns continuing",
+          "regularUpdates": "Regular updates:",
+          "regularUpdatesDesc": "Re-run forecasts monthly for best results"
+        },
+        "strategicUse": {
+          "title": "Strategic Use",
+          "description": "Use forecasts to:",
+          "budgetPlanning": "Budget planning:",
+          "budgetPlanningDesc": "Set realistic financial targets",
+          "cashManagement": "Cash management:",
+          "cashManagementDesc": "Prepare for projected shortfalls",
+          "growthPlanning": "Growth planning:",
+          "growthPlanningDesc": "Identify when to invest or expand",
+          "riskAssessment": "Risk assessment:",
+          "riskAssessmentDesc": "Understand potential scenarios",
+          "investorCommunication": "Investor communication:",
+          "investorCommunicationDesc": "Share data-driven projections"
+        }
+      },
+      "heatMap": {
+        "title": "Understanding Performance Heat Maps",
+        "whatAre": {
+          "title": "What are Performance Heat Maps?",
+          "description": "Heat maps provide a visual representation of your financial performance across months, using color intensity to show relative performance levels.",
+          "colorIntensity": {
+            "darker": "Darker/brighter colors",
+            "lighter": "Lighter/faded colors",
+            "darkerMeaning": "Better performance",
+            "lighterMeaning": "Lower performance"
+          }
+        },
+        "colorCoding": {
+          "title": "Color Coding",
+          "green": {
+            "label": "Green (Excellent)",
+            "description": "Top performance, above targets"
+          },
+          "yellow": {
+            "label": "Yellow (Good)",
+            "description": "Acceptable performance, meeting expectations"
+          },
+          "red": {
+            "label": "Red (Needs Attention)",
+            "description": "Below targets, requires improvement"
+          }
+        },
+        "interactive": {
+          "title": "Interactive Features",
+          "hover": "Hover",
+          "hoverDesc": "over any cell to see quick details",
+          "click": "Click",
+          "clickDesc": "on any month to see comprehensive metrics",
+          "compare": "Compare",
+          "compareDesc": "months visually at a glance",
+          "identify": "Identify",
+          "identifyDesc": "seasonal patterns and trends"
+        },
+        "availableMetrics": {
+          "title": "Available Metrics",
+          "cashFlow": {
+            "title": "Cash Flow Performance",
+            "description": "Monthly cash generation or burn, showing liquidity trends"
+          },
+          "inflowHeatMap": {
+            "title": "Inflow Heat Map",
+            "description": "Income patterns to identify your strongest inflow months"
+          }
+        },
+        "howToUse": {
+          "title": "How to Use",
+          "description": "Use heat maps to:",
+          "spotPatterns": "Spot patterns:",
+          "spotPatternsDesc": "Identify seasonal trends in your business",
+          "comparePerformance": "Compare performance:",
+          "comparePerformanceDesc": "See which months are strongest/weakest",
+          "planAhead": "Plan ahead:",
+          "planAheadDesc": "Use historical patterns for future planning",
+          "quickAssessment": "Quick assessment:",
+          "quickAssessmentDesc": "Get instant visual overview of annual performance"
+        }
+      }
+    }
+  },
+  "cashflow": {
+    "totalIncome": "Total Income",
+    "totalExpense": "Total Expense",
+    "finalBalance": "Final Balance",
+    "lowestBalance": "Lowest Balance",
+    "monthlyGeneration": "Monthly Generation",
+    "cashInflows": "Cash Inflows",
+    "cashOutflows": "Cash Outflows",
+    "netCashFlow": "Net Cash Flow",
+    "cashRunway": "Cash Runway",
+    "burnRate": "Burn Rate",
+    "yearToDateSummary": "Year to Date Summary",
+    "totalInflow": "Total Inflow",
+    "totalOutflow": "Total Outflow",
+    "totalIncomeAccumulated": "Total income accumulated",
+    "totalOutflowIncurred": "Total outflow incurred",
+    "pdfTitle": "Cash Flow Financial Report",
+    "uploadTitle": "Upload Cash Flow Data",
+    "uploadDescription": "Import your Excel file to analyze cash movements and financial health",
+    "demoModeTitle": "Demo Mode Active",
+    "demoModeDescription": "File upload is disabled in demo mode. The data shown below is sample data for demonstration purposes.",
+    "netBalance": "Net Balance",
+    "netPositionYTD": "Net position year to date",
+    "totalInvestment": "Total Investment",
+    "capitalDeployedYTD": "Capital deployed year to date",
+    "monthlyCashflowPerformance": "Monthly Cash Flow Performance",
+    "monthlyInflowHeatMap": "Monthly Inflow Heat Map",
+    "fullYearOverview": "2025 Full Year Overview",
+    "actualData": "Actual Data",
+    "forecast": "Forecast",
+    "cashflowAnalysis": "Cash Flow Analysis",
+    "advancedAnalytics": "Advanced Analytics",
+    "extendedFinancialAnalysis": "Extended Financial Analysis",
+    "exchangeRateBaseline": "Exchange Rate (USD baseline)",
+    "helpCurrentMonth": "Understanding current month metrics",
+    "helpYTD": "Understanding YTD cash flow summary",
+    "helpPerformance": "Understanding performance heat maps",
+    "helpChart": "Understanding the full year cash flow chart",
+    "helpProjections": "Understanding cash flow projections",
+    "helpKeyInsights": "Understanding key financial insights"
+  },
+  "pnl": {
+    "revenue": "Revenue",
+    "cogs": "Cost of Goods Sold",
+    "grossProfit": "Gross Profit",
+    "grossMargin": "Gross Margin",
+    "operatingExpenses": "Operating Expenses",
+    "operatingIncome": "Operating Income",
+    "operatingMargin": "Operating Margin",
+    "netIncome": "Net Income",
+    "netMargin": "Net Margin",
+    "ebitda": "EBITDA",
+    "ebitdaMargin": "EBITDA Margin",
+    "margin": "margin",
+    "ofSales": "of sales",
+    "dashboard": {
+      "title": "Profit & Loss Dashboard",
+      "subtitle": "Upload your P&L statement to view financial insights",
+      "financialPerformance": "Financial performance analysis and insights"
+    },
+    "upload": {
+      "title": "Upload P&L Statement",
+      "description": "Import your Profit & Loss Excel file to analyze financial performance"
+    },
+    "pdf": {
+      "title": "P&L Financial Report"
+    },
+    "demoMode": {
+      "title": "Demo Mode",
+      "description": "This is sample P&L data for demonstration purposes",
+      "active": "Demo Mode Active",
+      "uploadDisabled": "File upload is disabled in demo mode. The P&L data shown below is sample data for demonstration purposes."
+    },
+    "comparison": {
+      "compareAgainst": "Compare against:",
+      "helpTitle": "Learn about comparison periods",
+      "previousMonth": "Previous Month",
+      "previousQuarter": "Previous Quarter",
+      "sameLastYear": "Same Period Last Year",
+      "noYearData": "Historic year-over-year data not available. Showing month-over-month comparison."
+    },
+    "overview": {
+      "title": "P&L Overview"
+    },
+    "exchangeRate": {
+      "label": "Exchange Rate:"
+    },
+    "help": {
+      "understandingMetrics": "Understanding P&L metrics",
+      "revenueGrowth": "Understanding revenue growth metrics",
+      "personnelCost": "Understanding personnel cost metrics",
+      "costEfficiency": "Understanding cost efficiency metrics",
+      "performanceHeatMaps": "Understanding performance heat maps",
+      "performanceHeatMap": {
+        "title": "Understanding Performance Heat Maps",
+        "whatAre": "What are Performance Heat Maps?",
+        "description": "Heat maps provide a visual representation of your P&L performance across months, using color intensity to show relative performance levels."
+      },
+      "trendForecasts": "Understanding trend forecasts",
+      "trendForecast": {
+        "title": "Understanding P&L Trend Forecasts",
+        "pnlForecasting": "P&L Forecasting",
+        "forecastDescription": "P&L forecasts project your future revenue and profitability based on"
+      },
+      "profitMarginsChart": "Understanding profit margins chart",
+      "profitMargins": {
+        "title": "Understanding Profit Margins Trend",
+        "profitMarginsTrendChart": "Profit Margins Trend Chart",
+        "chartDescription": "This chart tracks your gross and net profit margins over time, showing how efficiently your business converts revenue into profit across different months.",
+        "marginsImportance": "Margins are more important than absolute dollar amounts because they show profitability efficiency.",
+        "readingTheChart": "Reading the Chart",
+        "grossMarginGreenLine": "Gross Margin % (Green Line)",
+        "grossMarginDesc": "Shows what percentage of revenue remains after direct costs",
+        "netMarginPurpleLine": "Net Margin % (Purple Line)",
+        "netMarginDesc": "Shows what percentage of revenue becomes final profit",
+        "strategicActions": "Strategic Actions",
+        "useMarginTrends": "Use margin trends to optimize profitability and make data-driven business decisions."
+      },
+      "revenueProfitabilityChart": "Understanding revenue and profitability chart",
+      "revenueProfitability": {
+        "title": "Understanding Revenue & Profitability Chart",
+        "chartTitle": "Revenue & Profitability Chart",
+        "chartDescription": "This bar chart compares revenue, gross profit, and net income across months, showing the \"profit waterfall\" from top-line revenue to bottom-line profit.",
+        "absoluteAmounts": "Each bar shows absolute dollar amounts, helping you see both growth trends and profit efficiency.",
+        "readingTheChart": "Reading the Chart",
+        "revenueGreenBars": "Revenue (Green Bars)",
+        "revenueDesc": "Total income from sales - your \"top line\" number",
+        "grossProfitBlueBars": "Gross Profit (Blue Bars)",
+        "grossProfitDesc": "Revenue minus direct costs - what's left after production",
+        "netIncomePurpleBars": "Net Income (Purple Bars)",
+        "netIncomeDesc": "Final profit after all expenses - your \"bottom line\"",
+        "strategicInsights": "Strategic Insights",
+        "useChartTo": "Use this chart to track business growth and profitability trends over time."
+      },
+      "ytdSummary": "Understanding YTD financial summary",
+      "comparisonPeriods": {
+        "title": "Understanding Comparison Periods",
+        "whatAre": "What are Comparison Periods?",
+        "description": "Comparison periods help you understand how your business performance changes over time. Each metric shows a percentage change compared to the selected period.",
+        "previousMonth": "Previous Month",
+        "previousMonthDesc": "Compares current month metrics to the immediately preceding month. Useful for tracking short-term trends and seasonal variations.",
+        "example": "Example:",
+        "previousQuarter": "Previous Quarter",
+        "previousQuarterDesc": "Compares current month to the same month in the previous quarter. Helps identify quarterly patterns and growth.",
+        "samePeriodLastYear": "Same Period Last Year",
+        "samePeriodLastYearDesc": "Compares current month to the same month last year. Best for understanding year-over-year growth and eliminating seasonal effects."
+      },
+      "personnel": {
+        "title": "Understanding Personnel Cost Analysis",
+        "whatIs": "What is Personnel Cost Analysis?",
+        "description": "Personnel costs are typically the largest expense for most companies. This analysis helps you understand:",
+        "point1": "Total cost of your workforce",
+        "point2": "How efficiently you're utilizing personnel",
+        "point3": "The breakdown of personnel-related expenses",
+        "point4": "Personnel costs as a percentage of revenue",
+        "currentMetrics": "Your Current Personnel Metrics",
+        "percentOfRevenue": "% of Revenue",
+        "includesText": "This includes salaries, payroll taxes, health coverage, and benefits",
+        "keyMetrics": "Key Metrics Explained",
+        "totalCostDesc": "Sum of all employee-related expenses including salaries, taxes, and benefits. Industry benchmark: 20-50% of revenue depending on business type.",
+        "efficiencyDesc": "Revenue generated per ARS spent on personnel. Higher is better. Formula: Revenue ÷ Personnel Cost",
+        "vsOpexDesc": "Shows what portion of operating expenses goes to personnel. Typically 50-70% for service companies, lower for product companies.",
+        "costBreakdownComponents": "Cost Breakdown Components",
+        "salaries": "Salaries:",
+        "salariesDesc": "Base compensation for employees",
+        "payrollTaxes": "Payroll Taxes:",
+        "payrollTaxesDesc": "Employer-paid taxes on wages",
+        "healthCoverage": "Health Coverage:",
+        "healthCoverageDesc": "Medical, dental, vision insurance",
+        "benefits": "Benefits:",
+        "benefitsDesc": "Retirement, PTO, other perks",
+        "personnelAllocation": "Personnel Allocation",
+        "understandingAllocation": "Understanding where your personnel costs are allocated:",
+        "costOfRevenue": "Cost of Revenue",
+        "directProduction": "Direct Production",
+        "staffGeneratingRevenue": "Staff directly generating revenue",
+        "operatingExpenses": "Operating Expenses",
+        "supportFunctions": "Support Functions",
+        "adminSalesManagement": "Admin, sales, management",
+        "optimizationTips": "Optimization Tips",
+        "waysToImprove": "Ways to improve personnel efficiency:",
+        "trackRevenuePerEmployee": "Track revenue per employee over time",
+        "compareIndustryBenchmarks": "Compare personnel costs to industry benchmarks",
+        "analyzeProductivityMetrics": "Analyze productivity metrics by department",
+        "considerAutomation": "Consider automation for repetitive tasks",
+        "investInTraining": "Invest in training to increase productivity",
+        "reviewBenefitCosts": "Review benefit costs regularly for savings"
+      },
+      "costEfficiency": {
+        "title": "Understanding Cost Efficiency Metrics",
+        "whatAre": "What are Cost Efficiency Metrics?",
+        "description": "Cost efficiency metrics help you understand how effectively your company converts revenue into profit by analyzing cost structure and ratios.",
+        "lowerBetter": "Lower percentages generally indicate better efficiency and higher profitability.",
+        "currentMetrics": "Your Current Efficiency Metrics",
+        "metrics": {
+          "costOfRevenuePercent": "Cost of Revenue %",
+          "operatingExpensePercent": "Operating Expense %"
+        },
+        "totalCosts": "Total costs are {{percentage}}% of revenue",
+        "explained": {
+          "title": "Metrics Explained",
+          "cor": {
+            "title": "Cost of Revenue % (CoR%)",
+            "description": "Direct costs to produce your product/service as % of revenue. Lower is better. Industry benchmarks:",
+            "benchmarks": {
+              "software": "Software: 20-30%",
+              "services": "Services: 50-70%",
+              "manufacturing": "Manufacturing: 60-80%"
+            }
+          },
+          "opex": {
+            "title": "Operating Expense % (OpEx%)",
+            "description": "Overhead costs (sales, admin, R&D) as % of revenue. Includes all expenses not directly tied to production. Target: 20-40% for healthy companies."
+          }
+        },
+        "strategicUse": {
+          "title": "Using P&L Metrics",
+          "description": "Use these metrics to:",
+          "comparePerformance": "Compare performance month-over-month",
+          "benchmark": "Benchmark against industry standards",
+          "identifyOptimization": "Identify areas for cost optimization",
+          "trackProgress": "Track progress toward profitability goals",
+          "makePricingDecisions": "Make pricing and investment decisions",
+          "communicateStakeholders": "Communicate performance to stakeholders"
+        }
+      },
+      "revenueGrowth": {
+        "title": "Understanding Revenue Growth Analysis",
+        "growthMetricsExplained": "Growth Metrics Explained",
+        "monthOverMonthGrowthDesc": "Compares current month revenue to previous month. Shows immediate momentum. Target: 5-20% monthly growth for healthy businesses.",
+        "averageMonthlyRevenueDesc": "Your baseline revenue performance across all analyzed months. Used for budgeting and forecasting future periods.",
+        "revenueTrendDesc": "Overall direction comparing first and last month in the period. Growing trends indicate business expansion and market success.",
+        "growthBenchmarks": "Growth Benchmarks",
+        "howDoesYourGrowthCompare": "How does your growth compare?",
+        "excellentGrowth": "Excellent Growth:",
+        "excellentGrowthRange": ">15% monthly",
+        "goodGrowth": "Good Growth:",
+        "goodGrowthRange": "5-15% monthly",
+        "stable": "Stable:",
+        "stableRange": "0-5% monthly",
+        "declining": "Declining:",
+        "decliningRange": "<0% monthly",
+        "growthStrategies": "Growth Strategies",
+        "waysToAccelerateGrowth": "Ways to accelerate revenue growth:",
+        "customerAcquisition": "Customer Acquisition:",
+        "improveMarketingCampaigns": "Improve marketing campaigns",
+        "expandToNewMarkets": "Expand to new markets",
+        "enhanceProductOfferings": "Enhance product offerings",
+        "referralPrograms": "Referral programs",
+        "customerRetention": "Customer Retention:",
+        "upsellExistingCustomers": "Upsell existing customers",
+        "improveCustomerService": "Improve customer service",
+        "loyaltyPrograms": "Loyalty programs",
+        "regularValueDelivery": "Regular value delivery",
+        "readingGrowthPatterns": "Reading Growth Patterns",
+        "consistentGrowth": "Consistent Growth:",
+        "consistentGrowthDesc": "Steady month-over-month increases",
+        "seasonalPatterns": "Seasonal Patterns:",
+        "seasonalPatternsDesc": "Regular ups and downs throughout the year",
+        "volatility": "Volatility:",
+        "volatilityDesc": "Large swings may indicate external factors",
+        "decliningTrend": "Declining Trend:",
+        "decliningTrendDesc": "May require immediate strategic action"
+      }
+    },
+    "revenueGrowth": {
+      "title": "Revenue Growth Analysis",
+      "monthOverMonth": "Month-over-Month Growth",
+      "averageMonthly": "Average Monthly Revenue",
+      "trend": "Revenue Trend",
+      "growing": "Growing",
+      "declining": "Declining",
+      "vsFirstMonth": "Since {{month}}"
+    },
+    "personnel": {
+      "title": "Personnel Cost Analysis",
+      "totalCost": "Total Personnel Cost",
+      "ofRevenue": "of Revenue",
+      "efficiency": "Personnel Efficiency",
+      "revenuePerArs": "Revenue per Personnel ARS",
+      "vsOpex": "Personnel vs OpEx",
+      "ofOperatingExpenses": "of Operating Expenses",
+      "costBreakdown": "Cost Breakdown",
+      "totalFormula": "Total = Salaries + Payroll Taxes + Benefits",
+      "totalSalaries": "Total Salaries",
+      "percentageOfTotal": "Percentage of total personnel cost",
+      "payrollTaxes": "Payroll Taxes",
+      "healthBenefits": "Health Coverage & Benefits",
+      "allocation": "Personnel Allocation",
+      "costOfRevenue": "Cost of Revenue"
+    },
+    "costStructure": {
+      "title": "Cost Structure Analysis",
+      "majorCategories": "Major Cost Categories",
+      "personnelCosts": "Personnel Costs",
+      "contractServices": "Contract Services",
+      "otherCosts": "Other Costs"
+    },
+    "costEfficiency": {
+      "title": "Cost Efficiency Metrics",
+      "corPercent": "Cost of Revenue %",
+      "opexPercent": "OpEx %",
+      "totalCostPercent": "Total Cost %",
+      "costPerRevenue": "Cost per Revenue ARS"
+    },
+    "keyInsights": "Key Insights",
+    "insights": {
+      "personnelCosts": "Personnel costs represent {{percentage}}% of revenue",
+      "contractServices": "Contract services account for {{percentage}}% of revenue",
+      "totalCostStructure": "Total cost structure is {{percentage}}% of revenue"
+    },
+    "performance": {
+      "title": "Performance Overview",
+      "monthlyRevenue": "Monthly Revenue Performance",
+      "monthlyNetMargin": "Monthly Net Margin Performance"
+    },
+    "trends": {
+      "title": "Trend Analysis & Forecasts",
+      "revenueForecast": "Revenue Trend & 6-Month Forecast",
+      "netIncomeForecast": "Net Income Trend & 6-Month Forecast"
+    },
+    "charts": {
+      "profitMarginsTrend": "Profit Margins Trend",
+      "revenueProfitability": "Revenue & Profitability",
+      "growthHigh": "Growth >5%",
+      "growthMedium": "Growth 0-5%",
+      "growthNegative": "Negative Growth",
+      "grossMarginPercent": "Gross Margin %",
+      "netMarginPercent": "Net Margin %"
+    },
+    "ytd": {
+      "title": "Year to Date Summary",
+      "uploadMoreData": "Upload 12+ months of data to see year-over-year comparisons",
+      "totalRevenue": "Total Revenue",
+      "vsLastYear": "vs last year",
+      "totalEbitda": "Total EBITDA",
+      "totalCogs": "Total COGS",
+      "totalOpex": "Total Operating Expenses",
+      "expenseRatio": "Expense Ratio"
     }
   },
   "upload": {
     "title": "Upload Cashflow Data",
     "subtitle": "Upload your Excel file to update the dashboard",
-    "dragDrop": "Drag and drop your Excel file here, or click to select",
+    "dragDrop": "Drag and drop your Excel file here",
     "fileTypes": "Only .xlsx files are supported",
     "uploading": "Uploading...",
-    "uploadSuccess": "File uploaded successfully!",
-    "uploadError": "Error uploading file. Please try again."
+    "uploadSuccess": "File uploaded and processed successfully!",
+    "uploadError": "Error uploading file. Please try again.",
+    "invalidFileType": "Please select a valid Excel file (.xlsx or .xls)",
+    "currentlyUsing": "Currently using",
+    "uploadedFile": "Uploaded file",
+    "fileSelected": "File selected!",
+    "orClickToBrowse": "or click to browse ({{formats}})",
+    "selectFile": "Select File",
+    "processing": "Processing...",
+    "processExcel": "Process Excel",
+    "uploadCancelled": "Upload cancelled"
   },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
     "language": "Language",
-    "currency": "$"
+    "currency": "$",
+    "edit": "Edit",
+    "updated": "Updated",
+    "poor": "Poor",
+    "excellent": "Excellent",
+    "forecast": "Forecast",
+    "period": "Period",
+    "target": "Target",
+    "status": "Status",
+    "positive": "✓ Positive",
+    "negative": "⚠️ Negative",
+    "trend": "Trend",
+    "growth": "Growth",
+    "performance": "Performance",
+    "clickOutsideOrEsc": "Click outside or press ESC to close"
+  },
+  "home": {
+    "hero": {
+      "badge": "Welcome to Warren",
+      "title1": "Your Financial",
+      "title2": "Command Center",
+      "subtitle": "Experience next-generation financial analytics with our AI-powered platform. Make data-driven decisions with confidence and clarity."
+    },
+    "stats": {
+      "accuracy": "Accuracy",
+      "monitoring": "Monitoring",
+      "response": "Response"
+    },
+    "modules": {
+      "cashflow": {
+        "title": "Cash Flow Management",
+        "description": "Track and analyze your company's cash flow, monitor balances, and forecast future liquidity",
+        "features": {
+          "realtime": "Real-time cash position tracking",
+          "runway": "Cash runway analysis",
+          "scenario": "Scenario planning",
+          "waterfall": "Waterfall visualizations"
+        },
+        "stats": {
+          "label": "Active Users"
+        }
+      },
+      "pnl": {
+        "title": "Profit & Loss Analysis",
+        "description": "Monitor inflows, outflows, and profitability metrics with detailed P&L statements",
+        "features": {
+          "tracking": "Inflow & outflow tracking",
+          "margin": "Margin analysis",
+          "budget": "Budget vs actual comparison",
+          "trends": "Profitability trends"
+        },
+        "stats": {
+          "label": "Reports Generated"
+        }
+      }
+    },
+    "highlights": {
+      "ai": {
+        "title": "AI-Powered Insights",
+        "description": "Get intelligent recommendations based on your financial data patterns"
+      },
+      "visual": {
+        "title": "Visual Analytics",
+        "description": "Beautiful charts and graphs that make complex data easy to understand"
+      },
+      "realtime": {
+        "title": "Real-Time Updates",
+        "description": "Stay informed with live data synchronization and instant alerts"
+      }
+    },
+    "accessModule": "Access Module",
+    "whyChoose": "Why Choose Warren?",
+    "whyChooseSubtitle": "Powerful features designed for modern finance teams",
+    "platformOverview": "Platform Overview",
+    "overview": {
+      "activeModules": "Active Modules",
+      "modulesList": "Cash Flow & P&L",
+      "lastSync": "Last Sync",
+      "live": "Live",
+      "realtimeUpdates": "Real-time updates",
+      "dataSecurity": "Data Security",
+      "enterpriseGrade": "Enterprise-grade"
+    }
+  },
+  "insights": {
+    "generatedFrom": "Insights are generated based on your financial data patterns and industry benchmarks",
+    "cashflow": {
+      "positiveCashGeneration": {
+        "title": "Positive Cash Generation",
+        "description": "Generated {{amount}} in {{month}}, maintaining healthy cash flow."
+      },
+      "negativeCashFlow": {
+        "title": "Negative Cash Flow",
+        "description": "Cash outflow exceeded inflow by {{amount}} in {{month}}."
+      },
+      "revenueSurge": {
+        "title": "Revenue Surge",
+        "description": "Inflow increased by {{percentage}}% compared to {{month}}."
+      },
+      "revenueDrop": {
+        "title": "Revenue Drop",
+        "description": "Inflow decreased by {{percentage}}% compared to {{month}}."
+      },
+      "risingExpenses": {
+        "title": "Rising Expenses",
+        "description": "Expenses increased by {{percentage}}% from {{previousMonth}} to {{currentMonth}}."
+      },
+      "lowCashRunway": {
+        "title": "Low Cash Runway",
+        "description": "Current cash balance covers less than 3 months of expenses. Consider fundraising or reducing costs."
+      },
+      "aboveSeasonalAverage": {
+        "title": "Above Seasonal Average",
+        "description": "{{month}} performance is 20% above historical average for this month."
+      }
+    },
+    "pnl": {
+      "operatingAtLoss": {
+        "title": "Operating at Loss",
+        "description": "Net margin is negative at {{margin}}%. Focus on revenue growth or cost reduction."
+      },
+      "strongProfitability": {
+        "title": "Strong Profitability",
+        "description": "Excellent net margin of {{margin}}%, well above industry standards."
+      },
+      "lowGrossMargin": {
+        "title": "Low Gross Margin",
+        "description": "Gross margin at {{margin}}% may limit profitability. Consider pricing or COGS optimization."
+      },
+      "highOperatingExpenses": {
+        "title": "High Operating Expenses",
+        "description": "Operating expenses are {{ratio}}% of revenue. Review for cost optimization opportunities."
+      },
+      "revenueGrowth": {
+        "title": "Revenue Growth",
+        "description": "Revenue grew by {{percentage}}% from {{month}}."
+      },
+      "revenueDecline": {
+        "title": "Revenue Decline",
+        "description": "Revenue declined by {{percentage}}% from {{month}}."
+      },
+      "negativeEBITDA": {
+        "title": "Negative EBITDA",
+        "description": "Operating performance before financing costs is negative. Immediate attention required."
+      },
+      "strongEBITDA": {
+        "title": "Strong EBITDA",
+        "description": "EBITDA margin of {{margin}}% indicates healthy operational efficiency."
+      }
+    }
+  },
+  "heatmap": {
+    "basedOnMargin": "Based on margin %",
+    "relativeToPeriod": "Relative to period range",
+    "forecastData": "Forecast data",
+    "performanceDetails": "Performance Details",
+    "industryAverage": "Industry average",
+    "aboveTarget": "✓ Above target",
+    "belowTarget": "↑ Below target",
+    "improving": "↑ Improving",
+    "declining": "↓ Declining",
+    "ranking": "Ranking",
+    "ofMonths": "of {{count}} months",
+    "profitability": "Profitability",
+    "profitable": "✓ Profitable",
+    "loss": "⚠️ Loss"
+  },
+  "charts": {
+    "actualRevenue": "Actual Revenue",
+    "actualProfit": "Actual Profit",
+    "actualExpenses": "Actual Expenses",
+    "actualCashflow": "Actual Cash Flow",
+    "trendLine": "Trend Line",
+    "upperConfidence": "Upper Confidence (95%)",
+    "lowerConfidence": "Lower Confidence (95%)",
+    "noDataForForecasting": "No data available for forecasting",
+    "currentTrend": "Current Trend",
+    "monthly": "monthly",
+    "monthForecast": "{{months}}-Month Forecast",
+    "confidenceRange": "Confidence Range"
   }
 }

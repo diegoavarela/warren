@@ -365,10 +365,13 @@ IMPORTANT RULES:
 3. First column usually contains metric labels/descriptions
 4. Look for ALL financial terms in Spanish/English throughout the file
 5. Common patterns:
-   - Dates: Jan-24, Enero 2024, 01/2024, Q1-2024, etc.
-   - Revenue: Ingresos, Ventas, Sales, Revenue, Facturación
-   - Costs: Costos, Gastos, Egresos, Expenses, COGS
-   - Profit: Utilidad, Ganancia, Profit, Resultado
+   - Dates: Jan-24, Ene-24, Enero 2024, 01/2024, Q1-2024, 1T-2024, etc.
+   - Revenue: Ingresos, Ventas, Sales, Revenue, Facturación, Facturado
+   - Income (Cashflow): Ingresos, Entradas, Cobros, Cobranzas, Recaudación
+   - Costs/Expenses: Costos, Gastos, Egresos, Expenses, COGS, Pagos, Salidas
+   - Profit: Utilidad, Ganancia, Profit, Resultado, Margen
+   - Balance: Saldo, Balance, Caja, Efectivo
+   - Cash Generation: Generación de Caja, Flujo Neto, Cash Flow
 6. Return EXACT row numbers where each metric is found
 7. Include ALL metrics you find, not just the requested ones
 
@@ -453,7 +456,17 @@ Common patterns:
 - Dates are usually in rows 2-7, as month names or date values
 - Financial metrics have labels in columns A-C
 - Data values start after the label columns
-- Spanish: Ingresos=Income, Egresos/Gastos=Expenses, Saldo=Balance, Flujo=Flow
+- Spanish financial terms mapping:
+  * Ingresos/Entradas/Cobros = Income/Revenue
+  * Egresos/Gastos/Salidas/Pagos = Expenses/Costs
+  * Saldo/Caja = Balance/Cash
+  * Flujo/Generación = Flow/Generation
+  * Ventas/Facturación = Sales/Revenue
+  * Costo de Venta/CMV = COGS
+  * Utilidad/Ganancia/Resultado = Profit/Income
+  * Margen = Margin
+  * Inicial/Apertura = Beginning/Initial
+  * Final/Cierre = Ending/Final
 - Always return actual row/column numbers (starting from 1), never 0
 Respond only with valid JSON.`
               },
@@ -523,7 +536,7 @@ Respond only with valid JSON.`
     for (const row of sampleData.rows) {
       const dateCount = row.cells.filter(cell => cell.type === 'date').length;
       const monthPatternCount = row.cells.filter(cell => 
-        /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i.test(String(cell.value))
+        /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|enero|ene|febrero|feb|marzo|mar|abril|abr|mayo|may|junio|jun|julio|jul|agosto|ago|septiembre|sept|sep|octubre|oct|noviembre|nov|diciembre|dic)/i.test(String(cell.value))
       ).length;
       
       if (dateCount >= 3 || monthPatternCount >= 3) {
@@ -550,22 +563,22 @@ Respond only with valid JSON.`
 
     // Enhanced pattern matching for common terms (including Spanish)
     const patterns = mappingType === 'cashflow' ? {
-      totalIncome: /(?:total.*)?(?:income|revenue|collection|cobros|ingresos|entrada|recaudacion|cobranza)/i,
-      totalExpense: /(?:total.*)?(?:expense|cost|egreso|gasto|salida|pago|desembolso)/i,
-      finalBalance: /(?:final|ending|cierre|saldo).*(?:balance|saldo|final|mes)|(?:balance|saldo).*(?:final|cierre|mes)/i,
-      lowestBalance: /(?:lowest|minimum|minimo|menor).*(?:balance|saldo)|(?:balance|saldo).*(?:low|min|minimo|menor)/i,
-      monthlyGeneration: /(?:monthly|mensual|mes).*(?:generation|generacion|flow|flujo|neto)|(?:cash|caja|efectivo).*(?:generation|generacion|flow|flujo)/i,
-      initialBalance: /(?:initial|beginning|inicial|apertura|inicio).*(?:balance|saldo)|(?:balance|saldo).*(?:initial|inicial|inicio)/i,
-      netCashflow: /(?:net|neto).*(?:cash|caja|efectivo).*(?:flow|flujo)|(?:flujo|flow).*(?:neto|net)/i,
-      cashGeneration: /(?:cash|caja).*(?:generation|generacion)|generacion.*(?:caja|efectivo)/i
+      totalIncome: /(?:total.*)?(?:income|revenue|collection|cobros|cobro|ingresos|ingreso|entrada|entradas|recaudacion|recaudaciones|cobranza|cobranzas|recibido|recibidos|facturacion|facturado)/i,
+      totalExpense: /(?:total.*)?(?:expense|expenses|cost|costs|egreso|egresos|gasto|gastos|salida|salidas|pago|pagos|desembolso|desembolsos|erogacion|erogaciones)/i,
+      finalBalance: /(?:final|ending|cierre|saldo).*(?:balance|saldo|final|mes|periodo)|(?:balance|saldo).*(?:final|cierre|mes|periodo)|saldo.*final|balance.*final/i,
+      lowestBalance: /(?:lowest|minimum|minimo|menor|mas.*bajo).*(?:balance|saldo)|(?:balance|saldo).*(?:low|min|minimo|menor|mas.*bajo)/i,
+      monthlyGeneration: /(?:monthly|mensual|mes).*(?:generation|generacion|flow|flujo|neto)|(?:cash|caja|efectivo).*(?:generation|generacion|flow|flujo)|flujo.*(?:caja|efectivo).*(?:neto|mensual)|generacion.*(?:mensual|caja)/i,
+      initialBalance: /(?:initial|beginning|inicial|apertura|inicio|arranque|comienzo).*(?:balance|saldo)|(?:balance|saldo).*(?:initial|inicial|inicio|apertura)|saldo.*inicial/i,
+      netCashflow: /(?:net|neto|neta).*(?:cash|caja|efectivo).*(?:flow|flujo)|(?:flujo|flow).*(?:neto|net|caja)|flujo.*neto.*(?:caja|efectivo)/i,
+      cashGeneration: /(?:cash|caja|efectivo).*(?:generation|generacion|generado)|generacion.*(?:caja|efectivo)|caja.*generada/i
     } : {
-      revenue: /^(?:total.*)?(?:revenue|sales|ingresos|ventas|facturacion)/i,
-      cogs: /(?:cost.*goods|cogs|costo.*venta|cmv)/i,
-      grossProfit: /gross.*(?:profit|margin)|(?:utilidad|margen).*brut[ao]/i,
-      grossMargin: /gross.*margin.*%|margen.*brut[ao].*%/i,
-      operatingExpenses: /(?:operating|operational).*expense|gastos.*operac/i,
-      ebitda: /ebitda/i,
-      netIncome: /net.*(?:income|profit)|(?:utilidad|resultado).*net[ao]/i
+      revenue: /^(?:total.*)?(?:revenue|revenues|sales|sale|ingresos|ingreso|ventas|venta|facturacion|facturado|factura)/i,
+      cogs: /(?:cost.*goods.*sold|cogs|costo.*venta|costos.*venta|cmv|costo.*mercaderia.*vendida|costo.*producto.*vendido)/i,
+      grossProfit: /gross.*(?:profit|margin)|(?:utilidad|ganancia|margen).*brut[ao]|margen.*bruto|ganancia.*bruta/i,
+      grossMargin: /gross.*margin.*%|margen.*brut[ao].*%|margen.*bruto.*%/i,
+      operatingExpenses: /(?:operating|operational).*expense|gastos.*operac|gastos.*operativos|gastos.*operacionales|opex/i,
+      ebitda: /ebitda|resultado.*operativo|resultado.*operacional/i,
+      netIncome: /net.*(?:income|profit|result)|(?:utilidad|ganancia|resultado).*net[ao]|resultado.*neto|utilidad.*neta|ganancia.*neta/i
     };
 
     // Search for patterns in rows

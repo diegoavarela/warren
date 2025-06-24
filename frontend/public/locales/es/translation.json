@@ -1,0 +1,122 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "export": "Exportar",
+    "download": "Descargar",
+    "upload": "Subir",
+    "refresh": "Actualizar",
+    "noData": "No hay datos disponibles",
+    "selectFile": "Seleccionar archivo",
+    "language": "Idioma"
+  },
+  "nav": {
+    "dashboard": "Panel de Control",
+    "cashflow": "Flujo de Caja",
+    "pnl": "PyG",
+    "configuration": "Configuración",
+    "dataManagement": "Gestión de Datos",
+    "logout": "Cerrar Sesión"
+  },
+  "dashboard": {
+    "title": "Panel Financiero",
+    "cashflowOverview": "Resumen de Flujo de Caja",
+    "pnlOverview": "Resumen de PyG",
+    "monthlyMetrics": "Métricas Mensuales",
+    "yearToDate": "Año hasta la Fecha",
+    "currentMonth": "Mes Actual",
+    "previousMonth": "Mes Anterior",
+    "comparison": "vs {{previousMonth}}",
+    "keyInsights": "Puntos Clave",
+    "performanceOverview": "Resumen de Rendimiento",
+    "trendAnalysis": "Análisis de Tendencias y Pronósticos",
+    "projections": "Proyecciones"
+  },
+  "cashflow": {
+    "totalIncome": "Ingresos Totales",
+    "totalExpense": "Gastos Totales",
+    "finalBalance": "Saldo Final",
+    "lowestBalance": "Saldo Más Bajo",
+    "monthlyGeneration": "Generación Mensual",
+    "cashInflows": "Entradas de Caja",
+    "cashOutflows": "Salidas de Caja",
+    "netCashFlow": "Flujo de Caja Neto",
+    "cashRunway": "Duración de Caja",
+    "burnRate": "Tasa de Consumo"
+  },
+  "pnl": {
+    "revenue": "Ingresos",
+    "cogs": "Costo de Ventas",
+    "grossProfit": "Utilidad Bruta",
+    "grossMargin": "Margen Bruto",
+    "operatingExpenses": "Gastos Operativos",
+    "operatingIncome": "Resultado Operativo",
+    "operatingMargin": "Margen Operativo",
+    "netIncome": "Utilidad Neta",
+    "netMargin": "Margen Neto",
+    "ebitda": "EBITDA",
+    "ebitdaMargin": "Margen EBITDA"
+  },
+  "upload": {
+    "title": "Cargar Datos Financieros",
+    "dropzone": "Arrastra y suelta archivos aquí, o haz clic para seleccionar",
+    "supportedFormats": "Formatos soportados: .xlsx, .xls",
+    "processing": "Procesando archivo...",
+    "success": "Archivo cargado exitosamente",
+    "error": "Error al cargar archivo",
+    "aiWizard": "Asistente de Análisis IA",
+    "detectingFormat": "Detectando formato de archivo...",
+    "mapping": "Mapeando campos de datos...",
+    "complete": "Carga completa"
+  },
+  "insights": {
+    "positive": "Positivo",
+    "warning": "Advertencia",
+    "critical": "Crítico",
+    "insight": "Observación",
+    "recommendation": "Recomendación",
+    "trend": "Tendencia"
+  },
+  "metrics": {
+    "growth": "Crecimiento",
+    "decline": "Disminución",
+    "stable": "Estable",
+    "increase": "Aumento",
+    "decrease": "Disminución",
+    "monthOverMonth": "Mes a Mes",
+    "yearOverYear": "Año a Año",
+    "percentage": "{{value}}%",
+    "currency": "{{value}} {{currency}}"
+  },
+  "currency": {
+    "USD": "Dólar Estadounidense",
+    "EUR": "Euro",
+    "ARS": "Peso Argentino",
+    "BRL": "Real Brasileño",
+    "thousands": "miles",
+    "millions": "millones",
+    "setExchangeRate": "Establecer Tipo de Cambio"
+  },
+  "months": {
+    "january": "Enero",
+    "february": "Febrero",
+    "march": "Marzo",
+    "april": "Abril",
+    "may": "Mayo",
+    "june": "Junio",
+    "july": "Julio",
+    "august": "Agosto",
+    "september": "Septiembre",
+    "october": "Octubre",
+    "november": "Noviembre",
+    "december": "Diciembre"
+  }
+}

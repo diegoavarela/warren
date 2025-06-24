@@ -112,6 +112,9 @@ export class CashflowServiceV2 {
     
     // PRIORITY 3: Non-standard format - trigger AI analysis
     logger.info('Non-standard cashflow format detected');
+    // IMPORTANT: Clear any existing data when a new non-standard file is uploaded
+    // This prevents old data from persisting when the AI wizard is triggered
+    this.clearStoredData();
     throw new Error('Unable to detect standard format. Please use the AI wizard to map your custom format.');
   }
 
@@ -300,6 +303,10 @@ export class CashflowServiceV2 {
       currentMonthData = parsedMetrics[parsedMetrics.length - 1];
     }
     
+    // Get previous month data for comparison
+    const currentMonthIndex = parsedMetrics.findIndex(m => m.month === currentMonthData.month);
+    const previousMonthData = currentMonthIndex > 0 ? parsedMetrics[currentMonthIndex - 1] : null;
+    
     // Calculate YTD (Year to Date) values
     let ytdInflow = 0;
     let ytdExpense = 0;
@@ -360,6 +367,14 @@ export class CashflowServiceV2 {
         lowestBalance: currentMonthData.lowestBalance,
         monthlyGeneration: currentMonthData.monthlyGeneration
       },
+      previousMonth: previousMonthData ? {
+        month: previousMonthData.month,
+        totalIncome: previousMonthData.totalInflow,
+        totalExpense: previousMonthData.totalOutflow,
+        finalBalance: previousMonthData.finalBalance,
+        lowestBalance: previousMonthData.lowestBalance,
+        monthlyGeneration: previousMonthData.monthlyGeneration
+      } : null,
       yearToDate: {
         totalIncome: ytdInflow,
         totalExpense: ytdExpense,

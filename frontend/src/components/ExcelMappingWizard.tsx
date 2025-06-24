@@ -69,10 +69,16 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
 
   // Auto-analyze when component mounts with initial file
   React.useEffect(() => {
+    console.log('ExcelMappingWizard mounted', { initialFile: !!initialFile, currentStep, isOpen });
     if (initialFile && currentStep === 'analyzing') {
       analyzeFile();
     }
   }, [initialFile]);
+
+  // Debug effect
+  React.useEffect(() => {
+    console.log('ExcelMappingWizard state change', { currentStep, isOpen, hasMapping: !!mapping, hasError: !!error });
+  }, [currentStep, isOpen, mapping, error]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -83,6 +89,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
   };
 
   const analyzeFile = async () => {
+    console.log('analyzeFile called', { selectedFile: selectedFile?.name });
     if (!selectedFile) return;
 
     setLoading(true);
@@ -676,6 +683,8 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
     }
   };
 
+  console.log('ExcelMappingWizard render check', { isOpen, willRender: isOpen });
+  
   if (!isOpen) return null;
 
   return (

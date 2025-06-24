@@ -36,6 +36,8 @@ import { currencyService } from '../services/currencyService'
 import { ExchangeRateModal } from '../components/ExchangeRateModal'
 import { PerformanceHeatMap } from '../components/PerformanceHeatMap'
 import { TrendForecastChart } from '../components/TrendForecastChart'
+import { KeyInsights } from '../components/KeyInsights'
+import { useTranslation } from 'react-i18next'
 
 interface DashboardData {
   hasData: boolean
@@ -70,6 +72,7 @@ interface DashboardData {
 }
 
 export const DashboardPage: React.FC = () => {
+  const { t } = useTranslation()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -262,6 +265,27 @@ export const DashboardPage: React.FC = () => {
     return value >= 0 ? 'from-emerald-50 via-teal-50 to-cyan-50' : 'from-rose-50 via-pink-50 to-red-50'
   }
 
+  const calculateChange = (current: number, previous: number) => {
+    if (!previous || previous === 0) return null
+    const change = ((current - previous) / Math.abs(previous)) * 100
+    return change
+  }
+
+  const getChangeDisplay = (current: number, previous: number) => {
+    const change = calculateChange(current, previous)
+    if (change === null) return ''
+    
+    const isPositive = change >= 0
+    const arrow = isPositive ? '↑' : '↓'
+    const color = isPositive ? 'text-emerald-600' : 'text-rose-600'
+    
+    return (
+      <span className={`${color} text-xs font-medium`}>
+        {arrow} {Math.abs(change).toFixed(1)}%
+      </span>
+    )
+  }
+
   const exportToPDF = async () => {
     if (!data) return
 
@@ -288,16 +312,11 @@ export const DashboardPage: React.FC = () => {
     // Skip upload in screenshot/demo mode
     if (isScreenshotMode || isDemoMode) return
     
-    try {
-      await cashflowService.uploadFile(uploadedFile)
-      // Add a small delay to ensure backend has processed the file
-      await new Promise(resolve => setTimeout(resolve, 500))
-      // Reload dashboard data
-      await loadDashboard()
-    } catch (error: any) {
-      // Re-throw the error so FileUploadSection can handle it
-      throw error
-    }
+    await cashflowService.uploadFile(uploadedFile)
+    // Add a small delay to ensure backend has processed the file
+    await new Promise(resolve => setTimeout(resolve, 500))
+    // Reload dashboard data
+    await loadDashboard()
   }
 
   if (loading) {
@@ -343,9 +362,9 @@ export const DashboardPage: React.FC = () => {
             <div className="mb-6">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent flex items-center">
                 <BanknotesIcon className="h-8 w-8 mr-3 text-violet-600" />
-                Cash Flow Dashboard
+                {t('nav.cashflow')} {t('nav.dashboard')}
               </h1>
-              <p className="text-gray-600 mt-2">Upload your cash flow data to view financial insights</p>
+              <p className="text-gray-600 mt-2">{t('dashboard.subtitle')}</p>
             </div>
 
             {/* File Upload Section */}
@@ -384,15 +403,15 @@ export const DashboardPage: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent flex items-center">
                 <BanknotesIcon className="h-8 w-8 mr-3 text-violet-600" />
-                Cash Flow Dashboard
+                {t('nav.cashflow')} {t('nav.dashboard')}
               </h1>
-              <p className="text-gray-600 mt-2">Monitor cash movements and financial health</p>
+              <p className="text-gray-600 mt-2">{t('dashboard.subtitle')}</p>
             </div>
             {data?.hasData && (
               <PremiumPDFExport
                 data={data}
                 type="cashflow"
-                title="Cash Flow Financial Report"
+                title={t('cashflow.pdfTitle')}
               />
             )}
           </div>
@@ -402,8 +421,8 @@ export const DashboardPage: React.FC = () => {
         {!isDemoMode ? (
           <FileUploadSection
             onFileUpload={handleUpload}
-            title="Upload Cash Flow Data"
-            description="Import your Excel file to analyze cash movements and financial health"
+            title={t('cashflow.uploadTitle')}
+            description={t('cashflow.uploadDescription')}
             uploadedFileName={data?.uploadedFileName}
             isRealData={data?.hasData}
             variant="cashflow"
@@ -413,8 +432,8 @@ export const DashboardPage: React.FC = () => {
             <div className="flex items-center">
               <SparklesIcon className="h-6 w-6 text-blue-600 mr-3" />
               <div>
-                <h3 className="text-lg font-semibold text-blue-800">Demo Mode Active</h3>
-                <p className="text-blue-600">File upload is disabled in demo mode. The data shown below is sample data for demonstration purposes.</p>
+                <h3 className="text-lg font-semibold text-blue-800">{t('cashflow.demoModeTitle')}</h3>
+                <p className="text-blue-600">{t('cashflow.demoModeDescription')}</p>
               </div>
             </div>
           </div>
@@ -431,7 +450,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">
-                    {data.currentMonth.month} Cashflow Overview
+                    {data.currentMonth.month} {t('dashboard.cashflowOverview')}
                   </h2>
                   {/* Exchange Rate Display */}
                   {settings.enableCurrencyConversion && displayCurrency !== 'USD' && currentExchangeRate && (
@@ -439,7 +458,7 @@ export const DashboardPage: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
                         <p className="text-xs text-gray-700">
-                          Exchange Rate (USD baseline): 
+                          {t('cashflow.exchangeRateBaseline')}: 
                           <span className="ml-1 font-semibold text-gray-900">
                             1 USD = {currentExchangeRate.toFixed(2)} {displayCurrency}
                           </span>
@@ -449,7 +468,7 @@ export const DashboardPage: React.FC = () => {
                         onClick={() => setShowExchangeRateModal(true)}
                         className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
                       >
-                        Edit
+                        {t('common.edit')}
                       </button>
                     </div>
                   )}
@@ -470,7 +489,7 @@ export const DashboardPage: React.FC = () => {
                 <button
                   onClick={() => setShowCurrentMonthHelpModal(true)}
                   className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Understanding current month metrics"
+                  title={t('cashflow.helpCurrentMonth')}
                 >
                   <QuestionMarkCircleIcon className="h-5 w-5" />
                 </button>
@@ -486,10 +505,18 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className="h-4 w-4 text-emerald-400" />
                 </div>
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Total Inflow</h3>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.totalIncome')}</h3>
                 <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(data.currentMonth.totalIncome, 'totalIncome')}
                 </p>
+                {data.previousMonth && (
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-gray-500">
+                      {t('dashboard.comparison', { previousMonth: data.previousMonth.month })}
+                    </p>
+                    {getChangeDisplay(data.currentMonth.totalIncome, data.previousMonth.totalIncome)}
+                  </div>
+                )}
               </div>
 
               {/* Total Outflow */}
@@ -500,10 +527,18 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className="h-4 w-4 text-rose-400" />
                 </div>
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Total Outflow</h3>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.totalExpense')}</h3>
                 <p className="text-xl font-bold text-rose-600">
                   {formatCurrency(Math.abs(data.currentMonth.totalExpense), 'totalExpense')}
                 </p>
+                {data.previousMonth && (
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-gray-500">
+                      {t('dashboard.comparison', { previousMonth: data.previousMonth.month })}
+                    </p>
+                    {getChangeDisplay(Math.abs(data.currentMonth.totalExpense), Math.abs(data.previousMonth.totalExpense))}
+                  </div>
+                )}
               </div>
 
               {/* Final Balance */}
@@ -514,10 +549,18 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className={`h-4 w-4 ${data.currentMonth.finalBalance >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
                 </div>
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Final Balance</h3>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.finalBalance')}</h3>
                 <p className={`text-xl font-bold ${data.currentMonth.finalBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {formatCurrency(data.currentMonth.finalBalance, 'finalBalance')}
                 </p>
+                {data.previousMonth && (
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-gray-500">
+                      {t('dashboard.comparison', { previousMonth: data.previousMonth.month })}
+                    </p>
+                    {getChangeDisplay(data.currentMonth.finalBalance, data.previousMonth.finalBalance)}
+                  </div>
+                )}
               </div>
 
               {/* Lowest Balance */}
@@ -528,10 +571,18 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className={`h-4 w-4 ${data.currentMonth.lowestBalance >= 0 ? 'text-purple-400' : 'text-red-400'}`} />
                 </div>
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Lowest Balance</h3>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.lowestBalance')}</h3>
                 <p className={`text-xl font-bold ${data.currentMonth.lowestBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {formatCurrency(data.currentMonth.lowestBalance, 'lowestBalance')}
                 </p>
+                {data.previousMonth && (
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-gray-500">
+                      {t('dashboard.comparison', { previousMonth: data.previousMonth.month })}
+                    </p>
+                    {getChangeDisplay(data.currentMonth.lowestBalance, data.previousMonth.lowestBalance)}
+                  </div>
+                )}
               </div>
 
               {/* Monthly Generation */}
@@ -542,10 +593,18 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className={`h-4 w-4 ${data.currentMonth.monthlyGeneration >= 0 ? 'text-emerald-400' : 'text-orange-400'}`} />
                 </div>
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Cash Generation</h3>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.monthlyGeneration')}</h3>
                 <p className={`text-xl font-bold ${data.currentMonth.monthlyGeneration >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {formatCurrency(data.currentMonth.monthlyGeneration, 'monthlyGeneration')}
                 </p>
+                {data.previousMonth && (
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-gray-500">
+                      {t('dashboard.comparison', { previousMonth: data.previousMonth.month })}
+                    </p>
+                    {getChangeDisplay(data.currentMonth.monthlyGeneration, data.previousMonth.monthlyGeneration)}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -556,11 +615,11 @@ export const DashboardPage: React.FC = () => {
         {data.yearToDate && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Year to Date Summary</h2>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">{t('cashflow.yearToDateSummary')}</h2>
               <button
                 onClick={() => setShowYTDHelpModal(true)}
                 className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Understanding YTD cash flow summary"
+                title={t('cashflow.helpYTD')}
               >
                 <QuestionMarkCircleIcon className="h-5 w-5" />
               </button>
@@ -571,9 +630,9 @@ export const DashboardPage: React.FC = () => {
                   <ArrowTrendingUpIcon className="h-8 w-8 text-emerald-600" />
                   <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">YTD</span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Inflow</h3>
+                <h3 className="text-sm font-medium text-gray-600 mb-2">{t('cashflow.totalInflow')}</h3>
                 <p className="text-3xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">{formatCurrency(data.yearToDate.totalIncome, 'ytdIncome')}</p>
-                <p className="text-sm text-emerald-600 mt-2">Total income accumulated</p>
+                <p className="text-sm text-emerald-600 mt-2">{t('cashflow.totalIncomeAccumulated')}</p>
               </div>
               
               <div className="bg-gradient-to-br from-rose-50/90 via-pink-50/90 to-red-50/90 backdrop-blur-sm rounded-3xl p-6 border border-rose-200/50 shadow-xl">
@@ -581,9 +640,9 @@ export const DashboardPage: React.FC = () => {
                   <ArrowTrendingDownIcon className="h-8 w-8 text-rose-600" />
                   <span className="text-xs font-medium text-rose-600 bg-rose-100 px-3 py-1 rounded-full">YTD</span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Outflow</h3>
+                <h3 className="text-sm font-medium text-gray-600 mb-2">{t('cashflow.totalOutflow')}</h3>
                 <p className="text-3xl font-bold bg-gradient-to-r from-rose-700 to-pink-700 bg-clip-text text-transparent">{formatCurrency(Math.abs(data.yearToDate.totalExpense), 'ytdExpense')}</p>
-                <p className="text-sm text-rose-600 mt-2">Total outflow incurred</p>
+                <p className="text-sm text-rose-600 mt-2">{t('cashflow.totalOutflowIncurred')}</p>
               </div>
               
               <div className={`bg-gradient-to-br ${data.yearToDate.totalBalance >= 0 ? 'from-blue-50/90 via-indigo-50/90 to-purple-50/90 border-blue-200/50' : 'from-orange-50/90 via-red-50/90 to-rose-50/90 border-orange-200/50'} backdrop-blur-sm rounded-3xl p-6 border shadow-xl`}>
@@ -591,9 +650,9 @@ export const DashboardPage: React.FC = () => {
                   <BanknotesIcon className={`h-8 w-8 ${data.yearToDate.totalBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
                   <span className={`text-xs font-medium ${data.yearToDate.totalBalance >= 0 ? 'text-blue-600 bg-blue-100' : 'text-orange-600 bg-orange-100'} px-3 py-1 rounded-full`}>YTD</span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Net Balance</h3>
+                <h3 className="text-sm font-medium text-gray-600 mb-2">{t('cashflow.netBalance')}</h3>
                 <p className={`text-3xl font-bold bg-gradient-to-r ${data.yearToDate.totalBalance >= 0 ? 'from-blue-700 to-purple-700' : 'from-orange-700 to-red-700'} bg-clip-text text-transparent`}>{formatCurrency(data.yearToDate.totalBalance, 'ytdBalance')}</p>
-                <p className={`text-sm ${data.yearToDate.totalBalance >= 0 ? 'text-blue-600' : 'text-orange-600'} mt-2`}>Net position year to date</p>
+                <p className={`text-sm ${data.yearToDate.totalBalance >= 0 ? 'text-blue-600' : 'text-orange-600'} mt-2`}>{t('cashflow.netPositionYTD')}</p>
               </div>
               
               {/* YTD Investment Card - Only show if there's investment data */}
@@ -603,24 +662,27 @@ export const DashboardPage: React.FC = () => {
                     <BanknotesIcon className="h-8 w-8 text-purple-600" />
                     <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">YTD</span>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Total Investment</h3>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">{t('cashflow.totalInvestment')}</h3>
                   <p className="text-3xl font-bold bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">{formatCurrency(Math.abs(data.yearToDate.totalInvestment), 'ytdInvestment')}</p>
-                  <p className="text-sm text-purple-600 mt-2">Capital deployed year to date</p>
+                  <p className="text-sm text-purple-600 mt-2">{t('cashflow.capitalDeployedYTD')}</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
+        {/* Key Insights Section */}
+        {data.hasData && <KeyInsights data={data} type="cashflow" />}
+
         {/* Performance Overview Section */}
         {data.chartData && data.chartData.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Performance Overview</h2>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">{t('dashboard.performanceOverview')}</h2>
               <button
                 onClick={() => setShowPerformanceHelpModal(true)}
                 className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Understanding performance heat maps"
+                title={t('cashflow.helpPerformance')}
               >
                 <QuestionMarkCircleIcon className="h-5 w-5" />
               </button>
@@ -629,20 +691,20 @@ export const DashboardPage: React.FC = () => {
               <PerformanceHeatMap 
                 data={data}
                 metric="cashflow"
-                title="Monthly Cash Flow Performance"
+                title={t('cashflow.monthlyCashflowPerformance')}
                 type="cashflow"
               />
               <PerformanceHeatMap 
                 data={data}
                 metric="revenue"
-                title="Monthly Inflow Heat Map"
+                title={t('cashflow.monthlyInflowHeatMap')}
                 type="cashflow"
               />
             </div>
           </div>
         )}
 
-        {/* Trend Analysis & Forecasts Section */}
+        {/* Trend Analysis & Forecasts Section - REMOVED per user request
         {data.chartData && data.chartData.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
@@ -673,17 +735,18 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
         )}
+        */}
 
         {/* Chart Section */}
         {console.log('Chart data:', data.chartData)}
         {data.chartData && data.chartData.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">2025 Full Year Overview</h2>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">{t('cashflow.fullYearOverview')}</h2>
               <button
                 onClick={() => setShowChartHelpModal(true)}
                 className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Understanding the full year cash flow chart"
+                title={t('cashflow.helpChart')}
               >
                 <QuestionMarkCircleIcon className="h-5 w-5" />
               </button>
@@ -693,11 +756,11 @@ export const DashboardPage: React.FC = () => {
                 <div className="flex items-center space-x-6 text-sm">
                   <div className="flex items-center">
                     <div className="w-4 h-4 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-60 rounded mr-2"></div>
-                    <span className="text-gray-600">Actual Data</span>
+                    <span className="text-gray-600">{t('cashflow.actualData')}</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-4 h-4 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-20 rounded mr-2"></div>
-                    <span className="text-gray-600">Forecast</span>
+                    <span className="text-gray-600">{t('cashflow.forecast')}</span>
                   </div>
                 </div>
               </div>
@@ -709,7 +772,7 @@ export const DashboardPage: React.FC = () => {
         {/* Cash Flow Analysis Section - Runway and Burn Rate */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">Cash Flow Analysis</h2>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">{t('cashflow.cashflowAnalysis')}</h2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CashRunwayWidget 
@@ -725,7 +788,7 @@ export const DashboardPage: React.FC = () => {
 
         {/* Advanced Analytics Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Advanced Analytics</h2>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">{t('cashflow.advancedAnalytics')}</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ScenarioPlanning />
             <CashFlowStackedBar />
@@ -734,7 +797,7 @@ export const DashboardPage: React.FC = () => {
 
         {/* Extended Financial Analysis Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">Extended Financial Analysis</h2>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">{t('cashflow.extendedFinancialAnalysis')}</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <OperationalAnalysisWidget 
               currency={currency} 
@@ -764,12 +827,12 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold bg-gradient-to-r from-violet-700 to-purple-700 bg-clip-text text-transparent flex items-center">
                   <SparklesIcon className="h-6 w-6 text-violet-500 mr-2" />
-                  Key Insights
+                  {t('dashboard.keyInsights')}
                 </h3>
                 <button
                   onClick={() => setShowKeyInsightsHelpModal(true)}
                   className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Understanding key financial insights"
+                  title={t('cashflow.helpKeyInsights')}
                 >
                   <QuestionMarkCircleIcon className="h-5 w-5" />
                 </button>
@@ -788,12 +851,12 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-700 to-indigo-700 bg-clip-text text-transparent flex items-center">
                   <ChartBarIcon className="h-6 w-6 text-purple-500 mr-2" />
-                  Projections
+                  {t('dashboard.projections')}
                 </h3>
                 <button
                   onClick={() => setShowProjectionsHelpModal(true)}
                   className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Understanding cash flow projections"
+                  title={t('cashflow.helpProjections')}
                 >
                   <QuestionMarkCircleIcon className="h-5 w-5" />
                 </button>
@@ -815,7 +878,7 @@ export const DashboardPage: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Understanding Key Financial Insights</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.help.keyInsights.title')}</h2>
                 <button
                   onClick={() => setShowKeyInsightsHelpModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -826,20 +889,19 @@ export const DashboardPage: React.FC = () => {
               
               <div className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">✨ What are Key Insights?</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">✨ {t('dashboard.help.keyInsights.whatAre')}</h3>
                   <div className="bg-violet-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      Key insights analyze your past 3 months of financial data to identify important patterns, 
-                      trends, and notable events that impact your cash flow.
+                      {t('dashboard.help.keyInsights.description')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      These insights help you understand what happened in your business and why.
+                      {t('dashboard.help.keyInsights.purpose')}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Your Current Insights</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('dashboard.help.keyInsights.currentInsights')}</h3>
                   <div className="bg-gray-50 rounded-xl p-4">
                     {data?.highlights?.pastThreeMonths && data.highlights.pastThreeMonths.length > 0 ? (
                       <ul className="space-y-2">
@@ -851,107 +913,103 @@ export const DashboardPage: React.FC = () => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-500">No insights available yet. Upload more data to see insights.</p>
+                      <p className="text-sm text-gray-500">{t('dashboard.help.keyInsights.noInsights')}</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔍 Types of Insights</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔍 {t('dashboard.help.keyInsights.typesOfInsights.title')}</h3>
                   <div className="space-y-3">
                     <div className="border-l-4 border-violet-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Cash Flow Patterns</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.keyInsights.typesOfInsights.cashFlow.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Identify months with strong cash generation vs. periods of cash burn.
-                        Helps understand business cycles and seasonal trends.
+                        {t('dashboard.help.keyInsights.typesOfInsights.cashFlow.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-blue-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Income Trends</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.keyInsights.typesOfInsights.income.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Track revenue growth, decline, or stability over the analyzed period.
-                        Highlights best and worst performing months.
+                        {t('dashboard.help.keyInsights.typesOfInsights.income.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-pink-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Outflow Analysis</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.keyInsights.typesOfInsights.outflow.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Spot unusual outflow spikes, cost control successes, or spending patterns.
-                        Identifies opportunities for cost optimization.
+                        {t('dashboard.help.keyInsights.typesOfInsights.outflow.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-green-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Balance Movements</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.keyInsights.typesOfInsights.balance.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Highlights significant changes in cash position, lowest balance points,
-                        and recovery periods after cash shortfalls.
+                        {t('dashboard.help.keyInsights.typesOfInsights.balance.description')}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 How Insights are Generated</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('dashboard.help.keyInsights.howGenerated.title')}</h3>
                   <div className="bg-blue-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-3">
-                      Our AI analyzes your financial data using these methods:
+                      {t('dashboard.help.keyInsights.howGenerated.description')}
                     </p>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-start">
                         <span className="text-blue-500 mr-2">•</span>
-                        <span><strong>Trend Detection:</strong> Identifies growth, decline, or stability patterns</span>
+                        <span><strong>{t('dashboard.help.keyInsights.howGenerated.methods.trendDetection.title')}:</strong> {t('dashboard.help.keyInsights.howGenerated.methods.trendDetection.description')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-blue-500 mr-2">•</span>
-                        <span><strong>Anomaly Spotting:</strong> Finds unusual spikes or drops in cash flow</span>
+                        <span><strong>{t('dashboard.help.keyInsights.howGenerated.methods.anomalySpotting.title')}:</strong> {t('dashboard.help.keyInsights.howGenerated.methods.anomalySpotting.description')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-blue-500 mr-2">•</span>
-                        <span><strong>Comparative Analysis:</strong> Compares months to identify best/worst performers</span>
+                        <span><strong>{t('dashboard.help.keyInsights.howGenerated.methods.comparative.title')}:</strong> {t('dashboard.help.keyInsights.howGenerated.methods.comparative.description')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-blue-500 mr-2">•</span>
-                        <span><strong>Risk Assessment:</strong> Highlights potential cash flow concerns</span>
+                        <span><strong>{t('dashboard.help.keyInsights.howGenerated.methods.riskAssessment.title')}:</strong> {t('dashboard.help.keyInsights.howGenerated.methods.riskAssessment.description')}</span>
                       </li>
                     </ul>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Using Insights for Decision Making</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 {t('dashboard.help.keyInsights.decisionMaking.title')}</h3>
                   <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                    <p className="text-sm text-gray-700 font-medium">Key insights help you:</p>
+                    <p className="text-sm text-gray-700 font-medium">{t('dashboard.help.keyInsights.decisionMaking.subtitle')}</p>
                     <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                      <li>Understand what drove good or bad financial performance</li>
-                      <li>Identify seasonal patterns in your business</li>
-                      <li>Spot potential problems before they become critical</li>
-                      <li>Recognize successful strategies worth repeating</li>
-                      <li>Make data-driven decisions about spending and investment</li>
-                      <li>Prepare for similar situations in the future</li>
+                      <li>{t('dashboard.help.keyInsights.decisionMaking.benefits.understand')}</li>
+                      <li>{t('dashboard.help.keyInsights.decisionMaking.benefits.patterns')}</li>
+                      <li>{t('dashboard.help.keyInsights.decisionMaking.benefits.problems')}</li>
+                      <li>{t('dashboard.help.keyInsights.decisionMaking.benefits.strategies')}</li>
+                      <li>{t('dashboard.help.keyInsights.decisionMaking.benefits.datadriven')}</li>
+                      <li>{t('dashboard.help.keyInsights.decisionMaking.benefits.prepare')}</li>
                     </ul>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Example Insights</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('dashboard.help.keyInsights.examples.title')}</h3>
                   <div className="bg-yellow-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-3">Common insights you might see:</p>
+                    <p className="text-sm text-gray-700 mb-3">{t('dashboard.help.keyInsights.examples.subtitle')}</p>
                     <div className="space-y-2 text-sm text-gray-600">
-                      <p className="font-medium text-gray-700">Positive Insights:</p>
+                      <p className="font-medium text-gray-700">{t('dashboard.help.keyInsights.examples.positive.title')}</p>
                       <ul className="space-y-1 ml-4">
-                        <li>• "March showed strongest cash generation with +$45K increase"</li>
-                        <li>• "Operating expenses decreased 12% compared to previous quarter"</li>
-                        <li>• "Revenue growth averaged 8% month-over-month"</li>
+                        <li>• {t('dashboard.help.keyInsights.examples.positive.cashGeneration')}</li>
+                        <li>• {t('dashboard.help.keyInsights.examples.positive.expenseDecrease')}</li>
+                        <li>• {t('dashboard.help.keyInsights.examples.positive.revenueGrowth')}</li>
                       </ul>
                       
-                      <p className="font-medium text-gray-700 mt-3">Areas for Attention:</p>
+                      <p className="font-medium text-gray-700 mt-3">{t('dashboard.help.keyInsights.examples.attention.title')}</p>
                       <ul className="space-y-1 ml-4">
-                        <li>• "May experienced lowest cash balance of $12K"</li>
-                        <li>• "Expenses spiked 25% in April due to equipment purchases"</li>
-                        <li>• "Cash generation declined for two consecutive months"</li>
+                        <li>• {t('dashboard.help.keyInsights.examples.attention.lowestBalance')}</li>
+                        <li>• {t('dashboard.help.keyInsights.examples.attention.expenseSpike')}</li>
+                        <li>• {t('dashboard.help.keyInsights.examples.attention.cashDecline')}</li>
                       </ul>
                     </div>
                   </div>
@@ -966,7 +1024,7 @@ export const DashboardPage: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Understanding Cash Flow Projections</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.help.projections.title')}</h2>
                 <button
                   onClick={() => setShowProjectionsHelpModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -977,20 +1035,19 @@ export const DashboardPage: React.FC = () => {
               
               <div className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔮 What are Cash Flow Projections?</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔮 {t('dashboard.help.projections.whatAre')}</h3>
                   <div className="bg-purple-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      Cash flow projections forecast your financial position over the next 6 months 
-                      based on historical patterns, trends, and business intelligence.
+                      {t('dashboard.help.projections.description')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      These projections help you plan ahead and make proactive financial decisions.
+                      {t('dashboard.help.projections.purpose')}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Your Current Projections</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('dashboard.help.projections.currentProjections')}</h3>
                   <div className="bg-gray-50 rounded-xl p-4">
                     {data?.highlights?.nextSixMonths && data.highlights.nextSixMonths.length > 0 ? (
                       <ul className="space-y-2">
@@ -1002,96 +1059,93 @@ export const DashboardPage: React.FC = () => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-500">No projections available yet. Upload more data to see forecasts.</p>
+                      <p className="text-sm text-gray-500">{t('dashboard.help.projections.noProjections')}</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 How Projections Work</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('dashboard.help.projections.howWork.title')}</h3>
                   <div className="space-y-3">
                     <div className="border-l-4 border-purple-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Trend Analysis</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.projections.howWork.trendAnalysis.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Analyzes 3-6 months of historical data to identify patterns in income, 
-                        expenses, and cash generation that are likely to continue.
+                        {t('dashboard.help.projections.howWork.trendAnalysis.description1')} 
+                        {t('dashboard.help.projections.howWork.trendAnalysis.description2')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-indigo-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Seasonal Patterns</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.projections.howWork.seasonal.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Identifies recurring monthly or quarterly patterns in your business
-                        to predict similar behaviors in the future.
+                        {t('dashboard.help.projections.howWork.seasonal.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-blue-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Growth Rates</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.projections.howWork.growthRates.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Calculates average growth rates for income and expenses to project
-                        future performance based on current trajectory.
+                        {t('dashboard.help.projections.howWork.growthRates.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-teal-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Risk Scenarios</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.projections.howWork.riskScenarios.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Models potential challenges like cash shortfalls, funding needs,
-                        or opportunities for growth investment.
+                        {t('dashboard.help.projections.howWork.riskScenarios.description')}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">⚠️ Projection Accuracy</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">⚠️ {t('dashboard.help.projections.accuracy.title')}</h3>
                   <div className="bg-yellow-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-3">
-                      Important considerations about projection accuracy:
+                      {t('dashboard.help.projections.accuracy.subtitle')}
                     </p>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>Near-term accuracy:</strong> 1-2 months ahead are most reliable</span>
+                        <span><strong>{t('dashboard.help.projections.accuracy.nearTerm.title')}:</strong> {t('dashboard.help.projections.accuracy.nearTerm.description')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>Data quality matters:</strong> More historical data = better projections</span>
+                        <span><strong>{t('dashboard.help.projections.accuracy.dataQuality.title')}:</strong> {t('dashboard.help.projections.accuracy.dataQuality.description')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>External factors:</strong> Market changes aren't automatically considered</span>
+                        <span><strong>{t('dashboard.help.projections.accuracy.externalFactors.title')}:</strong> {t('dashboard.help.projections.accuracy.externalFactors.description')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>Business changes:</strong> New products/services may alter projections</span>
+                        <span><strong>{t('dashboard.help.projections.accuracy.businessChanges.title')}:</strong> {t('dashboard.help.projections.accuracy.businessChanges.description')}</span>
                       </li>
                     </ul>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Using Projections Strategically</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 {t('dashboard.help.projections.strategic.title')}</h3>
                   <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                    <p className="text-sm text-gray-700 font-medium">Use projections to:</p>
+                    <p className="text-sm text-gray-700 font-medium">{t('dashboard.help.projections.strategic.subtitle')}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                       <div>
-                        <p className="text-xs font-medium text-gray-700 mb-1">Financial Planning:</p>
+                        <p className="text-xs font-medium text-gray-700 mb-1">{t('dashboard.help.projections.strategic.financialPlanning.title')}</p>
                         <ul className="text-xs text-gray-600 space-y-1">
-                          <li>• Plan for cash shortfalls</li>
-                          <li>• Time major purchases</li>
-                          <li>• Schedule fundraising</li>
-                          <li>• Set realistic budgets</li>
+                          <li>• {t('dashboard.help.projections.strategic.financialPlanning.shortfalls')}</li>
+                          <li>• {t('dashboard.help.projections.strategic.financialPlanning.purchases')}</li>
+                          <li>• {t('dashboard.help.projections.strategic.financialPlanning.fundraising')}</li>
+                          <li>• {t('dashboard.help.projections.strategic.financialPlanning.budgets')}</li>
                         </ul>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-gray-700 mb-1">Business Decisions:</p>
+                        <p className="text-xs font-medium text-gray-700 mb-1">{t('dashboard.help.projections.strategic.businessDecisions.title')}</p>
                         <ul className="text-xs text-gray-600 space-y-1">
-                          <li>• Hiring and staffing plans</li>
-                          <li>• Investment timing</li>
-                          <li>• Inventory management</li>
-                          <li>• Growth strategies</li>
+                          <li>• {t('dashboard.help.projections.strategic.businessDecisions.hiring')}</li>
+                          <li>• {t('dashboard.help.projections.strategic.businessDecisions.investment')}</li>
+                          <li>• {t('dashboard.help.projections.strategic.businessDecisions.inventory')}</li>
+                          <li>• {t('dashboard.help.projections.strategic.businessDecisions.growth')}</li>
                         </ul>
                       </div>
                     </div>
@@ -1099,36 +1153,35 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Example Projections</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('dashboard.help.projections.examples.title')}</h3>
                   <div className="bg-indigo-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-3">Common projections you might see:</p>
+                    <p className="text-sm text-gray-700 mb-3">{t('dashboard.help.projections.examples.subtitle')}</p>
                     <div className="space-y-2 text-sm text-gray-600">
-                      <p className="font-medium text-gray-700">Positive Outlook:</p>
+                      <p className="font-medium text-gray-700">{t('dashboard.help.projections.examples.positive.title')}</p>
                       <ul className="space-y-1 ml-4">
-                        <li>• "Cash balance expected to grow 15% over next 6 months"</li>
-                        <li>• "Projected to maintain positive cash flow through Q2"</li>
-                        <li>• "Revenue forecast shows 8% monthly growth trend"</li>
+                        <li>• {t('dashboard.help.projections.examples.positive.balanceGrowth')}</li>
+                        <li>• {t('dashboard.help.projections.examples.positive.positiveCashFlow')}</li>
+                        <li>• {t('dashboard.help.projections.examples.positive.revenueForecast')}</li>
                       </ul>
                       
-                      <p className="font-medium text-gray-700 mt-3">Planning Alerts:</p>
+                      <p className="font-medium text-gray-700 mt-3">{t('dashboard.help.projections.examples.alerts.title')}</p>
                       <ul className="space-y-1 ml-4">
-                        <li>• "Cash balance may drop below $20K in August"</li>
-                        <li>• "Consider fundraising by September to maintain runway"</li>
-                        <li>• "Expense growth outpacing revenue - monitor closely"</li>
+                        <li>• {t('dashboard.help.projections.examples.alerts.lowBalance')}</li>
+                        <li>• {t('dashboard.help.projections.examples.alerts.fundraising')}</li>
+                        <li>• {t('dashboard.help.projections.examples.alerts.expenseGrowth')}</li>
                       </ul>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔄 Updating Projections</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔄 {t('dashboard.help.projections.updating.title')}</h3>
                   <div className="bg-blue-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      Projections automatically update when you upload new financial data.
-                      Regular updates improve accuracy and keep forecasts relevant.
+                      {t('dashboard.help.projections.updating.description')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      Review projections monthly and compare actual results to forecasts to validate accuracy.
+                      {t('dashboard.help.projections.updating.review')}
                     </p>
                   </div>
                 </div>
@@ -1142,7 +1195,7 @@ export const DashboardPage: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Understanding Current Month Metrics</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.help.currentMonth.title')}</h2>
                 <button
                   onClick={() => setShowCurrentMonthHelpModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1153,40 +1206,39 @@ export const DashboardPage: React.FC = () => {
               
               <div className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Current Month Overview</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('dashboard.help.currentMonth.overview.title')}</h3>
                   <div className="bg-blue-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      These metrics show your financial performance for {data?.currentMonth?.month || 'the current month'}, 
-                      giving you a snapshot of your cash flow health.
+                      {t('dashboard.help.currentMonth.overview.description', { month: data?.currentMonth?.month || t('dashboard.help.currentMonth.overview.currentMonth') })}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      These are the most important numbers to monitor for immediate cash flow management.
+                      {t('dashboard.help.currentMonth.overview.importance')}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 Your Current Numbers</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 {t('dashboard.help.currentMonth.currentNumbers')}</h3>
                   <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-600">Total Inflow</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.currentMonth.metrics.totalInflow')}</p>
                         <p className="text-sm font-semibold text-emerald-600">{formatCurrency(data?.currentMonth?.totalIncome || 0)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600">Total Outflow</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.currentMonth.metrics.totalOutflow')}</p>
                         <p className="text-sm font-semibold text-rose-600">{formatCurrency(Math.abs(data?.currentMonth?.totalExpense || 0))}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200">
                       <div>
-                        <p className="text-xs text-gray-600">Final Balance</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.currentMonth.metrics.finalBalance')}</p>
                         <p className={`text-sm font-semibold ${getMetricColor(data?.currentMonth?.finalBalance || 0)}`}>
                           {formatCurrency(data?.currentMonth?.finalBalance || 0)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600">Cash Generation</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.currentMonth.metrics.cashGeneration')}</p>
                         <p className={`text-sm font-semibold ${getMetricColor(data?.currentMonth?.monthlyGeneration || 0)}`}>
                           {formatCurrency(data?.currentMonth?.monthlyGeneration || 0)}
                         </p>
@@ -1196,86 +1248,81 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Metrics Explained</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('dashboard.help.currentMonth.explained.title')}</h3>
                   <div className="space-y-3">
                     <div className="border-l-4 border-emerald-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Inflow</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.currentMonth.explained.inflow.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        All money coming into your business this month from sales, services, and other revenue sources.
-                        This is your "top line" number.
+                        {t('dashboard.help.currentMonth.explained.inflow.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-rose-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Outflow</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.currentMonth.explained.outflow.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        All money going out of your business this month including operational costs, 
-                        salaries, rent, and other business outflow.
+                        {t('dashboard.help.currentMonth.explained.outflow.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-purple-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Final Balance</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.currentMonth.explained.finalBalance.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Your cash position at the end of the month. 
-                        Formula: Starting Balance + Inflow - Outflow
+                        {t('dashboard.help.currentMonth.explained.finalBalance.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-gray-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Lowest Balance</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.currentMonth.explained.lowestBalance.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        The lowest your cash balance got during the month. Important for understanding 
-                        cash flow timing and avoiding overdrafts.
+                        {t('dashboard.help.currentMonth.explained.lowestBalance.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-cyan-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Cash Generation</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.currentMonth.explained.cashGeneration.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Net cash flow for the month (Inflow - Outflow). 
-                        Positive means you generated cash, negative means you consumed cash.
+                        {t('dashboard.help.currentMonth.explained.cashGeneration.description')}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🚦 Health Indicators</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🚦 {t('dashboard.help.currentMonth.healthIndicators.title')}</h3>
                   <div className="bg-yellow-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-3">What your numbers tell you:</p>
+                    <p className="text-sm text-gray-700 mb-3">{t('dashboard.help.currentMonth.healthIndicators.subtitle')}</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Positive Cash Generation:</span>
-                        <span className="font-medium text-green-600">Healthy cash flow</span>
+                        <span className="text-gray-600">{t('dashboard.help.currentMonth.healthIndicators.positiveCashGeneration')}</span>
+                        <span className="font-medium text-green-600">{t('dashboard.help.currentMonth.healthIndicators.healthyCashFlow')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Negative Cash Generation:</span>
-                        <span className="font-medium text-orange-600">Monitor expenses</span>
+                        <span className="text-gray-600">{t('dashboard.help.currentMonth.healthIndicators.negativeCashGeneration')}</span>
+                        <span className="font-medium text-orange-600">{t('dashboard.help.currentMonth.healthIndicators.monitorExpenses')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Low Final Balance:</span>
-                        <span className="font-medium text-red-600">Consider funding</span>
+                        <span className="text-gray-600">{t('dashboard.help.currentMonth.healthIndicators.lowFinalBalance')}</span>
+                        <span className="font-medium text-red-600">{t('dashboard.help.currentMonth.healthIndicators.considerFunding')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Very Low Lowest Balance:</span>
-                        <span className="font-medium text-red-600">Cash flow timing risk</span>
+                        <span className="text-gray-600">{t('dashboard.help.currentMonth.healthIndicators.veryLowLowestBalance')}</span>
+                        <span className="font-medium text-red-600">{t('dashboard.help.currentMonth.healthIndicators.cashFlowTimingRisk')}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Quick Actions</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 {t('dashboard.help.currentMonth.quickActions.title')}</h3>
                   <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                    <p className="text-sm text-gray-700 font-medium">Use these metrics to:</p>
+                    <p className="text-sm text-gray-700 font-medium">{t('dashboard.help.currentMonth.quickActions.subtitle')}</p>
                     <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                      <li>Track monthly performance vs targets</li>
-                      <li>Identify if you're cash positive or negative</li>
-                      <li>Spot potential cash flow problems early</li>
-                      <li>Make decisions about expenses and investments</li>
-                      <li>Plan for upcoming cash needs</li>
-                      <li>Communicate financial health to stakeholders</li>
+                      <li>{t('dashboard.help.currentMonth.quickActions.action1')}</li>
+                      <li>{t('dashboard.help.currentMonth.quickActions.action2')}</li>
+                      <li>{t('dashboard.help.currentMonth.quickActions.action3')}</li>
+                      <li>{t('dashboard.help.currentMonth.quickActions.action4')}</li>
+                      <li>{t('dashboard.help.currentMonth.quickActions.action5')}</li>
+                      <li>{t('dashboard.help.currentMonth.quickActions.action6')}</li>
                     </ul>
                   </div>
                 </div>
@@ -1289,7 +1336,7 @@ export const DashboardPage: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Understanding YTD Cash Flow Summary</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.help.ytd.title')}</h2>
                 <button
                   onClick={() => setShowYTDHelpModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1300,32 +1347,31 @@ export const DashboardPage: React.FC = () => {
               
               <div className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📅 Year to Date Cash Flow</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📅 {t('dashboard.help.ytd.overview.title')}</h3>
                   <div className="bg-blue-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      Year to Date shows your cumulative cash flow performance from January 1st 
-                      through the current month.
+                      {t('dashboard.help.ytd.overview.description')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      These numbers help you understand your overall financial trajectory for the year.
+                      {t('dashboard.help.ytd.overview.purpose')}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 Your YTD Performance</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 {t('dashboard.help.ytd.performance.title')}</h3>
                   <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-xs text-gray-600">Total Inflow</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.ytd.labels.totalInflow')}</p>
                         <p className="text-sm font-semibold text-emerald-600">{formatCurrency(data?.yearToDate?.totalIncome || 0)}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-gray-600">Total Outflow</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.ytd.labels.totalOutflow')}</p>
                         <p className="text-sm font-semibold text-rose-600">{formatCurrency(Math.abs(data?.yearToDate?.totalExpense || 0))}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-gray-600">Net Balance</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.ytd.labels.netBalance')}</p>
                         <p className={`text-sm font-semibold ${(data?.yearToDate?.totalBalance || 0) >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
                           {formatCurrency(data?.yearToDate?.totalBalance || 0)}
                         </p>
@@ -1335,87 +1381,84 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Metrics Explained</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('dashboard.help.ytd.metricsExplained.title')}</h3>
                   <div className="space-y-3">
                     <div className="border-l-4 border-emerald-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Inflow (YTD)</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.ytd.metricsExplained.totalInflow.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Sum of all income from January through the current month. 
-                        This shows your revenue generation capacity for the year.
+                        {t('dashboard.help.ytd.metricsExplained.totalInflow.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-rose-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Total Outflow (YTD)</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.ytd.metricsExplained.totalOutflow.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Sum of all expenses from January through the current month. 
-                        Helps track spending patterns and cost control.
+                        {t('dashboard.help.ytd.metricsExplained.totalOutflow.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-blue-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Net Balance (YTD)</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.ytd.metricsExplained.netBalance.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Your cumulative cash generation for the year (Total Inflow - Total Outflows). 
-                        Shows if you're profitable year-to-date.
+                        {t('dashboard.help.ytd.metricsExplained.netBalance.description')}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Performance Analysis</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('dashboard.help.ytd.performanceAnalysis.title')}</h3>
                   <div className="bg-yellow-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-3">Your YTD performance indicates:</p>
+                    <p className="text-sm text-gray-700 mb-3">{t('dashboard.help.ytd.performanceAnalysis.subtitle')}</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Positive Net Balance:</span>
-                        <span className="font-medium text-green-600">Profitable year so far</span>
+                        <span className="text-gray-600">{t('dashboard.help.ytd.performanceAnalysis.positiveNetBalance')}</span>
+                        <span className="font-medium text-green-600">{t('dashboard.help.ytd.performanceAnalysis.profitableYear')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Negative Net Balance:</span>
-                        <span className="font-medium text-orange-600">Operating at a loss YTD</span>
+                        <span className="text-gray-600">{t('dashboard.help.ytd.performanceAnalysis.negativeNetBalance')}</span>
+                        <span className="font-medium text-orange-600">{t('dashboard.help.ytd.performanceAnalysis.operatingAtLoss')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Growing Income:</span>
-                        <span className="font-medium text-blue-600">Business expanding</span>
+                        <span className="text-gray-600">{t('dashboard.help.ytd.performanceAnalysis.growingIncome')}</span>
+                        <span className="font-medium text-blue-600">{t('dashboard.help.ytd.performanceAnalysis.businessExpanding')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">High Expense Ratio:</span>
-                        <span className="font-medium text-red-600">Review cost structure</span>
+                        <span className="text-gray-600">{t('dashboard.help.ytd.performanceAnalysis.highExpenseRatio')}</span>
+                        <span className="font-medium text-red-600">{t('dashboard.help.ytd.performanceAnalysis.reviewCostStructure')}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Strategic Planning</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('dashboard.help.ytd.strategic.title')}</h3>
                   <div className="bg-green-50 rounded-xl p-4 space-y-2">
-                    <p className="text-sm text-gray-700 font-medium">Use YTD data to:</p>
+                    <p className="text-sm text-gray-700 font-medium">{t('dashboard.help.ytd.strategic.subtitle')}</p>
                     <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                      <li>Compare against annual goals and budgets</li>
-                      <li>Project full-year performance</li>
-                      <li>Identify seasonal trends and patterns</li>
-                      <li>Make mid-year strategy adjustments</li>
-                      <li>Prepare for upcoming quarters</li>
-                      <li>Communicate progress to investors/stakeholders</li>
+                      <li>{t('dashboard.help.ytd.strategic.uses.compare')}</li>
+                      <li>{t('dashboard.help.ytd.strategic.uses.project')}</li>
+                      <li>{t('dashboard.help.ytd.strategic.uses.identify')}</li>
+                      <li>{t('dashboard.help.ytd.strategic.uses.adjust')}</li>
+                      <li>{t('dashboard.help.ytd.strategic.uses.prepare')}</li>
+                      <li>{t('dashboard.help.ytd.strategic.uses.communicate')}</li>
                     </ul>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Monthly Average</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('dashboard.help.ytd.monthlyAverage.title')}</h3>
                   <div className="bg-purple-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-2">Based on your YTD data:</p>
+                    <p className="text-sm text-gray-700 mb-2">{t('dashboard.help.ytd.monthlyAverage.subtitle')}</p>
                     <div className="grid grid-cols-2 gap-4 mt-3">
                       <div className="text-center p-3 bg-white rounded-lg">
-                        <p className="text-xs text-gray-600">Average Monthly Income</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.ytd.labels.averageMonthlyIncome')}</p>
                         <p className="text-sm font-bold text-emerald-600">
                           {data?.yearToDate ? formatCurrency((data.yearToDate.totalIncome) / (new Date().getMonth() + 1)) : 'N/A'}
                         </p>
                       </div>
                       <div className="text-center p-3 bg-white rounded-lg">
-                        <p className="text-xs text-gray-600">Average Monthly Expense</p>
+                        <p className="text-xs text-gray-600">{t('dashboard.help.ytd.labels.averageMonthlyExpense')}</p>
                         <p className="text-sm font-bold text-rose-600">
                           {data?.yearToDate ? formatCurrency(Math.abs(data.yearToDate.totalExpense) / (new Date().getMonth() + 1)) : 'N/A'}
                         </p>
@@ -1433,7 +1476,7 @@ export const DashboardPage: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Understanding Full Year Cash Flow Chart</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.help.fullYear.title')}</h2>
                 <button
                   onClick={() => setShowChartHelpModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1444,59 +1487,58 @@ export const DashboardPage: React.FC = () => {
               
               <div className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 2025 Full Year Overview</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('dashboard.help.fullYear.overview.title')}</h3>
                   <div className="bg-blue-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      This chart shows your monthly cash flow performance across the entire year, 
-                      combining actual historical data with projected forecasts.
+                      {t('dashboard.help.fullYear.overview.description')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      It helps you visualize trends, seasonality, and plan for future cash needs.
+                      {t('dashboard.help.fullYear.overview.purpose')}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 Reading the Chart</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 {t('dashboard.help.fullYear.reading.title')}</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <div className="w-4 h-4 bg-emerald-500 opacity-60 rounded mt-0.5"></div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Actual Data (Darker)</p>
-                        <p className="text-sm text-gray-600">Real cash flow from months that have already occurred</p>
+                        <p className="text-sm font-medium text-gray-900">{t('dashboard.help.fullYear.reading.actual.label')}</p>
+                        <p className="text-sm text-gray-600">{t('dashboard.help.fullYear.reading.actual.description')}</p>
                       </div>
                     </div>
                     
                     <div className="flex items-start space-x-3">
                       <div className="w-4 h-4 bg-emerald-500 opacity-20 rounded mt-0.5"></div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Forecast (Lighter)</p>
-                        <p className="text-sm text-gray-600">Projected cash flow for future months based on trends</p>
+                        <p className="text-sm font-medium text-gray-900">{t('dashboard.help.fullYear.reading.forecast.label')}</p>
+                        <p className="text-sm text-gray-600">{t('dashboard.help.fullYear.reading.forecast.description')}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 What the Chart Shows</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('dashboard.help.fullYear.chartData.title')}</h3>
                   <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                     <div className="grid grid-cols-1 gap-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Data Points:</span>
+                        <span className="text-sm text-gray-600">{t('dashboard.help.fullYear.chartData.dataPoints')}:</span>
                         <span className="text-sm font-semibold text-gray-900">
-                          {data?.chartData?.length || 0} months of data
+                          {t('dashboard.help.fullYear.chartData.monthsOfData', { count: data?.chartData?.length || 0 })}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Actual Months:</span>
+                        <span className="text-sm text-gray-600">{t('dashboard.help.fullYear.chartData.actualMonths')}:</span>
                         <span className="text-sm font-semibold text-gray-900">
-                          {data?.chartData?.filter(d => d.isActual).length || 0} completed
+                          {t('dashboard.help.fullYear.chartData.completed', { count: data?.chartData?.filter(d => d.isActual).length || 0 })}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Forecasted Months:</span>
+                        <span className="text-sm text-gray-600">{t('dashboard.help.fullYear.chartData.forecastedMonths')}:</span>
                         <span className="text-sm font-semibold text-gray-900">
-                          {data?.chartData ? data.chartData.length - data.chartData.filter(d => d.isActual).length : 0} projected
+                          {t('dashboard.help.fullYear.chartData.projected', { count: data?.chartData ? data.chartData.length - data.chartData.filter(d => d.isActual).length : 0 })}
                         </span>
                       </div>
                     </div>
@@ -1504,73 +1546,73 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔍 Key Patterns to Look For</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔍 {t('dashboard.help.fullYear.patterns.title')}</h3>
                   <div className="space-y-3">
                     <div className="border-l-4 border-green-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Upward Trend</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.fullYear.patterns.upward.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Cash flow improving over time - indicates business growth and better financial health.
+                        {t('dashboard.help.fullYear.patterns.upward.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-blue-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Seasonal Patterns</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.fullYear.patterns.seasonal.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Regular ups and downs that repeat yearly - helps predict cash needs during slow periods.
+                        {t('dashboard.help.fullYear.patterns.seasonal.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-yellow-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Volatility</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.fullYear.patterns.volatility.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Large month-to-month swings may indicate inconsistent revenue or lumpy expenses.
+                        {t('dashboard.help.fullYear.patterns.volatility.description')}
                       </p>
                     </div>
                     
                     <div className="border-l-4 border-red-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Declining Trend</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.fullYear.patterns.declining.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Consistently worsening cash flow - may require immediate strategic intervention.
+                        {t('dashboard.help.fullYear.patterns.declining.description')}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 Strategic Insights</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎯 {t('dashboard.help.fullYear.strategicInsights.title')}</h3>
                   <div className="bg-yellow-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-3">Use this chart to:</p>
+                    <p className="text-sm text-gray-700 mb-3">{t('dashboard.help.fullYear.strategicInsights.description')}</p>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>Plan cash reserves:</strong> Identify low cash flow periods to prepare funding</span>
+                        <span><strong>{t('dashboard.help.fullYear.strategicInsights.planReserves')}</strong> {t('dashboard.help.fullYear.strategicInsights.planReservesDesc')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>Time major expenses:</strong> Schedule large purchases during high cash flow months</span>
+                        <span><strong>{t('dashboard.help.fullYear.strategicInsights.timeExpenses')}</strong> {t('dashboard.help.fullYear.strategicInsights.timeExpensesDesc')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>Set realistic goals:</strong> Base targets on historical performance and trends</span>
+                        <span><strong>{t('dashboard.help.fullYear.strategicInsights.setGoals')}</strong> {t('dashboard.help.fullYear.strategicInsights.setGoalsDesc')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-yellow-600 mr-2">•</span>
-                        <span><strong>Communicate with investors:</strong> Show business trajectory and future projections</span>
+                        <span><strong>{t('dashboard.help.fullYear.strategicInsights.communicate')}</strong> {t('dashboard.help.fullYear.strategicInsights.communicateDesc')}</span>
                       </li>
                     </ul>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">⚡ Forecast Accuracy</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">⚡ {t('dashboard.help.fullYear.forecastAccuracy.title')}</h3>
                   <div className="bg-purple-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-2">Important notes about projections:</p>
+                    <p className="text-sm text-gray-700 mb-2">{t('dashboard.help.fullYear.forecastAccuracy.description')}</p>
                     <ul className="space-y-1 text-sm text-gray-600">
-                      <li>• <strong>Near-term forecasts</strong> (1-2 months) are most reliable</li>
-                      <li>• <strong>Longer projections</strong> become less accurate due to market changes</li>
-                      <li>• <strong>Historical patterns</strong> are used to generate forecasts</li>
-                      <li>• <strong>External factors</strong> (market changes, new competition) aren't predicted</li>
-                      <li>• <strong>Regular updates</strong> improve forecast accuracy over time</li>
+                      <li>• <strong>{t('dashboard.help.fullYear.forecastAccuracy.nearTerm')}</strong> {t('dashboard.help.fullYear.forecastAccuracy.nearTermDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.fullYear.forecastAccuracy.longer')}</strong> {t('dashboard.help.fullYear.forecastAccuracy.longerDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.fullYear.forecastAccuracy.historical')}</strong> {t('dashboard.help.fullYear.forecastAccuracy.historicalDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.fullYear.forecastAccuracy.external')}</strong> {t('dashboard.help.fullYear.forecastAccuracy.externalDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.fullYear.forecastAccuracy.regular')}</strong> {t('dashboard.help.fullYear.forecastAccuracy.regularDesc')}</li>
                     </ul>
                   </div>
                 </div>
@@ -1601,7 +1643,7 @@ export const DashboardPage: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900">Understanding Performance Heat Maps</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.help.heatMap.title')}</h2>
                   <button
                     onClick={() => setShowPerformanceHelpModal(false)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1613,85 +1655,84 @@ export const DashboardPage: React.FC = () => {
               
               <div className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 What are Performance Heat Maps?</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🔥 {t('dashboard.help.heatMap.whatAre.title')}</h3>
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      Heat maps provide a visual representation of your financial performance across months, 
-                      using color intensity to show relative performance levels.
+                      {t('dashboard.help.heatMap.whatAre.description')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      <strong>Darker/brighter colors</strong> = Better performance<br/>
-                      <strong>Lighter/faded colors</strong> = Lower performance
+                      <strong>{t('dashboard.help.heatMap.whatAre.colorIntensity.darker')}</strong> = {t('dashboard.help.heatMap.whatAre.colorIntensity.darkerMeaning')}<br/>
+                      <strong>{t('dashboard.help.heatMap.whatAre.colorIntensity.lighter')}</strong> = {t('dashboard.help.heatMap.whatAre.colorIntensity.lighterMeaning')}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 Color Coding</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🎨 {t('dashboard.help.heatMap.colorCoding.title')}</h3>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-4">
                       <div className="w-16 h-8 bg-green-500 rounded"></div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">Green (Excellent)</p>
-                        <p className="text-sm text-gray-600">Top performance, above targets</p>
+                        <p className="text-sm font-semibold text-gray-900">{t('dashboard.help.heatMap.colorCoding.green.label')}</p>
+                        <p className="text-sm text-gray-600">{t('dashboard.help.heatMap.colorCoding.green.description')}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="w-16 h-8 bg-yellow-400 rounded"></div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">Yellow (Good)</p>
-                        <p className="text-sm text-gray-600">Acceptable performance, meeting expectations</p>
+                        <p className="text-sm font-semibold text-gray-900">{t('dashboard.help.heatMap.colorCoding.yellow.label')}</p>
+                        <p className="text-sm text-gray-600">{t('dashboard.help.heatMap.colorCoding.yellow.description')}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="w-16 h-8 bg-red-300 rounded"></div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">Red (Needs Attention)</p>
-                        <p className="text-sm text-gray-600">Below targets, requires improvement</p>
+                        <p className="text-sm font-semibold text-gray-900">{t('dashboard.help.heatMap.colorCoding.red.label')}</p>
+                        <p className="text-sm text-gray-600">{t('dashboard.help.heatMap.colorCoding.red.description')}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🖱️ Interactive Features</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">🖱️ {t('dashboard.help.heatMap.interactive.title')}</h3>
                   <div className="bg-blue-50 rounded-xl p-4">
                     <ul className="space-y-2 text-sm text-gray-700">
-                      <li>• <strong>Hover</strong> over any cell to see quick details</li>
-                      <li>• <strong>Click</strong> on any month to see comprehensive metrics</li>
-                      <li>• <strong>Compare</strong> months visually at a glance</li>
-                      <li>• <strong>Identify</strong> seasonal patterns and trends</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.interactive.hover')}</strong> {t('dashboard.help.heatMap.interactive.hoverDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.interactive.click')}</strong> {t('dashboard.help.heatMap.interactive.clickDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.interactive.compare')}</strong> {t('dashboard.help.heatMap.interactive.compareDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.interactive.identify')}</strong> {t('dashboard.help.heatMap.interactive.identifyDesc')}</li>
                     </ul>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Available Metrics</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 {t('dashboard.help.heatMap.availableMetrics.title')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="border-l-4 border-blue-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Cash Flow Performance</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.heatMap.availableMetrics.cashFlow.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Monthly cash generation or burn, showing liquidity trends
+                        {t('dashboard.help.heatMap.availableMetrics.cashFlow.description')}
                       </p>
                     </div>
                     <div className="border-l-4 border-purple-500 pl-4">
-                      <h4 className="text-sm font-semibold text-gray-900">Inflow Heat Map</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">{t('dashboard.help.heatMap.availableMetrics.inflowHeatMap.title')}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Income patterns to identify your strongest inflow months
+                        {t('dashboard.help.heatMap.availableMetrics.inflowHeatMap.description')}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 How to Use</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 {t('dashboard.help.heatMap.howToUse.title')}</h3>
                   <div className="bg-yellow-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-700 mb-3">Use heat maps to:</p>
+                    <p className="text-sm text-gray-700 mb-3">{t('dashboard.help.heatMap.howToUse.description')}</p>
                     <ul className="space-y-2 text-sm text-gray-600">
-                      <li>• <strong>Spot patterns:</strong> Identify seasonal trends in your business</li>
-                      <li>• <strong>Compare performance:</strong> See which months are strongest/weakest</li>
-                      <li>• <strong>Plan ahead:</strong> Use historical patterns for future planning</li>
-                      <li>• <strong>Quick assessment:</strong> Get instant visual overview of annual performance</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.howToUse.spotPatterns')}</strong> {t('dashboard.help.heatMap.howToUse.spotPatternsDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.howToUse.comparePerformance')}</strong> {t('dashboard.help.heatMap.howToUse.comparePerformanceDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.howToUse.planAhead')}</strong> {t('dashboard.help.heatMap.howToUse.planAheadDesc')}</li>
+                      <li>• <strong>{t('dashboard.help.heatMap.howToUse.quickAssessment')}</strong> {t('dashboard.help.heatMap.howToUse.quickAssessmentDesc')}</li>
                     </ul>
                   </div>
                 </div>
@@ -1718,15 +1759,13 @@ export const DashboardPage: React.FC = () => {
               
               <div className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 What are Trend Forecasts?</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 {t('dashboard.help.trendForecast.whatAre.title')}</h3>
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 mb-2">
-                      Trend forecasts use statistical analysis of your historical data to project 
-                      future performance, helping you plan and make informed decisions.
+                      {t('dashboard.help.trendForecast.whatAre.description')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      Our system uses <strong>linear regression</strong> to identify trends and 
-                      project them forward with confidence intervals.
+                      {t('dashboard.help.trendForecast.whatAre.method')}<strong>{t('dashboard.help.trendForecast.whatAre.methodLinearRegression')}</strong>{t('dashboard.help.trendForecast.whatAre.methodEnd')}
                     </p>
                   </div>
                 </div>
@@ -1783,19 +1822,19 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📉 Summary Cards</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">📉 {t('dashboard.help.trendForecast.summaryCards.title')}</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600">Current Trend</p>
-                      <p className="text-sm font-semibold">Monthly growth rate</p>
+                      <p className="text-xs text-gray-600">{t('dashboard.help.trendForecast.summaryCards.currentTrend.label')}</p>
+                      <p className="text-sm font-semibold">{t('dashboard.help.trendForecast.summaryCards.currentTrend.description')}</p>
                     </div>
                     <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600">6-Month Forecast</p>
-                      <p className="text-sm font-semibold">Projected end value</p>
+                      <p className="text-xs text-gray-600">{t('dashboard.help.trendForecast.summaryCards.sixMonthForecast.label')}</p>
+                      <p className="text-sm font-semibold">{t('dashboard.help.trendForecast.summaryCards.sixMonthForecast.description')}</p>
                     </div>
                     <div className="bg-green-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600">Confidence Range</p>
-                      <p className="text-sm font-semibold">Forecast uncertainty</p>
+                      <p className="text-xs text-gray-600">{t('dashboard.help.trendForecast.summaryCards.confidenceRange.label')}</p>
+                      <p className="text-sm font-semibold">{t('dashboard.help.trendForecast.summaryCards.confidenceRange.description')}</p>
                     </div>
                   </div>
                 </div>

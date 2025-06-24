@@ -11,6 +11,7 @@ import {
 import { ExcelMappingWizard } from './ExcelMappingWizard'
 import axios from 'axios'
 import { API_BASE_URL } from '../config/api'
+import { useTranslation } from 'react-i18next'
 
 interface FileUploadSectionProps {
   onFileUpload: (file: File) => Promise<void>
@@ -25,12 +26,13 @@ interface FileUploadSectionProps {
 export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onFileUpload,
   acceptedFormats = '.xlsx,.xls',
-  title = 'Upload Financial Data',
-  description = 'Import your Excel file to analyze financial metrics',
+  title,
+  description,
   uploadedFileName,
   isRealData = false,
   variant = 'cashflow'
 }) => {
+  const { t } = useTranslation()
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
@@ -40,6 +42,17 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   const [showMappingWizard, setShowMappingWizard] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const wizardShouldShowRef = useRef(false)
+
+  // Debug effect
+  React.useEffect(() => {
+    console.log('FileUploadSection state:', {
+      showMappingWizard,
+      file: file?.name,
+      uploading,
+      uploadError
+    })
+  }, [showMappingWizard, file, uploading, uploadError])
 
   // Premium color schemes with sophisticated gradients
   const colorSchemes = {
@@ -101,7 +114,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       setUploadError('')
       setUploadSuccess(false)
     } else {
-      setUploadError('Please select a valid Excel file (.xlsx or .xls)')
+      setUploadError(t('upload.invalidFileType'))
       setFile(null)
     }
   }
@@ -142,6 +155,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
     try {
       // First attempt with standard parsing
       await onFileUpload(file)
+      // Only mark as success if we get here without error
       setUploadSuccess(true)
       setFile(null)
       
@@ -150,6 +164,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         setIsCollapsed(true)
       }, 2000)
     } catch (err: any) {
+      // Keep the file when there's an error so wizard can use it
+      console.log('FileUploadSection caught error, keeping file for wizard')
       // If standard parsing fails, check if it's a structure issue
       console.log('Upload error:', err)
       console.log('Error response:', err.response)
@@ -165,10 +181,21 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       console.log('Is structure error:', isStructureError)
       console.log('Show mapping wizard:', showMappingWizard)
       
-      if (isStructureError && !showMappingWizard) {
-        // Automatically show AI mapping wizard for structure errors
-        setUploading(false)
+      if (isStructureError && !wizardShouldShowRef.current) {
+        // Always show AI mapping wizard for structure errors
+        console.log('Setting showMappingWizard to true')
+        console.log('Current file:', file)
+        // IMPORTANT: Do NOT clear the file here, we need it for the wizard
+        wizardShouldShowRef.current = true
         setShowMappingWizard(true)
+        setUploading(false)
+        setUploadError('') // Clear any previous errors
+        // Don't re-throw the error when we're showing the wizard
+        return
+      } else if (isStructureError && wizardShouldShowRef.current) {
+        // Wizard is already showing, don't do anything
+        console.log('Wizard already showing, ignoring duplicate error')
+        return
       } else {
         setUploadError(err.message || 'Failed to upload file. Please try again.')
         setUploading(false)
@@ -189,15 +216,15 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               <CloudArrowUpIcon className="h-6 w-6 text-white drop-shadow-md" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{title}</h3>
+              <h3 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{title || t('upload.title')}</h3>
               <p className="text-sm text-gray-600">
                 {isRealData ? (
                   <span className="flex items-center space-x-2">
                     <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-                    <span>Currently using: {uploadedFileName || 'Uploaded file'}</span>
+                    <span>{t('upload.currentlyUsing')}: {uploadedFileName || t('upload.uploadedFile')}</span>
                   </span>
                 ) : (
-                  <span>{description}</span>
+                  <span>{description || t('upload.subtitle')}</span>
                 )}
               </p>
             </div>
@@ -249,10 +276,10 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                   
                   <div className="text-center sm:text-left">
                     <p className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                      {file ? 'File selected!' : 'Drag and drop your Excel file here'}
+                      {file ? t('upload.fileSelected') : t('upload.dragDrop')}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {file ? file.name : `or click to browse (${acceptedFormats})`}
+                      {file ? file.name : t('upload.orClickToBrowse', { formats: acceptedFormats })}
                     </p>
                   </div>
                   
@@ -261,7 +288,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                       onClick={() => fileInputRef.current?.click()}
                       className={`mt-6 sm:mt-0 px-6 py-3 bg-gradient-to-r ${colors.primary.buttonGradient} text-white font-semibold rounded-xl ${colors.primary.buttonGradientHover} shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300`}
                     >
-                      Select File
+                      {t('upload.selectFile')}
                     </button>
                   )}
                 </div>
@@ -292,9 +319,9 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                   {!uploadSuccess && (
                     <button
                       onClick={handleUpload}
-                      disabled={uploading}
+                      disabled={uploading || showMappingWizard}
                       className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-300 ${
-                        uploading
+                        uploading || showMappingWizard
                           ? 'bg-gray-400 cursor-not-allowed'
                           : `bg-gradient-to-r ${colors.primary.buttonGradient} ${colors.primary.buttonGradientHover} shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`
                       }`}
@@ -305,12 +332,12 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          <span>Processing...</span>
+                          <span>{t('upload.processing')}</span>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center space-x-2">
                           <CloudArrowUpIcon className="h-5 w-5" />
-                          <span>Process Excel</span>
+                          <span>{t('upload.processExcel')}</span>
                         </div>
                       )}
                     </button>
@@ -329,7 +356,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               {uploadSuccess && (
                 <div className="mt-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl flex items-start space-x-2 shadow">
                   <CheckCircleIcon className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-emerald-700 text-sm font-medium">File uploaded and processed successfully!</p>
+                  <p className="text-emerald-700 text-sm font-medium">{t('upload.uploadSuccess')}</p>
                 </div>
               )}
 
@@ -339,17 +366,24 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       </div>
       
       {/* Excel Mapping Wizard - Transparent to user */}
+      {console.log('Rendering wizard check:', { showMappingWizard, hasFile: !!file })}
       {showMappingWizard && file && (
-        <ExcelMappingWizard
-          isOpen={showMappingWizard}
-          onClose={() => {
-            setShowMappingWizard(false)
-            setUploading(false)
-            setUploadError('Upload cancelled')
-          }}
-          mappingType={variant}
-          initialFile={file}
-          onMappingComplete={async (mapping) => {
+        <>
+          {console.log('RENDERING EXCEL MAPPING WIZARD')}
+          <ExcelMappingWizard
+            isOpen={true}
+            onClose={() => {
+              console.log('Wizard closed')
+              wizardShouldShowRef.current = false
+              setShowMappingWizard(false)
+              setUploading(false)
+              setUploadError(t('upload.uploadCancelled'))
+              setFile(null) // Clear file when wizard is closed
+            }}
+            mappingType={variant}
+            initialFile={file}
+            onMappingComplete={async (mapping) => {
+            wizardShouldShowRef.current = false
             setShowMappingWizard(false)
             
             // Process the file with the mapping
@@ -392,7 +426,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               }
             }
           }}
-        />
+          />
+        </>
       )}
     </div>
   )

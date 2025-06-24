@@ -1,5 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { 
   ChartBarIcon, 
   ArrowTrendingUpIcon,
@@ -16,12 +17,13 @@ import { Footer } from '../components/Footer'
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const modules = [
     {
       id: 'cashflow',
-      title: 'Cash Flow Management',
-      description: 'Track and analyze your company\'s cash flow, monitor balances, and forecast future liquidity',
+      title: t('home.modules.cashflow.title'),
+      description: t('home.modules.cashflow.description'),
       icon: BanknotesIcon,
       gradient: 'from-violet-600 via-purple-600 to-indigo-600',
       lightGradient: 'from-violet-50/50 via-purple-50/30 to-indigo-50/50',
@@ -30,17 +32,17 @@ export const HomePage: React.FC = () => {
       borderGlow: 'hover:shadow-purple-500/20',
       path: '/cashflow',
       features: [
-        'Real-time cash position tracking',
-        'Cash runway analysis',
-        'Scenario planning',
-        'Waterfall visualizations'
+        t('home.modules.cashflow.features.realtime'),
+        t('home.modules.cashflow.features.runway'),
+        t('home.modules.cashflow.features.scenario'),
+        t('home.modules.cashflow.features.waterfall')
       ],
-      stats: { label: 'Active Users', value: '2.4k+' }
+      stats: { label: t('home.modules.cashflow.stats.label'), value: '2.4k+' }
     },
     {
       id: 'pnl',
-      title: 'Profit & Loss Analysis',
-      description: 'Monitor inflows, outflows, and profitability metrics with detailed P&L statements',
+      title: t('home.modules.pnl.title'),
+      description: t('home.modules.pnl.description'),
       icon: ChartBarIcon,
       gradient: 'from-emerald-600 via-teal-600 to-cyan-600',
       lightGradient: 'from-emerald-50/50 via-teal-50/30 to-cyan-50/50',
@@ -49,32 +51,32 @@ export const HomePage: React.FC = () => {
       borderGlow: 'hover:shadow-teal-500/20',
       path: '/pnl',
       features: [
-        'Inflow & outflow tracking',
-        'Margin analysis',
-        'Budget vs actual comparison',
-        'Profitability trends'
+        t('home.modules.pnl.features.tracking'),
+        t('home.modules.pnl.features.margin'),
+        t('home.modules.pnl.features.budget'),
+        t('home.modules.pnl.features.trends')
       ],
-      stats: { label: 'Reports Generated', value: '10k+' }
+      stats: { label: t('home.modules.pnl.stats.label'), value: '10k+' }
     }
   ]
 
   const highlights = [
     {
       icon: LightBulbIcon,
-      title: 'AI-Powered Insights',
-      description: 'Get intelligent recommendations based on your financial data patterns',
+      title: t('home.highlights.ai.title'),
+      description: t('home.highlights.ai.description'),
       color: 'from-amber-500 to-orange-500'
     },
     {
       icon: ChartPieIcon,
-      title: 'Visual Analytics',
-      description: 'Beautiful charts and graphs that make complex data easy to understand',
+      title: t('home.highlights.visual.title'),
+      description: t('home.highlights.visual.description'),
       color: 'from-pink-500 to-rose-500'
     },
     {
       icon: CurrencyDollarIcon,
-      title: 'Real-Time Updates',
-      description: 'Stay informed with live data synchronization and instant alerts',
+      title: t('home.highlights.realtime.title'),
+      description: t('home.highlights.realtime.description'),
       color: 'from-blue-500 to-cyan-500'
     }
   ]
@@ -97,39 +99,38 @@ export const HomePage: React.FC = () => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center px-4 py-1.5 bg-gradient-to-r from-violet-100 to-purple-100 rounded-full mb-4">
             <SparklesIcon className="h-5 w-5 text-purple-600 mr-2" />
-            <span className="text-purple-700 font-medium">Welcome to Warren</span>
+            <span className="text-purple-700 font-medium">{t('home.hero.badge')}</span>
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 bg-clip-text text-transparent">
-              Your Financial
+              {t('home.hero.title1')}
             </span>
             <br />
             <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              Command Center
+              {t('home.hero.title2')}
             </span>
           </h1>
           
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
-            Experience next-generation financial analytics with our AI-powered platform. 
-            Make data-driven decisions with confidence and clarity.
+            {t('home.hero.subtitle')}
           </p>
 
           {/* Quick Stats Bar */}
           <div className="inline-flex items-center space-x-6 px-6 py-3 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-purple-100/20">
             <div className="text-center">
               <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">98%</p>
-              <p className="text-xs text-gray-600">Accuracy</p>
+              <p className="text-xs text-gray-600">{t('home.stats.accuracy')}</p>
             </div>
             <div className="w-px h-8 bg-gray-200"></div>
             <div className="text-center">
               <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">24/7</p>
-              <p className="text-xs text-gray-600">Monitoring</p>
+              <p className="text-xs text-gray-600">{t('home.stats.monitoring')}</p>
             </div>
             <div className="w-px h-8 bg-gray-200"></div>
             <div className="text-center">
               <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">50ms</p>
-              <p className="text-xs text-gray-600">Response</p>
+              <p className="text-xs text-gray-600">{t('home.stats.response')}</p>
             </div>
           </div>
         </div>
@@ -187,7 +188,7 @@ export const HomePage: React.FC = () => {
                     inline-flex items-center px-6 py-3 bg-gradient-to-r ${module.gradient} text-white font-semibold rounded-2xl
                     shadow-lg hover:shadow-xl hover:shadow-${module.shadowColor} transform group-hover:translate-x-1 transition-all duration-300
                   `}>
-                    Access Module
+                    {t('home.accessModule')}
                     <ArrowRightIcon className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
@@ -201,9 +202,9 @@ export const HomePage: React.FC = () => {
         <div className="mb-12">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">
-              Why Choose Warren?
+              {t('home.whyChoose')}
             </h2>
-            <p className="text-gray-600 mt-2">Powerful features designed for modern finance teams</p>
+            <p className="text-gray-600 mt-2">{t('home.whyChooseSubtitle')}</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -230,22 +231,22 @@ export const HomePage: React.FC = () => {
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500 rounded-full filter blur-3xl opacity-20"></div>
           
           <div className="relative z-10">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Platform Overview</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">{t('home.platformOverview')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-purple-200">
-                <p className="text-purple-700 text-sm mb-2">Active Modules</p>
+                <p className="text-purple-700 text-sm mb-2">{t('home.overview.activeModules')}</p>
                 <p className="text-3xl font-bold text-gray-800">2</p>
-                <p className="text-purple-600 text-sm mt-1">Cash Flow & P&L</p>
+                <p className="text-purple-600 text-sm mt-1">{t('home.overview.modulesList')}</p>
               </div>
               <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-purple-200">
-                <p className="text-purple-700 text-sm mb-2">Last Sync</p>
-                <p className="text-3xl font-bold text-gray-800">Live</p>
-                <p className="text-purple-600 text-sm mt-1">Real-time updates</p>
+                <p className="text-purple-700 text-sm mb-2">{t('home.overview.lastSync')}</p>
+                <p className="text-3xl font-bold text-gray-800">{t('home.overview.live')}</p>
+                <p className="text-purple-600 text-sm mt-1">{t('home.overview.realtimeUpdates')}</p>
               </div>
               <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-purple-200">
-                <p className="text-purple-700 text-sm mb-2">Data Security</p>
+                <p className="text-purple-700 text-sm mb-2">{t('home.overview.dataSecurity')}</p>
                 <p className="text-3xl font-bold text-emerald-600">100%</p>
-                <p className="text-purple-600 text-sm mt-1">Enterprise-grade</p>
+                <p className="text-purple-600 text-sm mt-1">{t('home.overview.enterpriseGrade')}</p>
               </div>
             </div>
           </div>
