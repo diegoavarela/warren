@@ -59,6 +59,7 @@ export class PnLService {
   private storedMetrics: PnLMetrics[] = []
   private lastUploadDate: Date | null = null
   private lastUploadedFileName: string | null = null
+  private processedFormat: 'vortex' | 'standard' | 'custom' | null = null
   private configService: ConfigurationService
 
   private constructor() {
@@ -293,6 +294,7 @@ export class PnLService {
 
       this.storedMetrics = metrics;
       this.lastUploadDate = new Date();
+      this.processedFormat = 'vortex';
 
       logger.info(`Vortex P&L processing complete. Processed ${metrics.length} months`);
 
@@ -759,6 +761,7 @@ export class PnLService {
       // Store metrics
       this.storedMetrics = metrics
       this.lastUploadDate = new Date()
+      this.processedFormat = 'standard'
 
       logger.info(`P&L processing complete. Processed ${metrics.length} months with ${validDataCount} valid entries`)
 
@@ -845,6 +848,7 @@ export class PnLService {
     this.storedMetrics = []
     this.lastUploadDate = null
     this.lastUploadedFileName = null
+    this.processedFormat = null
     logger.info('P&L stored data cleared')
   }
 
@@ -854,6 +858,10 @@ export class PnLService {
 
   getUploadedFileName(): string | null {
     return this.lastUploadedFileName
+  }
+
+  getProcessedFormat(): 'vortex' | 'standard' | 'custom' | null {
+    return this.processedFormat
   }
 
   async processExtractedData(extractedData: any, originalFilename: string): Promise<void> {
@@ -892,6 +900,7 @@ export class PnLService {
       this.storedMetrics = metrics
       this.lastUploadDate = new Date()
       this.lastUploadedFileName = originalFilename
+      this.processedFormat = 'custom'
       
       logger.info(`Stored ${metrics.length} months of P&L data from custom mapping`)
     }

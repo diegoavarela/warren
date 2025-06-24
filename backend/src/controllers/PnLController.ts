@@ -143,8 +143,31 @@ export class PnLController {
         })
       }
 
-      // Get current month data
-      const currentMonthIndex = metrics.length - 1
+      // Get current month data with smart selection based on format
+      const format = this.pnlService.getProcessedFormat()
+      let currentMonthIndex = metrics.length - 1  // Default to latest month
+
+      // For non-Vortex formats, try to find "current month - 1"
+      if (format !== 'vortex') {
+        const now = new Date()
+        const targetMonth = new Date(now.getFullYear(), now.getMonth() - 1) // Current month - 1
+        const targetMonthName = targetMonth.toLocaleDateString('en-US', { month: 'long' })
+        
+        // Find this month in metrics (case-insensitive search)
+        const targetIndex = metrics.findIndex(m => 
+          m.month.toLowerCase().includes(targetMonthName.toLowerCase())
+        )
+        
+        if (targetIndex >= 0) {
+          currentMonthIndex = targetIndex
+          logger.info(`Selected month for ${format} format: ${metrics[targetIndex].month} (target: ${targetMonthName})`)
+        } else {
+          logger.info(`Target month ${targetMonthName} not found for ${format} format, using latest month: ${metrics[currentMonthIndex].month}`)
+        }
+      } else {
+        logger.info(`Using latest month for Vortex format: ${metrics[currentMonthIndex].month}`)
+      }
+
       const currentMonth = metrics[currentMonthIndex]
       
       // Get previous month data for comparison
