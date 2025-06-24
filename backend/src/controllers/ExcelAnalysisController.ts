@@ -256,10 +256,9 @@ export class ExcelAnalysisController {
         // Call the regular upload endpoint to complete the flow
         return pnlController.uploadPnL(req, res, next);
       } else if (parsedMapping.mappingType === 'cashflow') {
-        // Store in Cashflow service - use the singleton instance from CashflowController
-        const { cashflowController } = require('./CashflowController');
-        // Access the private cashflowService through the controller's methods
-        const cashflowServiceInstance = (cashflowController as any).cashflowService;
+        // Store in Enhanced Cashflow service
+        const { CashflowServiceV2Enhanced } = require('../services/CashflowServiceV2Enhanced');
+        const cashflowServiceInstance = new CashflowServiceV2Enhanced();
         
         // Process the extracted data and store it
         await cashflowServiceInstance.processExtractedData(extractedData, req.file.originalname);

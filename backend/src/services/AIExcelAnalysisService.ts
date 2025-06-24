@@ -518,33 +518,53 @@ Respond only with valid JSON.`
    * Fallback pattern matching when no AI API is available
    */
   private analyzeWithPatternMatching(sampleData: ExcelSample, mappingType: 'cashflow' | 'pnl'): ExcelMapping {
-    logger.info('Using enhanced pattern matching for Excel analysis');
+    logger.info('Using enhanced pattern matching for Excel analysis with Spanish/multi-currency support');
     
     const mapping: ExcelMapping = {
       fileName: '',
       mappingType,
       structure: {
         metricMappings: {},
-        currencyUnit: 'units' // Default to units
+        currencyUnit: this.detectCurrencyFromSample(sampleData) // Detect currency from data
       },
       aiGenerated: false,
       confidence: 70
     };
 
-    // Find date row - look for rows with multiple date values
+    // Enhanced date detection - look for rows with multiple date values (Spanish/English support)
     let dateRowFound = false;
+    const monthPatterns = {
+      english: /^(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)/i,
+      spanish: /^(ene|enero|feb|febrero|mar|marzo|abr|abril|may|mayo|jun|junio|jul|julio|ago|agosto|sep|septiembre|oct|octubre|nov|noviembre|dic|diciembre)/i,
+      numeric: /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$|^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/,
+      year: /^20\d{2}$/
+    };
+    
     for (const row of sampleData.rows) {
       const dateCount = row.cells.filter(cell => cell.type === 'date').length;
-      const monthPatternCount = row.cells.filter(cell => 
-        /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|enero|ene|febrero|feb|marzo|mar|abril|abr|mayo|may|junio|jun|julio|jul|agosto|ago|septiembre|sept|sep|octubre|oct|noviembre|nov|diciembre|dic)/i.test(String(cell.value))
-      ).length;
+      const monthPatternCount = row.cells.filter(cell => {
+        const cellValue = String(cell.value || '').trim();
+        return monthPatterns.english.test(cellValue) || 
+               monthPatterns.spanish.test(cellValue) ||
+               monthPatterns.numeric.test(cellValue) ||
+               monthPatterns.year.test(cellValue);
+      }).length;
       
       if (dateCount >= 3 || monthPatternCount >= 3) {
         mapping.structure.dateRow = row.rowNumber;
         mapping.structure.dateColumns = row.cells
-          .map((cell, idx) => (cell.type === 'date' || /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(String(cell.value))) ? idx + 1 : null)
+          .map((cell, idx) => {
+            const cellValue = String(cell.value || '').trim();
+            const isDate = cell.type === 'date' || 
+                          monthPatterns.english.test(cellValue) ||
+                          monthPatterns.spanish.test(cellValue) ||
+                          monthPatterns.numeric.test(cellValue) ||
+                          monthPatterns.year.test(cellValue);
+            return isDate ? idx + 1 : null;
+          })
           .filter(col => col !== null) as number[];
         dateRowFound = true;
+        logger.info(`Found date row ${row.rowNumber} with ${monthPatternCount} date patterns and ${dateCount} date cells`);
         break;
       }
     }
@@ -561,24 +581,26 @@ Respond only with valid JSON.`
       }
     }
 
-    // Enhanced pattern matching for common terms (including Spanish)
+    // Enhanced pattern matching for common terms (comprehensive Spanish/English support)
     const patterns = mappingType === 'cashflow' ? {
-      totalIncome: /(?:total.*)?(?:income|revenue|collection|cobros|cobro|ingresos|ingreso|entrada|entradas|recaudacion|recaudaciones|cobranza|cobranzas|recibido|recibidos|facturacion|facturado)/i,
-      totalExpense: /(?:total.*)?(?:expense|expenses|cost|costs|egreso|egresos|gasto|gastos|salida|salidas|pago|pagos|desembolso|desembolsos|erogacion|erogaciones)/i,
-      finalBalance: /(?:final|ending|cierre|saldo).*(?:balance|saldo|final|mes|periodo)|(?:balance|saldo).*(?:final|cierre|mes|periodo)|saldo.*final|balance.*final/i,
-      lowestBalance: /(?:lowest|minimum|minimo|menor|mas.*bajo).*(?:balance|saldo)|(?:balance|saldo).*(?:low|min|minimo|menor|mas.*bajo)/i,
-      monthlyGeneration: /(?:monthly|mensual|mes).*(?:generation|generacion|flow|flujo|neto)|(?:cash|caja|efectivo).*(?:generation|generacion|flow|flujo)|flujo.*(?:caja|efectivo).*(?:neto|mensual)|generacion.*(?:mensual|caja)/i,
-      initialBalance: /(?:initial|beginning|inicial|apertura|inicio|arranque|comienzo).*(?:balance|saldo)|(?:balance|saldo).*(?:initial|inicial|inicio|apertura)|saldo.*inicial/i,
-      netCashflow: /(?:net|neto|neta).*(?:cash|caja|efectivo).*(?:flow|flujo)|(?:flujo|flow).*(?:neto|net|caja)|flujo.*neto.*(?:caja|efectivo)/i,
-      cashGeneration: /(?:cash|caja|efectivo).*(?:generation|generacion|generado)|generacion.*(?:caja|efectivo)|caja.*generada/i
+      totalIncome: /(?:total.*)?(?:income|revenue|collection|receipts|received|cobros?|ingresos?|entradas?|recaudaci[oó]n|recaudaciones|cobranzas?|recibidos?|facturaci[oó]n|facturado|ventas?|venta)/i,
+      totalExpense: /(?:total.*)?(?:expense|expenses|cost|costs|spending|paid|egresos?|gastos?|salidas?|pagos?|desembolsos?|erogaci[oó]n|erogaciones|costos?|gastado|pagado)/i,
+      finalBalance: /(?:final|ending|cierre|saldo|balance).*(?:balance|saldo|final|mes|per[ií]odo|cierre)|(?:balance|saldo).*(?:final|cierre|mes|per[ií]odo)|saldo.*final|balance.*final|caja.*final/i,
+      lowestBalance: /(?:lowest|minimum|m[ií]nimo|menor|m[aá]s.*bajo).*(?:balance|saldo)|(?:balance|saldo).*(?:low|min|m[ií]nimo|menor|m[aá]s.*bajo)|saldo.*m[ií]nimo|balance.*m[ií]nimo/i,
+      monthlyGeneration: /(?:monthly|mensual|mes|month).*(?:generation|generaci[oó]n|flow|flujo|neto)|(?:cash|caja|efectivo).*(?:generation|generaci[oó]n|flow|flujo)|flujo.*(?:caja|efectivo).*(?:neto|mensual)|generaci[oó]n.*(?:mensual|caja)/i,
+      initialBalance: /(?:initial|beginning|inicial|apertura|inicio|arranque|comienzo).*(?:balance|saldo)|(?:balance|saldo).*(?:initial|inicial|inicio|apertura)|saldo.*inicial|balance.*inicial|caja.*inicial/i,
+      netCashflow: /(?:net|neto|neta).*(?:cash|caja|efectivo).*(?:flow|flujo)|(?:flujo|flow).*(?:neto|net|caja)|flujo.*neto.*(?:caja|efectivo)|flujo.*de.*caja/i,
+      cashGeneration: /(?:cash|caja|efectivo).*(?:generation|generaci[oó]n|generado)|generaci[oó]n.*(?:caja|efectivo)|caja.*generada/i,
+      beginningBalance: /(?:beginning|starting|inicial|apertura|inicio|arranque|comienzo).*(?:balance|saldo)|(?:balance|saldo).*(?:beginning|inicial|inicio|apertura)|saldo.*inicial/i
     } : {
-      revenue: /^(?:total.*)?(?:revenue|revenues|sales|sale|ingresos|ingreso|ventas|venta|facturacion|facturado|factura)/i,
-      cogs: /(?:cost.*goods.*sold|cogs|costo.*venta|costos.*venta|cmv|costo.*mercaderia.*vendida|costo.*producto.*vendido)/i,
-      grossProfit: /gross.*(?:profit|margin)|(?:utilidad|ganancia|margen).*brut[ao]|margen.*bruto|ganancia.*bruta/i,
-      grossMargin: /gross.*margin.*%|margen.*brut[ao].*%|margen.*bruto.*%/i,
-      operatingExpenses: /(?:operating|operational).*expense|gastos.*operac|gastos.*operativos|gastos.*operacionales|opex/i,
-      ebitda: /ebitda|resultado.*operativo|resultado.*operacional/i,
-      netIncome: /net.*(?:income|profit|result)|(?:utilidad|ganancia|resultado).*net[ao]|resultado.*neto|utilidad.*neta|ganancia.*neta/i
+      revenue: /^(?:total.*)?(?:revenue|revenues|sales?|sale|ingresos?|ingreso|ventas?|venta|facturaci[oó]n|facturado|factura|cobros?)/i,
+      cogs: /(?:cost.*goods.*sold|cogs|costo.*ventas?|costos.*ventas?|cmv|costo.*mercader[ií]a.*vendida|costo.*productos?.*vendidos?|costo.*directo)/i,
+      grossProfit: /gross.*(?:profit|margin)|(?:utilidad|ganancia|margen).*brut[ao]|margen.*bruto|ganancia.*bruta|beneficio.*bruto/i,
+      grossMargin: /gross.*margin.*%|margen.*brut[ao].*%|margen.*bruto.*%|porcentaje.*bruto/i,
+      operatingExpenses: /(?:operating|operational).*expense|gastos.*operac|gastos.*operativos|gastos.*operacionales|opex|gastos.*administrativos|gastos.*generales/i,
+      ebitda: /ebitda|resultado.*operativo|resultado.*operacional|utilidad.*operativa|beneficio.*operativo/i,
+      netIncome: /net.*(?:income|profit|result)|(?:utilidad|ganancia|resultado).*net[ao]|resultado.*neto|utilidad.*neta|ganancia.*neta|beneficio.*neto/i,
+      operatingIncome: /operating.*(?:income|profit)|utilidad.*operativa|resultado.*operativo|beneficio.*operativo/i
     };
 
     // Search for patterns in rows
@@ -976,5 +998,71 @@ Return a JSON with:
       dateStructure: { layout: 'rows', locations: [] },
       insights: ['Pattern matching used - manual review recommended']
     };
+  }
+
+  /**
+   * Detect currency from sample data
+   */
+  private detectCurrencyFromSample(sampleData: ExcelSample): string {
+    const currencyCounts: { [key: string]: number } = {};
+    
+    // Look through all cells for currency indicators
+    for (const row of sampleData.rows) {
+      for (const cell of row.cells) {
+        if (typeof cell.value === 'string') {
+          // Check for currency symbols and codes
+          const currencyMatches = cell.value.match(/\$|USD|€|EUR|£|GBP|¥|JPY|₹|INR|ARS|\bpesos?\b|\bdollars?\b|\beuros?\b|\byens?\b/gi);
+          if (currencyMatches) {
+            currencyMatches.forEach(match => {
+              const normalized = this.normalizeCurrencyCode(match);
+              currencyCounts[normalized] = (currencyCounts[normalized] || 0) + 1;
+            });
+          }
+        }
+        
+        // Check cell formatting for currency indicators
+        if ((cell as any).format && ((cell as any).format.includes('$') || (cell as any).format.includes('currency'))) {
+          currencyCounts['USD'] = (currencyCounts['USD'] || 0) + 1;
+        }
+      }
+    }
+    
+    // Return most common currency, default to ARS for Warren (Argentina focus)
+    const currencies = Object.entries(currencyCounts).sort((a, b) => b[1] - a[1]);
+    return currencies.length > 0 ? currencies[0][0] : 'ARS';
+  }
+
+  /**
+   * Normalize currency symbols to standard codes
+   */
+  private normalizeCurrencyCode(symbol: string): string {
+    const lowerSymbol = symbol.toLowerCase();
+    const currencyMap: { [key: string]: string } = {
+      '$': 'USD',
+      'usd': 'USD',
+      'dollar': 'USD',
+      'dollars': 'USD',
+      '€': 'EUR',
+      'eur': 'EUR',
+      'euro': 'EUR',
+      'euros': 'EUR',
+      '£': 'GBP',
+      'gbp': 'GBP',
+      'pound': 'GBP',
+      'pounds': 'GBP',
+      '¥': 'JPY',
+      'jpy': 'JPY',
+      'yen': 'JPY',
+      'yens': 'JPY',
+      '₹': 'INR',
+      'inr': 'INR',
+      'rupee': 'INR',
+      'rupees': 'INR',
+      'ars': 'ARS',
+      'peso': 'ARS',
+      'pesos': 'ARS'
+    };
+    
+    return currencyMap[lowerSymbol] || symbol.toUpperCase();
   }
 }

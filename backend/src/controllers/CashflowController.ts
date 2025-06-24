@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import ExcelJS from 'exceljs';
 import { AuthRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
-import { CashflowServiceV2 } from '../services/CashflowServiceV2';
+import { CashflowServiceV2Enhanced } from '../services/CashflowServiceV2Enhanced';
 import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
 import { ExtendedFinancialService } from '../services/ExtendedFinancialService';
 import { InvestmentDiagnosticService } from '../services/InvestmentDiagnosticService';
@@ -12,7 +12,7 @@ import { pool } from '../config/database';
 import { logger } from '../utils/logger';
 
 // Create singleton instances
-const cashflowServiceInstance = new CashflowServiceV2();
+const cashflowServiceInstance = new CashflowServiceV2Enhanced();
 const analysisServiceInstance = new CashFlowAnalysisService();
 const extendedFinancialServiceInstance = ExtendedFinancialService.getInstance();
 
