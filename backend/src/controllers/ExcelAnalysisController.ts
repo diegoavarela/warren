@@ -358,9 +358,36 @@ export class ExcelAnalysisController {
     if (mapping.structure.dateRow && mapping.structure.dateColumns) {
       const dateRow = worksheet.getRow(mapping.structure.dateRow);
       
-      for (const col of mapping.structure.dateColumns) {
-        const dateValue = dateRow.getCell(col).value;
-        logger.info(`Processing column ${col}, raw value:`, { value: dateValue, type: typeof dateValue });
+      // Check for potential offset between month names and data
+      let detectedOffset = 0;
+      
+      // Try to detect if data is offset from month names by checking first metric row
+      if (mapping.structure.metricMappings) {
+        const firstMetric = Object.values(mapping.structure.metricMappings)[0] as any;
+        if (firstMetric?.row) {
+          const metricRow = worksheet.getRow(firstMetric.row);
+          
+          // Check if data columns are offset from date columns
+          for (let offset = 0; offset <= 2; offset++) {
+            const testCol = mapping.structure.dateColumns[0] + offset;
+            const testValue = metricRow.getCell(testCol).value;
+            
+            // If we find numeric data in an offset column, that's likely the data column
+            if (typeof testValue === 'number' && testValue !== 0) {
+              detectedOffset = offset;
+              logger.info(`Detected column offset: ${offset} (data appears to be ${offset} columns right of month names)`);
+              break;
+            }
+          }
+        }
+      }
+      
+      for (let i = 0; i < mapping.structure.dateColumns.length; i++) {
+        const dateCol = mapping.structure.dateColumns[i];
+        const dataCol = dateCol + detectedOffset; // Apply detected offset
+        
+        const dateValue = dateRow.getCell(dateCol).value;
+        logger.info(`Processing date column ${dateCol} (data column ${dataCol}), raw value:`, { value: dateValue, type: typeof dateValue });
         let processedDate: Date | null = null;
         let monthName = '';
         
@@ -375,7 +402,7 @@ export class ExcelAnalysisController {
             monthName = processedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
           } catch {
             // If date conversion fails, use column number as month
-            monthName = `Month ${col}`;
+            monthName = `Month ${dateCol}`;
           }
         } else if (typeof dateValue === 'string') {
           // Try to parse string date
@@ -392,7 +419,7 @@ export class ExcelAnalysisController {
           }
         } else {
           // Fallback to column-based naming
-          monthName = `Column ${col}`;
+          monthName = `Column ${dateCol}`;
         }
         
         // Always create month data, even if date parsing failed
@@ -402,10 +429,10 @@ export class ExcelAnalysisController {
           data: {}
         };
 
-        // Extract metrics for this month
+        // Extract metrics for this month using the data column (with offset)
         for (const [key, config] of Object.entries(mapping.structure.metricMappings)) {
           const metricConfig = config as any;
-          const value = worksheet.getRow(metricConfig.row).getCell(col).value;
+          const value = worksheet.getRow(metricConfig.row).getCell(dataCol).value;
           monthData.data[key] = {
             value: this.getCellValue(value),
             description: metricConfig.description
