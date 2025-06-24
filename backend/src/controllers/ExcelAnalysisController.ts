@@ -225,36 +225,75 @@ export class ExcelAnalysisController {
 
       const { mapping } = req.body;
       
-      if (!mapping || typeof mapping === 'string') {
-        // Parse mapping if it's a string
-        const parsedMapping = typeof mapping === 'string' ? JSON.parse(mapping) : mapping;
-        
-        if (!parsedMapping) {
-          return res.status(400).json({
-            success: false,
-            error: 'No mapping provided'
-          });
-        }
+      if (!mapping) {
+        return res.status(400).json({
+          success: false,
+          error: 'No mapping provided'
+        });
       }
 
-      const parsedMapping = typeof mapping === 'string' ? JSON.parse(mapping) : mapping;
+      // Parse mapping if it's a string
+      let parsedMapping;
+      try {
+        parsedMapping = typeof mapping === 'string' ? JSON.parse(mapping) : mapping;
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid mapping format - must be valid JSON'
+        });
+      }
 
-      logger.info(`Processing ${parsedMapping.mappingType} file with custom mapping for user ${req.user?.email}`);
+      if (!parsedMapping || !parsedMapping.mappingType) {
+        return res.status(400).json({
+          success: false,
+          error: 'Mapping must include mappingType field'
+        });
+      }
+
+      logger.info(`Processing ${parsedMapping.mappingType} file with custom mapping for user ${req.user?.email}`, {
+        fileName: req.file.originalname,
+        mappingType: parsedMapping.mappingType,
+        hasDateRow: !!parsedMapping.structure?.dateRow,
+        hasDateColumns: !!parsedMapping.structure?.dateColumns,
+        metricCount: parsedMapping.structure?.metricMappings ? Object.keys(parsedMapping.structure.metricMappings).length : 0
+      });
 
       // Extract data using the mapping
       const extractedData = await this.extractDataWithMapping(req.file.buffer, parsedMapping);
+      
+      logger.info('Data extraction completed', {
+        monthsExtracted: extractedData.months?.length || 0,
+        hasData: !!extractedData.months
+      });
 
       // Process the extracted data based on type
       if (parsedMapping.mappingType === 'pnl') {
         // Store in P&L service
-        const pnlService = require('../services/PnLService').PnLService.getInstance();
-        const pnlController = require('./PnLController').pnlController;
+        const { PnLService } = require('../services/PnLService');
+        const pnlService = PnLService.getInstance();
         
         // Process the extracted data and store it
         await pnlService.processExtractedData(extractedData, req.file.originalname);
         
-        // Call the regular upload endpoint to complete the flow
-        return pnlController.uploadPnL(req, res, next);
+        // Get the stored metrics and summary
+        const metrics = pnlService.getStoredMetrics();
+        const summary = pnlService.getSummary();
+        
+        // Return success response directly instead of calling uploadPnL
+        return res.json({
+          success: true,
+          message: 'P&L file processed successfully with custom mapping',
+          data: {
+            monthsProcessed: metrics.length,
+            summary: {
+              totalRevenue: summary.totalRevenue,
+              totalCOGS: summary.totalCOGS,
+              totalGrossProfit: summary.totalGrossProfit,
+              avgGrossMargin: summary.avgGrossMargin
+            },
+            lastMonth: metrics[metrics.length - 1]?.month || 'N/A'
+          }
+        });
       } else if (parsedMapping.mappingType === 'cashflow') {
         // Store in Enhanced Cashflow service
         const { CashflowServiceV2Enhanced } = require('../services/CashflowServiceV2Enhanced');
@@ -285,9 +324,20 @@ export class ExcelAnalysisController {
         }
       });
 
-    } catch (error) {
-      logger.error('Process with mapping error:', error);
-      next(error);
+    } catch (error: any) {
+      logger.error('Process with mapping error:', {
+        error: error.message,
+        stack: error.stack,
+        fileName: req.file?.originalname,
+        mappingType: req.body?.mapping?.mappingType || 'unknown'
+      });
+      
+      // Return structured error response instead of using next()
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process file with mapping',
+        details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+      });
     }
   }
 

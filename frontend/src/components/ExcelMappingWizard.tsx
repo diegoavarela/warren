@@ -81,6 +81,28 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
     console.log('ExcelMappingWizard state change', { currentStep, isOpen, hasMapping: !!mapping, hasError: !!error });
   }, [currentStep, isOpen, mapping, error]);
 
+  // Prevent background scrolling when modal is open
+  React.useEffect(() => {
+    if (isOpen) {
+      // Store original body overflow
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // Apply styles to prevent scrolling
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+      
+      // Cleanup function
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.paddingRight = originalPaddingRight;
+      };
+    }
+  }, [isOpen]);
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -759,11 +781,21 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden shadow-2xl border border-gray-100">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-6xl w-full max-h-[92vh] overflow-hidden shadow-2xl border border-gray-100 mx-auto my-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Enhanced Header with Progress */}
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50">
-          <div className="flex justify-between items-center mb-4">
+        <div className="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 flex-shrink-0">
+          <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
                 🚀 Intelligent Excel Import
@@ -774,7 +806,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-colors"
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-colors flex-shrink-0"
             >
               <span className="sr-only">Close</span>
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -784,7 +816,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
           </div>
           
           {/* Progress Indicator */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-center space-x-2">
             {['analyzing', 'review', 'edit', 'preview', 'complete'].map((step, index) => {
               const isActive = currentStep === step;
               const isCompleted = ['analyzing', 'review', 'edit', 'preview', 'complete'].indexOf(currentStep) > index;
@@ -793,11 +825,11 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
               return (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                       isCompleted
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-green-500 text-white shadow-lg'
                         : isActive
-                        ? 'bg-purple-600 text-white ring-4 ring-purple-200'
+                        ? 'bg-purple-600 text-white ring-4 ring-purple-200 shadow-lg'
                         : isUpcoming
                         ? 'bg-gray-200 text-gray-500'
                         : 'bg-gray-200 text-gray-500'
@@ -807,7 +839,7 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
                   </div>
                   {index < 4 && (
                     <div
-                      className={`w-8 h-1 transition-colors ${
+                      className={`w-12 h-1 transition-colors ${
                         isCompleted ? 'bg-green-400' : 'bg-gray-200'
                       }`}
                     />
@@ -818,8 +850,11 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(95vh-180px)]">
-          {renderStepContent()}
+        {/* Content Area with Better Scrolling */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-8 py-6 max-h-[calc(92vh-200px)]">
+            {renderStepContent()}
+          </div>
         </div>
       </div>
     </div>
