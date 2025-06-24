@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   DocumentArrowUpIcon,
+  DocumentIcon,
   SparklesIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
