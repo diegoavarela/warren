@@ -169,90 +169,28 @@ export const TaxesWidget: React.FC<TaxesWidgetProps> = ({ currency, displayUnit 
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="p-3 rounded-xl bg-red-100">
             <DocumentTextIcon className="h-8 w-8 text-red-600" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Tax Overview</h3>
-            <p className={`text-sm font-medium flex items-center space-x-1 ${
-              taxChange >= 0 ? 'text-red-600' : 'text-green-600'
-            }`}>
-              <ReceiptPercentIcon className="h-4 w-4" />
-              <span>
-                Total Tax Burden: {formatCurrency(currentData?.totalTaxBurden || 0)}
-              </span>
+            <p className="text-sm font-medium text-gray-500">
+              Total tax liability
             </p>
           </div>
         </div>
-
-        <button
-          onClick={() => setShowHelpModal(true)}
-          className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Understanding tax overview"
-        >
-          <QuestionMarkCircleIcon className="h-5 w-5" />
-        </button>
       </div>
 
-      <div className="space-y-4">
-        {/* Current Month Tax Burden */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-red-50 to-pink-50 border border-red-200">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">Current Month Tax Burden</span>
-            <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-              {formatCurrency(currentData?.totalTaxBurden || 0)}
-            </span>
-          </div>
-        </div>
-
-        {/* YTD Summary */}
-        <div className="grid grid-cols-1 gap-3">
-          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">Total Taxes Paid (YTD)</span>
-            <span className="text-sm font-semibold text-gray-900">
-              {formatCurrency(totalTaxesPaid)}
-            </span>
-          </div>
-          
-          <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg border border-orange-200">
-            <span className="text-sm font-medium text-gray-700">Net Tax Burden (YTD)</span>
-            <span className="text-sm font-bold text-orange-600">
-              {formatCurrency(netTaxBurden)}
-            </span>
-          </div>
-        </div>
-
-        {/* Monthly Change */}
-        {previousData && (
-          <div className="pt-3 border-t border-gray-200">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Month-over-Month Change</span>
-              <span className={`text-sm font-semibold flex items-center space-x-1 ${
-                taxChange >= 0 ? 'text-red-600' : 'text-green-600'
-              }`}>
-                <span>
-                  {taxChange >= 0 ? '+' : ''}{formatCurrency(Math.abs(taxChange))}
-                </span>
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Tax Estimate Warning */}
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start space-x-2">
-          <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-yellow-800">Estimated Annual Tax Liability</p>
-            <p className="text-lg font-bold text-yellow-700">
-              {formatCurrency(totalTaxesPaid * (12 / taxData.length))}
-            </p>
-            <p className="text-xs text-yellow-600 mt-1">
-              Based on current {taxData.length}-month average
-            </p>
-          </div>
-        </div>
+      {/* Single Total Tax Value */}
+      <div className="text-center py-8">
+        <p className="text-5xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
+          {formatCurrency(currentData?.totalTaxBurden || 0)}
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          {currentData?.month || 'Current Month'}
+        </p>
       </div>
 
       {/* Help Modal */}

@@ -1129,15 +1129,15 @@ export const PnLDashboardPage: React.FC = () => {
             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
               <p className="text-sm text-gray-600 mb-2">{t('pnl.personnel.efficiency')}</p>
               <p className="text-2xl font-bold text-purple-600">
-                {formatCurrency(data.currentMonth.revenue / (data.currentMonth.totalPersonnelCost / 1000))}
+                {formatCurrency(data.currentMonth.revenue / data.currentMonth.totalPersonnelCost)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">{t('pnl.personnel.revenuePerArs')}</p>
+              <p className="text-sm text-gray-500 mt-1">{t('pnl.personnel.revenuePerDollar')}</p>
             </div>
             
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
               <p className="text-sm text-gray-600 mb-2">{t('pnl.personnel.vsOpex')}</p>
               <p className="text-2xl font-bold text-green-600">
-                {((data.currentMonth.totalPersonnelCost / data.currentMonth.operatingExpenses) * 100).toFixed(1)}%
+                {(((data.currentMonth.personnelSalariesOp || 0) + (data.currentMonth.payrollTaxesOp || 0) + (data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0)) / data.currentMonth.operatingExpenses * 100).toFixed(1)}%
               </p>
               <p className="text-sm text-gray-500 mt-1">{t('pnl.personnel.ofOperatingExpenses')}</p>
             </div>
@@ -1233,7 +1233,7 @@ export const PnLDashboardPage: React.FC = () => {
                 <div className="text-center p-3 bg-purple-50 rounded-lg">
                   <p className="text-xs text-gray-600">{t('pnl.operatingExpenses')}</p>
                   <p className="text-lg font-semibold text-purple-600">
-                    {(((data.currentMonth.personnelSalariesOp || 0) + (data.currentMonth.payrollTaxesOp || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%
+                    {(((data.currentMonth.personnelSalariesOp || 0) + (data.currentMonth.payrollTaxesOp || 0) + (data.currentMonth.healthCoverage || 0) + (data.currentMonth.personnelBenefits || 0)) / data.currentMonth.totalPersonnelCost * 100).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -1588,17 +1588,10 @@ export const PnLDashboardPage: React.FC = () => {
             <div className="text-center p-6 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl">
               <p className="text-sm font-medium text-indigo-600 mb-2">{t('pnl.ytd.totalEbitda')}</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(data.chartData?.reduce((sum, month) => {
-                  // Calculate EBITDA as Operating Income + estimated D&A (assuming 3-5% of revenue)
-                  const monthlyEBITDA = month.operatingIncome + (month.revenue * 0.04);
-                  return sum + monthlyEBITDA;
-                }, 0) || 0)}
+                {formatCurrency(data.yearToDate?.ebitda || data.summary.totalEBITDA || 0)}
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                {data.chartData && formatPercentage(((data.chartData.reduce((sum, month) => {
-                  const monthlyEBITDA = month.operatingIncome + (month.revenue * 0.04);
-                  return sum + monthlyEBITDA;
-                }, 0)) / data.summary.totalRevenue) * 100)} {t('pnl.margin')}
+                {formatPercentage(data.summary.avgEBITDAMargin || ((data.yearToDate?.ebitda || 0) / data.summary.totalRevenue * 100))} {t('pnl.margin')}
               </p>
             </div>
             
@@ -1649,7 +1642,7 @@ export const PnLDashboardPage: React.FC = () => {
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-600">{t('pnl.ytd.expenseRatio')}</p>
+              <p className="text-sm text-gray-600">{t('pnl.ytd.opexPercentage')}</p>
               <p className="text-xl font-semibold text-gray-900">
                 {formatPercentage((data.summary.totalOperatingExpenses / data.summary.totalRevenue) * 100)}
               </p>

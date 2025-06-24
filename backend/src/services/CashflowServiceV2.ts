@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 import { ExtendedFinancialService } from './ExtendedFinancialService';
 import { logger } from '../utils/logger';
+import { FinancialStatementParser } from './FinancialStatementParser';
 
 interface MonthlyMetrics {
   date: Date;
@@ -103,19 +104,78 @@ export class CashflowServiceV2 {
       return this.processVortexFormat(buffer, filename);
     }
     
-    // PRIORITY 2: Check if this is standard format
-    const isStandardFormat = await this.checkIfStandardFormat(buffer);
-    if (isStandardFormat) {
-      logger.info('Detected standard cashflow format');
-      return this.processStandardFormat(buffer, filename);
+    // PRIORITY 2: Use financial logic parser for all non-Vortex formats
+    logger.info('Using financial logic parser for Cashflow analysis');
+    return this.processWithFinancialLogic(buffer, filename);
+  }
+
+  /**
+   * Process using financial logic parser
+   */
+  private async processWithFinancialLogic(buffer: Buffer, filename?: string): Promise<{ metrics: MonthlyMetrics[], format: string }> {
+    try {
+      const parser = new FinancialStatementParser()
+      const statement = await parser.parseFinancialStatement(buffer)
+      
+      if (statement.type !== 'cashflow') {
+        // Not a cashflow statement - fall back to standard processing
+        logger.info(`Financial parser detected ${statement.type}, falling back to standard processing`)
+        return this.processStandardFormat(buffer, filename)
+      }
+      
+      // Clear previous data
+      parsedMetrics = []
+      if (filename) {
+        uploadedFileName = filename
+      }
+      
+      // Convert financial parser results to our metrics format
+      const metrics: MonthlyMetrics[] = []
+      
+      statement.timePeriods.forEach((period, index) => {
+        const periodData = statement.data[period.period]
+        if (!periodData) return
+        
+        // Calculate beginning cash (previous period's ending cash)
+        let beginningCash = 0
+        if (index > 0) {
+          const prevPeriod = statement.timePeriods[index - 1]
+          const prevData = statement.data[prevPeriod.period]
+          beginningCash = prevData?.endingCash || 0
+        } else {
+          beginningCash = periodData.beginningCash || 0
+        }
+        
+        const netCashflow = periodData.operatingCashflow + periodData.investingCashflow + periodData.financingCashflow
+        const endingCash = beginningCash + netCashflow
+        
+        metrics.push({
+          date: period.date || new Date(`${period.period} 1, 2024`),
+          month: period.period,
+          columnIndex: period.col,
+          columnLetter: this.getColumnLetter(period.col),
+          totalInflow: Math.max(0, periodData.operatingCashflow + 
+                               (periodData.investingCashflow > 0 ? periodData.investingCashflow : 0) +
+                               (periodData.financingCashflow > 0 ? periodData.financingCashflow : 0)),
+          totalOutflow: Math.min(0, (periodData.operatingCashflow < 0 ? periodData.operatingCashflow : 0) +
+                                   (periodData.investingCashflow < 0 ? periodData.investingCashflow : 0) +
+                                   (periodData.financingCashflow < 0 ? periodData.financingCashflow : 0)),
+          finalBalance: endingCash,
+          lowestBalance: Math.min(beginningCash, endingCash),
+          monthlyGeneration: netCashflow
+        })
+      })
+      
+      // Store the metrics globally for dashboard generation
+      parsedMetrics = metrics
+      logger.info(`Financial logic parser: Stored ${metrics.length} months of cashflow data`)
+      
+      return { metrics, format: 'Financial Logic Parser' }
+    } catch (error) {
+      logger.error('Error in financial logic processing:', error)
+      // Fall back to standard processing
+      return this.processStandardFormat(buffer, filename)
     }
-    
-    // PRIORITY 3: Non-standard format - trigger AI analysis
-    logger.info('Non-standard cashflow format detected');
-    // IMPORTANT: Clear any existing data when a new non-standard file is uploaded
-    // This prevents old data from persisting when the AI wizard is triggered
-    this.clearStoredData();
-    throw new Error('Unable to detect standard format. Please use the AI wizard to map your custom format.');
   }
 
   /**

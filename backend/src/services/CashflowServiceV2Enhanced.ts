@@ -762,7 +762,15 @@ export class CashflowServiceV2Enhanced {
       }
     }
     
+    // YTD Balance should be Income - Expenses (expenses are negative, so we add them)
     const ytdBalance = ytdInflow + ytdExpense;
+    
+    logger.info('YTD Calculation:', {
+      ytdInflow,
+      ytdExpense,
+      ytdBalance,
+      calculation: `${ytdInflow} + ${ytdExpense} = ${ytdBalance}`
+    });
     
     const chartData = [];
     for (let i = 0; i < parsedMetrics.length; i++) {

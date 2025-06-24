@@ -615,8 +615,8 @@
     "demoModeDescription": "File upload is disabled in demo mode. The data shown below is sample data for demonstration purposes.",
     "netBalance": "Net Balance",
     "netPositionYTD": "Net position year to date",
-    "totalInvestment": "Total Investment",
-    "capitalDeployedYTD": "Capital deployed year to date",
+    "totalInvestment": "Investment Gain",
+    "investmentGain": "Investment Gain",
     "monthlyCashflowPerformance": "Monthly Cash Flow Performance",
     "monthlyInflowHeatMap": "Monthly Inflow Heat Map",
     "fullYearOverview": "2025 Full Year Overview",
@@ -930,7 +930,7 @@
       "totalEbitda": "Total EBITDA",
       "totalCogs": "Total COGS",
       "totalOpex": "Total Operating Expenses",
-      "expenseRatio": "Expense Ratio"
+      "opexPercentage": "OpEx %"
     }
   },
   "upload": {

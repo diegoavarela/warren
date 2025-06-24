@@ -615,8 +615,8 @@
     "demoModeDescription": "La carga de archivos está deshabilitada en modo demo. Los datos mostrados son datos de muestra con fines demostrativos.",
     "netBalance": "Saldo Neto",
     "netPositionYTD": "Posición neta año hasta la fecha",
-    "totalInvestment": "Inversión Total",
-    "capitalDeployedYTD": "Capital desplegado año hasta la fecha",
+    "totalInvestment": "Ganancia de Inversión",
+    "investmentGain": "Ganancia de Inversión",
     "monthlyCashflowPerformance": "Rendimiento Mensual de Flujo de Caja",
     "monthlyInflowHeatMap": "Mapa de Calor de Entradas Mensuales",
     "fullYearOverview": "Resumen Año Completo 2025",
@@ -930,7 +930,7 @@
       "totalEbitda": "EBITDA Total",
       "totalCogs": "Costo de Ventas Total",
       "totalOpex": "Gastos Operativos Totales",
-      "expenseRatio": "Ratio de Gastos"
+      "opexPercentage": "OpEx %"
     }
   },
   "upload": {

@@ -245,59 +245,43 @@ export const CashFlowStackedBar: React.FC = () => {
         {
           label: 'Revenue',
           data: stackedData.categories.inflow.revenue,
-          backgroundColor: '#10B981',
+          backgroundColor: '#22C55E',
+          borderColor: '#16A34A',
+          borderWidth: 1,
           stack: 'inflow',
-          barPercentage: 0.8,
-          categoryPercentage: 0.9
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
         },
         // Outflow datasets (negative values for below x-axis)
         {
-          label: 'Wages',
+          label: 'Personnel',
           data: stackedData.categories.outflows.wages.map(v => -v),
           backgroundColor: '#EF4444',
+          borderColor: '#DC2626',
+          borderWidth: 1,
           stack: 'outflows',
-          barPercentage: 0.8,
-          categoryPercentage: 0.9
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
         },
         {
-          label: 'OpEx',
+          label: 'Operations',
           data: stackedData.categories.outflows.opex.map(v => -v),
-          backgroundColor: '#F59E0B',
+          backgroundColor: '#F97316',
+          borderColor: '#EA580C',
+          borderWidth: 1,
           stack: 'outflows',
-          barPercentage: 0.8,
-          categoryPercentage: 0.9
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
         },
         {
-          label: 'Taxes',
-          data: stackedData.categories.outflows.taxes.map(v => -v),
-          backgroundColor: '#8B5CF6',
+          label: 'Taxes & Other',
+          data: stackedData.categories.outflows.taxes.map((v, i) => -(v + stackedData.categories.outflows.other[i])),
+          backgroundColor: '#6366F1',
+          borderColor: '#4F46E5',
+          borderWidth: 1,
           stack: 'outflows',
-          barPercentage: 0.8,
-          categoryPercentage: 0.9
-        },
-        {
-          label: 'Bank Fees',
-          data: stackedData.categories.outflows.bankFees.map(v => -v),
-          backgroundColor: '#06B6D4',
-          stack: 'outflows',
-          barPercentage: 0.8,
-          categoryPercentage: 0.9
-        },
-        {
-          label: 'Investment',
-          data: stackedData.categories.outflows.investment.map(v => -v),
-          backgroundColor: '#EC4899',
-          stack: 'outflows',
-          barPercentage: 0.8,
-          categoryPercentage: 0.9
-        },
-        {
-          label: 'Other',
-          data: stackedData.categories.outflows.other.map(v => -v),
-          backgroundColor: '#6B7280',
-          stack: 'outflows',
-          barPercentage: 0.8,
-          categoryPercentage: 0.9
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
         }
       ]
     }

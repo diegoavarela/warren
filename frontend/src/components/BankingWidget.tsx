@@ -184,7 +184,7 @@ export const BankingWidget: React.FC<BankingWidgetProps> = ({ currency, displayU
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="p-3 rounded-xl bg-blue-100">
             <BuildingLibraryIcon className="h-8 w-8 text-blue-600" />
@@ -192,68 +192,20 @@ export const BankingWidget: React.FC<BankingWidgetProps> = ({ currency, displayU
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Banking Overview</h3>
             <p className="text-sm font-medium text-gray-500">
-              Bank expenses and fees
+              Total cash in banks
             </p>
           </div>
         </div>
-        
-        <button
-          onClick={() => setShowHelpModal(true)}
-          className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Understanding banking overview"
-        >
-          <QuestionMarkCircleIcon className="h-5 w-5" />
-        </button>
       </div>
 
-      <div className="space-y-4">
-        {/* Bank Fees */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-200">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Monthly Bank Expenses</span>
-            <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-              {formatCurrency(currentData?.bankFees || 0)}
-            </span>
-          </div>
-        </div>
-
-        {/* Bank Fees Summary */}
-        <div className="grid grid-cols-1 gap-3">
-          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <BanknotesIcon className="h-5 w-5 text-gray-600" />
-              <span className="text-sm text-gray-600">Total Bank Expenses</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900">
-              {formatCurrency(currentData?.bankFees || 0)}
-            </span>
-          </div>
-          
-          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <BanknotesIcon className="h-5 w-5 text-gray-600" />
-              <span className="text-sm text-gray-600">Fees and Charges</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900">
-              {formatCurrency(currentData?.bankFees || 0)}
-            </span>
-          </div>
-        </div>
-
-        {/* Monthly Summary */}
-        <div className="pt-3 border-t border-gray-200">
-          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <BuildingLibraryIcon className="h-5 w-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-700">Monthly Total</span>
-              </div>
-              <span className="text-lg font-bold text-blue-600">
-                {formatCurrency(currentData?.bankFees || 0)}
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Single Total Cash Value */}
+      <div className="text-center py-8">
+        <p className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          {formatCurrency(totalCashBalance)}
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          {currentData?.month || 'Current Month'}
+        </p>
       </div>
 
       {/* Help Modal */}

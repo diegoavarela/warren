@@ -517,7 +517,7 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className="h-4 w-4 text-emerald-400" />
                 </div>
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.totalIncome')}</h3>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.totalInflow')}</h3>
                 <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(data.currentMonth.totalIncome, 'totalIncome')}
                 </p>
@@ -539,7 +539,7 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <SparklesIcon className="h-4 w-4 text-rose-400" />
                 </div>
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.totalExpense')}</h3>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{t('cashflow.totalOutflow')}</h3>
                 <p className="text-xl font-bold text-rose-600">
                   {formatCurrency(Math.abs(data.currentMonth.totalExpense), 'totalExpense')}
                 </p>
@@ -674,9 +674,8 @@ export const DashboardPage: React.FC = () => {
                     <BanknotesIcon className="h-8 w-8 text-purple-600" />
                     <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">YTD</span>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">{t('cashflow.totalInvestment')}</h3>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">{t('cashflow.investmentGain')}</h3>
                   <p className="text-3xl font-bold bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">{formatCurrency(Math.abs(data.yearToDate.totalInvestment), 'ytdInvestment')}</p>
-                  <p className="text-sm text-purple-600 mt-2">{t('cashflow.capitalDeployedYTD')}</p>
                 </div>
               )}
             </div>
@@ -810,25 +809,28 @@ export const DashboardPage: React.FC = () => {
         {/* Extended Financial Analysis Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent mb-6">{t('cashflow.extendedFinancialAnalysis')}</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left side - Operational Cost Analysis */}
             <OperationalAnalysisWidget 
               currency={currency} 
               displayUnit={convertToLegacyUnit(displayUnit)} 
             />
-            <BankingWidget 
-              currency={currency} 
-              displayUnit={convertToLegacyUnit(displayUnit)} 
-            />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <InvestmentsWidget 
-              currency={currency} 
-              displayUnit={convertToLegacyUnit(displayUnit)} 
-            />
-            <TaxesWidget 
-              currency={currency} 
-              displayUnit={convertToLegacyUnit(displayUnit)} 
-            />
+            
+            {/* Right side - Banking, Investment, Tax widgets stacked */}
+            <div className="grid grid-cols-1 gap-6">
+              <BankingWidget 
+                currency={currency} 
+                displayUnit={convertToLegacyUnit(displayUnit)} 
+              />
+              <InvestmentsWidget 
+                currency={currency} 
+                displayUnit={convertToLegacyUnit(displayUnit)} 
+              />
+              <TaxesWidget 
+                currency={currency} 
+                displayUnit={convertToLegacyUnit(displayUnit)} 
+              />
+            </div>
           </div>
         </div>
 

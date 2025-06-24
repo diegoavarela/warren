@@ -99,22 +99,36 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
 
     const intensity = (value - min) / range
 
-    // Color scale based on performance with appropriate text colors
+    // Enhanced traffic light color scheme with better contrast
     if (metric === 'margin') {
-      // For margins, use different thresholds
-      if (value < 0) return { bg: 'bg-red-500', text: 'text-white' }
-      if (value < 5) return { bg: 'bg-red-300', text: 'text-red-900' }
-      if (value < 10) return { bg: 'bg-yellow-300', text: 'text-yellow-900' }
-      if (value < 20) return { bg: 'bg-green-300', text: 'text-green-900' }
-      return { bg: 'bg-green-500', text: 'text-white' }
+      // For margins, use industry-standard thresholds
+      if (value < 0) return { bg: 'bg-red-600', text: 'text-white' }
+      if (value < 5) return { bg: 'bg-red-500', text: 'text-white' }
+      if (value < 10) return { bg: 'bg-orange-500', text: 'text-white' }
+      if (value < 15) return { bg: 'bg-amber-500', text: 'text-gray-900' }
+      if (value < 20) return { bg: 'bg-yellow-400', text: 'text-gray-900' }
+      if (value < 30) return { bg: 'bg-lime-500', text: 'text-gray-900' }
+      return { bg: 'bg-green-600', text: 'text-white' }
+    } else if (metric === 'cashflow' || metric === 'profit') {
+      // For cashflow and profit, negative is always bad
+      if (value < 0) {
+        const negIntensity = Math.abs(value) / Math.abs(min)
+        if (negIntensity > 0.8) return { bg: 'bg-red-600', text: 'text-white' }
+        if (negIntensity > 0.5) return { bg: 'bg-red-500', text: 'text-white' }
+        return { bg: 'bg-orange-500', text: 'text-white' }
+      }
+      // For positive values, use traffic light scale with better contrast
+      if (intensity < 0.3) return { bg: 'bg-amber-500', text: 'text-gray-900' }
+      if (intensity < 0.6) return { bg: 'bg-yellow-400', text: 'text-gray-900' }
+      if (intensity < 0.8) return { bg: 'bg-lime-500', text: 'text-gray-900' }
+      return { bg: 'bg-green-600', text: 'text-white' }
     } else {
-      // For revenue/profit/cashflow
-      if (value < 0) return { bg: 'bg-red-500', text: 'text-white' }
-      if (intensity < 0.2) return { bg: 'bg-red-300', text: 'text-red-900' }
-      if (intensity < 0.4) return { bg: 'bg-yellow-300', text: 'text-yellow-900' }
-      if (intensity < 0.6) return { bg: 'bg-yellow-400', text: 'text-yellow-900' }
-      if (intensity < 0.8) return { bg: 'bg-green-300', text: 'text-green-900' }
-      return { bg: 'bg-green-500', text: 'text-white' }
+      // For revenue, use traffic light colors with improved contrast
+      if (intensity < 0.2) return { bg: 'bg-red-500', text: 'text-white' }
+      if (intensity < 0.4) return { bg: 'bg-orange-500', text: 'text-white' }
+      if (intensity < 0.6) return { bg: 'bg-amber-500', text: 'text-gray-900' }
+      if (intensity < 0.8) return { bg: 'bg-yellow-400', text: 'text-gray-900' }
+      return { bg: 'bg-green-600', text: 'text-white' }
     }
   }
 
@@ -162,7 +176,7 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
                       <span className={`text-xs font-bold ${colorScheme.text}`}>
                         {item.month.substring(0, 3)}
                       </span>
-                      <span className={`text-xs font-medium ${colorScheme.text}`}>
+                      <span className={`text-sm font-semibold ${colorScheme.text}`}>
                         {formatCompactValue(item.value)}
                       </span>
                     </div>
@@ -181,19 +195,19 @@ export const PerformanceHeatMap: React.FC<PerformanceHeatMapProps> = ({
       <div className="mt-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-600">{t('common.poor')}</span>
+            <span className="text-xs text-gray-600">Baseline</span>
             <div className="flex space-x-1">
               <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <div className="w-4 h-4 bg-red-300 rounded"></div>
-              <div className="w-4 h-4 bg-yellow-300 rounded"></div>
+              <div className="w-4 h-4 bg-orange-500 rounded"></div>
+              <div className="w-4 h-4 bg-amber-500 rounded"></div>
               <div className="w-4 h-4 bg-yellow-400 rounded"></div>
-              <div className="w-4 h-4 bg-green-300 rounded"></div>
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <div className="w-4 h-4 bg-lime-500 rounded"></div>
+              <div className="w-4 h-4 bg-green-600 rounded"></div>
             </div>
-            <span className="text-xs text-gray-600">{t('common.excellent')}</span>
+            <span className="text-xs text-gray-600">Excellent</span>
           </div>
           <div className="text-xs text-gray-500">
-            {metric === 'margin' ? t('heatmap.basedOnMargin') : t('heatmap.relativeToPeriod')}
+            Relative to period range
           </div>
         </div>
         {/* Forecast indicator */}
