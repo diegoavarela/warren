@@ -423,6 +423,14 @@ export const PnLDashboardPage: React.FC = () => {
     await loadDashboard()
   }
 
+  const handleMappingSuccess = async () => {
+    // Skip in screenshot/demo mode
+    if (isScreenshotMode || isDemoMode) return
+    
+    // Just reload dashboard data since mapping endpoint already processed the file
+    await loadDashboard()
+  }
+
   const getMarginChartData = () => {
     if (!data?.chartData) return null
 
@@ -592,6 +600,7 @@ export const PnLDashboardPage: React.FC = () => {
             {/* File Upload Section */}
             <FileUploadSection
               onFileUpload={handleUpload}
+              onMappingSuccess={handleMappingSuccess}
               title={t('pnl.upload.title')}
               description={t('pnl.upload.description')}
               uploadedFileName={data?.uploadedFileName}
@@ -643,6 +652,7 @@ export const PnLDashboardPage: React.FC = () => {
       {!isDemoMode ? (
         <FileUploadSection
           onFileUpload={handleUpload}
+          onMappingSuccess={handleMappingSuccess}
           title={t('pnl.upload.title')}
           description={t('pnl.upload.description')}
           uploadedFileName={data?.uploadedFileName}

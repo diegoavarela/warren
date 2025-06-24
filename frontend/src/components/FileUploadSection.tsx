@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 
 interface FileUploadSectionProps {
   onFileUpload: (file: File) => Promise<void>
+  onMappingSuccess?: () => Promise<void>
   acceptedFormats?: string
   title?: string
   description?: string
@@ -25,6 +26,7 @@ interface FileUploadSectionProps {
 
 export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onFileUpload,
+  onMappingSuccess,
   acceptedFormats = '.xlsx,.xls',
   title,
   description,
@@ -366,10 +368,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       </div>
       
       {/* Excel Mapping Wizard - Transparent to user */}
-      {console.log('Rendering wizard check:', { showMappingWizard, hasFile: !!file })}
       {showMappingWizard && file && (
         <>
-          {console.log('RENDERING EXCEL MAPPING WIZARD')}
           <ExcelMappingWizard
             isOpen={true}
             onClose={() => {
@@ -409,8 +409,10 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                   setUploadSuccess(true)
                   setFile(null)
                   
-                  // Notify parent component of successful upload
-                  onFileUpload(file)
+                  // Refresh dashboard since mapping already processed the data
+                  if (onMappingSuccess) {
+                    await onMappingSuccess()
+                  }
                   
                   // Auto-collapse after successful mapping
                   setTimeout(() => {
@@ -422,6 +424,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               } catch (error: any) {
                 console.error('Error processing file with mapping:', error)
                 setUploadError(error.response?.data?.error || error.message || 'Failed to process file')
+                setUploading(false)
+              } finally {
                 setUploading(false)
               }
             }

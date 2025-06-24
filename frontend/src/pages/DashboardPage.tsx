@@ -319,6 +319,16 @@ export const DashboardPage: React.FC = () => {
     await loadDashboard()
   }
 
+  const handleMappingSuccess = async () => {
+    // Skip in screenshot/demo mode
+    if (isScreenshotMode || isDemoMode) return
+    
+    // Add a small delay to ensure backend has processed the file
+    await new Promise(resolve => setTimeout(resolve, 500))
+    // Just reload dashboard data since mapping endpoint already processed the file
+    await loadDashboard()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -370,6 +380,7 @@ export const DashboardPage: React.FC = () => {
             {/* File Upload Section */}
             <FileUploadSection
               onFileUpload={handleUpload}
+              onMappingSuccess={handleMappingSuccess}
               title="Upload Cash Flow Data"
               description="Import your Excel file to analyze cash movements and financial health"
               uploadedFileName={data?.uploadedFileName}
@@ -421,6 +432,7 @@ export const DashboardPage: React.FC = () => {
         {!isDemoMode ? (
           <FileUploadSection
             onFileUpload={handleUpload}
+            onMappingSuccess={handleMappingSuccess}
             title={t('cashflow.uploadTitle')}
             description={t('cashflow.uploadDescription')}
             uploadedFileName={data?.uploadedFileName}
