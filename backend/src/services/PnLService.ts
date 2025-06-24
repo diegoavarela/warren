@@ -92,6 +92,8 @@ export class PnLService {
       
       // PRIORITY 3: Non-standard format - trigger AI analysis
       logger.info('Non-standard P&L format detected, triggering AI analysis')
+      // Clear any existing data before throwing error to trigger wizard
+      this.clearStoredData()
       throw new Error('Unable to detect standard format. Please use the AI wizard to map your custom format.');
     } catch (error) {
       logger.error('Error processing P&L Excel file:', error)
@@ -315,30 +317,61 @@ export class PnLService {
       
       const worksheet = workbook.worksheets[0]
       
-      // Check for standard P&L structure (NOT Vortex)
-      // Row 2 should have "Revenue"
-      // Row 3 should have "Cost of Goods Sold" or "COGS"
-      // Row 4 should have "Gross Profit"
-      const row2Label = String(worksheet.getRow(2).getCell(1).value || '').toLowerCase();
-      const row3Label = String(worksheet.getRow(3).getCell(1).value || '').toLowerCase();
-      const row4Label = String(worksheet.getRow(4).getCell(1).value || '').toLowerCase();
+      // Enhanced P&L format detection - more flexible approach
+      // Look for key P&L terms in first 15 rows, not just specific rows
+      let revenueFound = false;
+      let cogsFound = false;
+      let grossProfitFound = false;
       
-      const hasRevenueLabel = row2Label.includes('revenue') || 
-                             row2Label.includes('ingreso') || 
-                             row2Label.includes('sales') ||
-                             row2Label.includes('ventas');
-                             
-      const hasCOGSLabel = row3Label.includes('cost of goods') || 
-                          row3Label.includes('cogs') || 
-                          row3Label.includes('costo');
-                          
-      const hasGrossProfitLabel = row4Label.includes('gross profit') || 
-                                 row4Label.includes('utilidad bruta') || 
-                                 row4Label.includes('ganancia bruta');
+      for (let row = 1; row <= Math.min(15, worksheet.rowCount); row++) {
+        const cellValue = String(worksheet.getRow(row).getCell(1).value || '').toLowerCase();
+        
+        // Enhanced revenue detection (English/Spanish)
+        if (!revenueFound && (
+          cellValue.includes('revenue') || 
+          cellValue.includes('ingreso') || 
+          cellValue.includes('sales') ||
+          cellValue.includes('ventas') ||
+          cellValue.includes('facturaci') ||
+          /^(total.*)?ventas?$/.test(cellValue) ||
+          /^(total.*)?ingresos?$/.test(cellValue) ||
+          cellValue.includes('total revenue')
+        )) {
+          revenueFound = true;
+        }
+        
+        // Enhanced COGS detection (English/Spanish)
+        if (!cogsFound && (
+          cellValue.includes('cost of goods') || 
+          cellValue.includes('cost of revenue') ||
+          cellValue.includes('cogs') || 
+          cellValue.includes('costo de') ||
+          cellValue.includes('costo de ventas') ||
+          cellValue.includes('costo directo') ||
+          /^(total.*)?costo/.test(cellValue)
+        )) {
+          cogsFound = true;
+        }
+        
+        // Enhanced gross profit detection (English/Spanish)
+        if (!grossProfitFound && (
+          cellValue.includes('gross profit') || 
+          cellValue.includes('utilidad bruta') || 
+          cellValue.includes('ganancia bruta') ||
+          cellValue.includes('margen bruto') ||
+          /^(utilidad|ganancia).*bruta/.test(cellValue)
+        )) {
+          grossProfitFound = true;
+        }
+      }
       
-      logger.info(`Standard format check - Revenue: ${hasRevenueLabel}, COGS: ${hasCOGSLabel}, GP: ${hasGrossProfitLabel}`);
+      // More lenient check - need at least revenue indicator
+      // This allows more formats to be considered "standard" and use default processing
+      const isStandardLike = revenueFound && (cogsFound || grossProfitFound);
       
-      return hasRevenueLabel && hasCOGSLabel && hasGrossProfitLabel;
+      logger.info(`Standard format check - Revenue: ${revenueFound}, COGS: ${cogsFound}, GP: ${grossProfitFound}, Result: ${isStandardLike}`);
+      
+      return isStandardLike;
     } catch (error) {
       logger.error('Error checking standard format:', error);
       return false;
