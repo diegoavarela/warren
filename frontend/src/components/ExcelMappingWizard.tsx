@@ -280,29 +280,99 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
 
       case 'analyzing':
         return (
-          <div className="text-center py-8">
-            <div className="relative inline-block mb-6">
-              <div className="h-24 w-24 bg-purple-100 rounded-full flex items-center justify-center">
-                <CpuChipIcon className="h-12 w-12 text-purple-600" />
+          <div className="py-8 px-6">
+            <div className="max-w-2xl mx-auto">
+              {/* Enhanced Loading Animation */}
+              <div className="text-center mb-8">
+                <div className="relative inline-block mb-6">
+                  {/* Outer spinning ring */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-32 w-32 border-4 border-purple-100 rounded-full animate-spin border-t-purple-600"></div>
+                  </div>
+                  {/* Middle pulsing ring */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-24 w-24 border-2 border-blue-200 rounded-full animate-pulse border-t-blue-500"></div>
+                  </div>
+                  {/* Inner icon */}
+                  <div className="h-32 w-32 bg-gradient-to-br from-purple-50 to-blue-50 rounded-full flex items-center justify-center relative z-10 shadow-lg">
+                    <SparklesIcon className="h-12 w-12 text-purple-600 animate-bounce" />
+                  </div>
+                </div>
+                
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent mb-3">
+                  🤖 AI Analysis in Progress
+                </h3>
+                
+                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm mb-6">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <DocumentIcon className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                    <div className="text-left flex-1">
+                      <p className="font-medium text-gray-900">{selectedFile?.name || 'Excel file'}</p>
+                      <p className="text-sm text-gray-500">
+                        {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : ''} • {mappingType === 'cashflow' ? 'Cashflow' : 'P&L'} Analysis
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-28 w-28 border-4 border-purple-200 rounded-full animate-spin border-t-purple-600"></div>
+
+              {/* Dynamic Status Messages */}
+              <div className="space-y-4 mb-8">
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 border border-purple-100">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-purple-900 mb-1">🔍 Smart Detection Phase</h4>
+                      <p className="text-purple-700 text-sm">
+                        Scanning for date patterns, financial metrics, and data structure in multiple languages (English/Spanish)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900 mb-1">🧠 AI Pattern Matching</h4>
+                      <p className="text-blue-700 text-sm">
+                        Identifying {mappingType === 'cashflow' ? 'cash inflows, outflows, and balance' : 'revenue, expenses, and profit'} metrics with high confidence
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-indigo-900 mb-1">🎯 Precision Validation</h4>
+                      <p className="text-indigo-700 text-sm">
+                        Validating detected mappings and preparing intelligent suggestions for review
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
-              Analyzing Your Excel File
-            </h3>
-            <div className="max-w-md mx-auto space-y-3">
-              <p className="text-gray-600">
-                <span className="font-medium">{selectedFile?.name || 'Excel file'}</span>
-              </p>
-              <div className="bg-purple-50 rounded-lg p-3 text-sm text-purple-700">
-                {mapping?.aiGenerated 
-                  ? 'AI is scanning your file structure and identifying financial metrics...'
-                  : 'Detecting patterns and identifying data structure...'}
-              </div>
-              <div className="flex items-center justify-center space-x-1 text-xs text-gray-500">
-                <span>This usually takes 5-10 seconds</span>
+
+              {/* Enhanced Progress Indicator */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Analysis Progress</span>
+                  <span className="text-sm text-gray-500">Processing...</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full animate-pulse" style={{width: '75%'}}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  ⚡ Enhanced detection with Spanish support • Usually takes 5-15 seconds
+                </p>
               </div>
             </div>
           </div>
@@ -688,16 +758,22 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Intelligent Excel Import
-            </h2>
+    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden shadow-2xl border border-gray-100">
+        {/* Enhanced Header with Progress */}
+        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
+                🚀 Intelligent Excel Import
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                AI-powered mapping for {mappingType === 'cashflow' ? 'Cashflow' : 'P&L'} data
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-colors"
             >
               <span className="sr-only">Close</span>
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -705,9 +781,43 @@ export const ExcelMappingWizard: React.FC<ExcelMappingWizardProps> = ({
               </svg>
             </button>
           </div>
+          
+          {/* Progress Indicator */}
+          <div className="flex items-center space-x-2">
+            {['analyzing', 'review', 'edit', 'preview', 'complete'].map((step, index) => {
+              const isActive = currentStep === step;
+              const isCompleted = ['analyzing', 'review', 'edit', 'preview', 'complete'].indexOf(currentStep) > index;
+              const isUpcoming = ['analyzing', 'review', 'edit', 'preview', 'complete'].indexOf(currentStep) < index;
+              
+              return (
+                <div key={step} className="flex items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
+                      isCompleted
+                        ? 'bg-green-500 text-white'
+                        : isActive
+                        ? 'bg-purple-600 text-white ring-4 ring-purple-200'
+                        : isUpcoming
+                        ? 'bg-gray-200 text-gray-500'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {isCompleted ? '✓' : index + 1}
+                  </div>
+                  {index < 4 && (
+                    <div
+                      className={`w-8 h-1 transition-colors ${
+                        isCompleted ? 'bg-green-400' : 'bg-gray-200'
+                      }`}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="overflow-y-auto max-h-[calc(95vh-180px)]">
           {renderStepContent()}
         </div>
       </div>

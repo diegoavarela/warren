@@ -73,17 +73,40 @@ export const ExcelMappingEditor: React.FC<ExcelMappingEditorProps> = ({
   }, [mapping]);
 
   const handleSaveField = () => {
-    if (!editingField) return;
+    if (!editingField || !editingField.key || !editingField.row) {
+      console.warn('Cannot save field: missing key or row', editingField);
+      return;
+    }
 
-    const updatedFields = editMode === 'new'
-      ? [...fields, editingField]
-      : fields.map(f => f.key === editingField.key ? editingField : f);
+    console.log('Saving field:', editingField, 'Mode:', editMode);
+    
+    let updatedFields: MappingField[];
+    
+    if (editMode === 'new') {
+      // Check if key already exists
+      const existingField = fields.find(f => f.key === editingField.key);
+      if (existingField) {
+        console.warn('Field key already exists:', editingField.key);
+        return;
+      }
+      updatedFields = [...fields, editingField];
+    } else {
+      // Update existing field
+      updatedFields = fields.map(f => f.key === editingField.key ? editingField : f);
+    }
 
+    console.log('Updated fields:', updatedFields);
     setFields(updatedFields);
     updateMapping(updatedFields);
     setEditMode(null);
     setEditingField(null);
     setShowAddField(false);
+    setNewField({
+      key: '',
+      row: 0,
+      description: '',
+      dataType: 'currency'
+    });
   };
 
   const handleDeleteField = (key: string) => {
@@ -189,8 +212,8 @@ export const ExcelMappingEditor: React.FC<ExcelMappingEditorProps> = ({
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h4 className="font-medium text-yellow-800 mb-2">Missing Required Fields</h4>
           <ul className="list-disc list-inside text-sm text-yellow-700">
-            {missingFields.map(field => (
-              <li key={field.key}>{field.label}</li>
+            {missingFields.map((field, index) => (
+              <li key={`missing-${field.key}-${index}`}>{field.label}</li>
             ))}
           </ul>
         </div>
@@ -202,14 +225,17 @@ export const ExcelMappingEditor: React.FC<ExcelMappingEditorProps> = ({
           <h4 className="font-medium text-gray-900">Metric Mappings</h4>
           <button
             onClick={() => {
+              console.log('Adding new field');
               setShowAddField(true);
               setEditMode('new');
-              setEditingField({
+              const newFieldTemplate = {
                 key: '',
                 row: 0,
                 description: '',
-                dataType: 'currency'
-              });
+                dataType: 'currency' as const
+              };
+              setEditingField(newFieldTemplate);
+              setNewField(newFieldTemplate);
             }}
             className="flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700"
           >
@@ -219,8 +245,8 @@ export const ExcelMappingEditor: React.FC<ExcelMappingEditorProps> = ({
         </div>
 
         <div className="space-y-2">
-          {fields.map((field) => (
-            <div key={field.key} className="bg-white border border-gray-200 rounded-lg p-3">
+          {fields.map((field, index) => (
+            <div key={`field-${field.key}-${field.row}-${index}`} className="bg-white border border-gray-200 rounded-lg p-3">
               {editMode === field.key ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
@@ -321,21 +347,33 @@ export const ExcelMappingEditor: React.FC<ExcelMappingEditorProps> = ({
                 <div className="grid grid-cols-3 gap-3">
                   <input
                     type="text"
-                    value={newField.key}
-                    onChange={(e) => setNewField({ ...newField, key: e.target.value })}
+                    value={editingField?.key || ''}
+                    onChange={(e) => {
+                      const updated = { ...editingField!, key: e.target.value };
+                      setEditingField(updated);
+                      setNewField(updated);
+                    }}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-                    placeholder="Field key"
+                    placeholder="Field key (e.g., totalRevenue)"
                   />
                   <input
                     type="number"
-                    value={newField.row || ''}
-                    onChange={(e) => setNewField({ ...newField, row: parseInt(e.target.value) || 0 })}
+                    value={editingField?.row || ''}
+                    onChange={(e) => {
+                      const updated = { ...editingField!, row: parseInt(e.target.value) || 0 };
+                      setEditingField(updated);
+                      setNewField(updated);
+                    }}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm"
                     placeholder="Row number"
                   />
                   <select
-                    value={newField.dataType}
-                    onChange={(e) => setNewField({ ...newField, dataType: e.target.value as any })}
+                    value={editingField?.dataType || 'currency'}
+                    onChange={(e) => {
+                      const updated = { ...editingField!, dataType: e.target.value as any };
+                      setEditingField(updated);
+                      setNewField(updated);
+                    }}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm"
                   >
                     <option value="currency">Currency</option>
@@ -346,14 +384,18 @@ export const ExcelMappingEditor: React.FC<ExcelMappingEditorProps> = ({
                 </div>
                 <input
                   type="text"
-                  value={newField.description}
-                  onChange={(e) => setNewField({ ...newField, description: e.target.value })}
+                  value={editingField?.description || ''}
+                  onChange={(e) => {
+                    const updated = { ...editingField!, description: e.target.value };
+                    setEditingField(updated);
+                    setNewField(updated);
+                  }}
                   className="w-full px-3 py-1 border border-gray-300 rounded-md text-sm"
-                  placeholder="Description (e.g., Total Revenue, Net Income)"
+                  placeholder="Description (e.g., Total Revenue from Sales)"
                 />
-                {sampleData && newField.row > 0 && (
+                {sampleData && editingField && editingField.row > 0 && (
                   <p className="text-xs text-gray-500">
-                    Row {newField.row} sample: {getSampleValue(newField.row)}
+                    Row {editingField.row} sample: {getSampleValue(editingField.row)}
                   </p>
                 )}
                 <div className="flex justify-end space-x-2">

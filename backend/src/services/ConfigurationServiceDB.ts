@@ -89,8 +89,8 @@ export class ConfigurationServiceDB {
           default_unit as "defaultUnit",
           enable_currency_conversion as "enableCurrencyConversion",
           show_currency_selector as "showCurrencySelector",
-          excel_structure as "excelStructure"
-          ,pnl_settings as "pnlSettings",
+          excel_structure as "excelStructure",
+          pnl_settings as "pnlSettings",
           cashflow_settings as "cashflowSettings"
         FROM companies
         ORDER BY created_at DESC
@@ -137,8 +137,8 @@ export class ConfigurationServiceDB {
           default_unit as "defaultUnit",
           enable_currency_conversion as "enableCurrencyConversion",
           show_currency_selector as "showCurrencySelector",
-          excel_structure as "excelStructure"
-          ,pnl_settings as "pnlSettings",
+          excel_structure as "excelStructure",
+          pnl_settings as "pnlSettings",
           cashflow_settings as "cashflowSettings"
         FROM companies
         WHERE is_active = true
