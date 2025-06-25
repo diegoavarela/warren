@@ -472,7 +472,7 @@ export const DashboardPage: React.FC = () => {
                         <p className="text-xs text-gray-700">
                           {t('cashflow.exchangeRateBaseline')}: 
                           <span className="ml-1 font-semibold text-gray-900">
-                            1 USD = {currentExchangeRate.toFixed(2)} {displayCurrency}
+                            1 USD = {currentExchangeRate < 0.01 ? currentExchangeRate.toFixed(6) : currentExchangeRate.toFixed(2)} {displayCurrency}
                           </span>
                         </p>
                       </div>
