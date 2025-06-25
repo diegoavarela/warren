@@ -472,7 +472,7 @@ export const DashboardPage: React.FC = () => {
                         <p className="text-xs text-gray-700">
                           {t('cashflow.exchangeRateBaseline')}: 
                           <span className="ml-1 font-semibold text-gray-900">
-                            1 USD = {currentExchangeRate < 0.01 ? currentExchangeRate.toFixed(6) : currentExchangeRate.toFixed(2)} {displayCurrency}
+                            1 USD = {displayCurrency === 'USD' ? '1.00 USD' : (baseCurrency === 'USD' ? (currentExchangeRate < 0.01 ? currentExchangeRate.toFixed(6) : currentExchangeRate.toFixed(2)) : (1 / currentExchangeRate < 0.01 ? (1 / currentExchangeRate).toFixed(6) : (1 / currentExchangeRate).toFixed(2))) + ' ' + displayCurrency}
                           </span>
                         </p>
                       </div>
