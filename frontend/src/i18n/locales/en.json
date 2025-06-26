@@ -11,6 +11,124 @@
     "upload": "Upload Data",
     "users": "Users"
   },
+  "pricing": {
+    "title": "Choose Your Plan",
+    "subtitle": "Get started with Warren and transform your financial data into actionable insights",
+    "period": "month",
+    "popular": "Most Popular",
+    "processing": "Processing...",
+    "error": "Failed to process your request. Please try again.",
+    "freemium": {
+      "name": "Free",
+      "price": "$0",
+      "description": "Perfect for trying out Warren",
+      "button": "Get Started",
+      "features": {
+        "dashboard": "Basic dashboard",
+        "excel": "1 Excel file upload",
+        "widgets": "3 basic widgets",
+        "history": "3 months of history",
+        "export": "PDF export (watermarked)",
+        "support": "Community support"
+      },
+      "limitations": {
+        "views": "10 dashboard views per month",
+        "ai": "No AI analysis",
+        "users": "1 user only"
+      }
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "$149",
+      "description": "For growing businesses",
+      "button": "Start Free Trial",
+      "features": {
+        "dashboard": "Full dashboard access",
+        "excel": "10 Excel files",
+        "widgets": "All widgets available",
+        "history": "Unlimited history",
+        "export": "Clean PDF exports",
+        "currency": "Multi-currency support",
+        "ai": "$10 AI credits/month",
+        "users": "Up to 5 users",
+        "support": "Email support"
+      }
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "$349",
+      "description": "For larger organizations",
+      "button": "Contact Sales",
+      "features": {
+        "everything": "Everything in Professional",
+        "excel": "Unlimited data sources",
+        "quickbooks": "QuickBooks integration",
+        "api": "API access",
+        "ai": "$50 AI credits/month",
+        "users": "Unlimited users",
+        "domain": "Custom domain",
+        "whitelabel": "White label options",
+        "ip": "IP whitelisting",
+        "support": "Priority support"
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "trial": {
+        "question": "Is there a free trial?",
+        "answer": "Yes! All paid plans come with a 14-day free trial. No credit card required to start."
+      },
+      "cancel": {
+        "question": "Can I cancel anytime?",
+        "answer": "Absolutely. You can cancel your subscription at any time from your account settings."
+      },
+      "data": {
+        "question": "What happens to my data if I downgrade?",
+        "answer": "Your data is always safe. If you downgrade, you'll have read-only access to data that exceeds your new plan limits."
+      }
+    }
+  },
+  "subscription": {
+    "title": "Subscription & Usage",
+    "subtitle": "Manage your subscription and track usage",
+    "current_plan": "Current Plan",
+    "manage_billing": "Manage Billing",
+    "freemium": "Free",
+    "free_forever": "Free forever",
+    "month": "month",
+    "canceling_on": "Canceling on {{date}}",
+    "upgrade": "Upgrade",
+    "cancel": "Cancel",
+    "canceling": "Canceling...",
+    "ai_usage": "AI Usage",
+    "of_limit": "of {{limit}}",
+    "views_remaining": "Views Remaining",
+    "this_month": "this month",
+    "storage": "Storage",
+    "unlimited": "Unlimited",
+    "team_members": "Team Members",
+    "features": "Features",
+    "upgrade_cta": "Upgrade to Professional to unlock all features and remove limitations",
+    "view_plans": "View Plans →",
+    "error": {
+      "loading": "Failed to load subscription data",
+      "portal": "Failed to open billing portal",
+      "cancel": "Failed to cancel subscription"
+    },
+    "cancel": {
+      "confirm": "Are you sure you want to cancel your subscription?"
+    },
+    "feature": {
+      "dashboard": "Dashboard Access",
+      "excel_upload": "Excel Upload",
+      "all_widgets": "All Widgets",
+      "multi_currency": "Multi-Currency",
+      "quickbooks": "QuickBooks Integration",
+      "api_access": "API Access",
+      "unlimited_views": "Unlimited Views",
+      "white_label": "White Label"
+    }
+  },
   "navigation": {
     "dashboard": "Dashboard",
     "upload": "Upload Data"

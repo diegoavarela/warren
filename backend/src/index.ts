@@ -20,6 +20,7 @@ import currencyRouter from './routes/currency';
 import mondayRouter from './routes/monday';
 import { analysisRoutes } from './routes/analysis';
 import { excelAnalysisRouter } from './routes/excelAnalysis';
+import { subscriptionRouter } from './routes/subscription';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { noCacheHeaders } from './middleware/noCacheHeaders'
@@ -81,6 +82,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/v2/auth', multiTenantAuthRouter);
 app.use('/api/v2/users', companyUsersRouter);
 app.use('/api/v2/platform', platformAdminRouter);
+app.use('/api/v2/subscription', subscriptionRouter);
 
 // Existing routes
 app.use('/api/cashflow', cashflowRouter);

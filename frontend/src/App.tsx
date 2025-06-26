@@ -23,6 +23,8 @@ import { AnalysisPageFixed } from './pages/AnalysisPageFixed'
 import { AnalysisPageDemo } from './pages/AnalysisPageDemo'
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard'
 import { CompanyUsersPage } from './pages/CompanyUsersPage'
+import { PricingPage } from './pages/saas/PricingPage'
+import { SubscriptionDashboard } from './components/Subscription/SubscriptionDashboard'
 import './i18n/config'
 
 function App() {
@@ -122,6 +124,14 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <CompanyUsersPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/subscription" element={
+          <ProtectedRoute>
+            <Layout>
+              <SubscriptionDashboard />
             </Layout>
           </ProtectedRoute>
         } />
