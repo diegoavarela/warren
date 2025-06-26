@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { AIAnalysisController } from '../controllers/AIAnalysisController'
 import { authMiddleware } from '../middleware/auth'
 import { tenantContext } from '../middleware/tenantContext'
+import { trackAIUsage, getAIUsage, getAIUsageHistory } from '../middleware/saas/aiUsageTracking'
 import { logger } from '../utils/logger'
 
 const router = Router()
@@ -14,9 +15,12 @@ logger.info('AI Analysis service initialized successfully')
 router.use(authMiddleware)
 router.use(tenantContext)
 
+// AI usage endpoints
+router.get('/usage', getAIUsage)
+router.get('/usage/history', getAIUsageHistory)
 
-// Main analysis endpoint
-router.post('/query', aiController.analyzeQuery.bind(aiController))
+// Main analysis endpoint with usage tracking
+router.post('/query', trackAIUsage, aiController.analyzeQuery.bind(aiController))
 
 // Get data summary
 router.get('/data-summary', aiController.getDataSummary.bind(aiController))

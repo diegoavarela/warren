@@ -23,6 +23,8 @@ import { excelAnalysisRouter } from './routes/excelAnalysis';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { noCacheHeaders } from './middleware/noCacheHeaders'
+import { pool } from './config/database';
+import { createStripeRoutes } from './routes/stripe';
 
 const app = express();
 const PORT = process.env.PORT || 4001;
@@ -63,6 +65,9 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);
+
+// Stripe webhooks need raw body (before JSON parsing)
+app.use('/api/stripe', createStripeRoutes(pool));
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));

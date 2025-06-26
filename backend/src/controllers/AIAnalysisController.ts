@@ -40,6 +40,13 @@ export class AIAnalysisController {
         includeCharts: includeCharts !== false // Default to true
       }, req.user?.id, req.tenantId)
 
+      // Extract usage data if present and store in res.locals for middleware
+      if ((result as any).usage) {
+        res.locals.aiUsage = (result as any).usage
+        // Remove usage from response to client
+        delete (result as any).usage
+      }
+
       res.json({
         success: true,
         data: result

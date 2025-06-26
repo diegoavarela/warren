@@ -130,6 +130,18 @@ export class AIAnalysisService {
         response_format: { type: "json_object" }
       })
       
+      // Store usage data for tracking (will be picked up by middleware)
+      const usage = completion.usage
+      if (usage) {
+        // Make usage data available to response
+        (query as any).aiUsage = {
+          model: completion.model,
+          promptTokens: usage.prompt_tokens,
+          completionTokens: usage.completion_tokens,
+          totalTokens: usage.total_tokens
+        }
+      }
+      
       // Parse and validate the AI response
       const aiResponse = completion.choices[0].message.content
       if (!aiResponse) {
@@ -137,7 +149,19 @@ export class AIAnalysisService {
       }
       
       const parsedResponse = JSON.parse(aiResponse)
-      return this.formatResponse(parsedResponse, financialData)
+      const response = this.formatResponse(parsedResponse, financialData)
+      
+      // Include usage data in response for middleware
+      if (usage) {
+        (response as any).usage = {
+          model: completion.model,
+          promptTokens: usage.prompt_tokens,
+          completionTokens: usage.completion_tokens,
+          totalTokens: usage.total_tokens
+        }
+      }
+      
+      return response
       
     } catch (error) {
       logger.error('Error in AI analysis:', error)

@@ -9,13 +9,15 @@
     "test": "jest",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit",
-    "migrate:companies": "ts-node src/scripts/run-companies-migration.ts"
+    "migrate:companies": "ts-node src/scripts/run-companies-migration.ts",
+    "migrate:saas": "ts-node src/scripts/run-saas-migration.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.835.0",
     "@types/nodemailer": "^6.4.17",
     "@types/puppeteer": "^7.0.4",
     "@types/qrcode": "^1.5.5",
+    "@types/stripe": "^8.0.416",
     "@types/uuid": "^10.0.0",
     "axios": "^1.9.0",
     "bcryptjs": "^2.4.3",
@@ -38,6 +40,7 @@
     "pg": "^8.16.1",
     "puppeteer": "^24.10.0",
     "qrcode": "^1.5.4",
+    "stripe": "^18.2.1",
     "typescript": "^5.2.2",
     "uuid": "^11.1.0",
     "winston": "^3.11.0"
