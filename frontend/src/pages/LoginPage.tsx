@@ -231,9 +231,17 @@ export function LoginPage() {
                   </div>
                   <div className="ml-3 flex-1">
                     <p className="text-sm font-medium text-blue-900">{t('auth.demoAccount')}</p>
-                    <div className="mt-2 text-sm text-blue-700">
-                      <p><span className="font-medium">{t('auth.email')}:</span> demo@warren.vortex.com</p>
-                      <p><span className="font-medium">{t('auth.password')}:</span> WarrenDemo2024!</p>
+                    <div className="mt-2 text-sm text-blue-700 space-y-2">
+                      <div>
+                        <p className="font-semibold text-blue-800 mb-1">Company Admin:</p>
+                        <p><span className="font-medium">{t('auth.email')}:</span> admin@vort-ex.com</p>
+                        <p><span className="font-medium">{t('auth.password')}:</span> vortex123</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-blue-800 mb-1">Platform Admin:</p>
+                        <p><span className="font-medium">{t('auth.email')}:</span> platform@warren.ai</p>
+                        <p><span className="font-medium">{t('auth.password')}:</span> Admin123!</p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -89,9 +89,7 @@ export class ConfigurationServiceDB {
           default_unit as "defaultUnit",
           enable_currency_conversion as "enableCurrencyConversion",
           show_currency_selector as "showCurrencySelector",
-          excel_structure as "excelStructure",
-          pnl_settings as "pnlSettings",
-          cashflow_settings as "cashflowSettings"
+          excel_structure as "excelStructure"
         FROM companies
         ORDER BY created_at DESC
       `
@@ -109,6 +107,57 @@ export class ConfigurationServiceDB {
       }))
     } catch (error) {
       logger.error('Error fetching companies:', error)
+      throw error
+    }
+  }
+
+  async getCompanyById(id: string): Promise<CompanyConfig | null> {
+    try {
+      const query = `
+        SELECT 
+          id,
+          name,
+          currency,
+          scale,
+          is_active as "isActive",
+          created_at as "createdAt",
+          updated_at as "lastUpdated",
+          logo,
+          website,
+          address,
+          phone,
+          email,
+          industry,
+          description,
+          primary_color as "primaryColor",
+          secondary_color as "secondaryColor",
+          default_currency as "defaultCurrency",
+          default_unit as "defaultUnit",
+          enable_currency_conversion as "enableCurrencyConversion",
+          show_currency_selector as "showCurrencySelector",
+          excel_structure as "excelStructure"
+        FROM companies
+        WHERE id = $1
+      `
+      
+      const result = await this.db.query(query, [id])
+      
+      if (result.rows.length === 0) {
+        return null
+      }
+      
+      const row = result.rows[0]
+      return {
+        ...row,
+        currencySettings: {
+          defaultCurrency: row.defaultCurrency || 'ARS',
+          defaultUnit: row.defaultUnit || 'thousands',
+          enableCurrencyConversion: row.enableCurrencyConversion ?? true,
+          showCurrencySelector: row.showCurrencySelector ?? true
+        }
+      }
+    } catch (error) {
+      logger.error('Error fetching company by id:', error)
       throw error
     }
   }
@@ -137,9 +186,7 @@ export class ConfigurationServiceDB {
           default_unit as "defaultUnit",
           enable_currency_conversion as "enableCurrencyConversion",
           show_currency_selector as "showCurrencySelector",
-          excel_structure as "excelStructure",
-          pnl_settings as "pnlSettings",
-          cashflow_settings as "cashflowSettings"
+          excel_structure as "excelStructure"
         FROM companies
         WHERE is_active = true
         LIMIT 1

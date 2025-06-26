@@ -27,12 +27,12 @@ export class EmailService {
   private sesClient: SESClient | null = null;
   private readonly fromEmail: string;
   private readonly fromName: string;
-  private readonly provider: 'ses' | 'smtp' | 'sendgrid';
+  private readonly provider: 'ses' | 'smtp' | 'sendgrid' | 'console';
 
   private constructor() {
     this.fromEmail = process.env.EMAIL_FROM || 'noreply@warren.ai';
     this.fromName = process.env.EMAIL_FROM_NAME || 'Warren Finance';
-    this.provider = (process.env.EMAIL_PROVIDER as 'ses' | 'smtp' | 'sendgrid') || 'smtp';
+    this.provider = (process.env.EMAIL_PROVIDER as 'ses' | 'smtp' | 'sendgrid' | 'console') || 'smtp';
 
     this.initialize();
   }
@@ -55,6 +55,9 @@ export class EmailService {
       case 'sendgrid':
         this.initializeSendGrid();
         break;
+      case 'console':
+        logger.info('Email service initialized in console mode (for development)');
+        break;
     }
   }
 
@@ -69,7 +72,7 @@ export class EmailService {
   }
 
   private initializeSMTP() {
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
@@ -81,7 +84,7 @@ export class EmailService {
   }
 
   private initializeSendGrid() {
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: 'smtp.sendgrid.net',
       port: 587,
       auth: {
@@ -96,7 +99,9 @@ export class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<void> {
     try {
-      if (this.provider === 'ses' && this.sesClient) {
+      if (this.provider === 'console') {
+        await this.sendWithConsole(options);
+      } else if (this.provider === 'ses' && this.sesClient) {
         await this.sendWithSES(options);
       } else if (this.transporter) {
         await this.sendWithNodemailer(options);
@@ -144,6 +149,18 @@ export class EmailService {
       text: options.text || this.htmlToText(options.html),
       attachments: options.attachments
     });
+  }
+
+  private async sendWithConsole(options: EmailOptions): Promise<void> {
+    console.log('\n=== EMAIL (CONSOLE MODE) ===');
+    console.log(`From: ${this.fromName} <${this.fromEmail}>`);
+    console.log(`To: ${options.to}`);
+    console.log(`Subject: ${options.subject}`);
+    console.log('--- TEXT ---');
+    console.log(options.text || this.htmlToText(options.html));
+    console.log('--- HTML ---');
+    console.log(options.html);
+    console.log('=========================\n');
   }
 
   /**

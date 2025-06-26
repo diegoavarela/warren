@@ -205,6 +205,46 @@ export class CompanyUserController {
   }
 
   /**
+   * Get company stats
+   */
+  async getCompanyStats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user || !req.tenantId) {
+        return next(createError('Authentication required', 401));
+      }
+
+      const stats = await CompanyUserService.getCompanyStats(req.tenantId);
+
+      res.json({
+        success: true,
+        ...stats
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get invitations
+   */
+  async getInvitations(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user || !req.tenantId) {
+        return next(createError('Authentication required', 401));
+      }
+
+      const invitations = await CompanyUserService.getInvitations(req.tenantId);
+
+      res.json({
+        success: true,
+        invitations
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Cancel invitation
    */
   async cancelInvitation(req: AuthRequest, res: Response, next: NextFunction) {

@@ -1,7 +1,9 @@
 import { PnLService } from './PnLService'
 import { CashflowService } from './CashflowService'
-import { CashflowServiceV2 } from './CashflowServiceV2'
+import { CashflowServiceV2Enhanced } from './CashflowServiceV2Enhanced'
 import { ExtendedFinancialService } from './ExtendedFinancialService'
+import { FileUploadService } from './FileUploadService'
+import { pool } from '../config/database'
 import { logger } from '../utils/logger'
 import { format } from 'date-fns'
 import { BankData as ExtendedBankData, InvestmentData as ExtendedInvestmentData } from '../interfaces/FinancialData'
@@ -111,14 +113,16 @@ export class FinancialDataAggregator {
   private static instance: FinancialDataAggregator
   private pnlService: PnLService
   private cashflowService: CashflowService
-  private cashflowServiceV2: CashflowServiceV2
+  private cashflowServiceV2: CashflowServiceV2Enhanced
   private extendedService: ExtendedFinancialService
+  private fileUploadService: FileUploadService
 
   private constructor() {
     this.pnlService = PnLService.getInstance()
     this.cashflowService = CashflowService.getInstance()
-    this.cashflowServiceV2 = new CashflowServiceV2()
+    this.cashflowServiceV2 = new CashflowServiceV2Enhanced()
     this.extendedService = ExtendedFinancialService.getInstance()
+    this.fileUploadService = new FileUploadService(pool)
   }
 
   static getInstance(): FinancialDataAggregator {
@@ -128,12 +132,15 @@ export class FinancialDataAggregator {
     return FinancialDataAggregator.instance
   }
 
-  async aggregateAllData(): Promise<FinancialDataContext> {
+  async aggregateAllData(userId?: number, companyId?: string): Promise<FinancialDataContext> {
     try {
-      logger.info('Aggregating all financial data for AI analysis')
+      logger.info(`Aggregating all financial data for AI analysis, userId: ${userId}, companyId: ${companyId}`)
       
-      const pnlData = await this.aggregatePnLData()
-      const cashflowData = await this.aggregateCashflowData()
+      const pnlData = await this.aggregatePnLData(userId, companyId)
+      const cashflowData = await this.aggregateCashflowData(userId, companyId)
+      
+      logger.info(`Aggregated data - PnL hasData: ${pnlData?.metadata?.hasData}, Cashflow hasData: ${cashflowData?.metadata?.hasData}`)
+      logger.info(`Cashflow metrics length: ${cashflowData?.metrics?.inflows?.length || 0}`)
       
       return {
         pnl: pnlData,
@@ -145,7 +152,7 @@ export class FinancialDataAggregator {
     }
   }
 
-  private async aggregatePnLData() {
+  private async aggregatePnLData(userId?: number, companyId?: string) {
     const metrics = this.pnlService.getStoredMetrics()
     const lastUpload = this.pnlService.getLastUploadDate()
     
@@ -301,16 +308,32 @@ export class FinancialDataAggregator {
     }
   }
 
-  private async aggregateCashflowData() {
-    // Try to get data from CashflowServiceV2 first (which is what the controller uses)
-    const storedMetrics = this.cashflowServiceV2.getStoredMetrics()
+  private async aggregateCashflowData(userId?: number, companyId?: string) {
+    logger.info(`Aggregating cashflow data for userId: ${userId}, companyId: ${companyId}`)
     
-    // If no data in V2, fall back to original service
-    const storedData = storedMetrics.length > 0 ? [] : this.cashflowService.getStoredData()
+    // Check if user has valid cashflow uploads in database
+    let uploadData = null
+    if (userId && companyId) {
+      uploadData = await this.fileUploadService.getLatestValidUpload(userId, 'cashflow', companyId)
+      logger.info(`Database upload data found: ${!!uploadData}`)
+    }
+    
+    // Always check in-memory data first since that's what the dashboard uses
+    const storedMetrics = this.cashflowServiceV2.getStoredMetrics()
+    const storedData = this.cashflowService.getStoredData()
     const lastUpload = this.cashflowService.getLastUploadDate() || (storedMetrics.length > 0 ? new Date() : null)
     
-    // Check if we have data from either source
-    if (storedMetrics.length === 0 && (!storedData || storedData.length === 0)) {
+    logger.info(`In-memory cashflow data - metrics: ${storedMetrics.length}, legacy data: ${storedData ? storedData.length : 0}`)
+    
+    // If we have in-memory data, use it (this is what the dashboard uses)
+    if (storedMetrics.length > 0 || (storedData && storedData.length > 0)) {
+      logger.info('Using in-memory data for AI analysis')
+      return this.aggregateFromInMemoryData(storedMetrics, storedData, lastUpload)
+    }
+    
+    // Otherwise, try database uploads
+    if (!uploadData) {
+      // No data available from any source
       return {
         availableMonths: [],
         metrics: {
@@ -330,8 +353,39 @@ export class FinancialDataAggregator {
       }
     }
 
-    // Get extended metrics
+    // We have a valid cashflow upload, create summary from database record
     const extendedMetrics = await this.extendedService.getExtendedMetrics()
+    
+    // For now, create a simple summary based on upload metadata
+    // In the future, we could store parsed metrics in the database
+    const dataSummary = uploadData.dataSummary || {}
+    const monthsAvailable = uploadData.monthsAvailable || 0
+    
+    return {
+      availableMonths: monthsAvailable > 0 ? this.generateMonthsFromRange(uploadData.periodStart, uploadData.periodEnd) : [],
+      metrics: {
+        inflows: [],
+        outflows: [],
+        netCashflow: [],
+        bankBalances: [],
+        investments: [],
+        cashPosition: []
+      },
+      metadata: {
+        lastUpload: uploadData.uploadDate,
+        dataRange: uploadData.periodStart && uploadData.periodEnd ? {
+          start: format(uploadData.periodStart, 'MMMM'),
+          end: format(uploadData.periodEnd, 'MMMM')
+        } : null,
+        currency: 'ARS',
+        hasData: true
+      }
+    }
+  }
+  
+  private aggregateFromInMemoryData(storedMetrics: any[], storedData: any[], lastUpload: Date | null) {
+    // Get extended metrics
+    const extendedMetrics = this.extendedService.getExtendedMetrics()
     
     // If we have data from CashflowServiceV2, use that
     if (storedMetrics.length > 0) {
@@ -543,12 +597,27 @@ export class FinancialDataAggregator {
     return new Date(currentYear, monthIndex, 1).toISOString()
   }
 
+  private generateMonthsFromRange(startDate?: Date, endDate?: Date): string[] {
+    if (!startDate || !endDate) return []
+    
+    const months: string[] = []
+    const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
+    
+    while (current <= end) {
+      months.push(format(current, 'MMMM'))
+      current.setMonth(current.getMonth() + 1)
+    }
+    
+    return months
+  }
+
   // Helper method to check data availability for specific queries
-  checkDataAvailability(requiredMetrics: string[]): {
+  async checkDataAvailability(requiredMetrics: string[], userId?: number, companyId?: string): Promise<{
     available: string[]
     missing: string[]
     isComplete: boolean
-  } {
+  }> {
     const availableMetrics = new Set<string>()
     
     // Check P&L metrics
@@ -569,28 +638,33 @@ export class FinancialDataAggregator {
       }
     }
     
-    // Check Cashflow metrics - first check V2, then fallback to V1
-    const cashflowV2Metrics = this.cashflowServiceV2.getStoredMetrics()
-    const cashflowData = this.cashflowService.getStoredData()
+    // Check Cashflow metrics - check database first, then in-memory
+    let hasCashflowData = false
+    if (userId && companyId) {
+      const uploadData = await this.fileUploadService.getLatestValidUpload(userId, 'cashflow', companyId)
+      if (uploadData) {
+        hasCashflowData = true
+      }
+    }
     
-    if (cashflowV2Metrics.length > 0) {
-      // V2 data is available
+    if (!hasCashflowData) {
+      // Fallback to in-memory data
+      const cashflowV2Metrics = this.cashflowServiceV2.getStoredMetrics()
+      const cashflowData = this.cashflowService.getStoredData()
+      
+      if (cashflowV2Metrics.length > 0) {
+        hasCashflowData = true
+      } else if (cashflowData && cashflowData.length > 0) {
+        hasCashflowData = true
+      }
+    }
+    
+    if (hasCashflowData) {
       availableMetrics.add('cash_position')
       availableMetrics.add('bank_balances')
       availableMetrics.add('cash_inflows')
       availableMetrics.add('cash_outflows')
       availableMetrics.add('investment_income')
-    } else if (cashflowData && cashflowData.length > 0) {
-      // V1 data is available
-      availableMetrics.add('cash_position')
-      availableMetrics.add('bank_balances')
-      availableMetrics.add('cash_inflows')
-      availableMetrics.add('cash_outflows')
-      
-      // Check for investment data in description
-      if (cashflowData.some((r: CashflowEntry) => r.description?.includes('Dividends'))) {
-        availableMetrics.add('investment_income')
-      }
     }
     
     const available = requiredMetrics.filter(m => availableMetrics.has(m))

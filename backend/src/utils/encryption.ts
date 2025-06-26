@@ -228,7 +228,7 @@ export class EncryptionService {
    * Generate a TOTP secret and encrypt it
    */
   async generateEncryptedTOTPSecret(companyId: string): Promise<{ encrypted: string; qrData: string }> {
-    const secret = crypto.randomBytes(20).toString('base32');
+    const secret = crypto.randomBytes(20).toString('hex');
     const encrypted = await this.encryptString(secret, companyId);
     
     // Generate QR code data (this would be used with otplib)

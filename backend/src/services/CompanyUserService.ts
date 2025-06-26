@@ -237,6 +237,36 @@ export class CompanyUserService {
    * Get company users
    */
   static async getCompanyUsers(companyId: string, requestingUserId: number) {
+    // Platform admins can see all users across all companies
+    if (companyId === 'platform') {
+      const result = await pool.query(
+        `SELECT 
+          u.id, u.email, u.role, u.is_active, u.is_2fa_enabled,
+          u.created_at, u.last_login, u.email_verified,
+          u.company_id, c.name as company_name,
+          inviter.email as invited_by_email
+         FROM users u
+         LEFT JOIN companies c ON u.company_id = c.id
+         LEFT JOIN users inviter ON u.invited_by = inviter.id
+         ORDER BY u.created_at DESC`
+      );
+      
+      return result.rows.map(user => ({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isActive: user.is_active,
+        is2FAEnabled: user.is_2fa_enabled,
+        emailVerified: user.email_verified,
+        companyId: user.company_id,
+        companyName: user.company_name,
+        createdAt: user.created_at,
+        lastLogin: user.last_login,
+        invitedByEmail: user.invited_by_email
+      }));
+    }
+
+    // Regular company users see only their company's users
     const result = await pool.query(
       `SELECT 
         u.id, u.email, u.role, u.is_active, u.is_2fa_enabled,
@@ -442,6 +472,34 @@ export class CompanyUserService {
    * Get pending invitations
    */
   static async getPendingInvitations(companyId: string) {
+    // Platform admins can see all pending invitations across all companies
+    if (companyId === 'platform') {
+      const result = await pool.query(
+        `SELECT 
+          i.id, i.email, i.role, i.created_at,
+          i.expires_at, i.company_id, c.name as company_name,
+          u.email as invited_by_email
+         FROM user_invitations i
+         JOIN users u ON i.invited_by = u.id
+         LEFT JOIN companies c ON i.company_id = c.id
+         WHERE i.accepted_at IS NULL 
+           AND i.expires_at > NOW()
+         ORDER BY i.created_at DESC`
+      );
+      
+      return result.rows.map(inv => ({
+        id: inv.id,
+        email: inv.email,
+        role: inv.role,
+        companyId: inv.company_id,
+        companyName: inv.company_name,
+        createdAt: inv.created_at,
+        expiresAt: inv.expires_at,
+        invitedByEmail: inv.invited_by_email
+      }));
+    }
+
+    // Regular company users see only their company's invitations
     const result = await pool.query(
       `SELECT 
         i.id, i.email, i.role, i.created_at,
@@ -563,6 +621,57 @@ export class CompanyUserService {
       userLimit: user_limit,
       currentUsers: currentCount
     };
+  }
+
+  /**
+   * Get company statistics
+   */
+  static async getCompanyStats(companyId: string) {
+    const result = await pool.query(
+      `SELECT 
+        c.subscription_tier,
+        c.user_limit,
+        COUNT(DISTINCT u.id) as total_users,
+        COUNT(DISTINCT u.id) FILTER (WHERE u.is_active = true) as active_users,
+        COUNT(DISTINCT ui.id) FILTER (WHERE ui.accepted_at IS NULL AND ui.expires_at > NOW()) as pending_invitations
+      FROM companies c
+      LEFT JOIN users u ON c.id = u.company_id
+      LEFT JOIN user_invitations ui ON c.id = ui.company_id
+      WHERE c.id = $1
+      GROUP BY c.id, c.subscription_tier, c.user_limit`,
+      [companyId]
+    );
+
+    return result.rows[0] || {
+      subscription_tier: 'basic',
+      user_limit: 5,
+      total_users: 0,
+      active_users: 0,
+      pending_invitations: 0
+    };
+  }
+
+  /**
+   * Get invitations
+   */
+  static async getInvitations(companyId: string) {
+    const result = await pool.query(
+      `SELECT 
+        ui.id,
+        ui.email,
+        ui.role,
+        ui.created_at,
+        ui.expires_at,
+        ui.accepted_at,
+        u.email as invited_by_email
+      FROM user_invitations ui
+      LEFT JOIN users u ON ui.invited_by = u.id
+      WHERE ui.company_id = $1
+      ORDER BY ui.created_at DESC`,
+      [companyId]
+    );
+
+    return result.rows;
   }
 
   /**

@@ -21,6 +21,8 @@ import { AnalysisPage } from './pages/AnalysisPage'
 import { AnalysisPageTest } from './pages/AnalysisPageTest'
 import { AnalysisPageFixed } from './pages/AnalysisPageFixed'
 import { AnalysisPageDemo } from './pages/AnalysisPageDemo'
+import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard'
+import { CompanyUsersPage } from './pages/CompanyUsersPage'
 import './i18n/config'
 
 function App() {
@@ -108,6 +110,20 @@ function App() {
           <Layout>
             <AnalysisPageFixed />
           </Layout>
+        } />
+        <Route path="/platform-admin" element={
+          <ProtectedRoute>
+            <Layout>
+              <PlatformAdminDashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/users" element={
+          <ProtectedRoute>
+            <Layout>
+              <CompanyUsersPage />
+            </Layout>
+          </ProtectedRoute>
         } />
       </Routes>
     </AuthProvider>

@@ -30,6 +30,7 @@ export interface FileUploadRecord {
 
 export interface FileUploadCreateDto {
   userId: number
+  companyId: string
   fileType: 'cashflow' | 'pnl' | 'other'
   filename: string
   originalFilename: string
@@ -74,21 +75,22 @@ export class FileUploadService {
       const softDeleteQuery = `
         UPDATE file_uploads 
         SET deleted_at = CURRENT_TIMESTAMP 
-        WHERE user_id = $1 AND file_type = $2 AND deleted_at IS NULL
+        WHERE user_id = $1 AND file_type = $2 AND company_id = $3 AND deleted_at IS NULL
       `
-      await client.query(softDeleteQuery, [data.userId, data.fileType])
+      await client.query(softDeleteQuery, [data.userId, data.fileType, data.companyId])
       
       // Now create the new upload record
       const insertQuery = `
         INSERT INTO file_uploads (
-          user_id, file_type, filename, original_filename, 
+          user_id, company_id, file_type, filename, original_filename, 
           file_size, mime_type, storage_path
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `
       
       const values = [
         data.userId,
+        data.companyId,
         data.fileType,
         data.filename,
         data.originalFilename,
@@ -259,20 +261,27 @@ export class FileUploadService {
   /**
    * Get the latest valid file upload for a user and file type
    */
-  async getLatestValidUpload(userId: number, fileType: 'cashflow' | 'pnl'): Promise<FileUploadRecord | null> {
-    const query = `
+  async getLatestValidUpload(userId: number, fileType: 'cashflow' | 'pnl', companyId?: string): Promise<FileUploadRecord | null> {
+    let query = `
       SELECT * FROM file_uploads 
       WHERE user_id = $1 
         AND file_type = $2 
         AND deleted_at IS NULL
         AND processing_status = 'completed'
         AND is_valid = TRUE
-      ORDER BY upload_date DESC 
-      LIMIT 1
     `
+    const params: (number | string)[] = [userId, fileType]
+    
+    // Add company filter if provided
+    if (companyId) {
+      query += ` AND company_id = $3`
+      params.push(companyId)
+    }
+    
+    query += ` ORDER BY upload_date DESC LIMIT 1`
     
     try {
-      const result = await this.pool.query(query, [userId, fileType])
+      const result = await this.pool.query(query, params)
       if (result.rows.length === 0) {
         return null
       }
@@ -286,14 +295,14 @@ export class FileUploadService {
   /**
    * Get data availability summary for a user
    */
-  async getDataAvailability(userId: number): Promise<{
+  async getDataAvailability(userId: number, companyId?: string): Promise<{
     cashflow: FileUploadRecord | null
     pnl: FileUploadRecord | null
   }> {
     try {
       const [cashflow, pnl] = await Promise.all([
-        this.getLatestValidUpload(userId, 'cashflow'),
-        this.getLatestValidUpload(userId, 'pnl')
+        this.getLatestValidUpload(userId, 'cashflow', companyId),
+        this.getLatestValidUpload(userId, 'pnl', companyId)
       ])
 
       return { cashflow, pnl }

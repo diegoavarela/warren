@@ -3,7 +3,14 @@ import { ConfigurationServiceDB } from '../services/ConfigurationServiceDB'
 import { logger } from '../utils/logger'
 
 interface AuthRequest extends Request {
-  user?: any
+  user?: {
+    id: string
+    email: string
+    role?: string
+    companyId?: string
+    companyName?: string
+  }
+  tenantId?: string
 }
 
 export class ConfigurationController {
@@ -15,11 +22,29 @@ export class ConfigurationController {
 
   async getCompanies(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const companies = await this.configService.getCompanies()
-      
+      // Platform admins can see all companies
+      if (req.user?.role === 'platform_admin') {
+        const companies = await this.configService.getCompanies()
+        res.json({
+          success: true,
+          data: companies
+        })
+        return
+      }
+
+      // Company users can only see their own company
+      if (req.user?.companyId) {
+        const company = await this.configService.getCompanyById(req.user.companyId)
+        res.json({
+          success: true,
+          data: company ? [company] : []
+        })
+        return
+      }
+
       res.json({
         success: true,
-        data: companies
+        data: []
       })
     } catch (error) {
       logger.error('Error getting companies:', error)
@@ -30,8 +55,16 @@ export class ConfigurationController {
   async getCompany(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params
-      const companies = await this.configService.getCompanies()
-      const company = companies.find(c => c.id === id)
+      
+      // Company users can only access their own company
+      if (req.user?.role !== 'platform_admin' && req.user?.companyId !== id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        })
+      }
+
+      const company = await this.configService.getCompanyById(id)
       
       if (!company) {
         return res.status(404).json({
@@ -52,19 +85,33 @@ export class ConfigurationController {
 
   async getActiveCompany(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const company = await this.configService.getActiveCompany()
-      
-      if (!company) {
+      // For multi-tenant, the active company is the user's company
+      if (req.user?.companyId) {
+        const company = await this.configService.getCompanyById(req.user.companyId)
+        
+        if (!company) {
+          return res.status(404).json({
+            success: false,
+            message: 'Company not found'
+          })
+        }
+
+        res.json({
+          success: true,
+          data: company
+        })
+      } else if (req.user?.role === 'platform_admin') {
+        // Platform admins don't have an active company
+        return res.status(400).json({
+          success: false,
+          message: 'Platform admins do not have an active company'
+        })
+      } else {
         return res.status(404).json({
           success: false,
           message: 'No active company found'
         })
       }
-
-      res.json({
-        success: true,
-        data: company
-      })
     } catch (error) {
       logger.error('Error getting active company:', error)
       next(error)
@@ -73,6 +120,14 @@ export class ConfigurationController {
 
   async addCompany(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      // Only platform admins can add companies
+      if (req.user?.role !== 'platform_admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only platform administrators can create companies'
+        })
+      }
+
       const { name, currency, scale } = req.body
 
       if (!name || !currency || !scale) {
@@ -108,6 +163,14 @@ export class ConfigurationController {
       const { id } = req.params
       const updates = req.body
 
+      // Company users can only update their own company
+      if (req.user?.role !== 'platform_admin' && req.user?.companyId !== id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        })
+      }
+
       const company = await this.configService.updateCompany(id, updates)
       
       if (!company) {
@@ -132,6 +195,14 @@ export class ConfigurationController {
 
   async deleteCompany(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      // Only platform admins can delete companies
+      if (req.user?.role !== 'platform_admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only platform administrators can delete companies'
+        })
+      }
+
       const { id } = req.params
       
       await this.configService.deleteCompany(id)
@@ -150,24 +221,13 @@ export class ConfigurationController {
 
   async setActiveCompany(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params
-      
-      await this.configService.setActiveCompany(id)
-      
-      logger.info(`Active company set by user ${req.user?.email}: ${id}`)
-
-      res.json({
-        success: true,
-        message: 'Active company updated successfully'
+      // This method is deprecated in multi-tenant architecture
+      return res.status(400).json({
+        success: false,
+        message: 'This endpoint is deprecated. Active company is determined by user context in multi-tenant architecture.'
       })
     } catch (error) {
       logger.error('Error setting active company:', error)
-      if (error instanceof Error && error.message === 'Company not found') {
-        return res.status(404).json({
-          success: false,
-          message: 'Company not found'
-        })
-      }
       next(error)
     }
   }
@@ -203,6 +263,14 @@ export class ConfigurationController {
     try {
       const { companyId } = req.params
       const { structure } = req.body
+
+      // Company users can only save structure for their own company
+      if (req.user?.role !== 'platform_admin' && req.user?.companyId !== companyId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        })
+      }
 
       if (!structure) {
         return res.status(400).json({

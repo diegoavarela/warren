@@ -4,6 +4,11 @@ import { authService } from '../services/authService'
 interface User {
   id: string
   email: string
+  role: 'platform_admin' | 'company_admin' | 'company_employee'
+  companyId?: string
+  companyName?: string
+  subscriptionTier?: string
+  is2FAEnabled?: boolean
 }
 
 interface AuthContextType {
@@ -11,6 +16,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   loading: boolean
+  setup2FA: () => Promise<any>
+  verify2FA: (code: string) => Promise<void>
+  disable2FA: (code: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -34,7 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       authService.getProfile()
         .then(response => {
-          setUser(response.data.user)
+          if (response.data.success) {
+            setUser(response.data.user)
+          } else {
+            localStorage.removeItem('token')
+          }
         })
         .catch(() => {
           localStorage.removeItem('token')
@@ -49,8 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await authService.login(email, password)
-    localStorage.setItem('token', response.data.token)
-    setUser(response.data.user)
+    
+    if (response.data.success) {
+      localStorage.setItem('token', response.data.token)
+      setUser(response.data.user)
+    } else {
+      throw new Error(response.data.error || 'Login failed')
+    }
   }
 
   const logout = async () => {
@@ -77,8 +94,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const setup2FA = async () => {
+    const response = await authService.setup2FA()
+    return response.data
+  }
+
+  const verify2FA = async (code: string) => {
+    const response = await authService.verify2FA(code)
+    if (response.data.success) {
+      // Update user state to reflect 2FA is now enabled
+      setUser(prev => prev ? { ...prev, is2FAEnabled: true } : null)
+    } else {
+      throw new Error(response.data.error || '2FA verification failed')
+    }
+  }
+
+  const disable2FA = async (code: string) => {
+    const response = await authService.disable2FA(code)
+    if (response.data.success) {
+      // Update user state to reflect 2FA is now disabled
+      setUser(prev => prev ? { ...prev, is2FAEnabled: false } : null)
+    } else {
+      throw new Error(response.data.error || '2FA disable failed')
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, setup2FA, verify2FA, disable2FA }}>
       {children}
     </AuthContext.Provider>
   )

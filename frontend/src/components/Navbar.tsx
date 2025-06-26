@@ -10,6 +10,8 @@ import {
   XMarkIcon,
   SparklesIcon,
   ChevronDownIcon,
+  BuildingOfficeIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
 import { LanguageSelector } from './LanguageSelector'
@@ -32,15 +34,28 @@ export const Navbar: React.FC = () => {
     ? { user: { name: 'Demo User', email: 'demo@warren.vortex.com' }, logout: () => navigate('/') }
     : authHook
 
+  // Define role-based navigation
   const navigationItems = isDemoMode ? [
     { path: '/demo/pnl', label: t('nav.pnl'), icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
     { path: '/demo/cashflow', label: t('nav.cashflow'), icon: BanknotesIcon, gradient: 'from-violet-600 to-indigo-600' },
-  ] : [
+  ] : user?.role === 'platform_admin' ? [
+    // Platform admin sees everything
+    { path: '/platform-admin', label: 'Platform Admin', icon: BuildingOfficeIcon, gradient: 'from-amber-600 to-orange-600' },
     { path: '/home', label: t('nav.home'), icon: HomeIcon, gradient: 'from-purple-600 to-violet-600' },
     { path: '/pnl', label: t('nav.pnl'), icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
     { path: '/cashflow', label: t('nav.cashflow'), icon: BanknotesIcon, gradient: 'from-violet-600 to-indigo-600' },
     { path: '/analysis', label: t('nav.aiAnalysis'), icon: SparklesIcon, gradient: 'from-pink-600 to-purple-600' },
-    { path: '/configuration', label: t('nav.configuration'), icon: CogIcon, gradient: 'from-slate-600 to-gray-600' }
+  ] : user?.role === 'company_admin' ? [
+    // Company admin - core features in navbar
+    { path: '/home', label: t('nav.home'), icon: HomeIcon, gradient: 'from-purple-600 to-violet-600' },
+    { path: '/pnl', label: t('nav.pnl'), icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
+    { path: '/cashflow', label: t('nav.cashflow'), icon: BanknotesIcon, gradient: 'from-violet-600 to-indigo-600' },
+    { path: '/analysis', label: t('nav.aiAnalysis'), icon: SparklesIcon, gradient: 'from-pink-600 to-purple-600' },
+  ] : [
+    // Company employee - most basic menu
+    { path: '/home', label: t('nav.home'), icon: HomeIcon, gradient: 'from-purple-600 to-violet-600' },
+    { path: '/pnl', label: t('nav.pnl'), icon: ChartBarIcon, gradient: 'from-emerald-600 to-teal-600' },
+    { path: '/cashflow', label: t('nav.cashflow'), icon: BanknotesIcon, gradient: 'from-violet-600 to-indigo-600' },
   ]
 
   const isActive = (path: string) => {
@@ -169,6 +184,34 @@ export const Navbar: React.FC = () => {
                   <p className="text-sm font-medium text-gray-900">{user?.email?.split('@')[0] || 'Admin User'}</p>
                   <p className="text-xs text-gray-500">{user?.email || 'admin@vort-ex.com'}</p>
                 </div>
+                
+                {/* Admin Menu Items */}
+                {user?.role === 'company_admin' && !isDemoMode && (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate('/users')
+                        setDropdownOpen(false)
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <UserGroupIcon className="h-4 w-4" />
+                      <span>{t('nav.users')}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/configuration')
+                        setDropdownOpen(false)
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <CogIcon className="h-4 w-4" />
+                      <span>{t('nav.configuration')}</span>
+                    </button>
+                    <div className="border-t border-gray-100 my-2"></div>
+                  </>
+                )}
+                
                 <button
                   onClick={() => {
                     handleSignOut()
@@ -224,6 +267,35 @@ export const Navbar: React.FC = () => {
                   </button>
                 )
               })}
+              
+              {/* Admin functions in mobile menu */}
+              {user?.role === 'company_admin' && !isDemoMode && (
+                <>
+                  <div className="px-4 py-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Admin</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigate('/users')
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-purple-50/50"
+                  >
+                    <UserGroupIcon className="h-5 w-5" />
+                    <span>{t('nav.users')}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate('/configuration')
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-purple-50/50"
+                  >
+                    <CogIcon className="h-5 w-5" />
+                    <span>{t('nav.configuration')}</span>
+                  </button>
+                </>
+              )}
               <div className="px-4 py-3 border-t border-gray-100">
                 <LanguageSelector />
               </div>

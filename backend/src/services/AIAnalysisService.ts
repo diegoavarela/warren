@@ -87,12 +87,12 @@ export class AIAnalysisService {
     return AIAnalysisService.instance
   }
 
-  async processQuery(query: AnalysisQuery): Promise<AnalysisResponse> {
+  async processQuery(query: AnalysisQuery, userId?: number, companyId?: string): Promise<AnalysisResponse> {
     try {
       logger.info('Processing AI analysis query:', query.query)
       
       // Aggregate all available financial data
-      const financialData = await this.dataAggregator.aggregateAllData()
+      const financialData = await this.dataAggregator.aggregateAllData(userId, companyId)
       
       // Validate data availability
       const validation = this.validateQuery(query.query, financialData)

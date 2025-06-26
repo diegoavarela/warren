@@ -7,6 +7,7 @@ import { logger } from '../utils/logger'
 
 interface AuthRequest extends Request {
   user?: any
+  tenantId?: string
 }
 
 export class AIAnalysisController {
@@ -37,7 +38,7 @@ export class AIAnalysisController {
         query,
         context,
         includeCharts: includeCharts !== false // Default to true
-      })
+      }, req.user?.id, req.tenantId)
 
       res.json({
         success: true,
@@ -53,38 +54,43 @@ export class AIAnalysisController {
     try {
       logger.info(`Data summary request from user ${req.user?.email}`)
 
-      // Get upload information from database
-      const uploadData = await this.fileUploadService.getDataAvailability(parseInt(req.user!.id))
+      // Get actual data availability from the aggregator (same as AI analysis uses)
+      const financialData = await this.dataAggregator.aggregateAllData(parseInt(req.user!.id), req.tenantId)
       
-      const financialData = await this.dataAggregator.aggregateAllData()
+      // Get upload information from database for metadata
+      const uploadData = await this.fileUploadService.getDataAvailability(parseInt(req.user!.id), req.tenantId)
       
-      // Create a summary of available data
+      // Debug logging
+      logger.info(`Data summary - PnL hasData: ${financialData.pnl?.metadata?.hasData}, inflows length: ${financialData.cashflow?.metrics?.inflows?.length || 0}`)
+      logger.info(`Database uploads - PnL: ${!!uploadData.pnl}, Cashflow: ${!!uploadData.cashflow}`)
+      
+      // Create a summary based on actual accessible data
       const summary = {
         pnl: {
-          hasData: financialData.pnl.metadata.hasData,
-          monthsAvailable: financialData.pnl.availableMonths.length,
-          dateRange: financialData.pnl.metadata.dataRange,
+          hasData: (financialData.pnl?.metadata?.hasData || false) && !!uploadData.pnl,
+          monthsAvailable: financialData.pnl?.availableMonths?.length || 0,
+          dateRange: financialData.pnl?.metadata?.dataRange || null,
           metrics: {
-            revenue: financialData.pnl.metrics.revenue.length > 0,
-            costs: financialData.pnl.metrics.costs.length > 0,
-            margins: financialData.pnl.metrics.margins.length > 0,
-            personnelCosts: financialData.pnl.metrics.personnelCosts.some(p => p.total > 0),
-            ebitda: financialData.pnl.metrics.ebitda.length > 0
+            revenue: (financialData.pnl?.metrics?.revenue?.length || 0) > 0,
+            costs: (financialData.pnl?.metrics?.costs?.length || 0) > 0,
+            margins: (financialData.pnl?.metrics?.margins?.length || 0) > 0,
+            personnelCosts: (financialData.pnl?.metrics?.personnelCosts?.length || 0) > 0,
+            ebitda: (financialData.pnl?.metrics?.ebitda?.length || 0) > 0
           },
-          lastUpload: uploadData.pnl?.uploadDate || financialData.pnl.metadata.lastUpload
+          lastUpload: uploadData.pnl?.uploadDate || null
         },
         cashflow: {
-          hasData: financialData.cashflow.metadata.hasData,
-          monthsAvailable: financialData.cashflow.availableMonths.length,
-          dateRange: financialData.cashflow.metadata.dataRange,
+          hasData: (financialData.cashflow?.metadata?.hasData || false) && !!uploadData.cashflow,
+          monthsAvailable: financialData.cashflow?.availableMonths?.length || 0,
+          dateRange: financialData.cashflow?.metadata?.dataRange || null,
           metrics: {
-            cashPosition: financialData.cashflow.metrics.cashPosition.length > 0,
-            bankBalances: financialData.cashflow.metrics.bankBalances.length > 0,
-            investments: financialData.cashflow.metrics.investments.length > 0,
-            inflows: financialData.cashflow.metrics.inflows.length > 0,
-            outflows: financialData.cashflow.metrics.outflows.length > 0
+            cashPosition: (financialData.cashflow?.metrics?.cashPosition?.length || 0) > 0,
+            bankBalances: (financialData.cashflow?.metrics?.bankBalances?.length || 0) > 0,
+            investments: (financialData.cashflow?.metrics?.investments?.length || 0) > 0,
+            inflows: (financialData.cashflow?.metrics?.inflows?.length || 0) > 0,
+            outflows: (financialData.cashflow?.metrics?.outflows?.length || 0) > 0
           },
-          lastUpload: uploadData.cashflow?.uploadDate || financialData.cashflow.metadata.lastUpload
+          lastUpload: uploadData.cashflow?.uploadDate || null
         }
       }
 
@@ -102,7 +108,10 @@ export class AIAnalysisController {
     try {
       logger.info(`Suggested queries request from user ${req.user?.email}`)
 
-      const financialData = await this.dataAggregator.aggregateAllData()
+      const financialData = await this.dataAggregator.aggregateAllData(
+        parseInt(req.user!.id), 
+        req.tenantId
+      )
       const suggestions = this.aiService.getSuggestedQueries(financialData)
 
       res.json({
@@ -129,7 +138,11 @@ export class AIAnalysisController {
         })
       }
 
-      const availability = this.dataAggregator.checkDataAvailability(requiredMetrics)
+      const availability = await this.dataAggregator.checkDataAvailability(
+        requiredMetrics, 
+        parseInt(req.user!.id), 
+        req.tenantId
+      )
 
       res.json({
         success: true,

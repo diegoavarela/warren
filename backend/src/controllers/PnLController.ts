@@ -6,6 +6,7 @@ import { logger } from '../utils/logger'
 
 interface AuthRequest extends Request {
   user?: any
+  tenantId?: string
 }
 
 export class PnLController {
@@ -171,6 +172,7 @@ export class PnLController {
       // Create file upload record
       const fileUploadRecord = await this.fileUploadService.createFileUpload({
         userId: parseInt(req.user!.id),
+        companyId: req.tenantId!,
         fileType: 'pnl',
         filename: `pnl_${Date.now()}_${req.file.originalname}`,
         originalFilename: req.file.originalname,

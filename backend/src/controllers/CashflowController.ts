@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import ExcelJS from 'exceljs';
 import { AuthRequest } from '../middleware/auth';
+
+interface TenantAuthRequest extends AuthRequest {
+  tenantId?: string;
+}
 import { createError } from '../middleware/errorHandler';
 import { CashflowServiceV2Enhanced } from '../services/CashflowServiceV2Enhanced';
 import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
@@ -24,7 +28,7 @@ export class CashflowController {
   private fileUploadService = new FileUploadService(pool);
   private aiExcelService = require('../services/AIExcelAnalysisService').AIExcelAnalysisService.getInstance();
 
-  async uploadFile(req: AuthRequest, res: Response, next: NextFunction) {
+  async uploadFile(req: TenantAuthRequest, res: Response, next: NextFunction) {
     let fileUploadId: number | null = null;
     
     try {
@@ -37,6 +41,7 @@ export class CashflowController {
       // Create file upload record
       const fileUploadRecord = await this.fileUploadService.createFileUpload({
         userId: parseInt(req.user!.id),
+        companyId: req.tenantId!,
         fileType: 'cashflow',
         filename: `cashflow_${Date.now()}_${req.file.originalname}`,
         originalFilename: req.file.originalname,

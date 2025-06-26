@@ -4,6 +4,7 @@ import { CashflowController } from '../controllers/CashflowController';
 import { DebugController } from '../controllers/DebugController';
 import { ExcelMappingController } from '../controllers/ExcelMappingController';
 import { authMiddleware } from '../middleware/auth';
+import { tenantContext } from '../middleware/tenantContext';
 
 const router = Router();
 const cashflowController = new CashflowController();
@@ -34,8 +35,9 @@ const upload = multer({
 router.post('/debug/investment-parsing', upload.single('file'), debugController.debugInvestmentParsing.bind(debugController));
 router.post('/debug/excel-mapping', upload.single('file'), excelMappingController.showInvestmentDataMapping.bind(excelMappingController));
 
-// All routes require authentication
+// All routes require authentication and tenant context
 router.use(authMiddleware);
+router.use(tenantContext);
 
 router.post('/upload', upload.single('file'), cashflowController.uploadFile.bind(cashflowController));
 router.get('/dashboard', cashflowController.getDashboard.bind(cashflowController));

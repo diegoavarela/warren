@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { AIAnalysisController } from '../controllers/AIAnalysisController'
 import { authMiddleware } from '../middleware/auth'
+import { tenantContext } from '../middleware/tenantContext'
 import { logger } from '../utils/logger'
 
 const router = Router()
@@ -9,8 +10,9 @@ const router = Router()
 const aiController = new AIAnalysisController()
 logger.info('AI Analysis service initialized successfully')
 
-// All routes require authentication
+// All routes require authentication and tenant context
 router.use(authMiddleware)
+router.use(tenantContext)
 
 
 // Main analysis endpoint

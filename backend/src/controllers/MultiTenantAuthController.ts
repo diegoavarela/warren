@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { TwoFactorService } from '../services/TwoFactorService';
+import { CompanyUserService } from '../services/CompanyUserService';
 import { logger } from '../utils/logger';
 import { pool } from '../config/database';
 import { encryptionService } from '../utils/encryption';
@@ -435,6 +436,39 @@ export class MultiTenantAuthController {
       res.json({
         success: true,
         message: 'Logged out successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Accept invitation (public route)
+   */
+  async acceptInvitation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token, password, firstName, lastName } = req.body;
+
+      if (!token || !password) {
+        return next(createError('Token and password are required', 400));
+      }
+
+      if (password.length < 8) {
+        return next(createError('Password must be at least 8 characters', 400));
+      }
+
+      const result = await CompanyUserService.acceptInvitation(
+        token,
+        password,
+        firstName,
+        lastName
+      );
+
+      res.json({
+        success: true,
+        message: 'Account created successfully. You can now log in.',
+        userId: result.userId,
+        companyId: result.companyId
       });
     } catch (error) {
       next(error);

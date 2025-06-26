@@ -7,6 +7,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { authRouter } from './routes/auth';
+import { multiTenantAuthRouter } from './routes/multiTenantAuth';
+import { companyUsersRouter } from './routes/companyUsers';
+import { platformAdminRouter } from './routes/platformAdmin';
 import { cashflowRouter } from './routes/cashflow';
 import { pnlRouter } from './routes/pnl';
 import { teamRouter } from './routes/team';
@@ -66,7 +69,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+// Legacy auth route (for backward compatibility)
 app.use('/api/auth', authRouter);
+
+// Multi-tenant routes
+app.use('/api/v2/auth', multiTenantAuthRouter);
+app.use('/api/v2/users', companyUsersRouter);
+app.use('/api/v2/platform', platformAdminRouter);
+
+// Existing routes
 app.use('/api/cashflow', cashflowRouter);
 app.use('/api/pnl', pnlRouter);
 app.use('/api/team', teamRouter);

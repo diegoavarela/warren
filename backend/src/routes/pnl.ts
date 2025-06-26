@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import { authMiddleware } from '../middleware/auth'
+import { tenantContext } from '../middleware/tenantContext'
 import { PnLController } from '../controllers/PnLController'
 
 const router = Router()
@@ -21,8 +22,9 @@ const upload = multer({
 
 const pnlController = new PnLController()
 
-// All routes require authentication
+// All routes require authentication and tenant context
 router.use(authMiddleware)
+router.use(tenantContext)
 
 // P&L routes
 router.post('/upload', upload.single('file'), (req, res, next) => pnlController.uploadPnL(req, res, next))

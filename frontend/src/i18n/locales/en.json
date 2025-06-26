@@ -8,7 +8,8 @@
     "dataManagement": "Data Management",
     "logout": "Logout",
     "aiAnalysis": "AI Analysis",
-    "upload": "Upload Data"
+    "upload": "Upload Data",
+    "users": "Users"
   },
   "navigation": {
     "dashboard": "Dashboard",

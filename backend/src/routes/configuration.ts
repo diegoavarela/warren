@@ -2,6 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { ConfigurationController } from '../controllers/ConfigurationController'
 import { authMiddleware } from '../middleware/auth'
+import { tenantContext, requirePermission } from '../middleware/tenantContext'
 
 const router = Router()
 const configController = new ConfigurationController()
@@ -22,20 +23,49 @@ const upload = multer({
   }
 })
 
-// Apply authentication middleware to all routes
+// Apply authentication and tenant context middleware to all routes
 router.use(authMiddleware)
+router.use(tenantContext)
 
 // Company management routes
-router.get('/companies', configController.getCompanies.bind(configController))
-router.get('/companies/active', configController.getActiveCompany.bind(configController))
-router.get('/companies/:id', configController.getCompany.bind(configController))
-router.post('/companies', configController.addCompany.bind(configController))
-router.put('/companies/:id', configController.updateCompany.bind(configController))
-router.delete('/companies/:id', configController.deleteCompany.bind(configController))
-router.post('/companies/:id/activate', configController.setActiveCompany.bind(configController))
+router.get('/companies', 
+  requirePermission('configuration.view'),
+  configController.getCompanies.bind(configController)
+)
+router.get('/companies/active', 
+  requirePermission('configuration.view'),
+  configController.getActiveCompany.bind(configController)
+)
+router.get('/companies/:id', 
+  requirePermission('configuration.view'),
+  configController.getCompany.bind(configController)
+)
+router.post('/companies', 
+  requirePermission('configuration.create'),
+  configController.addCompany.bind(configController)
+)
+router.put('/companies/:id', 
+  requirePermission('configuration.edit'),
+  configController.updateCompany.bind(configController)
+)
+router.delete('/companies/:id', 
+  requirePermission('configuration.delete'),
+  configController.deleteCompany.bind(configController)
+)
+router.post('/companies/:id/activate', 
+  requirePermission('configuration.edit'),
+  configController.setActiveCompany.bind(configController)
+)
 
 // Excel structure analysis routes
-router.post('/analyze-excel', upload.single('file'), configController.analyzeExcelStructure.bind(configController))
-router.post('/companies/:companyId/excel-structure', configController.saveExcelStructure.bind(configController))
+router.post('/analyze-excel', 
+  upload.single('file'), 
+  requirePermission('configuration.edit'),
+  configController.analyzeExcelStructure.bind(configController)
+)
+router.post('/companies/:companyId/excel-structure', 
+  requirePermission('configuration.edit'),
+  configController.saveExcelStructure.bind(configController)
+)
 
 export default router
