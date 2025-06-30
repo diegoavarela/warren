@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { pool } from '../../config/database';
 import { logger } from '../../utils/logger';
 
 export interface AuditLogEntry {
@@ -296,7 +297,7 @@ export class AuditService {
     `;
 
     const result = await this.pool.query(query);
-    const deletedCount = result.rowCount;
+    const deletedCount = result.rowCount || 0;
     
     if (deletedCount > 0) {
       logger.info(`Cleaned up ${deletedCount} audit log entries older than ${retentionDays} days`);
@@ -337,3 +338,6 @@ export class AuditService {
     return result.rows;
   }
 }
+
+// Export singleton instance
+export const auditService = AuditService.getInstance(pool);

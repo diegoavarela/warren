@@ -35,3 +35,4 @@ router.get('/companies/:companyId/stats',
 );
 
 export { router as platformAdminRouter };
+export default router;

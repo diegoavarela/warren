@@ -19,6 +19,7 @@ interface AIResponse extends Response {
       completionTokens: number;
       totalTokens: number;
     };
+    startTime?: number;
   };
 }
 
@@ -69,8 +70,8 @@ export async function trackAIUsage(
         totalTokens,
         costCents,
         requestType: 'analysis',
-        requestId: req.id,
-        responseTimeMs: Date.now() - res.locals.startTime
+        requestId: '', // req.id is not available in Express by default
+        responseTimeMs: res.locals.startTime ? Date.now() - res.locals.startTime : 0
       }).catch(error => {
         logger.error('Failed to track AI usage:', error);
       });

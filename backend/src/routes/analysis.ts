@@ -35,3 +35,4 @@ router.post('/check-availability', aiController.checkDataAvailability.bind(aiCon
 router.get('/uploads', aiController.getUploadHistory.bind(aiController))
 
 export const analysisRoutes = router
+export default router

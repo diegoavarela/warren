@@ -402,4 +402,123 @@ export class FileUploadService {
       pnlUploadId: row.pnl_upload_id
     }
   }
+
+  /**
+   * Save uploaded file data (for V2 controller)
+   */
+  async saveUpload(data: {
+    userId: number;
+    companyId: string;
+    fileName: string;
+    fileSize: number;
+    mimeType?: string;
+    mappingType: string;
+    parsedData: any;
+    metadata?: any;
+  }): Promise<{ id: number }> {
+    // Create file upload record
+    const uploadRecord = await this.createFileUpload({
+      userId: data.userId,
+      companyId: data.companyId,
+      fileType: data.mappingType === 'cashflow' ? 'cashflow' : 'pnl',
+      filename: data.fileName,
+      originalFilename: data.fileName,
+      fileSize: data.fileSize,
+      mimeType: data.mimeType
+    });
+
+    // Update with parsed data
+    await this.updateFileUpload(uploadRecord.id, {
+      processingStatus: 'completed',
+      processingCompletedAt: new Date(),
+      isValid: true,
+      dataSummary: data.parsedData
+    });
+
+    return { id: uploadRecord.id };
+  }
+
+  /**
+   * Get files with pagination (for V2 controller)
+   */
+  async getFiles(params: {
+    companyId: string;
+    page: number;
+    limit: number;
+    mappingType?: string;
+  }): Promise<{ files: any[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    
+    let query = `
+      SELECT * FROM file_uploads 
+      WHERE company_id = $1 AND deleted_at IS NULL
+    `;
+    const values: any[] = [params.companyId];
+    
+    if (params.mappingType) {
+      query += ` AND file_type = $2`;
+      values.push(params.mappingType === 'cashflow' ? 'cashflow' : 'pnl');
+    }
+    
+    query += ` ORDER BY upload_date DESC LIMIT ${params.limit} OFFSET ${offset}`;
+    
+    try {
+      const result = await this.pool.query(query, values);
+      const countQuery = `
+        SELECT COUNT(*) FROM file_uploads 
+        WHERE company_id = $1 AND deleted_at IS NULL
+        ${params.mappingType ? ' AND file_type = $2' : ''}
+      `;
+      const countResult = await this.pool.query(countQuery, values);
+      
+      return {
+        files: result.rows.map(row => this.mapToFileUploadRecord(row)),
+        total: parseInt(countResult.rows[0].count)
+      };
+    } catch (error) {
+      logger.error('Error getting files:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get single file (for V2 controller)
+   */
+  async getFile(id: number, companyId: string, userId: number): Promise<any | null> {
+    const query = `
+      SELECT * FROM file_uploads 
+      WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL
+    `;
+    
+    try {
+      const result = await this.pool.query(query, [id, companyId]);
+      if (result.rows.length === 0) {
+        return null;
+      }
+      return this.mapToFileUploadRecord(result.rows[0]);
+    } catch (error) {
+      logger.error('Error getting file:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete file (for V2 controller)
+   */
+  async deleteFile(id: number, companyId: string, userId: number): Promise<boolean> {
+    const query = `
+      UPDATE file_uploads 
+      SET deleted_at = CURRENT_TIMESTAMP 
+      WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL
+      RETURNING id
+    `;
+    
+    try {
+      const result = await this.pool.query(query, [id, companyId]);
+      return result.rows.length > 0;
+    } catch (error) {
+      logger.error('Error deleting file:', error);
+      throw error;
+    }
+  }
 }

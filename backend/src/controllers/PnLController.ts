@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { PnLService } from '../services/PnLService'
 import { FileUploadService } from '../services/FileUploadService'
+import { DataSourceService } from '../services/DataSourceService'
 import { pool } from '../config/database'
 import { logger } from '../utils/logger'
 
@@ -12,10 +13,12 @@ interface AuthRequest extends Request {
 export class PnLController {
   private pnlService: PnLService
   private fileUploadService: FileUploadService
+  private dataSourceService: DataSourceService
 
   constructor() {
     this.pnlService = PnLService.getInstance()
     this.fileUploadService = new FileUploadService(pool)
+    this.dataSourceService = DataSourceService.getInstance(pool)
   }
 
   /**
@@ -247,6 +250,60 @@ export class PnLController {
       // Store the uploaded filename
       this.pnlService.setUploadedFileName(req.file.originalname);
 
+      // Create data source for P&L file
+      let dataSourceId: string | undefined;
+      try {
+        const dataSource = await this.dataSourceService.createDataSource({
+          companyId: req.tenantId!,
+          name: `P&L File - ${req.file.originalname}`,
+          type: 'excel',
+          config: {
+            fileType: 'pnl',
+            originalFilename: req.file.originalname,
+            uploadDate: new Date().toISOString(),
+            monthsProcessed: metrics.length,
+            summary: dataSummary,
+            description: `P&L data from ${req.file.originalname}`
+          },
+          userId: parseInt(req.user!.id)
+        });
+        
+        dataSourceId = dataSource.id;
+        
+        // Link the uploaded file to the data source
+        await this.dataSourceService.addFileToDataSource({
+          dataSourceId,
+          fileUploadId,
+          fileName: req.file.originalname,
+          fileType: 'pnl',
+          fileSize: req.file.size,
+          rowCount: metrics.length
+        });
+        
+        logger.info(`Created data source ${dataSourceId} for P&L file: ${req.file.originalname}`);
+      } catch (error) {
+        logger.error('Failed to create data source for P&L file:', error);
+        // Don't fail the upload, but log the issue
+      }
+
+      // Save P&L data to structured tables
+      try {
+        if (!dataSourceId) {
+          logger.warn('No data source ID available, skipping database save');
+        } else {
+          // Save to new structured pnl_data table
+          await this.pnlService.saveToPnLDataTable(req.tenantId!, dataSourceId, parseInt(req.user!.id));
+          logger.info('P&L data successfully saved to pnl_data table');
+          
+          // Also save to financial_records for backward compatibility (temporary)
+          await this.pnlService.saveToFinancialRecords(req.tenantId!, dataSourceId);
+          logger.info('P&L data successfully saved to financial_records for widget access');
+        }
+      } catch (error) {
+        logger.error('Failed to save P&L data:', error);
+        // Don't fail the upload, but log the issue
+      }
+
       res.json({
         success: true,
         message: 'P&L file processed successfully',
@@ -269,9 +326,34 @@ export class PnLController {
 
   async getDashboard(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const metrics = this.pnlService.getStoredMetrics()
-      const summary = this.pnlService.getSummary()
+      // First try to get data from memory (for backward compatibility)
+      let metrics = this.pnlService.getStoredMetrics()
+      let summary = this.pnlService.getSummary()
       const lastUpload = this.pnlService.getLastUploadDate()
+      
+      // If no data in memory, fetch from database
+      if (metrics.length === 0) {
+        logger.info('No P&L data in memory, fetching from database')
+        
+        // Get the most recent P&L data source for this company
+        const dataSourceQuery = await pool.query(`
+          SELECT ds.id, ds.name, fu.created_at as upload_date
+          FROM data_sources ds
+          LEFT JOIN data_source_files dsf ON ds.id = dsf.data_source_id
+          LEFT JOIN file_uploads fu ON dsf.file_upload_id = fu.id
+          WHERE ds.company_id = $1 
+          AND ds.type = 'excel'
+          AND ds.name LIKE 'P&L%'
+          ORDER BY ds.created_at DESC
+          LIMIT 1
+        `, [req.tenantId])
+        
+        if (dataSourceQuery.rows.length > 0) {
+          const dataSourceId = dataSourceQuery.rows[0].id
+          metrics = await this.pnlService.getPnLDataFromDB(req.tenantId!, dataSourceId)
+          summary = await this.pnlService.getPnLSummaryFromDB(req.tenantId!, dataSourceId)
+        }
+      }
       
       if (metrics.length === 0) {
         return res.json({

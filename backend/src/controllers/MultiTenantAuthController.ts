@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { TwoFactorService } from '../services/TwoFactorService';
@@ -44,11 +44,14 @@ export class MultiTenantAuthController {
         return next(createError('Email domain not allowed. Please use your corporate email.', 403));
       }
 
-      // Get user with company info
+      // Get user with company info and actual subscription tier
       const userResult = await pool.query(
-        `SELECT u.*, c.name as company_name, c.subscription_tier, c.license_expiry
+        `SELECT u.*, c.name as company_name, c.license_expiry,
+                COALESCE(sp.name, 'freemium') as subscription_tier
          FROM users u
          LEFT JOIN companies c ON u.company_id = c.id
+         LEFT JOIN company_subscriptions cs ON c.id = cs.company_id AND cs.status = 'active'
+         LEFT JOIN subscription_plans sp ON cs.plan_id = sp.id
          WHERE u.email = $1 AND u.is_active = true`,
         [email]
       );
@@ -488,10 +491,13 @@ export class MultiTenantAuthController {
         `SELECT 
           u.id, u.email, u.role, u.is_2fa_enabled, u.email_verified,
           u.created_at, u.last_login, u.company_id,
-          c.name as company_name, c.subscription_tier, c.user_limit,
+          c.name as company_name, c.user_limit,
+          COALESCE(sp.name, 'freemium') as subscription_tier,
           (SELECT COUNT(*) FROM users WHERE company_id = u.company_id AND is_active = true) as company_user_count
          FROM users u
          LEFT JOIN companies c ON u.company_id = c.id
+         LEFT JOIN company_subscriptions cs ON c.id = cs.company_id AND cs.status = 'active'
+         LEFT JOIN subscription_plans sp ON cs.plan_id = sp.id
          WHERE u.id = $1`,
         [req.user.id]
       );

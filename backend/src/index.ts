@@ -2,6 +2,14 @@ import dotenv from 'dotenv';
 // Load environment variables FIRST before any other imports
 dotenv.config();
 
+// Validate environment variables
+import { validateEnvironment } from './utils/envValidation';
+validateEnvironment();
+
+// Global error handlers - set up BEFORE any other imports
+import { setupGlobalErrorHandlers } from './utils/globalErrorHandler';
+setupGlobalErrorHandlers();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -21,6 +29,8 @@ import mondayRouter from './routes/monday';
 import { analysisRoutes } from './routes/analysis';
 import { excelAnalysisRouter } from './routes/excelAnalysis';
 import { subscriptionRouter } from './routes/subscription';
+import widgetRouter from './routes/widgets';
+import { dataSourceRouter } from './routes/dataSource';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { noCacheHeaders } from './middleware/noCacheHeaders'
@@ -83,6 +93,8 @@ app.use('/api/v2/auth', multiTenantAuthRouter);
 app.use('/api/v2/users', companyUsersRouter);
 app.use('/api/v2/platform', platformAdminRouter);
 app.use('/api/v2/subscription', subscriptionRouter);
+app.use('/api/v2/data-sources', dataSourceRouter);
+app.use('/api', widgetRouter);
 
 // Existing routes
 app.use('/api/cashflow', cashflowRouter);

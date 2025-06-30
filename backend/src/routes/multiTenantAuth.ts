@@ -24,3 +24,4 @@ router.post('/2fa/disable', (req, res, next) => authController.disable2FA(req, r
 router.post('/2fa/backup-codes', (req, res, next) => authController.regenerateBackupCodes(req, res, next));
 
 export { router as multiTenantAuthRouter };
+export default router;

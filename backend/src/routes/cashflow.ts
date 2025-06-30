@@ -55,3 +55,4 @@ router.get('/financial-summary', cashflowController.getFinancialSummary.bind(cas
 router.post('/investments/diagnose', upload.single('file'), cashflowController.diagnoseInvestments.bind(cashflowController));
 
 export { router as cashflowRouter, cashflowController };
+export default router;

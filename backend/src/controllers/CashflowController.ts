@@ -11,6 +11,7 @@ import { CashFlowAnalysisService } from '../services/CashFlowAnalysisService';
 import { ExtendedFinancialService } from '../services/ExtendedFinancialService';
 import { InvestmentDiagnosticService } from '../services/InvestmentDiagnosticService';
 import { FileUploadService } from '../services/FileUploadService';
+import { DataSourceService } from '../services/DataSourceService';
 import { ExtendedFinancialData } from '../interfaces/FinancialData';
 import { pool } from '../config/database';
 import { logger } from '../utils/logger';
@@ -26,6 +27,7 @@ export class CashflowController {
   private extendedFinancialService = extendedFinancialServiceInstance;
   private investmentDiagnosticService = new InvestmentDiagnosticService();
   private fileUploadService = new FileUploadService(pool);
+  private dataSourceService = DataSourceService.getInstance(pool);
   private aiExcelService = require('../services/AIExcelAnalysisService').AIExcelAnalysisService.getInstance();
 
   async uploadFile(req: TenantAuthRequest, res: Response, next: NextFunction) {
@@ -118,6 +120,54 @@ export class CashflowController {
         }
       };
 
+      // Create data source for cashflow file
+      let dataSourceId: string | undefined;
+      try {
+        const dataSource = await this.dataSourceService.createDataSource({
+          companyId: req.tenantId!,
+          name: `Cashflow File - ${req.file.originalname}`,
+          type: 'excel',
+          config: {
+            fileType: 'cashflow',
+            originalFilename: req.file.originalname,
+            uploadDate: new Date().toISOString(),
+            monthsProcessed: metrics.length,
+            summary: dataSummary,
+            description: `Cashflow data from ${req.file.originalname}`
+          },
+          userId: parseInt(req.user!.id)
+        });
+        
+        dataSourceId = dataSource.id;
+        
+        // Link the uploaded file to the data source
+        await this.dataSourceService.addFileToDataSource({
+          dataSourceId,
+          fileUploadId,
+          fileName: req.file.originalname,
+          fileType: 'cashflow',
+          fileSize: req.file.size,
+          rowCount: metrics.length
+        });
+        
+        logger.info(`Created data source ${dataSourceId} for cashflow file: ${req.file.originalname}`);
+        
+        // Save cashflow data to structured tables
+        if (dataSourceId) {
+          await this.cashflowService.saveToCashflowDataTable(
+            req.tenantId!, 
+            dataSourceId, 
+            parseInt(req.user!.id),
+            metrics,
+            extendedData
+          );
+          logger.info('Cashflow data successfully saved to cashflow_data table');
+        }
+      } catch (error) {
+        logger.error('Failed to create data source for cashflow file:', error);
+        // Don't fail the upload, but log the issue
+      }
+
       // Mark processing as completed
       await this.fileUploadService.markProcessingCompleted(fileUploadId, {
         isValid: true,
@@ -136,7 +186,8 @@ export class CashflowController {
           filename: req.file.originalname,
           monthsProcessed: metrics.length,
           dateRange: dataSummary.dateRange,
-          extendedDataProcessed: dataSummary.extendedData
+          extendedDataProcessed: dataSummary.extendedData,
+          dataSourceId
         }
       });
     } catch (error: any) {

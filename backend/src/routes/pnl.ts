@@ -34,3 +34,4 @@ router.get('/line-items', (req, res, next) => pnlController.getLineItems(req, re
 router.delete('/clear', (req, res, next) => pnlController.clearData(req, res, next))
 
 export { router as pnlRouter }
+export default router

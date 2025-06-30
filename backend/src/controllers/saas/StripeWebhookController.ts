@@ -4,7 +4,7 @@ import { logger } from '../../utils/logger';
 import { Pool } from 'pg';
 
 export class StripeWebhookController {
-  private stripeService: StripeService;
+  private stripeService: StripeService | null;
 
   constructor(pool: Pool) {
     this.stripeService = StripeService.getInstance(pool);
@@ -33,7 +33,11 @@ export class StripeWebhookController {
         });
       }
 
-      await this.stripeService.handleWebhook(rawBody, signature);
+      if (this.stripeService) {
+        await this.stripeService.handleWebhook(rawBody, signature);
+      } else {
+        logger.warn('Stripe service not configured, webhook ignored');
+      }
 
       res.json({ received: true });
     } catch (error) {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { createError } from './errorHandler';
 
 export interface AuthRequest extends Request {
@@ -30,3 +30,6 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
 
 // Export as 'auth' for backward compatibility
 export const auth = authMiddleware;
+
+// Export as 'authenticateToken' for v2 controllers
+export const authenticateToken = authMiddleware;

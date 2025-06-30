@@ -87,3 +87,4 @@ router.put('/me/password',
 );
 
 export { router as companyUsersRouter };
+export default router;

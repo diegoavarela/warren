@@ -14,7 +14,7 @@ interface AuthRequest extends Request {
 }
 
 export class SubscriptionController {
-  private stripeService: StripeService;
+  private stripeService: StripeService | null;
   private aiUsageService: AIUsageService;
   private pool: Pool;
 
@@ -132,6 +132,13 @@ export class SubscriptionController {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
+      if (!this.stripeService || !this.stripeService.isStripeConfigured()) {
+        return res.status(503).json({
+          success: false,
+          message: 'Payment processing is not available at this time'
+        });
+      }
+
       const { planId } = req.body;
       
       if (!planId) {
@@ -240,6 +247,13 @@ export class SubscriptionController {
       }
 
       // Create portal session
+      if (!this.stripeService) {
+        return res.status(503).json({
+          success: false,
+          message: 'Billing service is not available'
+        });
+      }
+      
       const session = await this.stripeService.createPortalSession({
         customerId: stripeCustomerId,
         returnUrl: `${process.env.FRONTEND_URL}/subscription`
@@ -294,7 +308,9 @@ export class SubscriptionController {
       }
 
       // Cancel in Stripe
-      await this.stripeService.cancelSubscription(stripeSubscriptionId);
+      if (this.stripeService) {
+        await this.stripeService.cancelSubscription(stripeSubscriptionId);
+      }
 
       res.json({
         success: true,

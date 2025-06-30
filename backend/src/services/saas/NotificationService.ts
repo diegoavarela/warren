@@ -34,9 +34,9 @@ export class NotificationService {
         <p>Hello {{userName}},</p>
         <p>Your company <strong>{{companyName}}</strong> has used <strong>{{percent}}%</strong> of your monthly AI credits.</p>
         <ul>
-          <li>Used: ${{used}}</li>
-          <li>Limit: ${{limit}}</li>
-          <li>Remaining: ${{remaining}}</li>
+          <li>Used: $\{{used}}</li>
+          <li>Limit: $\{{limit}}</li>
+          <li>Remaining: $\{{remaining}}</li>
         </ul>
         <p>To avoid service interruption, please consider <a href="{{upgradeUrl}}">upgrading your plan</a>.</p>
       `,
@@ -281,7 +281,7 @@ export class NotificationService {
       await this.sendNotification('AI_USAGE_WARNING', user.email, {
         userName: user.name || user.email,
         companyName: company.name,
-        percent: Math.round(percentUsed),
+        percent: Math.round(percentUsed).toString(),
         used: (usedCents / 100).toFixed(2),
         limit: (limitCents / 100).toFixed(2),
         remaining: ((limitCents - usedCents) / 100).toFixed(2),

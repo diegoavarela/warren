@@ -3,6 +3,8 @@ import * as ExcelJS from 'exceljs'
 import { logger } from '../utils/logger'
 import { ConfigurationService } from './ConfigurationService'
 import { FinancialStatementParser } from './FinancialStatementParser'
+import { pool } from '../config/database'
+import { encryptionService } from '../utils/encryption'
 
 interface PnLRow {
   lineItem: string
@@ -1314,6 +1316,488 @@ export class PnLService {
       logger.info(`Universal P&L processing complete. Processed ${metrics.length} months`)
     } catch (error) {
       logger.error('Error in universal P&L processing:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Save P&L metrics to financial_records table so widgets can access the data
+   */
+  async saveToFinancialRecords(companyId: string, dataSourceId?: string): Promise<void> {
+    if (this.storedMetrics.length === 0) {
+      logger.warn('No P&L metrics to save to financial records')
+      return
+    }
+
+    try {
+      logger.info(`Saving ${this.storedMetrics.length} P&L metrics to financial_records for company ${companyId}`)
+
+      for (const metric of this.storedMetrics) {
+        // Parse the month to get a proper date
+        const date = new Date(metric.month + '-01')
+        
+        // Create individual records for each component of the P&L
+        const records = [
+          {
+            record_type: 'revenue',
+            category: 'Total Revenue',
+            subcategory: 'Sales',
+            description: `Revenue for ${metric.month}`,
+            amount: metric.revenue
+          },
+          {
+            record_type: 'expense',
+            category: 'Cost of Goods Sold',
+            subcategory: 'COGS',
+            description: `COGS for ${metric.month}`,
+            amount: Math.abs(metric.cogs) // Ensure positive for encryption
+          },
+          {
+            record_type: 'expense',
+            category: 'Operating Expenses',
+            subcategory: 'Operations',
+            description: `Operating expenses for ${metric.month}`,
+            amount: Math.abs(metric.operatingExpenses)
+          }
+        ]
+
+        // Insert each record
+        for (const record of records) {
+          const encryptedAmount = await encryptionService.encryptNumber(record.amount, companyId)
+          
+          await pool.query(`
+            INSERT INTO financial_records (
+              company_id, date, record_type, category, subcategory, 
+              description, amount_encrypted, currency, data_source_id,
+              metadata, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+            ON CONFLICT (company_id, date, record_type, category, subcategory) 
+            DO UPDATE SET 
+              amount_encrypted = EXCLUDED.amount_encrypted,
+              description = EXCLUDED.description,
+              updated_at = NOW()
+          `, [
+            companyId,
+            date.toISOString().split('T')[0], // YYYY-MM-DD format
+            record.record_type,
+            record.category,
+            record.subcategory,
+            record.description,
+            encryptedAmount,
+            'USD', // Default currency
+            dataSourceId,
+            JSON.stringify({
+              source: 'pnl_upload',
+              month: metric.month,
+              grossProfit: metric.grossProfit,
+              grossMargin: metric.grossMargin,
+              operatingIncome: metric.operatingIncome
+            })
+          ])
+        }
+      }
+
+      logger.info(`Successfully saved P&L data to financial_records for company ${companyId}`)
+    } catch (error) {
+      logger.error('Error saving P&L data to financial_records:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Save P&L metrics to structured pnl_data table
+   */
+  async saveToPnLDataTable(companyId: string, dataSourceId: string, userId?: number): Promise<void> {
+    if (this.storedMetrics.length === 0) {
+      logger.warn('No P&L metrics to save to pnl_data table')
+      return
+    }
+
+    const client = await pool.connect()
+    
+    try {
+      await client.query('BEGIN')
+      logger.info(`Saving ${this.storedMetrics.length} P&L metrics to pnl_data table for company ${companyId}`)
+
+      for (const metric of this.storedMetrics) {
+        // Parse the month to get a proper date (first day of month)
+        logger.info(`Processing P&L metric for month: ${metric.month}`)
+        
+        // Handle different month formats
+        let monthDate: Date
+        
+        // Check if it's already in YYYY-MM format
+        if (/^\d{4}-\d{2}$/.test(metric.month)) {
+          monthDate = new Date(metric.month + '-01')
+        } else {
+          // Handle month names like "January", "February", etc.
+          const currentYear = new Date().getFullYear()
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                             'July', 'August', 'September', 'October', 'November', 'December']
+          const monthIndex = monthNames.findIndex(m => m.toLowerCase() === metric.month.toLowerCase())
+          
+          if (monthIndex !== -1) {
+            monthDate = new Date(currentYear, monthIndex, 1)
+          } else {
+            logger.error(`Unable to parse month: ${metric.month}`)
+            continue
+          }
+        }
+        
+        if (isNaN(monthDate.getTime())) {
+          logger.error(`Invalid date for month: ${metric.month}`)
+          continue
+        }
+        
+        logger.info(`Parsed month ${metric.month} to date: ${monthDate.toISOString()}`)
+        
+        // Encrypt sensitive financial values
+        const encryptedValues = {
+          revenue_encrypted: await encryptionService.encryptNumber(metric.revenue, companyId),
+          cogs_encrypted: await encryptionService.encryptNumber(Math.abs(metric.cogs), companyId),
+          gross_profit_encrypted: await encryptionService.encryptNumber(metric.grossProfit, companyId),
+          operating_expenses_encrypted: await encryptionService.encryptNumber(Math.abs(metric.operatingExpenses), companyId),
+          operating_income_encrypted: await encryptionService.encryptNumber(metric.operatingIncome, companyId),
+          ebitda_encrypted: await encryptionService.encryptNumber(metric.ebitda, companyId),
+          net_income_encrypted: await encryptionService.encryptNumber(metric.netIncome, companyId)
+        }
+
+        // Prepare operating expenses breakdown
+        const operatingExpensesBreakdown = {
+          personnelSalariesOp: metric.personnelSalariesOp || 0,
+          payrollTaxesOp: metric.payrollTaxesOp || 0,
+          healthCoverage: metric.healthCoverage || 0,
+          personnelBenefits: metric.personnelBenefits || 0,
+          contractServicesOp: metric.contractServicesOp || 0,
+          professionalServices: metric.professionalServices || 0,
+          salesMarketing: metric.salesMarketing || 0,
+          facilitiesAdmin: metric.facilitiesAdmin || 0
+        }
+
+        // Prepare personnel cost details
+        const personnelCostDetails = {
+          personnelSalariesCoR: metric.personnelSalariesCoR || 0,
+          payrollTaxesCoR: metric.payrollTaxesCoR || 0,
+          totalPersonnelCost: metric.totalPersonnelCost || 0
+        }
+
+        const query = `
+          INSERT INTO pnl_data (
+            company_id, data_source_id, month,
+            revenue, revenue_encrypted,
+            cogs, cogs_encrypted,
+            gross_profit, gross_profit_encrypted, gross_margin,
+            operating_expenses, operating_expenses_encrypted, operating_expenses_breakdown,
+            operating_income, operating_income_encrypted, operating_margin,
+            ebitda, ebitda_encrypted, ebitda_margin,
+            net_income, net_income_encrypted, net_margin,
+            personnel_cost_details,
+            metadata,
+            created_by
+          ) VALUES (
+            $1, $2, $3,
+            $4, $5,
+            $6, $7,
+            $8, $9, $10,
+            $11, $12, $13,
+            $14, $15, $16,
+            $17, $18, $19,
+            $20, $21, $22,
+            $23,
+            $24,
+            $25
+          )
+          ON CONFLICT (company_id, data_source_id, month)
+          DO UPDATE SET
+            revenue = EXCLUDED.revenue,
+            revenue_encrypted = EXCLUDED.revenue_encrypted,
+            cogs = EXCLUDED.cogs,
+            cogs_encrypted = EXCLUDED.cogs_encrypted,
+            gross_profit = EXCLUDED.gross_profit,
+            gross_profit_encrypted = EXCLUDED.gross_profit_encrypted,
+            gross_margin = EXCLUDED.gross_margin,
+            operating_expenses = EXCLUDED.operating_expenses,
+            operating_expenses_encrypted = EXCLUDED.operating_expenses_encrypted,
+            operating_expenses_breakdown = EXCLUDED.operating_expenses_breakdown,
+            operating_income = EXCLUDED.operating_income,
+            operating_income_encrypted = EXCLUDED.operating_income_encrypted,
+            operating_margin = EXCLUDED.operating_margin,
+            ebitda = EXCLUDED.ebitda,
+            ebitda_encrypted = EXCLUDED.ebitda_encrypted,
+            ebitda_margin = EXCLUDED.ebitda_margin,
+            net_income = EXCLUDED.net_income,
+            net_income_encrypted = EXCLUDED.net_income_encrypted,
+            net_margin = EXCLUDED.net_margin,
+            personnel_cost_details = EXCLUDED.personnel_cost_details,
+            metadata = EXCLUDED.metadata,
+            updated_at = CURRENT_TIMESTAMP
+        `
+
+        const metadata = {
+          source: 'pnl_upload',
+          format: this.processedFormat,
+          uploadDate: this.lastUploadDate,
+          fileName: this.lastUploadedFileName
+        }
+
+        await client.query(query, [
+          companyId,
+          dataSourceId,
+          monthDate,
+          metric.revenue,
+          encryptedValues.revenue_encrypted,
+          Math.abs(metric.cogs), // Store as positive
+          encryptedValues.cogs_encrypted,
+          metric.grossProfit,
+          encryptedValues.gross_profit_encrypted,
+          metric.grossMargin,
+          Math.abs(metric.operatingExpenses), // Store as positive
+          encryptedValues.operating_expenses_encrypted,
+          operatingExpensesBreakdown,
+          metric.operatingIncome,
+          encryptedValues.operating_income_encrypted,
+          metric.operatingMargin,
+          metric.ebitda,
+          encryptedValues.ebitda_encrypted,
+          metric.ebitdaMargin,
+          metric.netIncome,
+          encryptedValues.net_income_encrypted,
+          metric.netMargin,
+          personnelCostDetails,
+          metadata,
+          userId || null
+        ])
+
+        logger.info(`Saved P&L data for ${metric.month} to pnl_data table`)
+      }
+
+      // Also save summary metrics to financial_metrics table
+      await this.saveFinancialMetrics(client, companyId, dataSourceId)
+
+      await client.query('COMMIT')
+      logger.info(`Successfully saved P&L data to pnl_data table for company ${companyId}`)
+    } catch (error) {
+      await client.query('ROLLBACK')
+      logger.error('Error saving P&L data to pnl_data table:', error)
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Save calculated financial metrics for quick access
+   */
+  private async saveFinancialMetrics(client: any, companyId: string, dataSourceId: string): Promise<void> {
+    const summary = this.getSummary()
+    
+    if (!this.storedMetrics.length) return
+
+    // Get date range with proper month parsing
+    const parsedDates: Date[] = []
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                       'July', 'August', 'September', 'October', 'November', 'December']
+    const currentYear = new Date().getFullYear()
+    
+    for (const metric of this.storedMetrics) {
+      let date: Date
+      
+      // Check if it's already in YYYY-MM format
+      if (/^\d{4}-\d{2}$/.test(metric.month)) {
+        date = new Date(metric.month + '-01')
+      } else {
+        // Handle month names
+        const monthIndex = monthNames.findIndex(m => m.toLowerCase() === metric.month.toLowerCase())
+        if (monthIndex !== -1) {
+          date = new Date(currentYear, monthIndex, 1)
+        } else {
+          continue // Skip invalid months
+        }
+      }
+      
+      if (!isNaN(date.getTime())) {
+        parsedDates.push(date)
+      }
+    }
+    
+    if (parsedDates.length === 0) {
+      logger.warn('No valid dates found in P&L metrics')
+      return
+    }
+    
+    const periodStart = new Date(Math.min(...parsedDates.map(d => d.getTime())))
+    const periodEnd = new Date(Math.max(...parsedDates.map(d => d.getTime())))
+
+    const metrics = [
+      { type: 'revenue', name: 'total_revenue', value: summary.totalRevenue },
+      { type: 'revenue', name: 'avg_monthly_revenue', value: summary.totalRevenue / this.storedMetrics.length },
+      { type: 'profitability', name: 'gross_margin', value: summary.avgGrossMargin },
+      { type: 'profitability', name: 'operating_margin', value: summary.avgOperatingMargin },
+      { type: 'profitability', name: 'ebitda_margin', value: summary.avgEBITDAMargin },
+      { type: 'profitability', name: 'net_margin', value: summary.avgNetMargin },
+      { type: 'profitability', name: 'total_ebitda', value: summary.totalEBITDA },
+      { type: 'expense', name: 'total_cogs', value: summary.totalCOGS },
+      { type: 'expense', name: 'total_operating_expenses', value: summary.totalOperatingExpenses }
+    ]
+
+    for (const metric of metrics) {
+      const encryptedValue = await encryptionService.encryptNumber(metric.value, companyId)
+      
+      await client.query(`
+        INSERT INTO financial_metrics (
+          company_id, data_source_id, metric_type, metric_name,
+          period_start, period_end, value, value_encrypted,
+          metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (company_id, data_source_id, metric_type, metric_name, period_start, period_end)
+        DO UPDATE SET
+          value = EXCLUDED.value,
+          value_encrypted = EXCLUDED.value_encrypted,
+          updated_at = CURRENT_TIMESTAMP
+      `, [
+        companyId,
+        dataSourceId,
+        metric.type,
+        metric.name,
+        periodStart,
+        periodEnd,
+        metric.value,
+        encryptedValue,
+        { source: 'pnl_upload', format: this.processedFormat }
+      ])
+    }
+  }
+
+  /**
+   * Get P&L data from database for a specific company and data source
+   */
+  async getPnLDataFromDB(companyId: string, dataSourceId?: string): Promise<PnLMetrics[]> {
+    try {
+      let query = `
+        SELECT 
+          month,
+          revenue,
+          cogs,
+          gross_profit,
+          gross_margin,
+          operating_expenses,
+          operating_expenses_breakdown,
+          operating_income,
+          operating_margin,
+          ebitda,
+          ebitda_margin,
+          net_income,
+          net_margin,
+          personnel_cost_details,
+          metadata
+        FROM pnl_data
+        WHERE company_id = $1
+      `
+      
+      const params: any[] = [companyId]
+      
+      if (dataSourceId) {
+        query += ` AND data_source_id = $2`
+        params.push(dataSourceId)
+      }
+      
+      query += ` ORDER BY month ASC`
+      
+      const result = await pool.query(query, params)
+      
+      // Convert database rows to PnLMetrics format
+      const metrics: PnLMetrics[] = []
+      
+      for (const row of result.rows) {
+        const personnelDetails = row.personnel_cost_details || {}
+        const opexBreakdown = row.operating_expenses_breakdown || {}
+        
+        metrics.push({
+          month: row.month.toISOString().slice(0, 7), // Format as YYYY-MM
+          revenue: parseFloat(row.revenue),
+          cogs: -Math.abs(parseFloat(row.cogs)), // Ensure negative for consistency
+          grossProfit: parseFloat(row.gross_profit),
+          grossMargin: parseFloat(row.gross_margin),
+          operatingExpenses: -Math.abs(parseFloat(row.operating_expenses)), // Ensure negative
+          operatingIncome: parseFloat(row.operating_income),
+          operatingMargin: parseFloat(row.operating_margin),
+          otherIncomeExpenses: 0, // Calculate if needed
+          netIncome: parseFloat(row.net_income),
+          netMargin: parseFloat(row.net_margin),
+          ebitda: parseFloat(row.ebitda),
+          ebitdaMargin: parseFloat(row.ebitda_margin),
+          // Personnel Cost Details
+          personnelSalariesCoR: personnelDetails.personnelSalariesCoR || 0,
+          payrollTaxesCoR: personnelDetails.payrollTaxesCoR || 0,
+          personnelSalariesOp: opexBreakdown.personnelSalariesOp || 0,
+          payrollTaxesOp: opexBreakdown.payrollTaxesOp || 0,
+          healthCoverage: opexBreakdown.healthCoverage || 0,
+          personnelBenefits: opexBreakdown.personnelBenefits || 0,
+          totalPersonnelCost: personnelDetails.totalPersonnelCost || 0,
+          // Cost Structure
+          contractServicesCoR: 0, // Add if stored
+          contractServicesOp: opexBreakdown.contractServicesOp || 0,
+          professionalServices: opexBreakdown.professionalServices || 0,
+          salesMarketing: opexBreakdown.salesMarketing || 0,
+          facilitiesAdmin: opexBreakdown.facilitiesAdmin || 0
+        })
+      }
+      
+      return metrics
+    } catch (error) {
+      logger.error('Error fetching P&L data from database:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get P&L summary from database
+   */
+  async getPnLSummaryFromDB(companyId: string, dataSourceId?: string): Promise<PnLSummary> {
+    try {
+      let query = `
+        SELECT 
+          SUM(revenue) as total_revenue,
+          SUM(cogs) as total_cogs,
+          SUM(gross_profit) as total_gross_profit,
+          AVG(gross_margin) as avg_gross_margin,
+          SUM(operating_expenses) as total_operating_expenses,
+          SUM(operating_income) as total_operating_income,
+          AVG(operating_margin) as avg_operating_margin,
+          SUM(ebitda) as total_ebitda,
+          AVG(ebitda_margin) as avg_ebitda_margin,
+          SUM(net_income) as total_net_income,
+          AVG(net_margin) as avg_net_margin,
+          COUNT(*) as months_count
+        FROM pnl_data
+        WHERE company_id = $1
+      `
+      
+      const params: any[] = [companyId]
+      
+      if (dataSourceId) {
+        query += ` AND data_source_id = $2`
+        params.push(dataSourceId)
+      }
+      
+      const result = await pool.query(query, params)
+      const row = result.rows[0]
+      
+      return {
+        totalRevenue: parseFloat(row.total_revenue) || 0,
+        totalCOGS: parseFloat(row.total_cogs) || 0,
+        totalGrossProfit: parseFloat(row.total_gross_profit) || 0,
+        avgGrossMargin: parseFloat(row.avg_gross_margin) || 0,
+        totalOperatingExpenses: parseFloat(row.total_operating_expenses) || 0,
+        totalOperatingIncome: parseFloat(row.total_operating_income) || 0,
+        avgOperatingMargin: parseFloat(row.avg_operating_margin) || 0,
+        totalEBITDA: parseFloat(row.total_ebitda) || 0,
+        avgEBITDAMargin: parseFloat(row.avg_ebitda_margin) || 0,
+        totalNetIncome: parseFloat(row.total_net_income) || 0,
+        avgNetMargin: parseFloat(row.avg_net_margin) || 0
+      }
+    } catch (error) {
+      logger.error('Error fetching P&L summary from database:', error)
       throw error
     }
   }

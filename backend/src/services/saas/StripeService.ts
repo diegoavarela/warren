@@ -16,26 +16,31 @@ export interface CreateSubscriptionData {
 }
 
 export class StripeService {
-  private stripe: Stripe;
-  private static instance: StripeService;
+  private stripe: Stripe | null;
+  private static instance: StripeService | null;
   private pool: Pool;
+  private isConfigured: boolean;
 
   private constructor(pool: Pool) {
     const apiKey = process.env.STRIPE_SECRET_KEY;
-    if (!apiKey) {
-      throw new Error('STRIPE_SECRET_KEY is not configured');
+    
+    if (apiKey) {
+      this.stripe = new Stripe(apiKey, {
+        apiVersion: '2023-10-16' as any,
+        typescript: true,
+      });
+      this.isConfigured = true;
+      logger.info('Stripe service initialized');
+    } else {
+      this.stripe = null;
+      this.isConfigured = false;
+      logger.warn('Stripe service not configured - STRIPE_SECRET_KEY is missing. Stripe features will be disabled.');
     }
-
-    this.stripe = new Stripe(apiKey, {
-      apiVersion: '2024-12-18.acacia',
-      typescript: true,
-    });
     
     this.pool = pool;
-    logger.info('Stripe service initialized');
   }
 
-  static getInstance(pool: Pool): StripeService {
+  static getInstance(pool: Pool): StripeService | null {
     if (!StripeService.instance) {
       StripeService.instance = new StripeService(pool);
     }
@@ -43,11 +48,22 @@ export class StripeService {
   }
 
   /**
+   * Check if Stripe is configured
+   */
+  isStripeConfigured(): boolean {
+    return this.isConfigured;
+  }
+
+  /**
    * Create a Stripe customer for a company
    */
   async createCustomer(data: CreateCustomerData): Promise<Stripe.Customer> {
+    if (!this.stripe) {
+      throw new Error('Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.');
+    }
+    
     try {
-      const customer = await this.stripe.customers.create({
+      const customer = await this.stripe!.customers.create({
         email: data.email,
         name: data.companyName,
         metadata: {
@@ -82,7 +98,7 @@ export class StripeService {
         subscriptionData.trial_period_days = data.trialDays;
       }
 
-      const subscription = await this.stripe.subscriptions.create(subscriptionData);
+      const subscription = await this.stripe!.subscriptions.create(subscriptionData);
 
       logger.info(`Created subscription: ${subscription.id} for customer: ${data.customerId}`);
       return subscription;
@@ -100,7 +116,7 @@ export class StripeService {
     params: Stripe.SubscriptionUpdateParams
   ): Promise<Stripe.Subscription> {
     try {
-      const subscription = await this.stripe.subscriptions.update(subscriptionId, params);
+      const subscription = await this.stripe!.subscriptions.update(subscriptionId, params);
       logger.info(`Updated subscription: ${subscriptionId}`);
       return subscription;
     } catch (error) {
@@ -114,7 +130,7 @@ export class StripeService {
    */
   async cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     try {
-      const subscription = await this.stripe.subscriptions.update(subscriptionId, {
+      const subscription = await this.stripe!.subscriptions.update(subscriptionId, {
         cancel_at_period_end: true,
       });
       logger.info(`Scheduled cancellation for subscription: ${subscriptionId}`);
@@ -130,7 +146,7 @@ export class StripeService {
    */
   async getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     try {
-      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscription = await this.stripe!.subscriptions.retrieve(subscriptionId);
       return subscription;
     } catch (error) {
       logger.error('Error retrieving subscription:', error);
@@ -143,7 +159,7 @@ export class StripeService {
    */
   async listSubscriptions(customerId: string): Promise<Stripe.Subscription[]> {
     try {
-      const subscriptions = await this.stripe.subscriptions.list({
+      const subscriptions = await this.stripe!.subscriptions.list({
         customer: customerId,
         status: 'all',
         expand: ['data.default_payment_method'],
@@ -166,7 +182,7 @@ export class StripeService {
     metadata?: Record<string, string>;
   }): Promise<Stripe.Checkout.Session> {
     try {
-      const session = await this.stripe.checkout.sessions.create({
+      const session = await this.stripe!.checkout.sessions.create({
         customer: params.customerId,
         payment_method_types: ['card'],
         line_items: [
@@ -197,7 +213,7 @@ export class StripeService {
     returnUrl: string;
   }): Promise<Stripe.BillingPortal.Session> {
     try {
-      const session = await this.stripe.billingPortal.sessions.create({
+      const session = await this.stripe!.billingPortal.sessions.create({
         customer: params.customerId,
         return_url: params.returnUrl,
       });
@@ -222,7 +238,7 @@ export class StripeService {
     let event: Stripe.Event;
 
     try {
-      event = this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      event = this.stripe!.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (error) {
       logger.error('Webhook signature verification failed:', error);
       throw new Error('Webhook signature verification failed');
@@ -275,8 +291,8 @@ export class StripeService {
 
       await client.query(updateQuery, [
         subscription.status,
-        new Date(subscription.current_period_start * 1000),
-        new Date(subscription.current_period_end * 1000),
+        new Date((subscription as any).current_period_start * 1000),
+        new Date((subscription as any).current_period_end * 1000),
         subscription.cancel_at_period_end,
         subscription.id,
       ]);
@@ -370,8 +386,8 @@ export class StripeService {
         invoice.amount_paid,
         invoice.currency,
         `Payment for invoice ${invoice.number}`,
-        JSON.stringify({ invoice_id: invoice.id, subscription_id: invoice.subscription }),
-        invoice.subscription,
+        JSON.stringify({ invoice_id: invoice.id, subscription_id: (invoice as any).subscription }),
+        (invoice as any).subscription,
       ]);
 
       await client.query('COMMIT');

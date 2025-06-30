@@ -7,14 +7,14 @@ interface FinancialLineItem {
   col: number
   value: number
   category: 'revenue' | 'expense' | 'asset' | 'liability' | 'equity' | 'cash_inflow' | 'cash_outflow' | 'subtotal' | 'total' | 'unknown'
-  subcategory?: string
-  isCalculated?: boolean
+  subcategory?: string | undefined
+  isCalculated?: boolean | undefined
 }
 
 interface TimePeriod {
   col: number
   period: string
-  date?: Date
+  date?: Date | undefined
   type: 'month' | 'quarter' | 'year'
 }
 
@@ -299,7 +299,7 @@ export class FinancialStatementParser {
             timePeriods.push({
               col: cell.col,
               period: period.period,
-              date: period.date,
+              date: period.date ?? undefined,
               type: period.type
             })
             logger.info(`Added time period: ${period.period} at column ${cell.col}`)
@@ -424,7 +424,7 @@ export class FinancialStatementParser {
             col: cell.col,
             value: cell.value,
             category,
-            subcategory
+            subcategory: subcategory ?? undefined
           })
         }
       })
@@ -481,21 +481,21 @@ export class FinancialStatementParser {
       
       if (statementType === 'pnl') {
         if (item.category === 'revenue') {
-          periodData.revenue += item.value
+          periodData.revenue = (periodData.revenue ?? 0) + item.value
         } else if (item.category === 'expense') {
           if (item.subcategory === 'cogs') {
-            periodData.cogs += Math.abs(item.value)
+            periodData.cogs = (periodData.cogs ?? 0) + Math.abs(item.value)
           } else {
-            periodData.operatingExpenses += Math.abs(item.value)
+            periodData.operatingExpenses = (periodData.operatingExpenses ?? 0) + Math.abs(item.value)
           }
         }
       } else if (statementType === 'cashflow') {
         if (item.subcategory === 'operating') {
-          periodData.operatingCashflow += item.category === 'cash_inflow' ? item.value : -Math.abs(item.value)
+          periodData.operatingCashflow = (periodData.operatingCashflow ?? 0) + (item.category === 'cash_inflow' ? item.value : -Math.abs(item.value))
         } else if (item.subcategory === 'investing') {
-          periodData.investingCashflow += item.category === 'cash_inflow' ? item.value : -Math.abs(item.value)
+          periodData.investingCashflow = (periodData.investingCashflow ?? 0) + (item.category === 'cash_inflow' ? item.value : -Math.abs(item.value))
         } else if (item.subcategory === 'financing') {
-          periodData.financingCashflow += item.category === 'cash_inflow' ? item.value : -Math.abs(item.value)
+          periodData.financingCashflow = (periodData.financingCashflow ?? 0) + (item.category === 'cash_inflow' ? item.value : -Math.abs(item.value))
         }
       }
     })
@@ -503,14 +503,25 @@ export class FinancialStatementParser {
     // Calculate derived values
     Object.keys(data).forEach(period => {
       const pd = data[period]
+      if (!pd) return
       
       if (statementType === 'pnl') {
-        pd.grossProfit = pd.revenue - pd.cogs
-        pd.operatingIncome = pd.grossProfit - pd.operatingExpenses
+        const revenue = pd.revenue ?? 0
+        const cogs = pd.cogs ?? 0
+        const operatingExpenses = pd.operatingExpenses ?? 0
+        const otherIncome = pd.otherIncome ?? 0
+        const otherExpenses = pd.otherExpenses ?? 0
+        
+        pd.grossProfit = revenue - cogs
+        pd.operatingIncome = pd.grossProfit - operatingExpenses
         pd.ebitda = pd.operatingIncome // Simplified - would add back depreciation/amortization
-        pd.netIncome = pd.operatingIncome + pd.otherIncome - pd.otherExpenses
+        pd.netIncome = pd.operatingIncome + otherIncome - otherExpenses
       } else if (statementType === 'cashflow') {
-        pd.netCashflow = pd.operatingCashflow + pd.investingCashflow + pd.financingCashflow
+        const operatingCashflow = pd.operatingCashflow ?? 0
+        const investingCashflow = pd.investingCashflow ?? 0
+        const financingCashflow = pd.financingCashflow ?? 0
+        
+        pd.netCashflow = operatingCashflow + investingCashflow + financingCashflow
       }
     })
     

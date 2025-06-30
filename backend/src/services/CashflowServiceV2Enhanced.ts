@@ -2,6 +2,9 @@ import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 import { ExtendedFinancialService } from './ExtendedFinancialService';
 import { logger } from '../utils/logger';
+import { pool } from '../config/database';
+import { encryptionService } from '../utils/encryption';
+import { ExtendedFinancialData } from '../interfaces/FinancialData';
 
 interface MonthlyMetrics {
   date: Date;
@@ -911,6 +914,95 @@ export class CashflowServiceV2Enhanced {
    */
   getStoredMetrics(): MonthlyMetrics[] {
     return parsedMetrics;
+  }
+
+  /**
+   * Save cashflow data to structured database table
+   */
+  async saveToCashflowDataTable(
+    companyId: string, 
+    dataSourceId: string, 
+    userId: number,
+    metrics: MonthlyMetrics[],
+    extendedData: ExtendedFinancialData
+  ): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Delete existing cashflow data for this data source
+      await client.query(
+        'DELETE FROM cashflow_data WHERE company_id = $1 AND data_source_id = $2',
+        [companyId, dataSourceId]
+      );
+
+      // Insert cashflow data for each month
+      for (const metric of metrics) {
+        // Calculate burn rate (monthly outflow)
+        const burnRate = metric.totalOutflow;
+        
+        // Calculate runway in months (if burning cash)
+        const runwayMonths = burnRate > 0 && metric.finalBalance > 0 
+          ? metric.finalBalance / burnRate 
+          : null;
+
+        // Prepare encrypted values
+        const encryptedInflows = await encryptionService.encryptString(metric.totalInflow.toString(), companyId);
+        const encryptedOutflows = await encryptionService.encryptString(metric.totalOutflow.toString(), companyId);
+        const encryptedNetFlow = await encryptionService.encryptString(metric.monthlyGeneration.toString(), companyId);
+        const encryptedEndingBalance = await encryptionService.encryptString(metric.finalBalance.toString(), companyId);
+        const encryptedBurnRate = burnRate ? await encryptionService.encryptString(burnRate.toString(), companyId) : null;
+
+        await client.query(`
+          INSERT INTO cashflow_data (
+            company_id,
+            data_source_id,
+            date,
+            period_type,
+            cash_inflows,
+            cash_inflows_encrypted,
+            cash_outflows,
+            cash_outflows_encrypted,
+            net_cash_flow,
+            net_cash_flow_encrypted,
+            ending_balance,
+            ending_balance_encrypted,
+            burn_rate,
+            burn_rate_encrypted,
+            runway_months,
+            currency,
+            created_by
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        `, [
+          companyId,
+          dataSourceId,
+          metric.date,
+          'monthly',
+          metric.totalInflow,
+          encryptedInflows,
+          metric.totalOutflow,
+          encryptedOutflows,
+          metric.monthlyGeneration,
+          encryptedNetFlow,
+          metric.finalBalance,
+          encryptedEndingBalance,
+          burnRate,
+          encryptedBurnRate,
+          runwayMonths,
+          metric.currency || 'USD',
+          userId
+        ]);
+      }
+
+      await client.query('COMMIT');
+      logger.info(`Saved ${metrics.length} months of cashflow data to database for company ${companyId}`);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      logger.error('Error saving cashflow data to database:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   /**
