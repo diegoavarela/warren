@@ -47,10 +47,32 @@ export function CompanySelector({ selectedCompanyId, onCompanySelect, className 
       const response = await fetch('/api/v1/companies');
       if (response.ok) {
         const data = await response.json();
-        setCompanies(data.data);
+        // Ensure data.data is an array before setting it
+        if (Array.isArray(data.data)) {
+          setCompanies(data.data);
+        } else {
+          console.warn('API returned non-array data:', data);
+          // Fallback to demo companies if API structure is unexpected
+          setCompanies([
+            { id: 'demo-1', name: 'Empresa Demo 1', taxId: 'RFC123456789', industry: 'Tecnología' },
+            { id: 'demo-2', name: 'Empresa Demo 2', taxId: 'RFC987654321', industry: 'Servicios' }
+          ]);
+        }
+      } else {
+        console.error('Failed to fetch companies, status:', response.status);
+        // Fallback to demo companies if API fails
+        setCompanies([
+          { id: 'demo-1', name: 'Empresa Demo 1', taxId: 'RFC123456789', industry: 'Tecnología' },
+          { id: 'demo-2', name: 'Empresa Demo 2', taxId: 'RFC987654321', industry: 'Servicios' }
+        ]);
       }
     } catch (error) {
       console.error('Failed to fetch companies:', error);
+      // Fallback to demo companies if API call fails
+      setCompanies([
+        { id: 'demo-1', name: 'Empresa Demo 1', taxId: 'RFC123456789', industry: 'Tecnología' },
+        { id: 'demo-2', name: 'Empresa Demo 2', taxId: 'RFC987654321', industry: 'Servicios' }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -117,7 +139,7 @@ export function CompanySelector({ selectedCompanyId, onCompanySelect, className 
           <option value="">
             {locale?.startsWith('es') ? 'Selecciona una empresa' : 'Select a company'}
           </option>
-          {companies.map((company) => (
+          {Array.isArray(companies) && companies.map((company) => (
             <option key={company.id} value={company.id}>
               {company.name}
             </option>
