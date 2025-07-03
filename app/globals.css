@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  body {
+    @apply bg-white text-gray-900;
+  }
+}
+
+/* Custom scrollbar for Excel viewer */
+.excel-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.excel-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+.excel-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded;
+}
+
+.excel-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Excel cell styles */
+.excel-cell {
+  @apply border border-gray-200 p-2 text-sm min-w-[100px] bg-white;
+}
+
+.excel-header-cell {
+  @apply excel-cell bg-gray-50 font-medium;
+}
+
+.excel-data-cell {
+  @apply excel-cell hover:bg-gray-50;
+}
+
+/* Confidence level indicators */
+.confidence-high {
+  @apply border-l-4 border-l-confidence-high bg-green-50;
+}
+
+.confidence-medium {
+  @apply border-l-4 border-l-confidence-medium bg-yellow-50;
+}
+
+.confidence-low {
+  @apply border-l-4 border-l-confidence-low bg-red-50;
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Loading states */
+.pulse-skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* File drop zone */
+.drop-zone-active {
+  @apply border-primary-500 bg-primary-50;
+}
+
+.drop-zone-reject {
+  @apply border-danger-500 bg-danger-50;
+}
+
+/* Financial data tables */
+.financial-table {
+  @apply w-full border-collapse;
+}
+
+.financial-table th {
+  @apply bg-gray-50 p-3 text-left font-medium text-gray-900 border-b;
+}
+
+.financial-table td {
+  @apply p-3 border-b border-gray-200;
+}
+
+/* Responsive grid for mobile */
+@media (max-width: 768px) {
+  .excel-cell {
+    @apply min-w-[80px] p-1 text-xs;
+  }
+  
+  .financial-table th,
+  .financial-table td {
+    @apply p-2 text-sm;
+  }
+}

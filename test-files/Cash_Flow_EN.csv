@@ -1,0 +1,31 @@
+Account,Description,Jan 2024,Feb 2024,Mar 2024,Apr 2024
+,,,"Statement of Cash Flows",,
+,,,"ABC Company Inc.",,
+,,,"January - April 2024",,
+,,,"(In thousands USD)",,
+,,,,,
+Operating Activities,,,,,
+1100,Cash from Customers,1350,1480,1620,1590
+1200,Cash to Suppliers,-680,-720,-780,-760
+1300,Cash to Employees,-340,-345,-350,-355
+1400,Interest Paid,-12,-14,-16,-18
+1500,Taxes Paid,-85,-95,-105,-110
+,Net Cash from Operating Activities,233,306,369,347
+,,,,,
+Investing Activities,,,,,
+2100,Purchase of PPE,-125,-85,-200,-150
+2200,Sale of PPE,0,45,0,0
+2300,Purchase of Investments,-50,-75,-100,-80
+2400,Sale of Investments,25,0,35,60
+,Net Cash from Investing Activities,-150,-115,-265,-170
+,,,,,
+Financing Activities,,,,,
+3100,Proceeds from Debt,200,0,150,100
+3200,Repayment of Debt,-45,-50,-55,-60
+3300,Equity Issued,0,0,500,0
+3400,Dividends Paid,0,-25,0,-35
+,Net Cash from Financing Activities,155,-75,595,5
+,,,,,
+,Net Increase (Decrease) in Cash,238,116,699,182
+,Cash at Beginning of Period,450,688,804,1503
+,Cash at End of Period,688,804,1503,1685
