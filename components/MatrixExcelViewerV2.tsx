@@ -494,8 +494,62 @@ export function MatrixExcelViewerV2({
 
           {/* Excel Table - Show for all steps except AI analysis */}
           {mappingStep !== 'ai_analysis' && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
+            <div className="space-y-4">
+              {/* Top Navigation Buttons */}
+              <div className="flex justify-between items-center">
+                <Button
+                  variant="secondary"
+                  onClick={() => setMappingStep(getPrevStep())}
+                  disabled={mappingStep === 'ai_analysis'}
+                >
+                  ← Anterior
+                </Button>
+
+                <div className="flex items-center space-x-3">
+                  {mappingStep === 'data' && (
+                    <Button
+                      variant="outline"
+                      onClick={detectDataRange}
+                      leftIcon={<ArrowsPointingOutIcon className="w-4 h-4" />}
+                    >
+                      Auto-detectar
+                    </Button>
+                  )}
+                  
+                  {mappingStep === 'account_review' ? (
+                    <Button
+                      variant="primary"
+                      onClick={completeMapping}
+                      disabled={conceptColumns.length === 0 || periodColumns.length === 0 || dataRange.startRow === -1}
+                      leftIcon={<CheckCircleIcon className="w-4 h-4" />}
+                    >
+                      Guardar Datos
+                    </Button>
+                  ) : mappingStep === 'persist' ? (
+                    <Button
+                      variant="primary"
+                      onClick={completeMapping}
+                      disabled={conceptColumns.length === 0 || periodColumns.length === 0 || dataRange.startRow === -1}
+                      leftIcon={<CheckCircleIcon className="w-4 h-4" />}
+                    >
+                      Confirmar y Procesar
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      onClick={handleNext}
+                      disabled={!canProceedToNext()}
+                    >
+                      {mappingStep === 'ai_analysis' && aiError 
+                        ? 'Omitir y Continuar →'
+                        : 'Siguiente →'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
                 <thead>
                   <tr className="bg-gray-50 border-b">
                     <th className="px-3 py-2 text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-50 z-10">
@@ -738,6 +792,7 @@ export function MatrixExcelViewerV2({
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
