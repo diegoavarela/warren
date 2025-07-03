@@ -139,6 +139,11 @@ export interface MatrixMapping {
   hasSubtotals: boolean;
   hasTotals: boolean;
   currency: string;
+  
+  // AI analysis data (optional)
+  aiAnalysis?: DocumentStructure;
+  accountClassifications?: AccountClassification[];
+  detectedTotalRows?: any[];
 }
 
 // AI-powered document analysis interfaces

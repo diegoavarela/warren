@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleContext';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { Card, CardBody } from '@/components/ui/Card';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -141,31 +143,32 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex">
-                  <svg className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-red-800">{error}</p>
-                </div>
-              </div>
+              <Card variant="flat" className="bg-red-50 border-red-200">
+                <CardBody className="py-3">
+                  <div className="flex">
+                    <svg className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                </CardBody>
+              </Card>
             )}
 
             <div>
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
                 disabled={loading}
-                className="w-full flex justify-center items-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                loading={loading}
               >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    {locale?.startsWith('es') ? 'Iniciando sesión...' : 'Signing in...'}
-                  </div>
-                ) : (
-                  locale?.startsWith('es') ? 'Iniciar Sesión' : 'Sign In'
-                )}
-              </button>
+                {loading 
+                  ? (locale?.startsWith('es') ? 'Iniciando sesión...' : 'Signing in...')
+                  : (locale?.startsWith('es') ? 'Iniciar Sesión' : 'Sign In')
+                }
+              </Button>
             </div>
 
             <div className="text-center">
@@ -179,14 +182,16 @@ export default function LoginPage() {
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600 text-center mb-2">
-              {locale?.startsWith('es') ? 'Credenciales de demo:' : 'Demo credentials:'}
-            </p>
-            <p className="text-xs text-gray-700 text-center font-mono">
-              demo@warren.com / demo123
-            </p>
-          </div>
+          <Card variant="flat" className="mt-8">
+            <CardBody className="text-center">
+              <p className="text-xs text-gray-600 mb-2">
+                {locale?.startsWith('es') ? 'Credenciales de demo:' : 'Demo credentials:'}
+              </p>
+              <p className="text-xs text-gray-700 font-mono">
+                demo@warren.com / demo123
+              </p>
+            </CardBody>
+          </Card>
         </div>
       </div>
 

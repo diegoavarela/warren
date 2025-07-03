@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MatrixExcelViewer } from "@/components/MatrixExcelViewer";
+import { MatrixExcelViewerV2 } from "@/components/MatrixExcelViewerV2";
 import { MatrixMapping, DocumentStructure, AccountClassification } from "@/types";
 import { Header } from "@/components/Header";
 import { readExcelFile } from "@/lib/excel-reader";
@@ -124,9 +124,42 @@ export default function AdvancedMapperPage() {
       };
       
       setLoadingStep("Preparando para persistencia...");
+      
+      // Create accountMapping structure expected by persist page
+      const accountMapping = {
+        statementType: mapping.aiAnalysis?.statementType || 'profit_loss',
+        currency: mapping.currency || 'MXN',
+        accounts: processedData.map((row: any) => {
+          // Try to find AI classification for this account
+          const aiClassification = mapping.accountClassifications?.find(
+            (c: any) => c.accountName === row.accountName
+          );
+          
+          return {
+            code: row.accountCode,
+            name: row.accountName,
+            category: aiClassification?.suggestedCategory || row.category,
+            isInflow: aiClassification?.isInflow ?? (row.category?.includes('revenue') || row.category?.includes('income')),
+            periods: row.periods
+          };
+        })
+      };
+      
       // Store results for persistence
+      console.log('Mapper page - Storing data to sessionStorage');
+      console.log('accountMapping:', {
+        statementType: accountMapping.statementType,
+        currency: accountMapping.currency,
+        accountsCount: accountMapping.accounts.length
+      });
+      console.log('validationResults:', {
+        totalRows: results.totalRows,
+        validRows: results.validRows
+      });
+      
       sessionStorage.setItem('validationResults', JSON.stringify(results));
-      sessionStorage.setItem('matrixMapping', JSON.stringify(mapping));
+      sessionStorage.setItem('accountMapping', JSON.stringify(accountMapping));
+      sessionStorage.setItem('matrixMapping', JSON.stringify(mapping)); // Keep for reference
       
       // Redirect to persistence page
       router.push('/persist');
@@ -243,7 +276,7 @@ export default function AdvancedMapperPage() {
 
           {excelData && (
             <div className="relative">
-              <MatrixExcelViewer
+              <MatrixExcelViewerV2
                 rawData={excelData}
                 excelMetadata={excelMetadata}
                 onMappingComplete={handleMappingComplete}

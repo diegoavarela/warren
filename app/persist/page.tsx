@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Header } from "@/components/Header";
 import { CompanySelector } from "@/components/CompanySelector";
 import { CheckCircleIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline";
+import { Card, CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 function PersistPageContent() {
   const router = useRouter();
@@ -27,13 +29,35 @@ function PersistPageContent() {
     const resultsStr = sessionStorage.getItem('validationResults');
     const mappingStr = sessionStorage.getItem('accountMapping');
     
+    console.log('Persist page - Loading data from sessionStorage');
+    console.log('validationResults exists:', !!resultsStr);
+    console.log('accountMapping exists:', !!mappingStr);
+    
     if (!resultsStr || !mappingStr) {
+      console.error('Missing data in sessionStorage:', {
+        validationResults: resultsStr?.substring(0, 100),
+        accountMapping: mappingStr?.substring(0, 100)
+      });
       setError('No se encontraron datos para guardar');
       return;
     }
     
-    setValidationResults(JSON.parse(resultsStr));
-    setAccountMapping(JSON.parse(mappingStr));
+    try {
+      const parsedResults = JSON.parse(resultsStr);
+      const parsedMapping = JSON.parse(mappingStr);
+      
+      console.log('Parsed data successfully:', {
+        resultsKeys: Object.keys(parsedResults),
+        mappingKeys: Object.keys(parsedMapping),
+        accountsCount: parsedMapping.accounts?.length
+      });
+      
+      setValidationResults(parsedResults);
+      setAccountMapping(parsedMapping);
+    } catch (err) {
+      console.error('Error parsing sessionStorage data:', err);
+      setError('Error al cargar los datos guardados');
+    }
   }, []);
 
   const handlePersist = async () => {
@@ -91,7 +115,29 @@ function PersistPageContent() {
         <Header />
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <div className="text-center">
-            <p className="text-lg text-gray-600">Cargando datos...</p>
+            {error ? (
+              <>
+                <div className="text-red-600 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
+                <p className="text-gray-600 mb-6">{error}</p>
+                <Button
+                  onClick={() => router.push('/mapper')}
+                  variant="primary"
+                >
+                  Volver al mapeador
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-lg text-gray-600">Cargando datos...</p>
+                <p className="text-sm text-gray-500 mt-2">Si este mensaje persiste, verifica la consola del navegador.</p>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -120,30 +166,32 @@ function PersistPageContent() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>
                 {locale?.startsWith('es') ? 'Guardar Datos Financieros' : 'Save Financial Data'}
-              </h1>
-              <p className="text-gray-600">
+              </CardTitle>
+              <CardDescription>
                 {locale?.startsWith('es') 
                   ? 'Los datos serán encriptados antes de almacenarse en la base de datos.'
                   : 'Data will be encrypted before being stored in the database.'
                 }
-              </p>
-              {user && (
-                <p className="text-sm text-gray-500 mt-2">
-                  {locale?.startsWith('es') ? 'Usuario:' : 'User:'} {user.firstName} {user.lastName}
-                </p>
-              )}
-            </div>
+                {user && (
+                  <span className="block mt-2">
+                    {locale?.startsWith('es') ? 'Usuario:' : 'User:'} {user.firstName} {user.lastName}
+                  </span>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardBody className="space-y-6">
 
-            {/* Summary */}
-            <div className="bg-gray-50 rounded-lg p-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">
-                {locale?.startsWith('es') ? 'Resumen de Datos' : 'Data Summary'}
-              </h3>
+              {/* Summary */}
+              <Card variant="flat">
+                <CardBody>
+                  <h3 className="font-semibold text-gray-900 mb-4">
+                    {locale?.startsWith('es') ? 'Resumen de Datos' : 'Data Summary'}
+                  </h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">
@@ -176,96 +224,98 @@ function PersistPageContent() {
                   </span>
                   <span className="ml-2 font-medium">{accountMapping.accounts.length}</span>
                 </div>
-              </div>
-            </div>
+                  </div>
+                </CardBody>
+              </Card>
 
-            {/* Company Selection */}
-            <CompanySelector
-              selectedCompanyId={selectedCompanyId}
-              onCompanySelect={setSelectedCompanyId}
-              className="mb-8"
-            />
+              {/* Company Selection */}
+              <CompanySelector
+                selectedCompanyId={selectedCompanyId}
+                onCompanySelect={setSelectedCompanyId}
+              />
 
-            {/* Template Option */}
-            <div className="mb-8">
-              <label className="flex items-center space-x-3">
-                <input 
-                  type="checkbox"
-                  checked={saveAsTemplate}
-                  onChange={(e) => setSaveAsTemplate(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  {locale?.startsWith('es') 
-                    ? 'Guardar como plantilla para futuros mapeos'
-                    : 'Save as template for future mappings'
-                  }
-                </span>
-              </label>
-              {saveAsTemplate && (
-                <input
-                  type="text"
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                  placeholder={locale?.startsWith('es') 
-                    ? 'Nombre de la plantilla (opcional)'
-                    : 'Template name (optional)'
-                  }
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+              {/* Template Option */}
+              <Card variant="flat">
+                <CardBody>
+                  <label className="flex items-center space-x-3">
+                    <input 
+                      type="checkbox"
+                      checked={saveAsTemplate}
+                      onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      {locale?.startsWith('es') 
+                        ? 'Guardar como plantilla para futuros mapeos'
+                        : 'Save as template for future mappings'
+                      }
+                    </span>
+                  </label>
+                  {saveAsTemplate && (
+                    <input
+                      type="text"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder={locale?.startsWith('es') 
+                        ? 'Nombre de la plantilla (opcional)'
+                        : 'Template name (optional)'
+                      }
+                      className="mt-3 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  )}
+                </CardBody>
+              </Card>
+
+              {/* Security Notice */}
+              <Card variant="flat" className="bg-blue-50 border-blue-200">
+                <CardBody>
+                  <div className="flex items-start space-x-3">
+                    <CloudArrowUpIcon className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium mb-1">Seguridad de Datos</p>
+                      <p>
+                        Todos los datos financieros serán encriptados usando AES-256 antes de 
+                        almacenarse. Solo usuarios autorizados podrán acceder a la información.
+                      </p>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+
+              {error && (
+                <Card variant="flat" className="bg-red-50 border-red-200">
+                  <CardBody>
+                    <p className="text-sm text-red-800">{error}</p>
+                  </CardBody>
+                </Card>
               )}
-            </div>
 
-            {/* Security Notice */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-              <div className="flex items-start space-x-3">
-                <CloudArrowUpIcon className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">Seguridad de Datos</p>
-                  <p>
-                    Todos los datos financieros serán encriptados usando AES-256 antes de 
-                    almacenarse. Solo usuarios autorizados podrán acceder a la información.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex justify-between">
-              <button
+            </CardBody>
+            <CardFooter className="flex justify-between">
+              <Button
+                variant="ghost"
                 onClick={() => router.push('/mapper')}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
               >
                 ← Volver al mapeo
-              </button>
+              </Button>
               
-              <button
+              <Button
+                variant="primary"
+                size="lg"
                 onClick={handlePersist}
-                disabled={loading || !selectedCompanyId}
-                className="px-8 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+                disabled={!selectedCompanyId}
+                loading={loading}
+                leftIcon={!loading && <CloudArrowUpIcon className="w-5 h-5" />}
               >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>{locale?.startsWith('es') ? 'Guardando...' : 'Saving...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <CloudArrowUpIcon className="w-5 h-5" />
-                    <span>
-                      {locale?.startsWith('es') ? 'Guardar Datos Encriptados' : 'Save Encrypted Data'}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+                {loading 
+                  ? (locale?.startsWith('es') ? 'Guardando...' : 'Saving...')
+                  : (
+                      locale?.startsWith('es') ? 'Guardar Datos Encriptados' : 'Save Encrypted Data'
+                  )
+                }
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       </main>
     </div>

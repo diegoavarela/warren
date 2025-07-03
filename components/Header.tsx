@@ -6,6 +6,7 @@ import { ChevronDownIcon, UserCircleIcon, ArrowRightOnRectangleIcon } from "@her
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useTranslation } from "@/lib/translations";
+import { Button } from "./ui/Button";
 
 export function Header() {
   const router = useRouter();
@@ -111,18 +112,20 @@ export function Header() {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => router.push('/login')}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
                 >
                   {t('auth.login')}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => router.push('/signup')}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
                 >
                   {t('auth.signup')}
-                </button>
+                </Button>
               </div>
             )}
 

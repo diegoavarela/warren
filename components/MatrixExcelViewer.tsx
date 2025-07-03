@@ -363,7 +363,11 @@ export function MatrixExcelViewer({
       dataRange,
       hasSubtotals: false, // Could be detected or set by user
       hasTotals: false,    // Could be detected or set by user
-      currency: 'MXN'      // Could be detected or set by user
+      currency: aiAnalysis?.currency || 'MXN',
+      // Add AI analysis data
+      aiAnalysis: aiAnalysis || undefined,
+      accountClassifications: accountClassifications.length > 0 ? accountClassifications : undefined,
+      detectedTotalRows: detectedTotalRows.length > 0 ? detectedTotalRows : undefined
     };
     
     onMappingComplete(mapping);

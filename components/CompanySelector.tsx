@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleContext';
 import { PlusIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { Button } from './ui/Button';
+import { Card, CardHeader, CardBody, CardFooter, CardTitle } from './ui/Card';
 
 interface Company {
   id: string;
@@ -132,11 +134,13 @@ export function CompanySelector({ selectedCompanyId, onCompanySelect, className 
       {/* Create Company Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">
+          <Card className="max-w-md w-full mx-4">
+            <CardHeader>
+              <CardTitle>
                 {locale?.startsWith('es') ? 'Crear Nueva Empresa' : 'Create New Company'}
-              </h3>
+              </CardTitle>
+            </CardHeader>
+            <CardBody>
               
               <form onSubmit={handleCreateCompany} className="space-y-4">
                 <div>
@@ -182,36 +186,31 @@ export function CompanySelector({ selectedCompanyId, onCompanySelect, className 
                   </div>
                 )}
 
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setError('');
-                      setCreateForm({ name: '', taxId: '', industry: '' });
-                    }}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                  >
-                    {locale?.startsWith('es') ? 'Cancelar' : 'Cancel'}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createLoading}
-                    className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    {createLoading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    ) : (
-                      <>
-                        <PlusIcon className="w-4 h-4" />
-                        <span>{locale?.startsWith('es') ? 'Crear' : 'Create'}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
               </form>
-            </div>
-          </div>
+            </CardBody>
+            <CardFooter className="flex justify-end space-x-3">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setError('');
+                  setCreateForm({ name: '', taxId: '', industry: '' });
+                }}
+              >
+                {locale?.startsWith('es') ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={createLoading}
+                loading={createLoading}
+                leftIcon={!createLoading && <PlusIcon className="w-4 h-4" />}
+                onClick={handleCreateCompany}
+              >
+                {locale?.startsWith('es') ? 'Crear' : 'Create'}
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       )}
     </div>

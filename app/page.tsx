@@ -8,6 +8,8 @@ import { ExcelFileMetadata } from "@/types";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/lib/translations";
+import { Button } from "@/components/ui/Button";
+import { Card, CardBody } from "@/components/ui/Card";
 
 export default function HomePage() {
   const router = useRouter();
@@ -204,18 +206,22 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="space-y-3 max-w-sm mx-auto">
-                  <button
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
                     onClick={() => router.push('/login')}
-                    className="w-full px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-[1.02] shadow-md"
                   >
                     {t('auth.login')}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
                     onClick={() => router.push('/signup')}
-                    className="w-full px-6 py-3.5 bg-white text-blue-600 font-medium rounded-xl border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all transform hover:scale-[1.02]"
                   >
                     {t('auth.createAccount')}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -223,15 +229,18 @@ export default function HomePage() {
             {/* Quick Start Button - Only for authenticated users */}
             {isAuthenticated && (
               <div className="mt-8 text-center">
-                <a
-                  href="/mapper"
-                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  leftIcon={
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  }
+                  onClick={() => router.push('/mapper')}
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
                   {locale?.startsWith('es') ? 'Ir al Mapeador Visual' : 'Go to Visual Mapper'}
-                </a>
+                </Button>
               </div>
             )}
           </div>
