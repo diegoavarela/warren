@@ -3,7 +3,8 @@
 import { 
   Organization, 
   User,
-  Company, 
+  Company,
+  CompanyUser,
   FinancialStatement, 
   FinancialLineItem, 
   MappingTemplate,
@@ -104,6 +105,62 @@ let mockCompanies: Company[] = [
   }
 ];
 
+// Mock company-user relationships
+let mockCompanyUsers: CompanyUser[] = [
+  {
+    id: "comp-user-1",
+    companyId: "company-1",
+    userId: "user-1",
+    role: "company_admin",
+    permissions: null,
+    isActive: true,
+    invitedAt: new Date(),
+    joinedAt: new Date(),
+    invitedBy: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "comp-user-2", 
+    companyId: "company-1",
+    userId: "user-2",
+    role: "user",
+    permissions: null,
+    isActive: true,
+    invitedAt: new Date(),
+    joinedAt: new Date(),
+    invitedBy: "user-1",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "comp-user-3",
+    companyId: "company-2", 
+    userId: "user-1",
+    role: "company_admin",
+    permissions: null,
+    isActive: true,
+    invitedAt: new Date(),
+    joinedAt: new Date(),
+    invitedBy: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "comp-user-4",
+    companyId: "company-2",
+    userId: "user-3",
+    role: "user", 
+    permissions: null,
+    isActive: true,
+    invitedAt: new Date(),
+    joinedAt: new Date(),
+    invitedBy: "user-1",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+];
+
 let mockStatements: FinancialStatement[] = [];
 let mockLineItems: FinancialLineItem[] = [];
 let mockTemplates: MappingTemplate[] = [];
@@ -130,6 +187,11 @@ export const mockDb = {
           const newCompany = { ...data, id: `company-${Date.now()}`, createdAt: new Date(), updatedAt: new Date() };
           mockCompanies.push(newCompany);
           return Promise.resolve([newCompany]);
+        }
+        if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+          const newCompanyUser = { ...data, id: `comp-user-${Date.now()}`, createdAt: new Date(), updatedAt: new Date() };
+          mockCompanyUsers.push(newCompanyUser);
+          return Promise.resolve([newCompanyUser]);
         }
         if (table === mockTables.financialStatements || table._symbol === mockTables.financialStatements._symbol) {
           const newStatement = { ...data, id: `stmt-${Date.now()}`, createdAt: new Date(), updatedAt: new Date() };
@@ -195,6 +257,8 @@ export const mockDb = {
                 items = filterItems(mockOrganizations);
               } else if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
                 items = filterItems(mockCompanies);
+              } else if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+                items = filterItems(mockCompanyUsers);
               } else if (table === mockTables.processingJobs || table._symbol === mockTables.processingJobs._symbol) {
                 items = filterItems(mockJobs);
               }
@@ -209,6 +273,8 @@ export const mockDb = {
               items = filterItems(mockOrganizations);
             } else if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
               items = filterItems(mockCompanies);
+            } else if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+              items = filterItems(mockCompanyUsers);
             } else if (table === mockTables.processingJobs || table._symbol === mockTables.processingJobs._symbol) {
               items = filterItems(mockJobs);
             }
@@ -230,6 +296,9 @@ export const mockDb = {
       limit: (count: number) => {
         if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
           return Promise.resolve(mockCompanies.slice(0, count));
+        }
+        if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+          return Promise.resolve(mockCompanyUsers.slice(0, count));
         }
         if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
           return Promise.resolve(mockUsers.slice(0, count));
@@ -289,6 +358,14 @@ export const mockTables = {
     name: 'name',
     isActive: 'isActive'
   },
+  companyUsers: {
+    _symbol: Symbol('companyUsers'),
+    id: 'id',
+    companyId: 'companyId',
+    userId: 'userId',
+    role: 'role',
+    isActive: 'isActive'
+  },
   financialStatements: {
     _symbol: Symbol('financialStatements'),
     id: 'id',
@@ -322,4 +399,4 @@ export const eq = (field: any, value: any) => ({ field, value, type: 'eq' });
 export const desc = (field: any) => ({ field, type: 'desc' });
 
 // Export the mock data for direct access if needed
-export { mockOrganizations, mockUsers, mockCompanies, mockStatements, mockLineItems, mockTemplates, mockLogs, mockJobs };
+export { mockOrganizations, mockUsers, mockCompanies, mockCompanyUsers, mockStatements, mockLineItems, mockTemplates, mockLogs, mockJobs };

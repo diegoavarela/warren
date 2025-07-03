@@ -9,6 +9,7 @@ let db: any;
 let organizations: any;
 let users: any;
 let companies: any;
+let companyUsers: any;
 let financialStatements: any;
 let financialLineItems: any;
 let mappingTemplates: any;
@@ -26,6 +27,7 @@ if (isDevelopment && !hasRealDatabase) {
   organizations = mockTables.organizations;
   users = mockTables.users;
   companies = mockTables.companies;
+  companyUsers = mockTables.companyUsers;
   financialStatements = mockTables.financialStatements;
   financialLineItems = mockTables.financialLineItems;
   mappingTemplates = mockTables.mappingTemplates;
@@ -51,6 +53,7 @@ if (isDevelopment && !hasRealDatabase) {
   organizations = schema.organizations;
   users = schema.users;
   companies = schema.companies;
+  companyUsers = schema.companyUsers;
   financialStatements = schema.financialStatements;
   financialLineItems = schema.financialLineItems;
   mappingTemplates = schema.mappingTemplates;
@@ -65,6 +68,7 @@ export {
   organizations,
   users,
   companies,
+  companyUsers,
   financialStatements,
   financialLineItems,
   mappingTemplates,

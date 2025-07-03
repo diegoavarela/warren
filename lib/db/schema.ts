@@ -59,6 +59,23 @@ export const companies = pgTable("companies", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Company-User relationships for role-based access
+export const companyUsers = pgTable("company_users", {
+  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  role: varchar("role", { length: 50 }).notNull().default("user"), // company_admin, user, viewer
+  permissions: jsonb("permissions"), // specific permissions within the company
+  isActive: boolean("is_active").default(true),
+  invitedAt: timestamp("invited_at"),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  invitedBy: uuid("invited_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyUser: unique().on(table.companyId, table.userId),
+}));
+
 // Financial periods for time-series data
 export const financialPeriods = pgTable("financial_periods", {
   id: uuid("id").primaryKey().default("gen_random_uuid()"),
@@ -248,6 +265,8 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
+export type CompanyUser = typeof companyUsers.$inferSelect;
+export type NewCompanyUser = typeof companyUsers.$inferInsert;
 export type FinancialPeriod = typeof financialPeriods.$inferSelect;
 export type NewFinancialPeriod = typeof financialPeriods.$inferInsert;
 export type FinancialStatement = typeof financialStatements.$inferSelect;
