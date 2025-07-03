@@ -40,6 +40,18 @@ interface MatrixExcelViewerProps {
   statementType?: string;
 }
 
+// LATAM Currencies
+const LATAM_CURRENCIES = [
+  { code: 'MXN', name: 'Peso Mexicano', symbol: '$', flag: '🇲🇽' },
+  { code: 'USD', name: 'Dólar Estadounidense', symbol: '$', flag: '🇺🇸' },
+  { code: 'COP', name: 'Peso Colombiano', symbol: '$', flag: '🇨🇴' },
+  { code: 'ARS', name: 'Peso Argentino', symbol: '$', flag: '🇦🇷' },
+  { code: 'CLP', name: 'Peso Chileno', symbol: '$', flag: '🇨🇱' },
+  { code: 'PEN', name: 'Sol Peruano', symbol: 'S/', flag: '🇵🇪' },
+  { code: 'BRL', name: 'Real Brasileño', symbol: 'R$', flag: '🇧🇷' },
+  { code: 'EUR', name: 'Euro', symbol: '€', flag: '🇪🇺' }
+];
+
 const WIZARD_STEPS: Step[] = [
   { id: 'ai_analysis', name: 'Análisis IA', icon: <SparklesIcon className="w-5 h-5" /> },
   { id: 'concepts', name: 'Conceptos', icon: <TableCellsIcon className="w-5 h-5" /> },
@@ -79,6 +91,9 @@ export function MatrixExcelViewerV2({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [detectedTotalRows, setDetectedTotalRows] = useState<TotalDetectionResult[]>([]);
+  
+  // Currency state
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('MXN');
   
   const displayData = useMemo(() => {
     return excelMetadata?.data || rawData;
@@ -125,6 +140,11 @@ export function MatrixExcelViewerV2({
       
       if (structureResult.success) {
         setAiAnalysis(structureResult.data);
+        
+        // Auto-set detected currency if valid
+        if (structureResult.data.currency && LATAM_CURRENCIES.some(c => c.code === structureResult.data.currency)) {
+          setSelectedCurrency(structureResult.data.currency);
+        }
         
         // Apply AI suggestions if available
         const conceptCols = [];
@@ -350,7 +370,7 @@ export function MatrixExcelViewerV2({
       dataRange,
       hasSubtotals: false,
       hasTotals: false,
-      currency: aiAnalysis?.currency || 'MXN',
+      currency: selectedCurrency,
       aiAnalysis: aiAnalysis || undefined,
       accountClassifications: accountClassifications.length > 0 ? accountClassifications : undefined,
       detectedTotalRows: detectedTotalRows.length > 0 ? detectedTotalRows : undefined
@@ -473,9 +493,34 @@ export function MatrixExcelViewerV2({
                     <h4 className="font-semibold text-green-900 mb-2">Análisis Completado</h4>
                     <div className="space-y-2 text-sm">
                       <p><span className="font-medium">Tipo de Estado:</span> {aiAnalysis.statementType} (Confianza: {aiAnalysis.confidence}%)</p>
-                      <p><span className="font-medium">Moneda:</span> {aiAnalysis.currency}</p>
+                      <p><span className="font-medium">Moneda detectada:</span> {aiAnalysis.currency}</p>
                       <p><span className="font-medium">Filas de datos:</span> {aiAnalysis.dataStartRow} - {aiAnalysis.dataEndRow}</p>
                     </div>
+                  </div>
+                  
+                  {/* Currency Selection */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 mb-3">Seleccionar Moneda</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {LATAM_CURRENCIES.map((currency) => (
+                        <button
+                          key={currency.code}
+                          onClick={() => setSelectedCurrency(currency.code)}
+                          className={`p-3 rounded-lg border transition-all ${
+                            selectedCurrency === currency.code
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
+                          }`}
+                        >
+                          <div className="text-lg mb-1">{currency.flag}</div>
+                          <div className="font-medium text-sm">{currency.code}</div>
+                          <div className="text-xs opacity-75">{currency.symbol}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-blue-700 mt-2">
+                      Moneda seleccionada: <span className="font-medium">{selectedCurrency}</span>
+                    </p>
                   </div>
                   {aiAnalysis.reasoning && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

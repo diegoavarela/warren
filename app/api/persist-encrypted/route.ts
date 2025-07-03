@@ -18,8 +18,22 @@ export async function POST(request: NextRequest) {
       } = body;
 
       if (!validationResults || !accountMapping || !companyId) {
+        console.log('Missing required data:', {
+          hasValidationResults: !!validationResults,
+          hasAccountMapping: !!accountMapping,
+          hasCompanyId: !!companyId,
+          accountMappingKeys: accountMapping ? Object.keys(accountMapping) : 'none',
+          validationResultsKeys: validationResults ? Object.keys(validationResults) : 'none'
+        });
         return NextResponse.json(
-          { error: "Missing required data" },
+          { 
+            error: "Missing required data",
+            details: {
+              validationResults: !!validationResults,
+              accountMapping: !!accountMapping,
+              companyId: !!companyId
+            }
+          },
           { status: 400 }
         );
       }
@@ -34,8 +48,9 @@ export async function POST(request: NextRequest) {
       const statementId = nanoid();
       
       // Extract period from the first period column
-      const firstPeriod = accountMapping.periodColumns[0]?.label || 'Unknown';
-      const lastPeriod = accountMapping.periodColumns[accountMapping.periodColumns.length - 1]?.label || firstPeriod;
+      const periodColumns = accountMapping.periodColumns || [];
+      const firstPeriod = periodColumns[0]?.label || periodColumns[0]?.periodLabel || 'Unknown';
+      const lastPeriod = periodColumns[periodColumns.length - 1]?.label || periodColumns[periodColumns.length - 1]?.periodLabel || firstPeriod;
 
       // Prepare the data for storage
       const financialData = {
@@ -68,17 +83,23 @@ export async function POST(request: NextRequest) {
       // Encrypt sensitive data if requested
       let dataToStore: any = financialData;
       if (shouldEncrypt) {
-        // Encrypt the entire financial data object
-        dataToStore = {
-          periodId,
-          statementId,
-          companyId,
-          userId: user.id,
-          organizationId: user.organizationId,
-          encryptedData: encryptObject(financialData),
-          isEncrypted: true,
-          createdAt: new Date().toISOString()
-        };
+        try {
+          // Encrypt the entire financial data object
+          const encryptedData = encryptObject(financialData);
+          dataToStore = {
+            periodId,
+            statementId,
+            companyId,
+            userId: user.id,
+            organizationId: user.organizationId,
+            encryptedData,
+            isEncrypted: true,
+            createdAt: new Date().toISOString()
+          };
+        } catch (encryptionError) {
+          console.error('Encryption error:', encryptionError);
+          throw new Error(`Encryption failed: ${encryptionError instanceof Error ? encryptionError.message : 'Unknown encryption error'}`);
+        }
       }
 
       // Save mapping template if requested
@@ -126,8 +147,14 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
       console.error("Persistence error:", error);
+      console.error("Error stack:", error instanceof Error ? error.stack : 'Unknown error');
+      console.error("Error message:", error instanceof Error ? error.message : String(error));
+      
       return NextResponse.json(
-        { error: "Error al guardar los datos" },
+        { 
+          error: "Error al guardar los datos",
+          details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined
+        },
         { status: 500 }
       );
     }

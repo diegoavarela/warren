@@ -1,9 +1,23 @@
 import crypto from 'crypto';
 
 // In production, this should come from environment variables
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-32-character-encryption-key-here-change-me!';
+const DEFAULT_KEY = 'warren-financial-parser-secret-key-32-characters!';
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || DEFAULT_KEY;
 const IV_LENGTH = 16;
 const ALGORITHM = 'aes-256-cbc';
+
+// Ensure key is exactly 32 characters for AES-256
+function getValidKey(key: string): Buffer {
+  if (key.length === 32) {
+    return Buffer.from(key);
+  } else if (key.length > 32) {
+    return Buffer.from(key.slice(0, 32));
+  } else {
+    // Pad with zeros if too short
+    const paddedKey = key.padEnd(32, '0');
+    return Buffer.from(paddedKey);
+  }
+}
 
 /**
  * Encrypts sensitive financial data
@@ -12,7 +26,7 @@ export function encrypt(text: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(
     ALGORITHM, 
-    Buffer.from(ENCRYPTION_KEY.slice(0, 32)), 
+    getValidKey(ENCRYPTION_KEY), 
     iv
   );
   
@@ -32,7 +46,7 @@ export function decrypt(text: string): string {
   
   const decipher = crypto.createDecipheriv(
     ALGORITHM, 
-    Buffer.from(ENCRYPTION_KEY.slice(0, 32)), 
+    getValidKey(ENCRYPTION_KEY), 
     iv
   );
   

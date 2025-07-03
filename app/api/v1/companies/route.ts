@@ -4,6 +4,40 @@ import { withAuth } from "@/lib/auth/middleware";
 
 // GET /api/v1/companies - List companies for organization
 export async function GET(request: NextRequest) {
+  // Temporarily bypass auth for debugging
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const companyList = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.organizationId, 'org-1')) // Use default org for development
+        .where(eq(companies.isActive, true));
+
+      console.log('Companies API: Found companies:', companyList);
+
+      return NextResponse.json({
+        success: true,
+        data: companyList,
+        meta: {
+          total: companyList.length
+        }
+      });
+
+    } catch (error) {
+      console.error('Companies GET error:', error);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Internal server error'
+          }
+        },
+        { status: 500 }
+      );
+    }
+  }
+  
   return withAuth(request, async (req, user) => {
     try {
       const companyList = await db
