@@ -46,7 +46,7 @@ const WIZARD_STEPS: Step[] = [
   { id: 'periods', name: 'Períodos', icon: <CalendarDaysIcon className="w-5 h-5" /> },
   { id: 'data', name: 'Datos', icon: <DocumentTextIcon className="w-5 h-5" /> },
   { id: 'account_review', name: 'Clasificación', icon: <TagIcon className="w-5 h-5" /> },
-  { id: 'final_review', name: 'Revisión', icon: <CheckCircleIcon className="w-5 h-5" /> }
+  { id: 'persist', name: 'Guardar', icon: <CheckCircleIcon className="w-5 h-5" /> }
 ];
 
 export function MatrixExcelViewerV2({
@@ -69,7 +69,7 @@ export function MatrixExcelViewerV2({
   
   // UI state
   const [selectedCell, setSelectedCell] = useState<{row: number, col: number} | null>(null);
-  const [mappingStep, setMappingStep] = useState<'ai_analysis' | 'concepts' | 'periods' | 'data' | 'account_review' | 'final_review'>('ai_analysis');
+  const [mappingStep, setMappingStep] = useState<'ai_analysis' | 'concepts' | 'periods' | 'data' | 'account_review' | 'persist'>('ai_analysis');
   const [showAllRows, setShowAllRows] = useState(false);
   const [editingClassification, setEditingClassification] = useState<AccountClassification | null>(null);
   
@@ -453,8 +453,8 @@ export function MatrixExcelViewerV2({
             {mappingStep === 'concepts' && 'Selecciona las columnas que contienen información de cuentas'}
             {mappingStep === 'periods' && 'Identifica la fila de encabezados y las columnas de períodos'}
             {mappingStep === 'data' && 'Define el rango que contiene los valores financieros'}
-            {mappingStep === 'account_review' && 'Revisa y ajusta las categorías sugeridas por IA'}
-            {mappingStep === 'final_review' && 'Revisa el mapeo completo antes de procesar'}
+            {mappingStep === 'account_review' && 'Revisa y ajusta las categorías sugeridas por IA. Luego guarda los datos.'}
+            {mappingStep === 'persist' && 'Confirmando y guardando los datos procesados'}
           </CardDescription>
         </CardHeader>
 
@@ -773,7 +773,16 @@ export function MatrixExcelViewerV2({
               </Button>
             )}
             
-            {mappingStep === 'final_review' ? (
+            {mappingStep === 'account_review' ? (
+              <Button
+                variant="primary"
+                onClick={completeMapping}
+                disabled={conceptColumns.length === 0 || periodColumns.length === 0 || dataRange.startRow === -1}
+                leftIcon={<CheckCircleIcon className="w-4 h-4" />}
+              >
+                Guardar Datos
+              </Button>
+            ) : mappingStep === 'persist' ? (
               <Button
                 variant="primary"
                 onClick={completeMapping}
