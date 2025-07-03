@@ -34,11 +34,9 @@ function PersistPageContent() {
     console.log('accountMapping exists:', !!mappingStr);
     
     if (!resultsStr || !mappingStr) {
-      console.error('Missing data in sessionStorage:', {
-        validationResults: resultsStr?.substring(0, 100),
-        accountMapping: mappingStr?.substring(0, 100)
-      });
-      setError('No se encontraron datos para guardar');
+      console.log('No data in sessionStorage, redirecting to home page');
+      // Redirect to home page if no data is available
+      router.push('/');
       return;
     }
     
@@ -56,7 +54,8 @@ function PersistPageContent() {
       setAccountMapping(parsedMapping);
     } catch (err) {
       console.error('Error parsing sessionStorage data:', err);
-      setError('Error al cargar los datos guardados');
+      // Redirect to home page if data is corrupted
+      router.push('/');
     }
   }, []);
 
@@ -115,29 +114,9 @@ function PersistPageContent() {
         <Header />
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <div className="text-center">
-            {error ? (
-              <>
-                <div className="text-red-600 mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
-                <p className="text-gray-600 mb-6">{error}</p>
-                <Button
-                  onClick={() => router.push('/mapper')}
-                  variant="primary"
-                >
-                  Volver al mapeador
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-lg text-gray-600">Cargando datos...</p>
-                <p className="text-sm text-gray-500 mt-2">Si este mensaje persiste, verifica la consola del navegador.</p>
-              </>
-            )}
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Cargando datos...</p>
+            <p className="text-sm text-gray-500 mt-2">Redirigiendo si no hay datos disponibles...</p>
           </div>
         </div>
       </div>
