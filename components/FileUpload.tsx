@@ -19,7 +19,7 @@ interface FileUploadProps {
 export function FileUpload({ 
   onFileUploaded, 
   maxFileSize = 50 * 1024 * 1024, // 50MB
-  locale = 'es-MX' 
+  locale = 'en-US' 
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -98,7 +98,7 @@ export function FileUpload({
     return (
       <div className="space-y-6">
         {/* Success message */}
-        <div className="flex items-center space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="flex items-center space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg animate-slide-up">
           <CheckCircleIcon className="w-6 h-6 text-green-600 flex-shrink-0" />
           <div>
             <p className="font-medium text-green-900">Archivo cargado exitosamente</p>
@@ -117,11 +117,12 @@ export function FileUpload({
             {uploadedFile.sheets.map((sheet, index) => (
               <div
                 key={index}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                className={`animate-slide-up p-4 border rounded-lg cursor-pointer transition-all duration-200 transform ${
                   sheet.hasData 
-                    ? 'border-gray-200 hover:border-blue-300 hover:bg-blue-50' 
-                    : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                    ? 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5' 
+                    : 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-60'
                 }`}
+                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -136,9 +137,9 @@ export function FileUpload({
                     </div>
                   </div>
                   {sheet.hasData && (
-                    <button className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                    <Button variant="soft" size="sm">
                       Analizar
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -153,7 +154,7 @@ export function FileUpload({
               setUploadedFile(null);
               setUploadError(null);
             }}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-all duration-200 hover:bg-gray-100 rounded-lg"
           >
             Cargar otro archivo
           </button>
@@ -168,10 +169,11 @@ export function FileUpload({
       <div
         {...getRootProps()}
         className={`
-          relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
-          ${isDragActive && !isDragReject ? 'border-blue-400 bg-blue-50' : ''}
-          ${isDragReject ? 'border-red-400 bg-red-50' : ''}
-          ${!isDragActive ? 'border-gray-300 hover:border-gray-400' : ''}
+          relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer 
+          transition-all duration-300 ease-in-out transform
+          ${isDragActive && !isDragReject ? 'border-blue-400 bg-blue-50 scale-105 shadow-lg' : ''}
+          ${isDragReject ? 'border-red-400 bg-red-50 animate-pulse' : ''}
+          ${!isDragActive ? 'border-gray-300 hover:border-gray-400 hover:shadow-md hover:-translate-y-1' : ''}
           ${isUploading ? 'pointer-events-none opacity-50' : ''}
         `}
       >
@@ -190,7 +192,7 @@ export function FileUpload({
             </>
           ) : (
             <>
-              <CloudArrowUpIcon className="mx-auto w-12 h-12 text-gray-400" />
+              <CloudArrowUpIcon className={`mx-auto w-12 h-12 text-gray-400 transition-all duration-300 ${isDragActive ? 'text-blue-500 scale-110' : ''}`} />
               <div>
                 <p className="text-lg font-medium text-gray-900">
                   {isDragActive 
@@ -207,7 +209,7 @@ export function FileUpload({
 
         {/* Error message */}
         {uploadError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-95 rounded-xl">
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-95 rounded-xl animate-fade-in">
             <div className="flex items-center space-x-3 text-red-600">
               <ExclamationTriangleIcon className="w-6 h-6" />
               <p className="font-medium">{uploadError}</p>
@@ -231,17 +233,17 @@ export function FileUpload({
       <div className="text-sm text-gray-500">
         <p className="font-medium mb-2">Tipos de estados financieros soportados:</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span>Estado de Resultados (P&L)</span>
+          <div className="flex items-center space-x-2 group">
+            <div className="w-2 h-2 bg-green-500 rounded-full group-hover:scale-150 transition-transform"></div>
+            <span className="group-hover:text-green-600 transition-colors">Estado de Resultados (P&L)</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span>Flujo de Efectivo</span>
+          <div className="flex items-center space-x-2 group">
+            <div className="w-2 h-2 bg-blue-500 rounded-full group-hover:scale-150 transition-transform"></div>
+            <span className="group-hover:text-blue-600 transition-colors">Flujo de Efectivo</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <span>Balance General</span>
+          <div className="flex items-center space-x-2 group">
+            <div className="w-2 h-2 bg-purple-500 rounded-full group-hover:scale-150 transition-transform"></div>
+            <span className="group-hover:text-purple-600 transition-colors">Balance General</span>
           </div>
         </div>
       </div>
