@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .limit(5);
 
     // Decrypt and process line items
-    const processedItems = lineItems.map(item => {
+    const processedItems = lineItems.map((item: any) => {
       let decryptedName = item.accountName;
       let decryptedMetadata = null;
       

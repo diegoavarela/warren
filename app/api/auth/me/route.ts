@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       .where(eq(users.id, payload.userId));
     
     // Filter active users
-    const activeUsers = userResult.filter(u => u.isActive);
+    const activeUsers = userResult.filter((u: any) => u.isActive);
 
     if (activeUsers.length === 0) {
       return NextResponse.json(

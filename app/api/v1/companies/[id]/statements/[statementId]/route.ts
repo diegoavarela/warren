@@ -58,7 +58,7 @@ export async function GET(
         .orderBy(financialLineItems.displayOrder);
 
       // Decrypt line items
-      const decryptedLineItems = lineItems.map(item => {
+      const decryptedLineItems = lineItems.map((item: any) => {
         let decryptedAccountName = item.accountName;
         try {
           if (item.accountName && item.accountName.includes(':')) {

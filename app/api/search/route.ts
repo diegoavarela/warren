@@ -1,162 +1,170 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRBAC } from '@/lib/auth/rbac';
-import { db, organizations, companies, users, mappingTemplates, eq, like, or, and } from '@/lib/db';
+import { db, organizations, companies, users, mappingTemplates, eq, like, or } from '@/lib/db';
+import { withRBAC, hasPermission, PERMISSIONS } from '@/lib/auth/rbac';
 
 export async function GET(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
-    try {
-      const searchParams = req.nextUrl.searchParams;
-      const query = searchParams.get('q')?.toLowerCase() || '';
-      
-      if (query.length < 2) {
-        return NextResponse.json({
-          success: true,
-          results: []
-        });
-      }
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get('q') || '';
+    const type = searchParams.get('type') || 'all';
 
-      const results = [];
-      
-      // Search based on user role
-      if (user.role === 'super_admin') {
-        // Platform admins can search all organizations
+    if (!query || query.length < 2) {
+      return NextResponse.json({
+        success: true,
+        results: []
+      });
+    }
+
+    const results: any[] = [];
+    const searchQuery = `%${query}%`;
+
+    try {
+      // Search organizations (platform admin only)
+      if ((type === 'all' || type === 'organizations') && user.role === 'super_admin') {
         const orgResults = await db
           .select({
             id: organizations.id,
             name: organizations.name,
-            subdomain: organizations.subdomain
+            locale: organizations.locale
           })
           .from(organizations)
           .where(
             or(
-              like(organizations.name, `%${query}%`),
-              like(organizations.subdomain, `%${query}%`)
+              like(organizations.name, searchQuery),
+              like(organizations.id, searchQuery)
             )
           )
           .limit(5);
           
-        orgResults.forEach(org => {
+        orgResults.forEach((org: any) => {
           results.push({
-            id: org.id,
             type: 'organization',
+            id: org.id,
             title: org.name,
-            subtitle: `${org.subdomain}.warren.com`,
-            path: `/dashboard/platform-admin/organizations/${org.id}`
+            subtitle: `Organization • ${org.locale || 'Unknown locale'}`,
+            url: `/dashboard/platform-admin/organizations/${org.id}`
           });
         });
       }
-      
-      // Search companies within user's organization
-      const companyResults = await db
-        .select({
-          id: companies.id,
-          name: companies.name,
-          taxId: companies.taxId
-        })
-        .from(companies)
-        .where(
-          user.role === 'super_admin' || user.role === 'admin'
-            ? or(
-                like(companies.name, `%${query}%`),
-                like(companies.taxId || '', `%${query}%`)
-              )
-            : eq(companies.organizationId, user.organizationId)
-        )
-        .limit(5);
+
+      // Search companies
+      if (type === 'all' || type === 'companies') {
+        let companiesQuery = db
+          .select({
+            id: companies.id,
+            name: companies.name,
+            ruc: companies.ruc,
+            country: companies.country
+          })
+          .from(companies)
+          .where(
+            or(
+              like(companies.name, searchQuery),
+              like(companies.ruc, searchQuery)
+            )
+          )
+          .limit(5);
+
+        const companiesResult = await companiesQuery;
         
-      companyResults.forEach(company => {
-        results.push({
-          id: company.id,
-          type: 'company',
-          title: company.name,
-          subtitle: company.taxId || undefined,
-          path: user.role === 'super_admin' 
-            ? `/dashboard/platform-admin/companies/${company.id}`
-            : `/dashboard/org-admin/companies/${company.id}`
+        companiesResult.forEach((company: any) => {
+          // Check if user has permission to view this company
+          if (hasPermission(user, PERMISSIONS.VIEW_FINANCIAL_DATA, company.id)) {
+            results.push({
+              type: 'company',
+              id: company.id,
+              title: company.name,
+              subtitle: `Company • ${company.country || 'Unknown'} • ${company.ruc || 'No RUC'}`,
+              url: `/dashboard/company-admin/financial?companyId=${company.id}`
+            });
+          }
         });
-      });
-      
-      // Search users within organization
-      if (user.role === 'super_admin' || user.role === 'admin') {
-        const userResults = await db
+      }
+
+      // Search users (admins only)
+      if ((type === 'all' || type === 'users') && 
+          (user.role === 'super_admin' || user.role === 'organization_admin')) {
+        const usersQuery = db
           .select({
             id: users.id,
             email: users.email,
             firstName: users.firstName,
-            lastName: users.lastName
+            lastName: users.lastName,
+            role: users.role
           })
           .from(users)
           .where(
-            user.role === 'super_admin'
-              ? or(
-                  like(users.email, `%${query}%`),
-                  like(users.firstName || '', `%${query}%`),
-                  like(users.lastName || '', `%${query}%`)
-                )
-              : and(
-                  eq(users.organizationId, user.organizationId),
-                  or(
-                    like(users.email, `%${query}%`),
-                    like(users.firstName || '', `%${query}%`),
-                    like(users.lastName || '', `%${query}%`)
-                  )
-                )
+            or(
+              like(users.email, searchQuery),
+              like(users.firstName, searchQuery),
+              like(users.lastName, searchQuery)
+            )
           )
           .limit(5);
-          
-        userResults.forEach(u => {
+
+        // If org admin, filter by organization
+        if (user.role === 'organization_admin') {
+          usersQuery.where(eq(users.organizationId, user.organizationId));
+        }
+
+        const usersResult = await usersQuery;
+        
+        usersResult.forEach((u: any) => {
           results.push({
-            id: u.id,
             type: 'user',
-            title: `${u.firstName} ${u.lastName}`.trim() || u.email,
-            subtitle: u.email,
-            path: user.role === 'super_admin'
-              ? `/dashboard/platform-admin/users/${u.id}`
+            id: u.id,
+            title: `${u.firstName} ${u.lastName}`,
+            subtitle: `User • ${u.email} • ${u.role}`,
+            url: user.role === 'super_admin' 
+              ? `/dashboard/platform-admin/users?userId=${u.id}`
               : `/dashboard/org-admin/users/${u.id}`
           });
         });
       }
-      
+
       // Search templates
-      if (user.companyAccess && user.companyAccess.length > 0) {
-        const templateResults = await db
+      if (type === 'all' || type === 'templates') {
+        const templatesQuery = db
           .select({
             id: mappingTemplates.id,
-            name: mappingTemplates.name,
-            statementType: mappingTemplates.statementType
+            templateName: mappingTemplates.templateName,
+            statementType: mappingTemplates.statementType,
+            companyId: mappingTemplates.companyId
           })
           .from(mappingTemplates)
-          .where(
-            like(mappingTemplates.name, `%${query}%`)
-          )
+          .where(like(mappingTemplates.templateName, searchQuery))
           .limit(5);
-          
-        templateResults.forEach(template => {
-          results.push({
-            id: template.id,
-            type: 'template',
-            title: template.name,
-            subtitle: template.statementType,
-            path: `/templates/${template.id}`
-          });
+
+        const templatesResult = await templatesQuery;
+        
+        templatesResult.forEach((template: any) => {
+          if (hasPermission(user, PERMISSIONS.VIEW_FINANCIAL_DATA, template.companyId)) {
+            results.push({
+              type: 'template',
+              id: template.id,
+              title: template.templateName,
+              subtitle: `Template • ${template.statementType}`,
+              url: `/mapper?templateId=${template.id}`
+            });
+          }
         });
       }
-      
+
       return NextResponse.json({
         success: true,
         results
       });
-      
+
     } catch (error) {
       console.error('Search error:', error);
       return NextResponse.json(
         { 
           success: false,
-          error: 'Search failed'
+          error: 'Search failed',
+          results: []
         },
         { status: 500 }
       );
     }
   });
 }
-

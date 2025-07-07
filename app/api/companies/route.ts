@@ -203,7 +203,7 @@ export async function GET(request: NextRequest) {
         .where(eq(companyUsers.userId, payload.userId))
         .where(eq(companyUsers.isActive, true));
       
-      companyList = userCompanies.map(uc => ({
+      companyList = userCompanies.map((uc: any) => ({
         ...uc.company,
         userRole: uc.role
       }));

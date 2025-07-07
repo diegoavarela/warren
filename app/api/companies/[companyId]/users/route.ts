@@ -180,7 +180,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      users: companyUsersList.map(cu => ({
+      users: companyUsersList.map((cu: any) => ({
         id: cu.user.id,
         email: cu.user.email,
         firstName: cu.user.firstName,

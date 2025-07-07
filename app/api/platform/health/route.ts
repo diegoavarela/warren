@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRBAC, ROLES } from '@/lib/auth/rbac';
 import { db } from '@/lib/db';
 
+type HealthStatus = 'operational' | 'degraded' | 'down';
+
 export async function GET(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
     // Only platform admins can access system health
@@ -16,13 +18,13 @@ export async function GET(request: NextRequest) {
       // Check API health
       const apiStartTime = Date.now();
       const apiHealth = {
-        status: 'operational' as const,
+        status: 'operational' as HealthStatus,
         responseTime: 0
       };
 
       // Check database health
       let dbHealth = {
-        status: 'operational' as const,
+        status: 'operational' as HealthStatus,
         connections: 0
       };
 
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
 
       // Check storage health (mock data)
       const storageHealth = {
-        status: 'operational' as const,
+        status: 'operational' as HealthStatus,
         usage: Math.floor(Math.random() * 30) + 40 // Mock 40-70% usage
       };
 
@@ -61,9 +63,9 @@ export async function GET(request: NextRequest) {
       console.error('Health check error:', error);
       return NextResponse.json(
         { 
-          api: { status: 'down', responseTime: 0 },
-          database: { status: 'down', connections: 0 },
-          storage: { status: 'down', usage: 0 }
+          api: { status: 'down' as HealthStatus, responseTime: 0 },
+          database: { status: 'down' as HealthStatus, connections: 0 },
+          storage: { status: 'down' as HealthStatus, usage: 0 }
         },
         { status: 500 }
       );

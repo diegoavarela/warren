@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     console.log('User search result:', userResult.length > 0 ? 'User found' : 'User not found');
     
     // Filter for active users
-    const activeUsers = userResult.filter(u => u.isActive);
+    const activeUsers = userResult.filter((u: any) => u.isActive);
     
     if (activeUsers.length === 0) {
       console.log('No active user found with this email');
