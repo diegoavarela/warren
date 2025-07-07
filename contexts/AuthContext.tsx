@@ -10,6 +10,11 @@ export interface User {
   organizationId: string;
   role: string;
   locale?: string;
+  companyAccess?: {
+    companyId: string;
+    role: string;
+    permissions: string[];
+  }[];
 }
 
 export interface Organization {

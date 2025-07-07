@@ -42,6 +42,25 @@ interface CompanyStats {
   activeTemplates: number;
 }
 
+interface FinancialStatus {
+  hasData: boolean;
+  statements: {
+    profit_loss: StatementStatus;
+    cash_flow: StatementStatus;
+    balance_sheet: StatementStatus;
+    trial_balance: StatementStatus;
+  };
+  totalPeriods: number;
+  lastActivity: string | null;
+}
+
+interface StatementStatus {
+  available: boolean;
+  coverage: string | null;
+  lastUpload: string | null;
+  statementId: string | null;
+}
+
 interface Template {
   id: string;
   templateName: string;
@@ -76,6 +95,7 @@ function CompanyAdminDashboard() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [financialLoading, setFinancialLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<CompanyStats>({
     totalUsers: 0,
@@ -83,24 +103,31 @@ function CompanyAdminDashboard() {
     documentsThisMonth: 0,
     activeTemplates: 0
   });
+  const [financialStatus, setFinancialStatus] = useState<FinancialStatus | null>(null);
 
   useEffect(() => {
     fetchCompanies();
     
-    // Check for pre-selected company from organization admin
+    // Check for pre-selected company from routing or organization admin
     const preSelectedCompanyId = sessionStorage.getItem('selectedCompanyId');
     if (preSelectedCompanyId) {
       setSelectedCompanyId(preSelectedCompanyId);
-      // Clear the stored value after using it
-      sessionStorage.removeItem('selectedCompanyId');
+      
+      // Only clear the stored value if user is org admin (they selected the company)
+      // For company employees, keep it so they stay locked to their company
+      const isOrgAdmin = user?.role === ROLES.ORG_ADMIN || user?.role === 'admin';
+      if (isOrgAdmin) {
+        sessionStorage.removeItem('selectedCompanyId');
+      }
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (selectedCompanyId) {
       fetchCompanyStats(selectedCompanyId);
       fetchCompanyTemplates(selectedCompanyId);
       fetchCompanyUsers(selectedCompanyId);
+      fetchFinancialStatus(selectedCompanyId);
     }
   }, [selectedCompanyId]);
 
@@ -210,6 +237,30 @@ function CompanyAdminDashboard() {
     }
   };
 
+  const fetchFinancialStatus = async (companyId: string) => {
+    try {
+      setFinancialLoading(true);
+      const response = await fetch(`/api/v1/companies/${companyId}/financial-status`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setFinancialStatus(result.data);
+        } else {
+          console.warn('Failed to fetch financial status:', result.error?.message);
+          setFinancialStatus(null);
+        }
+      } else {
+        console.warn('Financial status API not available');
+        setFinancialStatus(null);
+      }
+    } catch (error) {
+      console.error('Error fetching financial status:', error);
+      setFinancialStatus(null);
+    } finally {
+      setFinancialLoading(false);
+    }
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString(locale || 'en-US', {
       year: 'numeric',
@@ -292,18 +343,50 @@ function CompanyAdminDashboard() {
       color: 'green'
     },
     {
-      title: locale?.startsWith('es') ? 'Docs Este Mes' : 'Docs This Month',
+      title: locale?.startsWith('es') ? 'Documentos Subidos' : 'Uploaded Documents',
       value: stats.documentsThisMonth,
       icon: DocumentTextIcon,
       color: 'purple'
     },
     {
-      title: locale?.startsWith('es') ? 'Plantillas Activas' : 'Active Templates',
-      value: stats.activeTemplates,
-      icon: DocumentDuplicateIcon,
+      title: locale?.startsWith('es') ? 'Períodos Cubiertos' : 'Periods Covered',
+      value: financialStatus?.totalPeriods || 0,
+      icon: ChartBarIcon,
       color: 'orange'
     }
   ];
+
+  const getStatementLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'profit_loss': locale?.startsWith('es') ? 'P&L' : 'P&L',
+      'cash_flow': locale?.startsWith('es') ? 'Flujo de Efectivo' : 'Cash Flow',
+      'balance_sheet': locale?.startsWith('es') ? 'Balance General' : 'Balance Sheet',
+      'trial_balance': locale?.startsWith('es') ? 'Balanza' : 'Trial Balance'
+    };
+    return labels[type] || type;
+  };
+
+  const getStatementIcon = (type: string, available: boolean) => {
+    return available ? '✓' : '⚠️';
+  };
+
+  const handleViewData = (statementId: string) => {
+    // Navigate to financial dashboard
+    sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+    if (statementId) {
+      router.push(`/dashboard/company-admin/financial/${statementId}/dashboard`);
+    } else {
+      router.push('/dashboard/company-admin/financial');
+    }
+  };
+
+  const handleUploadNew = (statementType?: string) => {
+    sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+    if (statementType) {
+      sessionStorage.setItem('preferredStatementType', statementType);
+    }
+    router.push('/upload');
+  };
 
   const getColorClasses = (color: string) => {
     const colors: Record<string, string> = {
@@ -344,8 +427,8 @@ function CompanyAdminDashboard() {
           </p>
         </div>
 
-        {/* Companies Table */}
-        {!selectedCompanyId ? (
+        {/* Companies Table - Only show for org admins without selected company */}
+        {!selectedCompanyId && (user?.role === ROLES.ORG_ADMIN || user?.role === 'admin') ? (
           <Card className="mb-8">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -469,24 +552,41 @@ function CompanyAdminDashboard() {
               </div>
             </CardBody>
           </Card>
-        ) : (
+        ) : !selectedCompanyId && (user?.role !== ROLES.ORG_ADMIN && user?.role !== 'admin') ? (
+          <Card className="mb-8">
+            <CardBody className="text-center py-12">
+              <BuildingOfficeIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {locale?.startsWith('es') ? 'Sin Empresa Asignada' : 'No Company Assigned'}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {locale?.startsWith('es') 
+                  ? 'No tienes acceso a ninguna empresa. Contacta a tu administrador para obtener acceso.'
+                  : 'You do not have access to any company. Contact your administrator for access.'}
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => router.push('/dashboard')}
+              >
+                {locale?.startsWith('es') ? 'Volver al Dashboard' : 'Return to Dashboard'}
+              </Button>
+            </CardBody>
+          </Card>
+        ) : selectedCompanyId && (user?.role === ROLES.ORG_ADMIN || user?.role === 'admin') ? (
           <div className="mb-8">
             <Button
               variant="ghost"
               onClick={() => {
-                // If user came from org admin, go back there; otherwise just clear selection
-                if (user?.role === 'admin' || user?.role === ROLES.ORG_ADMIN) {
-                  router.push('/dashboard/org-admin');
-                } else {
-                  setSelectedCompanyId('');
-                }
+                // Clear selection and go back to company list for org admins
+                setSelectedCompanyId('');
+                sessionStorage.removeItem('selectedCompanyId');
               }}
               className="mb-4"
             >
               ← {locale?.startsWith('es') ? 'Volver a empresas' : 'Back to companies'}
             </Button>
           </div>
-        )}
+        ) : null}
 
         {selectedCompanyId ? (
           <>
@@ -691,6 +791,137 @@ function CompanyAdminDashboard() {
                             className="text-sm text-blue-600 hover:text-blue-800"
                           >
                             {locale?.startsWith('es') ? 'Ver todas las plantillas' : 'View all templates'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+
+              {/* Financial Data Overview Section */}
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>
+                        {locale?.startsWith('es') ? 'Estado Financiero' : 'Financial Data'}
+                      </CardTitle>
+                      <CardDescription>
+                        {locale?.startsWith('es') 
+                          ? 'Resumen de datos financieros disponibles'
+                          : 'Overview of available financial data'}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
+                      onClick={() => handleUploadNew()}
+                    >
+                      {locale?.startsWith('es') ? 'Subir Documento' : 'Upload Document'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  {financialLoading ? (
+                    <div className="text-center py-4">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {locale?.startsWith('es') ? 'Cargando estado financiero...' : 'Loading financial status...'}
+                      </p>
+                    </div>
+                  ) : !financialStatus || !financialStatus.hasData ? (
+                    <div className="text-center py-8">
+                      <ChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {locale?.startsWith('es') ? 'Sin datos financieros' : 'No financial data'}
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        {locale?.startsWith('es') 
+                          ? 'Sube tu primer documento financiero para comenzar'
+                          : 'Upload your first financial document to get started'}
+                      </p>
+                      <Button
+                        variant="gradient"
+                        onClick={() => handleUploadNew()}
+                        leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
+                      >
+                        {locale?.startsWith('es') ? 'Subir Primer Documento' : 'Upload First Document'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {Object.entries(financialStatus.statements).map(([type, statement]) => (
+                        <div key={type} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-xl">
+                              {getStatementIcon(type, statement.available)}
+                            </span>
+                            <div>
+                              <p className="font-medium">
+                                {getStatementLabel(type)}
+                                {statement.available && statement.coverage && (
+                                  <span className="ml-2 text-sm text-gray-600">
+                                    • {statement.coverage}
+                                  </span>
+                                )}
+                              </p>
+                              {statement.available && statement.lastUpload && (
+                                <p className="text-xs text-gray-500">
+                                  {locale?.startsWith('es') ? 'Último: ' : 'Last: '}
+                                  {new Date(statement.lastUpload).toLocaleDateString(locale || 'en-US')}
+                                </p>
+                              )}
+                              {!statement.available && (
+                                <p className="text-xs text-gray-500">
+                                  {locale?.startsWith('es') ? 'Sin datos' : 'No data available'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {statement.available && statement.statementId && (
+                              <Button
+                                variant="soft"
+                                size="sm"
+                                onClick={() => handleViewData(statement.statementId!)}
+                              >
+                                {locale?.startsWith('es') ? 'Ver Datos' : 'View Data'}
+                              </Button>
+                            )}
+                            <Button
+                              variant={statement.available ? "outline" : "primary"}
+                              size="sm"
+                              onClick={() => handleUploadNew(type)}
+                            >
+                              {statement.available 
+                                ? (locale?.startsWith('es') ? 'Subir Nuevo' : 'Upload New')
+                                : (locale?.startsWith('es') ? 'Subir' : 'Upload')
+                              }
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {financialStatus.lastActivity && (
+                        <div className="text-center pt-4 border-t">
+                          <p className="text-sm text-gray-500 mb-2">
+                            {locale?.startsWith('es') ? 'Última actividad: ' : 'Last activity: '}
+                            {new Date(financialStatus.lastActivity).toLocaleDateString(locale || 'en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                          <button
+                            onClick={() => {
+                              sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                              router.push('/dashboard/company-admin/financial');
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            {locale?.startsWith('es') ? 'Ver todos los estados financieros →' : 'View all financial statements →'}
                           </button>
                         </div>
                       )}

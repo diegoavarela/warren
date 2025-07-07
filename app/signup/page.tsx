@@ -28,7 +28,7 @@ export default function SignupPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -58,7 +58,7 @@ export default function SignupPage() {
     });
     
     if (result.success) {
-      router.push('/');
+      router.push('/dashboard');
     } else {
       setError(result.error || (locale?.startsWith('es') ? 'Error al crear cuenta' : 'Error creating account'));
     }

@@ -10,15 +10,14 @@ export interface SupportedLocale {
 }
 
 export const SUPPORTED_LOCALES: SupportedLocale[] = [
-  { code: 'es-MX', name: 'Español (México)', region: 'LATAM', default: true },
+  { code: 'en-US', name: 'English (United States)', region: 'North America', default: true },
+  { code: 'en-GB', name: 'English (United Kingdom)', region: 'Europe', default: false },
   { code: 'es-ES', name: 'Español (España)', region: 'Europe', default: false },
   { code: 'es-AR', name: 'Español (Argentina)', region: 'LATAM', default: false },
   { code: 'es-CO', name: 'Español (Colombia)', region: 'LATAM', default: false },
   { code: 'es-CL', name: 'Español (Chile)', region: 'LATAM', default: false },
   { code: 'es-PE', name: 'Español (Perú)', region: 'LATAM', default: false },
   { code: 'pt-BR', name: 'Português (Brasil)', region: 'LATAM', default: false },
-  { code: 'en-US', name: 'English (United States)', region: 'North America', default: false },
-  { code: 'en-GB', name: 'English (United Kingdom)', region: 'Europe', default: false },
 ];
 
 /**
@@ -27,8 +26,8 @@ export const SUPPORTED_LOCALES: SupportedLocale[] = [
  */
 export function detectUserLocale(): string {
   if (typeof window === 'undefined') {
-    // Server-side: return default
-    return 'es-MX';
+    // Server-side: return English as default
+    return 'en-US';
   }
 
   // Get browser languages in order of preference
@@ -63,9 +62,6 @@ export function detectUserLocale(): string {
   
   // Map timezones to likely locales
   const timezoneToLocale: Record<string, string> = {
-    'America/Mexico_City': 'es-MX',
-    'America/Tijuana': 'es-MX',
-    'America/Cancun': 'es-MX',
     'America/Buenos_Aires': 'es-AR',
     'America/Argentina/Buenos_Aires': 'es-AR',
     'America/Bogota': 'es-CO',
@@ -83,8 +79,8 @@ export function detectUserLocale(): string {
     return timezoneToLocale[timezone];
   }
 
-  // Fallback to default
-  return SUPPORTED_LOCALES.find(l => l.default)?.code || 'es-MX';
+  // Fallback to English
+  return 'en-US';
 }
 
 /**
@@ -141,7 +137,7 @@ export function getNumberFormatForLocale(localeCode: string): {
     'es-ES': { decimalSeparator: ',', thousandsSeparator: '.', currencySymbol: '€' },
   };
   
-  return formatMap[localeCode] || formatMap['es-MX'];
+  return formatMap[localeCode] || formatMap['en-US'];
 }
 
 /**

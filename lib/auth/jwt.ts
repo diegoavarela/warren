@@ -17,7 +17,7 @@ export async function signJWT(payload: Omit<JWTPayload, 'iat' | 'exp'>): Promise
   const jwt = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
+    .setExpirationTime('1d')
     .sign(jwtSecret);
   
   return jwt;

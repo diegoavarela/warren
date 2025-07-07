@@ -10,7 +10,7 @@ import {
   MappingTemplate,
   ParsingLog,
   ProcessingJob 
-} from "./schema";
+} from "./actual-schema";
 
 // Mock data stores
 let mockOrganizations: Organization[] = [
@@ -19,8 +19,20 @@ let mockOrganizations: Organization[] = [
     name: "Empresa Demo SA de CV",
     subdomain: "demo",
     tier: "professional",
-    locale: "es-MX",
+    locale: "en-US",
     baseCurrency: "MXN",
+    fiscalYearStart: 1,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "org-platform",
+    name: "Warren Platform",
+    subdomain: "platform",
+    tier: "enterprise",
+    locale: "en-US",
+    baseCurrency: "USD",
     fiscalYearStart: 1,
     isActive: true,
     createdAt: new Date(),
@@ -32,12 +44,12 @@ let mockUsers: User[] = [
   {
     id: "user-1",
     email: "admin@demo.com",
-    passwordHash: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtErBF4VfK7L4C8R9nF8mxjX3qTG", // password: admin123
+    passwordHash: "$2a$12$i0X/ZXMg3KGkR8LTIGgDqu5FLVP9uD2K8fAndftVCxr0cC9XGmCpW", // password: admin123
     firstName: "Carlos",
     lastName: "Administrador",
     organizationId: "org-1",
     role: "admin",
-    locale: "es-MX",
+    locale: "en-US",
     isActive: true,
     isEmailVerified: true,
     lastLoginAt: new Date(),
@@ -47,12 +59,12 @@ let mockUsers: User[] = [
   {
     id: "user-2", 
     email: "user@demo.com",
-    passwordHash: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtErBF4VfK7L4C8R9nF8mxjX3qTG", // password: user123
+    passwordHash: "$2a$12$d0QRJPCYszwkdSiQLl8qBe9Q9MMzW0tgmm1o5iUVCoLaVHmD0c2sa", // password: user123
     firstName: "Maria",
     lastName: "Usuario",
     organizationId: "org-1",
     role: "user",
-    locale: "es-MX",
+    locale: "en-US",
     isActive: true,
     isEmailVerified: true,
     lastLoginAt: new Date(),
@@ -62,11 +74,41 @@ let mockUsers: User[] = [
   {
     id: "user-3",
     email: "demo@warren.com",
-    passwordHash: "$2a$12$qVNQKGD6GzaWznl9SYAv2.I7wcA.o5rSKHVK1nhHbLuG4ifv9iACS", // password: demo123
+    passwordHash: "$2a$12$1Ba/RclW/Z08c3yJUoIev.SVVbX.mVlxpzCThHpnowQ3/ygTQ/Kpy", // password: demo123
     firstName: "Demo",
     lastName: "User",
     organizationId: "org-1",
     role: "user",
+    locale: "en-US",
+    isActive: true,
+    isEmailVerified: true,
+    lastLoginAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "user-4",
+    email: "platform@warren.com",
+    passwordHash: "$2a$12$6LAK2rkXi14UwdG58y9fF.w7ZnnP1NBtjfMEGl/O9FMfgCKuJAdii", // password: platform123
+    firstName: "Platform",
+    lastName: "Admin",
+    organizationId: "org-platform", // Special org for platform admins
+    role: "super_admin",
+    locale: "en-US",
+    isActive: true,
+    isEmailVerified: true,
+    lastLoginAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "user-5",
+    email: "companyadmin@demo.com",
+    passwordHash: "$2a$12$Tohbe9OH.NZyDLO/gcpruesBOPlTvEnowERSZ5rJvgz.dNKnvyUKW", // password: company123
+    firstName: "Company",
+    lastName: "Admin",
+    organizationId: "org-1",
+    role: "company_admin",
     locale: "en-US",
     isActive: true,
     isEmailVerified: true,
@@ -83,7 +125,7 @@ let mockCompanies: Company[] = [
     name: "Empresa Demo SA de CV",
     taxId: "RFC123456789",
     industry: "Manufactura",
-    locale: "es-MX",
+    locale: "en-US",
     baseCurrency: "MXN",
     fiscalYearStart: 1,
     isActive: true,
@@ -96,7 +138,7 @@ let mockCompanies: Company[] = [
     name: "Comercializadora XYZ",
     taxId: "RFC987654321",
     industry: "Retail",
-    locale: "es-MX",
+    locale: "en-US",
     baseCurrency: "MXN",
     fiscalYearStart: 1,
     isActive: true,
@@ -148,6 +190,32 @@ let mockCompanyUsers: CompanyUser[] = [
   },
   {
     id: "comp-user-4",
+    companyId: "company-1",
+    userId: "user-5", // Company Admin user
+    role: "company_admin", 
+    permissions: null,
+    isActive: true,
+    invitedAt: new Date(),
+    joinedAt: new Date(),
+    invitedBy: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "comp-user-5",
+    companyId: "company-2",
+    userId: "user-5", // Company Admin can manage multiple companies
+    role: "company_admin",
+    permissions: null,
+    isActive: true,
+    invitedAt: new Date(),
+    joinedAt: new Date(),
+    invitedBy: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "comp-user-6",
     companyId: "company-2",
     userId: "user-3",
     role: "user", 
@@ -163,7 +231,83 @@ let mockCompanyUsers: CompanyUser[] = [
 
 let mockStatements: FinancialStatement[] = [];
 let mockLineItems: FinancialLineItem[] = [];
-let mockTemplates: MappingTemplate[] = [];
+let mockTemplates: MappingTemplate[] = [
+  {
+    id: "tmpl-1",
+    companyId: "company-1",
+    templateName: "Estado de Resultados Estándar",
+    statementType: "profit_loss",
+    filePattern: "estado_resultados*.xlsx",
+    columnMappings: {
+      conceptColumns: [
+        { columnIndex: 0, columnType: "account_code" },
+        { columnIndex: 1, columnType: "account_name" }
+      ],
+      periodColumns: [
+        { columnIndex: 2, periodLabel: "Enero 2024", periodType: "month" },
+        { columnIndex: 3, periodLabel: "Febrero 2024", periodType: "month" },
+        { columnIndex: 4, periodLabel: "Marzo 2024", periodType: "month" }
+      ],
+      dataRange: { startRow: 2, endRow: 50, startCol: 0, endCol: 4 }
+    },
+    validationRules: null,
+    locale: "en-US",
+    isDefault: true,
+    usageCount: 15,
+    lastUsedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    updatedAt: new Date()
+  },
+  {
+    id: "tmpl-2",
+    companyId: "company-1",
+    templateName: "Balance General Trimestral",
+    statementType: "balance_sheet",
+    filePattern: "balance_general*.xlsx",
+    columnMappings: {
+      conceptColumns: [
+        { columnIndex: 0, columnType: "account_name" }
+      ],
+      periodColumns: [
+        { columnIndex: 1, periodLabel: "Q1 2024", periodType: "quarter" },
+        { columnIndex: 2, periodLabel: "Q2 2024", periodType: "quarter" }
+      ],
+      dataRange: { startRow: 1, endRow: 40, startCol: 0, endCol: 2 }
+    },
+    validationRules: null,
+    locale: "en-US",
+    isDefault: false,
+    usageCount: 8,
+    lastUsedAt: new Date(Date.now() - 72 * 60 * 60 * 1000), // 3 days ago
+    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+    updatedAt: new Date()
+  },
+  {
+    id: "tmpl-3",
+    companyId: "company-2",
+    templateName: "P&L Monthly Report",
+    statementType: "profit_loss",
+    filePattern: "monthly_pl*.xlsx",
+    columnMappings: {
+      conceptColumns: [
+        { columnIndex: 0, columnType: "account_name" },
+        { columnIndex: 1, columnType: "account_description" }
+      ],
+      periodColumns: [
+        { columnIndex: 2, periodLabel: "Current Month", periodType: "month" },
+        { columnIndex: 3, periodLabel: "YTD", periodType: "ytd" }
+      ],
+      dataRange: { startRow: 3, endRow: 60, startCol: 0, endCol: 3 }
+    },
+    validationRules: null,
+    locale: "en-US",
+    isDefault: true,
+    usageCount: 25,
+    lastUsedAt: new Date(),
+    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
+    updatedAt: new Date()
+  }
+];
 let mockLogs: ParsingLog[] = [];
 let mockJobs: ProcessingJob[] = [];
 
@@ -231,81 +375,132 @@ export const mockDb = {
 
   // Mock select operations
   select: (fields?: any) => ({
-    from: (table: any) => ({
-      where: (...conditions: any[]) => {
-        // Helper function to filter based on conditions
-        const filterItems = (items: any[]) => {
-          return items.filter(item => {
-            return conditions.every(condition => {
-              if (condition.type === 'eq') {
-                // Handle field access - field is the property name string from mockTables
-                const fieldName = typeof condition.field === 'string' ? condition.field : condition.field.name;
-                return item[fieldName] === condition.value;
-              }
-              return true;
-            });
-          });
-        };
-
-        return {
-          where: (condition: any) => ({
-            limit: (count: number) => {
-              let items: any[] = [];
-              if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
-                items = filterItems(mockUsers);
-              } else if (table === mockTables.organizations || table._symbol === mockTables.organizations._symbol) {
-                items = filterItems(mockOrganizations);
-              } else if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
-                items = filterItems(mockCompanies);
-              } else if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
-                items = filterItems(mockCompanyUsers);
-              } else if (table === mockTables.processingJobs || table._symbol === mockTables.processingJobs._symbol) {
-                items = filterItems(mockJobs);
-              }
-              return Promise.resolve(items.slice(0, count));
-            }
-          }),
-          limit: (count: number) => {
-            let items: any[] = [];
-            if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
-              items = filterItems(mockUsers);
-            } else if (table === mockTables.organizations || table._symbol === mockTables.organizations._symbol) {
-              items = filterItems(mockOrganizations);
-            } else if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
-              items = filterItems(mockCompanies);
-            } else if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
-              items = filterItems(mockCompanyUsers);
-            } else if (table === mockTables.processingJobs || table._symbol === mockTables.processingJobs._symbol) {
-              items = filterItems(mockJobs);
-            }
-            return Promise.resolve(items.slice(0, count));
-          },
-          orderBy: (order: any) => ({
-            limit: (count: number) => ({
-              offset: (skip: number) => {
-                let items: any[] = [];
-                if (table === mockTables.processingJobs) {
-                  items = filterItems(mockJobs);
+    from: (table: any) => {
+      let whereConditions: any[] = [];
+      const isCountQuery = fields && fields.count !== undefined;
+      
+      const applyConditions = (items: any[]) => {
+        return items.filter(item => {
+          return whereConditions.every(condition => {
+            if (condition.type === 'eq') {
+              // Handle field access - field is the property name string from mockTables
+              const fieldName = typeof condition.field === 'string' ? condition.field : condition.field.name;
+              return item[fieldName] === condition.value;
+            } else if (condition.type === 'and') {
+              return condition.conditions.every((subCond: any) => {
+                if (subCond.type === 'eq') {
+                  const fieldName = typeof subCond.field === 'string' ? subCond.field : subCond.field.name;
+                  return item[fieldName] === subCond.value;
+                } else if (subCond.type === 'gte') {
+                  const fieldName = typeof subCond.field === 'string' ? subCond.field : subCond.field.name;
+                  return item[fieldName] >= subCond.value;
                 }
-                return Promise.resolve(items.slice(skip, skip + count));
-              }
-            })
-          })
-        };
-      },
-      limit: (count: number) => {
-        if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
-          return Promise.resolve(mockCompanies.slice(0, count));
+                return true;
+              });
+            } else if (condition.type === 'gte') {
+              const fieldName = typeof condition.field === 'string' ? condition.field : condition.field.name;
+              return item[fieldName] >= condition.value;
+            }
+            return true;
+          });
+        });
+      };
+      
+      const createWhereHandler = () => ({
+        where: (condition: any) => {
+          whereConditions.push(condition);
+          return createWhereHandler();
+        },
+        limit: (count: number) => {
+          let items: any[] = [];
+          if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
+            items = applyConditions(mockUsers);
+          } else if (table === mockTables.organizations || table._symbol === mockTables.organizations._symbol) {
+            items = applyConditions(mockOrganizations);
+          } else if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
+            items = applyConditions(mockCompanies);
+          } else if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+            items = applyConditions(mockCompanyUsers);
+          } else if (table === mockTables.processingJobs || table._symbol === mockTables.processingJobs._symbol) {
+            items = applyConditions(mockJobs);
+          } else if (table === mockTables.mappingTemplates || table._symbol === mockTables.mappingTemplates._symbol) {
+            items = applyConditions(mockTemplates);
+          }
+          return Promise.resolve(items.slice(0, count));
+        },
+        then: (resolve: any, reject: any) => {
+          let items: any[] = [];
+          if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
+            items = applyConditions(mockCompanies);
+          } else if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+            items = applyConditions(mockCompanyUsers);
+          } else if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
+            items = applyConditions(mockUsers);
+          } else if (table === mockTables.organizations || table._symbol === mockTables.organizations._symbol) {
+            items = applyConditions(mockOrganizations);
+          } else if (table === mockTables.mappingTemplates || table._symbol === mockTables.mappingTemplates._symbol) {
+            items = applyConditions(mockTemplates);
+          } else if (table === mockTables.financialStatements || table._symbol === mockTables.financialStatements._symbol) {
+            items = applyConditions(mockStatements);
+          }
+          
+          // If it's a count query, return count result
+          if (isCountQuery) {
+            return resolve([{ count: items.length }]);
+          }
+          return resolve(items);
+        },
+        [Symbol.for('nodejs.util.promisify.custom')]: () => {
+          let items: any[] = [];
+          if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
+            items = applyConditions(mockCompanies);
+          } else if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+            items = applyConditions(mockCompanyUsers);
+          } else if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
+            items = applyConditions(mockUsers);
+          } else if (table === mockTables.organizations || table._symbol === mockTables.organizations._symbol) {
+            items = applyConditions(mockOrganizations);
+          } else if (table === mockTables.mappingTemplates || table._symbol === mockTables.mappingTemplates._symbol) {
+            items = applyConditions(mockTemplates);
+          } else if (table === mockTables.financialStatements || table._symbol === mockTables.financialStatements._symbol) {
+            items = applyConditions(mockStatements);
+          }
+          
+          // If it's a count query, return count result
+          if (isCountQuery) {
+            return Promise.resolve([{ count: items.length }]);
+          }
+          return Promise.resolve(items);
         }
-        if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
-          return Promise.resolve(mockCompanyUsers.slice(0, count));
+      });
+      
+      return {
+        ...createWhereHandler(),
+        leftJoin: (joinTable: any, joinCondition: any) => {
+          // Simple join support for templates with companies
+          return {
+            ...createWhereHandler(),
+            orderBy: (...orderFields: any[]) => createWhereHandler()
+          };
+        },
+        orderBy: (...orderFields: any[]) => createWhereHandler(),
+        limit: (count: number) => {
+          if (table === mockTables.companies || table._symbol === mockTables.companies._symbol) {
+            return Promise.resolve(mockCompanies.slice(0, count));
+          }
+          if (table === mockTables.companyUsers || table._symbol === mockTables.companyUsers._symbol) {
+            return Promise.resolve(mockCompanyUsers.slice(0, count));
+          }
+          if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
+            return Promise.resolve(mockUsers.slice(0, count));
+          }
+          if (table === mockTables.mappingTemplates || table._symbol === mockTables.mappingTemplates._symbol) {
+            return Promise.resolve(mockTemplates.slice(0, count));
+          }
+          return Promise.resolve([]);
         }
-        if (table === mockTables.users || table._symbol === mockTables.users._symbol) {
-          return Promise.resolve(mockUsers.slice(0, count));
-        }
-        return Promise.resolve([]);
-      }
-    })
+      };
+    }
   }),
 
   // Mock update operations
@@ -380,7 +575,12 @@ export const mockTables = {
   mappingTemplates: {
     _symbol: Symbol('mappingTemplates'),
     id: 'id',
-    organizationId: 'organizationId'
+    companyId: 'companyId',
+    templateName: 'templateName',
+    statementType: 'statementType',
+    isDefault: 'isDefault',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   },
   parsingLogs: {
     _symbol: Symbol('parsingLogs'),
@@ -391,12 +591,18 @@ export const mockTables = {
     _symbol: Symbol('processingJobs'),
     id: 'id',
     organizationId: 'organizationId'
-  },
+  }
 };
 
 // Export mock functions that match drizzle-orm
 export const eq = (field: any, value: any) => ({ field, value, type: 'eq' });
 export const desc = (field: any) => ({ field, type: 'desc' });
+export const count = (field?: any) => ({ type: 'count', field });
+export const and = (...conditions: any[]) => ({ type: 'and', conditions });
+export const gte = (field: any, value: any) => ({ field, value, type: 'gte' });
+export const like = (field: any, pattern: string) => ({ field, pattern, type: 'like' });
+export const or = (...conditions: any[]) => ({ type: 'or', conditions });
+export const sql = (strings: TemplateStringsArray, ...values: any[]) => ({ type: 'sql', strings, values });
 
 // Export the mock data for direct access if needed
 export { mockOrganizations, mockUsers, mockCompanies, mockCompanyUsers, mockStatements, mockLineItems, mockTemplates, mockLogs, mockJobs };

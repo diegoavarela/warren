@@ -147,31 +147,25 @@ export const translations = {
   }
 };
 
-export function useTranslation(locale: string = 'es') {
-  const lang = locale.startsWith('es') ? 'es' : 'en';
+export function useTranslation(locale: string = 'en-US') {
+  const lang = locale?.startsWith('es') ? 'es' : 'en';
   
   const t = (key: string): string => {
-    const keys = key.split('.');
-    let value: any = translations[lang];
+    if (!key) return '';
     
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = value[k];
-      } else {
-        // Fallback to English if key not found
-        value = translations.en;
-        for (const fallbackKey of keys) {
-          if (value && typeof value === 'object' && fallbackKey in value) {
-            value = value[fallbackKey];
-          } else {
-            return key; // Return key if not found
-          }
-        }
-        break;
-      }
+    // Direct lookup in translations object
+    const translation = translations[lang][key];
+    
+    // If found, return it
+    if (translation) {
+      return translation;
     }
     
-    return typeof value === 'string' ? value : key;
+    // Try fallback to English
+    const fallback = translations.en[key];
+    
+    // Return fallback or key if nothing found
+    return fallback || key;
   };
 
   return { t };

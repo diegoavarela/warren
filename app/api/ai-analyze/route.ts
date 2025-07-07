@@ -1,24 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { financialAI } from "@/lib/ai-service";
+import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { 
-      action, // 'structure' | 'classify' | 'validate' | 'suggest'
-      rawData,
-      fileName,
-      accounts,
-      documentContext,
-      mapping
-    } = body;
+  return withRBAC(request, async (req, user) => {
+    try {
+      const body = await req.json();
+      const { 
+        action, // 'structure' | 'classify' | 'validate' | 'suggest'
+        rawData,
+        fileName,
+        accounts,
+        documentContext,
+        mapping,
+        companyId
+      } = body;
 
-    if (!action || !rawData) {
-      return NextResponse.json(
-        { error: "Missing required parameters: action and rawData" },
-        { status: 400 }
-      );
-    }
+      // Check if user has permission to view financial data
+      if (companyId && !hasPermission(user, PERMISSIONS.VIEW_FINANCIAL_DATA, companyId)) {
+        return NextResponse.json(
+          { 
+            error: "Insufficient permissions to analyze financial data for this company",
+            required: PERMISSIONS.VIEW_FINANCIAL_DATA,
+            companyId 
+          },
+          { status: 403 }
+        );
+      }
+
+      if (!action || !rawData) {
+        return NextResponse.json(
+          { error: "Missing required parameters: action and rawData" },
+          { status: 400 }
+        );
+      }
 
     let result;
 
@@ -58,25 +73,26 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: result,
-      action,
-      timestamp: new Date().toISOString()
-    });
+      return NextResponse.json({ 
+        success: true, 
+        data: result,
+        action,
+        timestamp: new Date().toISOString()
+      });
 
-  } catch (error) {
-    console.error("AI analysis error:", error);
-    
-    // Return a fallback response instead of failing completely
-    return NextResponse.json(
-      { 
-        success: false,
-        error: "AI analysis temporarily unavailable",
-        fallback: true,
-        message: "Using fallback analysis. Please check OpenAI API configuration."
-      },
-      { status: 200 } // Return 200 so the frontend can handle gracefully
-    );
-  }
+    } catch (error) {
+      console.error("AI analysis error:", error);
+      
+      // Return a fallback response instead of failing completely
+      return NextResponse.json(
+        { 
+          success: false,
+          error: "AI analysis temporarily unavailable",
+          fallback: true,
+          message: "Using fallback analysis. Please check OpenAI API configuration."
+        },
+        { status: 200 } // Return 200 so the frontend can handle gracefully
+      );
+    }
+  });
 }

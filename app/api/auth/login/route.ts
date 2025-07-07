@@ -8,6 +8,8 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
+    console.log('Login attempt for email:', email);
+
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -16,21 +18,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
+    console.log('Searching for user in database...');
     const userResult = await db
       .select()
       .from(users)
-      .where(eq(users.email, email.toLowerCase()))
-      .where(eq(users.isActive, true))
-      .limit(1);
+      .where(eq(users.email, email.toLowerCase()));
 
-    if (userResult.length === 0) {
+    console.log('User search result:', userResult.length > 0 ? 'User found' : 'User not found');
+    
+    // Filter for active users
+    const activeUsers = userResult.filter(u => u.isActive);
+    
+    if (activeUsers.length === 0) {
+      console.log('No active user found with this email');
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
-    const user = userResult[0];
+    const user = activeUsers[0];
 
     // Verify password
     const isPasswordValid = await verifyPassword(password, user.passwordHash);
@@ -61,7 +68,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24, // 1 day to match JWT expiration
+      path: '/'
     });
 
     return NextResponse.json({

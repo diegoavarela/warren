@@ -1,0 +1,3764 @@
+npm warn cli npm v11.3.0 does not support Node.js v20.12.2. This version of npm supports the following node versions: `^20.17.0 || >=22.9.0`. You can find the latest version at https://nodejs.org/.
+
+> warren-financial-parser@0.1.0 dev
+> next dev -p 4000
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:4000
+  - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+ ✓ Compiled /api/test-persistence in 9.4s (1356 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET / 200 in 10145ms
+Error checking persistence: SyntaxError: Unexpected number in JSON at position 1
+    at JSON.parse (<anonymous>)
+    at eval (webpack-internal:///(rsc)/./app/api/test-persistence/route.ts:17:71)
+    at Array.map (<anonymous>)
+    at GET (webpack-internal:///(rsc)/./app/api/test-persistence/route.ts:15:38)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/start-server.js:141:13)
+ GET /api/test-persistence 500 in 7500ms
+ ✓ Compiled in 1784ms (561 modules)
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 534ms (878 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 1394ms
+ GET /api/auth/me 200 in 337ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 577ms (1519 modules)
+ ✓ Compiled /dashboard/org-admin in 378ms (1545 modules)
+ ✓ Compiled /api/v1/companies in 158ms (942 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 458ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 222ms
+ ✓ Compiled in 859ms (1557 modules)
+ ✓ Compiled in 946ms (619 modules)
+ ✓ Compiled in 509ms (619 modules)
+ ✓ Compiled in 1145ms (1207 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /dashboard/org-admin 200 in 208ms
+ ✓ Compiled /api/auth/me in 393ms (914 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 1322ms
+ ✓ Compiled /api/v1/companies in 165ms (916 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 490ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ GET /api/auth/me 200 in 673ms
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 201ms
+ ○ Compiling /dashboard/company-admin ...
+ ✓ Compiled /dashboard/company-admin in 1246ms (1540 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 273ms
+ ✓ Compiled /api/v1/companies/[id]/financial-status in 312ms (930 modules)
+ ✓ Compiled in 0ms (936 modules)
+ ✓ Compiled in 0ms (936 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 851ms
+ ✓ Compiled in 0ms (936 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/templates?companyId=b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 1556ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/users 200 in 2633ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/stats 200 in 3038ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-status 200 in 3117ms
+ ○ Compiling /upload ...
+ ✓ Compiled /upload in 567ms (1594 modules)
+ ✓ Compiled /api/v1/companies/[id] in 159ms (962 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 1264ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 218ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ○ Compiling /api/upload-client ...
+ ✓ Compiled /api/upload-client in 845ms (967 modules)
+ POST /api/upload-client 200 in 1536ms
+ ✓ Compiled /select-sheet in 307ms (1609 modules)
+ GET /select-sheet?session=unc3_Y8WEhwuMU4GcJUIu 200 in 490ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 708ms
+ GET /api/auth/me 200 in 307ms
+ ○ Compiling /mapper ...
+ ✓ Compiled /mapper in 1948ms (1696 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 652ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 207ms
+ ○ Compiling /api/ai-analyze ...
+ ✓ Compiled /api/ai-analyze in 665ms (1120 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ POST /api/ai-analyze 200 in 6622ms
+Failed to parse AI response: {
+  "classifications": [
+    {
+      "accountName": "SRL Services",
+      "suggestedCategory": "service_revenue",
+      "isInflow": true,
+      "confidence": 90,
+      "reasoning": "Service revenue account related to SRL Services.",
+      "alternativeCategories": [
+        {
+          "category": "revenue",
+          "confidence": 80
+        }
+      ]
+    },
+    {
+      "accountName": "LLC transfers",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from LLC categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Revenue",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "General other revenue account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Cost of Revenue",
+      "suggestedCategory": "cost_of_sales",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Cost of revenue associated with generating revenue.",
+      "alternativeCategories": [
+        {
+          "category": "direct_materials",
+          "confidence": 85
+        },
+        {
+          "category": "direct_labor",
+          "confidence": 80
+        }
+      ]
+    },
+    {
+      "accountName": "Payroll Taxes (CoR)",
+      "suggestedCategory": "payroll_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payroll taxes related to cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Contract Services (CoR)",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Contract services under cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Health Coverage (CoR)",
+      "suggestedCategory": "benefits",
+      "isInflow": false,
+      "confidence": 75,
+      "reasoning": "Health coverage costs related to cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Training (CoR)",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Training expenses under cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other (CoR)",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 70,
+      "reasoning": "Other costs related to cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Operating Expenses",
+      "suggestedCategory": "operating_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "General operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Personnel Operating Salaries",
+      "suggestedCategory": "salaries_wages",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Salaries for personnel under operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Payroll Operating Taxes",
+      "suggestedCategory": "payroll_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payroll taxes related to operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Contract Operating Services",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Contract services under operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Severance and Compensation",
+      "suggestedCategory": "salaries_wages",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Severance and compensation costs.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Business development investments (Sales & Marketing)",
+      "suggestedCategory": "marketing_advertising",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Investments in business development under sales & marketing.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Marketing and Promotion",
+      "suggestedCategory": "marketing_advertising",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Costs related to marketing and promotion.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Meals and Entertainment",
+      "suggestedCategory": "travel_entertainment",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Expenses for meals and entertainment.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Travel, Transfers and Accommodation",
+      "suggestedCategory": "travel_entertainment",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Travel, transfers, and accommodation expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Bank Fees",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Bank fees categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Computer and Equipment",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Computer and equipment expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Dues and Subscriptions",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Dues and subscriptions as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Expenses Reimbursement",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 75,
+      "reasoning": "Expenses reimbursement categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Office Supplies",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Office supplies expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Cell Phones",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Cell phone expenses under office supplies.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Professional Services",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Other professional services expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Software & Subscriptions",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Software and subscriptions expenses under office supplies.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Training and development programs",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Expenses related to training and development programs.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Misc. Expense",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Miscellaneous expenses categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Income / (Expense)",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "General other income or expense account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Income",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "General other income account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Expense",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "General other expense account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Transfers from A1 LLC",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from A1 LLC categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Expenses paid on behalf of Accelone",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Expenses paid on behalf of Accelone as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Transfers from DL",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from DL categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Payments to DL",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payments to DL as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " EBITDA ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "EBITDA as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " EBITDA Margin ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "EBITDA Margin as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest income",
+      "suggestedCategory": "interest_income",
+      "isInflow": true,
+      "confidence": 90,
+      "reasoning": "Interest income account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest Expense",
+      "suggestedCategory": "interest_expense",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Interest expense account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Gain on FX ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Gain on foreign exchange as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Loss on FX ",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Loss on foreign exchange as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Depreciation",
+      "suggestedCategory": "depreciation",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Depreciation expense account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " Earnings Before Tax ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "Earnings before tax as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Gross Income Tax (IIBB)",
+      "suggestedCategory": "income_tax",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Gross income tax (IIBB) account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Income tax",
+      "suggestedCategory": "income_tax",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Income tax account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest Tax",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Interest tax categorized as other taxes.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Withholding Tax",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Withholding tax categorized as other taxes.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Taxes",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "General other taxes account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Exhibits",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Exhibits categorized as other expenses
+AI account classification failed: Error: Invalid JSON response from AI
+    at FinancialAI.parseAIResponse (webpack-internal:///(rsc)/./lib/ai-service.ts:248:23)
+    at FinancialAI.classifyAccounts (webpack-internal:///(rsc)/./lib/ai-service.ts:71:33)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async eval (webpack-internal:///(rsc)/./app/api/ai-analyze/route.ts:46:30)
+    at async withRBAC (webpack-internal:///(rsc)/./lib/auth/rbac.ts:202:16)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/start-server.js:141:13)
+Using local classification fallback for 52 accounts
+ POST /api/ai-analyze 200 in 43143ms
+ ○ Compiling /persist ...
+ ✓ Compiled /persist in 1361ms (1783 modules)
+ ✓ Compiled /api/v1/companies in 172ms (1103 modules)
+ ✓ Compiled (1105 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 893ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 1060ms
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 226ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 233ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/persist-encrypted in 208ms (1108 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User organization: a70129ac-4b7d-4872-ad42-ea230825f333
+Company ID: b1dea3ff-cac4-45cc-be78-5488e612c2a8
+Using actual database schema for persistence
+Period dates: {
+  firstPeriod: 'Jan-25',
+  lastPeriod: 'Dec-25',
+  periodStartDate: '2025-01-01',
+  periodEndDate: '2025-12-31'
+}
+Processing data: 76 items
+Item 0: {
+  name: 'SRL Services',
+  category: 'other_income',
+  periods: {
+    'Jan-25': ' $46,287 ',
+    'Feb-25': ' $49,171 ',
+    'Mar-25': ' $48,418 ',
+    'Apr-25': ' $45,689 ',
+    'May-25': ' $56,708 ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $46,287 '
+}
+Item 1: {
+  name: 'LLC transfers',
+  category: 'other_income',
+  periods: {
+    'Jan-25': ' $-   ',
+    'Feb-25': ' $-   ',
+    'Mar-25': ' $-   ',
+    'Apr-25': ' $-   ',
+    'May-25': ' $-   ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $-   '
+}
+Item 2: {
+  name: 'Other Revenue',
+  category: 'revenue',
+  periods: {
+    'Jan-25': ' $-   ',
+    'Feb-25': ' $-   ',
+    'Mar-25': ' $-   ',
+    'Apr-25': ' $-   ',
+    'May-25': ' $-   ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $-   '
+}
+Successfully persisted encrypted financial data: {
+  statementId: '74d18125-5af3-44db-84b3-549d1b3c9a8d',
+  companyId: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+  userId: 'e123a07d-e13e-46d2-b2ab-db73adb24d7f',
+  organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+  isEncrypted: true,
+  lineItemsCount: 76,
+  templateSaved: false
+}
+ POST /api/persist-encrypted 200 in 1360ms
+ ○ Compiling /dashboard/company-admin/financial/[statementId]/dashboard ...
+ ✓ Compiled /dashboard/company-admin/financial/[statementId]/dashboard in 1191ms (1723 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /dashboard in 178ms (1022 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 781ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 381ms
+ ✓ Compiled /dashboard/org-admin in 365ms (1025 modules)
+ ✓ Compiled (1039 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 232ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 243ms
+Total line items: 76
+Categories found: [
+  'other_income',
+  'revenue',
+  'cost_of_sales',
+  'other_expense',
+  'salaries_wages',
+  'benefits',
+  'marketing_advertising',
+  'travel_entertainment',
+  'bank_fees',
+  'office_supplies',
+  'rent_utilities',
+  'professional_services',
+  'interest_expense',
+  'depreciation',
+  'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'other_income', amount: 46287 },
+  { name: 'LLC transfers', category: 'other_income', amount: 0 },
+  { name: 'Other Revenue', category: 'revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: 'ca6723d3-9da0-4121-9b19-2e8e5e7a1a4b',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '0d9b1d7a-f94c-48c4-a52e-530040ed30d7',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '65f75c0d-670c-4b2b-a62f-50cacd9847eb',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  },
+  {
+    id: '1c28da85-ba06-4c37-a6c1-e05135cb36c3',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '00a7d499-4033-48bd-8855-afaff0eaa99e',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: '2709478d-591f-410c-aac5-64b88a5f152a',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '1db203a7-c526-4e4b-91fa-6311537df29e',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: '942d60c5-6ee9-457e-8478-a66e68b2a882',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '1b4a427d-dc5d-477c-93b8-b37eb8915a01',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '9001b0a8-9a0b-48d7-b848-62f540083d49',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: 'e9882262209a1cf71f076a14448f9c36:bf71b3010976aaacda07395c7bdd5025',
+    category: 'other_income',
+    amount: 'NaN',
+    metadata: 'aad53c0eeb0da38ecf481cff96581314:fe249cb78e35e11b20313ebf8052287f67271ef3a51e3465ae70b58c8e89a04cbc4273a624383c964946922fdedd5225e97c1fa4eb93ac109ee25756574a279e81a80c14eb1f841128b77f3f3b2c51ca13b271ba498878a54bce07b0ab6a5ebdb6daedde0a2ed6fdac27ea0b9a24f02ee2e7f79708404825144be1744161c639a9385a872b0d2e53137c21601db860b31b2287ccca1124cd551568ad5d81613bc064ac0aeb4b047344b432aee3bee53cb6e96aa7e9c0d0e3b0b0bbe88f4c060821a12aa3355e063b8ec456d7778d261ecb89a377c9a63dd406aeb3f0f35def9b06ba3f0af92bb5ff4c850c504831414e96a6f5e38b6e3992bc78cade2cda040f8665485da8a2b0bb9f90e45512b6ff5e53c1332d2a52cdb67bff86707a4474982ed546f9cdc6a1f418fc394eb874aa7cc83b35d1446242d69730d2decf908130d8fbb273aee41888fb98897d2f7bef0d9c632783932ea227b34607d5766cb83ee1023e2949d71cb79d5137de8713d85b8cfe9c7d67c31a5377c4e6e4d86e8eb262672aec7dc4f208f73935f719b5e574cac3e65f993fa031f4ef666fadb7a73d19426abecefb6a09152ef9586ff5432c7bb94c61ac757ddf7cb1475077c80eb93848d0ff13ba16ca9282c39a6fde28ed38fc5a2ee625f2408d737b21c2cb2618d12c3dcbe754ab69cbc2a7784b229c96722b995f9e31f7ef8b731045b83eeebe1ad3960cbc7fea3415fe4be7fad8752705c5e9e86e985b62de5b3b9d324b2d1a2613214a5f85e56ed97fadb0a955a0b576aac6f5b9627b94e7bfc20d1e20248c807d94bfdc6b7050966b978103a949e429018b83d6ebcfed0d83d25870e45be151c6a61fa886c7fa1286bb51620a34da8d8cdb41346761019b2fef3b01efa4415c9795d3c7ce20f62fa92cce20597167'
+  },
+  {
+    accountName: '8bba1a9fd0bc46dbf1a95e4f9edf5b1c:7c5629fbc0fa22f97366315102efa7c3',
+    category: 'other_income',
+    amount: 'NaN',
+    metadata: 'fd458ece4b756dba8f05372d65d4ea6e:10c65e8f75fdcf488338c4862bfd344a52f79a238eba344ebeb28a9fb9a981c804ed00f92b2655fa7aa4e88af3b7c044966cecb5d60b33c31f5db50bd9e773bf5f9148eae5d4c010807b3b1d5fb4b40569ecd28d9a9ec8a2369df2a0e23bc0955641ed3a79b91d65e13591f53f261e1ad5b70780def17839245142762090d63f3a9b57544dcc757c1e2b961b0608bc7c4c6589c911a47cd336d5c274be7c393a54eb932288eb97e341c7994fc9f3f15e1defb347c0098d3c7ff326b35530d35d872d217adee390cf5aaa8c076bf5d4e7ab441569074588141847ca0db7fd7058bf259202281a0a0b085f0c0344f85b6412049a35180c222bfcc6ada9a011720fc856a96ad377ef43460df2dd0866a494471ef1ce095e3c811396f51efc57c435075649e7549da40704bbe341e64c8447d572d8554d148680f61478036b469229a0a399bc783b3949b2cc546668eb473e688908d3e17d074114657fd4a2d16a74a851edddbf69da2fe9e6afd7e59cf5ced418043250a7124ca1081fc6b7f8c0a78b8f2dc43b6d7cd17c39452b9d51b88ac00bc5f2263c4c55509305115b6f04f47d36d488a57b41398927e496fd13f37d527cf4fe046b5471a5ee16ae1802f5c1a92e1caa19c430fbcd98aca7f894aee91a8482560af46e9b66d209dd6d7df67342e601822bcfc14cfe4cfd26db7f4c0e6a954ff9527ab9f949869558298c8a3ffca267340831a611bd443d1a2a85a594c699de7aa69b5cc413c07abfb600cd11daab7ec44b4bd35232ebaceb68de1809af6e88305e8455889fb2095c92cd2e3945f3d64d339991555531d831d9059363add55e9e0bd4be72d755239ba505b48e0e652e552aab61cd6faf4d2dc402ae2e'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=74d18125-5af3-44db-84b3-549d1b3c9a8d 200 in 3688ms
+Total line items: 76
+Categories found: [
+  'other_income',
+  'revenue',
+  'cost_of_sales',
+  'other_expense',
+  'salaries_wages',
+  'benefits',
+  'marketing_advertising',
+  'travel_entertainment',
+  'bank_fees',
+  'office_supplies',
+  'rent_utilities',
+  'professional_services',
+  'interest_expense',
+  'depreciation',
+  'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'other_income', amount: 46287 },
+  { name: 'LLC transfers', category: 'other_income', amount: 0 },
+  { name: 'Other Revenue', category: 'revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: 'ca6723d3-9da0-4121-9b19-2e8e5e7a1a4b',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '0d9b1d7a-f94c-48c4-a52e-530040ed30d7',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '65f75c0d-670c-4b2b-a62f-50cacd9847eb',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  },
+  {
+    id: '1c28da85-ba06-4c37-a6c1-e05135cb36c3',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '00a7d499-4033-48bd-8855-afaff0eaa99e',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: '2709478d-591f-410c-aac5-64b88a5f152a',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '1db203a7-c526-4e4b-91fa-6311537df29e',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: '942d60c5-6ee9-457e-8478-a66e68b2a882',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '1b4a427d-dc5d-477c-93b8-b37eb8915a01',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '9001b0a8-9a0b-48d7-b848-62f540083d49',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: 'e9882262209a1cf71f076a14448f9c36:bf71b3010976aaacda07395c7bdd5025',
+    category: 'other_income',
+    amount: 'NaN',
+    metadata: 'aad53c0eeb0da38ecf481cff96581314:fe249cb78e35e11b20313ebf8052287f67271ef3a51e3465ae70b58c8e89a04cbc4273a624383c964946922fdedd5225e97c1fa4eb93ac109ee25756574a279e81a80c14eb1f841128b77f3f3b2c51ca13b271ba498878a54bce07b0ab6a5ebdb6daedde0a2ed6fdac27ea0b9a24f02ee2e7f79708404825144be1744161c639a9385a872b0d2e53137c21601db860b31b2287ccca1124cd551568ad5d81613bc064ac0aeb4b047344b432aee3bee53cb6e96aa7e9c0d0e3b0b0bbe88f4c060821a12aa3355e063b8ec456d7778d261ecb89a377c9a63dd406aeb3f0f35def9b06ba3f0af92bb5ff4c850c504831414e96a6f5e38b6e3992bc78cade2cda040f8665485da8a2b0bb9f90e45512b6ff5e53c1332d2a52cdb67bff86707a4474982ed546f9cdc6a1f418fc394eb874aa7cc83b35d1446242d69730d2decf908130d8fbb273aee41888fb98897d2f7bef0d9c632783932ea227b34607d5766cb83ee1023e2949d71cb79d5137de8713d85b8cfe9c7d67c31a5377c4e6e4d86e8eb262672aec7dc4f208f73935f719b5e574cac3e65f993fa031f4ef666fadb7a73d19426abecefb6a09152ef9586ff5432c7bb94c61ac757ddf7cb1475077c80eb93848d0ff13ba16ca9282c39a6fde28ed38fc5a2ee625f2408d737b21c2cb2618d12c3dcbe754ab69cbc2a7784b229c96722b995f9e31f7ef8b731045b83eeebe1ad3960cbc7fea3415fe4be7fad8752705c5e9e86e985b62de5b3b9d324b2d1a2613214a5f85e56ed97fadb0a955a0b576aac6f5b9627b94e7bfc20d1e20248c807d94bfdc6b7050966b978103a949e429018b83d6ebcfed0d83d25870e45be151c6a61fa886c7fa1286bb51620a34da8d8cdb41346761019b2fef3b01efa4415c9795d3c7ce20f62fa92cce20597167'
+  },
+  {
+    accountName: '8bba1a9fd0bc46dbf1a95e4f9edf5b1c:7c5629fbc0fa22f97366315102efa7c3',
+    category: 'other_income',
+    amount: 'NaN',
+    metadata: 'fd458ece4b756dba8f05372d65d4ea6e:10c65e8f75fdcf488338c4862bfd344a52f79a238eba344ebeb28a9fb9a981c804ed00f92b2655fa7aa4e88af3b7c044966cecb5d60b33c31f5db50bd9e773bf5f9148eae5d4c010807b3b1d5fb4b40569ecd28d9a9ec8a2369df2a0e23bc0955641ed3a79b91d65e13591f53f261e1ad5b70780def17839245142762090d63f3a9b57544dcc757c1e2b961b0608bc7c4c6589c911a47cd336d5c274be7c393a54eb932288eb97e341c7994fc9f3f15e1defb347c0098d3c7ff326b35530d35d872d217adee390cf5aaa8c076bf5d4e7ab441569074588141847ca0db7fd7058bf259202281a0a0b085f0c0344f85b6412049a35180c222bfcc6ada9a011720fc856a96ad377ef43460df2dd0866a494471ef1ce095e3c811396f51efc57c435075649e7549da40704bbe341e64c8447d572d8554d148680f61478036b469229a0a399bc783b3949b2cc546668eb473e688908d3e17d074114657fd4a2d16a74a851edddbf69da2fe9e6afd7e59cf5ced418043250a7124ca1081fc6b7f8c0a78b8f2dc43b6d7cd17c39452b9d51b88ac00bc5f2263c4c55509305115b6f04f47d36d488a57b41398927e496fd13f37d527cf4fe046b5471a5ee16ae1802f5c1a92e1caa19c430fbcd98aca7f894aee91a8482560af46e9b66d209dd6d7df67342e601822bcfc14cfe4cfd26db7f4c0e6a954ff9527ab9f949869558298c8a3ffca267340831a611bd443d1a2a85a594c699de7aa69b5cc413c07abfb600cd11daab7ec44b4bd35232ebaceb68de1809af6e88305e8455889fb2095c92cd2e3945f3d64d339991555531d831d9059363add55e9e0bd4be72d755239ba505b48e0e652e552aab61cd6faf4d2dc402ae2e'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=74d18125-5af3-44db-84b3-549d1b3c9a8d 200 in 1700ms
+ ○ Compiling /api/v1/companies/[id]/financial-status ...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ ✓ Compiled /api/v1/companies/[id]/financial-status in 1377ms (1002 modules)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 1673ms
+ ✓ Compiled in 1ms (1013 modules)
+ ✓ Compiled in 0ms (1013 modules)
+ ✓ Compiled in 0ms (1013 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/templates?companyId=b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 4141ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 2418ms
+ GET /api/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/users 200 in 4470ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/stats 200 in 4866ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-status 200 in 5217ms
+ ✓ Compiled /api/v1/companies/[id] in 174ms (1015 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 868ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 221ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/upload-client in 326ms (1015 modules)
+ POST /api/upload-client 200 in 1332ms
+ ✓ Compiled /select-sheet in 237ms (1020 modules)
+ GET /select-sheet?session=CZG5VQxEV6hrqasI529Ak 200 in 446ms
+ ✓ Compiled /api/auth/me in 425ms (1022 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 1298ms
+ GET /api/auth/me 200 in 353ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 671ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 301ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/ai-analyze in 435ms (1125 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ POST /api/ai-analyze 200 in 7434ms
+Failed to parse AI response: {
+  "classifications": [
+    {
+      "accountName": "SRL Services",
+      "suggestedCategory": "service_revenue",
+      "isInflow": true,
+      "confidence": 90,
+      "reasoning": "Service revenue account related to SRL Services.",
+      "alternativeCategories": [
+        {
+          "category": "revenue",
+          "confidence": 80
+        }
+      ]
+    },
+    {
+      "accountName": "LLC transfers",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from LLC considered as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Revenue",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "General category for other types of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Cost of Revenue",
+      "suggestedCategory": "cost_of_sales",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Cost directly related to generating revenue.",
+      "alternativeCategories": [
+        {
+          "category": "direct_materials",
+          "confidence": 85
+        },
+        {
+          "category": "direct_labor",
+          "confidence": 80
+        }
+      ]
+    },
+    {
+      "accountName": "Payroll Taxes (CoR)",
+      "suggestedCategory": "payroll_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payroll taxes related to Cost of Revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Contract Services (CoR)",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Contract services related to Cost of Revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Health Coverage (CoR)",
+      "suggestedCategory": "benefits",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Employee benefits related to Cost of Revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Training (CoR)",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 75,
+      "reasoning": "Training expenses related to Cost of Revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other (CoR)",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 70,
+      "reasoning": "Other expenses related to Cost of Revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Operating Expenses",
+      "suggestedCategory": "operating_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "General operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Personnel Operating Salaries",
+      "suggestedCategory": "salaries_wages",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Salaries directly related to operations.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Payroll Operating Taxes",
+      "suggestedCategory": "payroll_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payroll taxes related to operations.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Contract Operating Services",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Contract services related to operations.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Severance and Compensation",
+      "suggestedCategory": "salaries_wages",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Severance and compensation costs.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Business development investments (Sales & Marketing)",
+      "suggestedCategory": "marketing_advertising",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Investments related to sales and marketing activities.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Marketing and Promotion",
+      "suggestedCategory": "marketing_advertising",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Expenses related to marketing and promotion.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Meals and Entertainment",
+      "suggestedCategory": "travel_entertainment",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Meals and entertainment expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Travel, Transfers and Accommodation",
+      "suggestedCategory": "travel_entertainment",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Travel, transfers, and accommodation expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Bank Fees",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Bank fees considered as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Computer and Equipment",
+      "suggestedCategory": "depreciation",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Depreciation of computer and equipment.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Dues and Subscriptions",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Dues and subscriptions expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Expenses Reimbursement",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Expenses reimbursement considered as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Office Supplies",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Office supplies expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Cell Phones",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Cell phones expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Professional Services",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Other professional services expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Software & Subscriptions",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Software and subscriptions expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Training and development programs",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Training and development expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Misc. Expense",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Miscellaneous expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Income / (Expense)",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "General category for other types of income or expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Income",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "General category for other types of income.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Expense",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "General category for other types of expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Transfers from A1 LLC",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from A1 LLC considered as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Expenses paid on behalf of Accelone",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Expenses paid on behalf of Accelone considered as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Transfers from DL",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from DL considered as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Payments to DL",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payments to DL considered as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " EBITDA ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "EBITDA considered as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " EBITDA Margin ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "EBITDA Margin considered as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest income",
+      "suggestedCategory": "interest_income",
+      "isInflow": true,
+      "confidence": 90,
+      "reasoning": "Interest income account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest Expense",
+      "suggestedCategory": "interest_expense",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Interest expense account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Gain on FX ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Gain on foreign exchange considered as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Loss on FX ",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Loss on foreign exchange considered as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Depreciation",
+      "suggestedCategory": "depreciation",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Depreciation expense account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " Earnings Before Tax ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 80,
+      "reasoning": "Earnings before tax considered as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Gross Income Tax (IIBB)",
+      "suggestedCategory": "income_tax",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Gross income tax account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Income tax",
+      "suggestedCategory": "income_tax",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Income tax account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest Tax",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Interest tax account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Withholding Tax",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Withholding tax account.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Taxes",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "General category for other types of taxes.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Exhibits",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Exhibits expenses.",
+      "alternativeCategories": []
+    },
+
+AI account classification failed: Error: Invalid JSON response from AI
+    at FinancialAI.parseAIResponse (webpack-internal:///(rsc)/./lib/ai-service.ts:248:23)
+    at FinancialAI.classifyAccounts (webpack-internal:///(rsc)/./lib/ai-service.ts:71:33)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async eval (webpack-internal:///(rsc)/./app/api/ai-analyze/route.ts:46:30)
+    at async withRBAC (webpack-internal:///(rsc)/./lib/auth/rbac.ts:202:16)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/start-server.js:141:13)
+Using local classification fallback for 52 accounts
+ POST /api/ai-analyze 200 in 18280ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 631ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 777ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 242ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 245ms
+ ○ Compiling /api/persist-encrypted ...
+ ✓ Compiled /api/persist-encrypted in 589ms (991 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User organization: a70129ac-4b7d-4872-ad42-ea230825f333
+Company ID: b1dea3ff-cac4-45cc-be78-5488e612c2a8
+Using actual database schema for persistence
+Period dates: {
+  firstPeriod: 'Jan-25',
+  lastPeriod: 'Dec-25',
+  periodStartDate: '2025-01-01',
+  periodEndDate: '2025-12-31'
+}
+Processing data: 76 items
+Item 0: {
+  name: 'SRL Services',
+  category: 'gain_on_sale',
+  periods: {
+    'Jan-25': ' $46,287 ',
+    'Feb-25': ' $49,171 ',
+    'Mar-25': ' $48,418 ',
+    'Apr-25': ' $45,689 ',
+    'May-25': ' $56,708 ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $46,287 '
+}
+Item 1: {
+  name: 'LLC transfers',
+  category: 'interest_income',
+  periods: {
+    'Jan-25': ' $-   ',
+    'Feb-25': ' $-   ',
+    'Mar-25': ' $-   ',
+    'Apr-25': ' $-   ',
+    'May-25': ' $-   ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $-   '
+}
+Item 2: {
+  name: 'Other Revenue',
+  category: 'revenue',
+  periods: {
+    'Jan-25': ' $-   ',
+    'Feb-25': ' $-   ',
+    'Mar-25': ' $-   ',
+    'Apr-25': ' $-   ',
+    'May-25': ' $-   ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $-   '
+}
+Successfully persisted encrypted financial data: {
+  statementId: 'a40875a1-851f-4772-b42c-7a83cc7dae41',
+  companyId: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+  userId: 'e123a07d-e13e-46d2-b2ab-db73adb24d7f',
+  organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+  isEncrypted: true,
+  lineItemsCount: 76,
+  templateSaved: false
+}
+ POST /api/persist-encrypted 200 in 2096ms
+ ✓ Compiled /dashboard/company-admin/financial/[statementId]/dashboard in 358ms (1017 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 289ms
+ ✓ Compiled /api/v1/companies/[id]/financial-analytics in 198ms (1020 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 913ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+Total line items: 76
+Categories found: [
+  'gain_on_sale',
+  'interest_income',
+  'revenue',
+  'cost_of_sales',
+  'bank_fees',
+  'other_income',
+  'other_expense',
+  'salaries_wages',
+  'benefits',
+  'marketing_advertising',
+  'travel_entertainment',
+  'office_supplies',
+  'rent_utilities',
+  'professional_services',
+  'interest_expense',
+  'depreciation',
+  'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'gain_on_sale', amount: 46287 },
+  { name: 'LLC transfers', category: 'interest_income', amount: 0 },
+  { name: 'Other Revenue', category: 'revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: '9a1ad8dd-5511-4cc1-afaf-9b587632bd20',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '9c09dfcf-702b-4ab1-bc1d-beacfb3d5375',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '0023e0d4-9125-46e6-97e5-b586486fd605',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'da8637ca-48e6-4d55-bf8a-589e18c46645',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '60dd7d5a-8955-46c2-aa9f-7ee6e7937dc0',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: '29f01112-6d88-463f-877e-5beae1bae82e',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: 'ae675142-eeff-403d-b0c2-e6c62557469b',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '0ba1f561-237b-4ce1-a822-ac5e86ac9e7e',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '985bd9f7-15d3-4f9b-96c5-c921a64aec23',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  },
+  {
+    id: 'f981ae58-a208-466d-b09e-3f054c59b758',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: 'd78cb398bf5e0c5103ee38aa7068c074:7012a932a31f96c08cb6f3d0adb5060d',
+    category: 'gain_on_sale',
+    amount: 'NaN',
+    metadata: '6cc38b495bbec8f72575883e52001563:02898e1606983bf032b15a78e168f3386345a3935966d35e5bda4a2efd15b781443d572d794d2559b759a0b0f910ed16e9a76f43b119693e5c5ee3e0f11f1ac6abe8d89fddd2a725933fd20205fddd22010f1857dfea6b4e275ed72bd3be7bc2a29ed02a5ea0082dc20ff546d30c154164f576e4a6de6109baa8fe05892ee0582ba1753e3ddda919d5e931c0604ac27d57429d9dad52c3cbd3bd8df583c49394bd36cf9cdf544d48ac20f0ce463bb83dca126d94197db24053e60d101bdcfd49602a653a729d65d333bdae67929b9945509d55a7b12dc65ea50da7842fb2d270f0aa57b753d589ce087053d9409ab6eb3215da8f3f15e043de94ea199f71128b68140c4c6205470fb16c9c4ecf59489173dbbadf05fa6b41dad587942eed01c85e99d918b2c9687868423e58af7e0ba5ea20a6b977726160a861d5d3275ee731c04168ca4620f6e17137d8b483e2eec475bc8b3836d4304c6f93a07fa462bf826b06ca0b0cd5bdb06d2449a708aca1d7ed6e3895e8884f73cb9adfb8f02051e3c52a62984088daf73b71c7d93be1d37e322e22a8673c6ae2ffb1d0a5427041615fcb08be164022f3e17c7c05e7ed9e0989573ab665c918629ff430d1a17a5f647fb54dec75b53aead586bb22d72605a516ac98f4b2c80c47e5260cc8d8f1c7588f7c651d1c36c29cb7646c9e17a778483a4868510b108ab06951193cd052c02bfb7017631b50904d5c11c3334b08cd2aa30018e0f2b2d4cfc92c857807bad3d86e1d09773e94f0afce31e43d8ceef89edd8734c0dd16a53d089467a8b455a2c715ba088c9664bd5b1b2777a7f3987306e52a29e3eb1b462004b17930ae387ccdf9fe1eaa6e141f1b8c9cd2bdc800190f9fdc5e148481e136ea445ab197dd234ae42844b27c97cf6f379daf62db22802a'
+  },
+  {
+    accountName: '8a4a0db082802906ce1aa9b8cc779c82:4eee82a85edf0127792f07f993b23d97',
+    category: 'interest_income',
+    amount: 'NaN',
+    metadata: '557fbc6024e3c65e107969d06c834d5b:8ee96b47a2ea48d61495dc2df2b69377257f5a75bf47bf119e6763f7994f9110a87fb0d4a3a3326df4a2e6138e0042b2cf8148e124098047a2e0220d16dc7971bb6831fdc1bd1a285b5d81f6cfd2ef5d760f0dac5919e038a26e69a32ff7119cb2b533ac2356299ac2d28f4f1a4d45f32d7c41e72cbefa2ad9de7617c40cc99a4791b256f30328f533fb595cc5612dba8e9fc0852c2522301a5c92476a62811dbb265dccec503e816128844c6ba962a290a9a81f7107917d74638c9a099a2f91f52c5eb84ac6f0ee140eff7df3a168026b93a58230a45d2ace73e06d6e2c908f5da0e4a3af5ada0df791d10a16eb5e3206bea4f3cdb36b94e6a1d86ebde968461f4dc83b42bc9a0258efa7f87461296920306bf9c0bb8051a047e2c6d08aaeb35a59bcb7b9217b6783f3d1444d6bbced759599fd05571725543e7ea9f31dda8fd59a3bf4bbf50077e6b5da198adf5d49d1e9f64bcdbda9e64c812dce285f9b1472809f4013995badfa0d5b276d1bdf33a115852c73b256fb15f013db7b399630ea4beb694bd78eed19c71f11f9ac7e499289d185ce2f1963c389edb33efd1632fcbfbc446f0ce87020c3042c1e5370c6a20d627ccfe226f93db258b9d8a89c5282ebb0da83f534b814dd1da1fbdc41ecd70217ffd7566c203c536d3808eefe3f89ac7663d3bd431443a92c7daef00a35d27502eba847810110e726842cb132f246da83e9b53cdae295995ce734f0d090aa4de18d0c34063a62c66bf229b45f3f2dca8cfb7a3844c4f84489c7026fc8f88d8df42692f3f6e66f0a8e64e3898c597a6cedafb5e5ea8f63477c56ea76f975ec713de567856e7f7ce801b7b2ba07588ecb34f52fe7370d639525d68e2d7c01'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=a40875a1-851f-4772-b42c-7a83cc7dae41 200 in 2572ms
+Total line items: 76
+Categories found: [
+  'gain_on_sale',
+  'interest_income',
+  'revenue',
+  'cost_of_sales',
+  'bank_fees',
+  'other_income',
+  'other_expense',
+  'salaries_wages',
+  'benefits',
+  'marketing_advertising',
+  'travel_entertainment',
+  'office_supplies',
+  'rent_utilities',
+  'professional_services',
+  'interest_expense',
+  'depreciation',
+  'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'gain_on_sale', amount: 46287 },
+  { name: 'LLC transfers', category: 'interest_income', amount: 0 },
+  { name: 'Other Revenue', category: 'revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: '9a1ad8dd-5511-4cc1-afaf-9b587632bd20',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '9c09dfcf-702b-4ab1-bc1d-beacfb3d5375',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '0023e0d4-9125-46e6-97e5-b586486fd605',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'da8637ca-48e6-4d55-bf8a-589e18c46645',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '60dd7d5a-8955-46c2-aa9f-7ee6e7937dc0',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: '29f01112-6d88-463f-877e-5beae1bae82e',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: 'ae675142-eeff-403d-b0c2-e6c62557469b',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '0ba1f561-237b-4ce1-a822-ac5e86ac9e7e',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '985bd9f7-15d3-4f9b-96c5-c921a64aec23',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  },
+  {
+    id: 'f981ae58-a208-466d-b09e-3f054c59b758',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: 'd78cb398bf5e0c5103ee38aa7068c074:7012a932a31f96c08cb6f3d0adb5060d',
+    category: 'gain_on_sale',
+    amount: 'NaN',
+    metadata: '6cc38b495bbec8f72575883e52001563:02898e1606983bf032b15a78e168f3386345a3935966d35e5bda4a2efd15b781443d572d794d2559b759a0b0f910ed16e9a76f43b119693e5c5ee3e0f11f1ac6abe8d89fddd2a725933fd20205fddd22010f1857dfea6b4e275ed72bd3be7bc2a29ed02a5ea0082dc20ff546d30c154164f576e4a6de6109baa8fe05892ee0582ba1753e3ddda919d5e931c0604ac27d57429d9dad52c3cbd3bd8df583c49394bd36cf9cdf544d48ac20f0ce463bb83dca126d94197db24053e60d101bdcfd49602a653a729d65d333bdae67929b9945509d55a7b12dc65ea50da7842fb2d270f0aa57b753d589ce087053d9409ab6eb3215da8f3f15e043de94ea199f71128b68140c4c6205470fb16c9c4ecf59489173dbbadf05fa6b41dad587942eed01c85e99d918b2c9687868423e58af7e0ba5ea20a6b977726160a861d5d3275ee731c04168ca4620f6e17137d8b483e2eec475bc8b3836d4304c6f93a07fa462bf826b06ca0b0cd5bdb06d2449a708aca1d7ed6e3895e8884f73cb9adfb8f02051e3c52a62984088daf73b71c7d93be1d37e322e22a8673c6ae2ffb1d0a5427041615fcb08be164022f3e17c7c05e7ed9e0989573ab665c918629ff430d1a17a5f647fb54dec75b53aead586bb22d72605a516ac98f4b2c80c47e5260cc8d8f1c7588f7c651d1c36c29cb7646c9e17a778483a4868510b108ab06951193cd052c02bfb7017631b50904d5c11c3334b08cd2aa30018e0f2b2d4cfc92c857807bad3d86e1d09773e94f0afce31e43d8ceef89edd8734c0dd16a53d089467a8b455a2c715ba088c9664bd5b1b2777a7f3987306e52a29e3eb1b462004b17930ae387ccdf9fe1eaa6e141f1b8c9cd2bdc800190f9fdc5e148481e136ea445ab197dd234ae42844b27c97cf6f379daf62db22802a'
+  },
+  {
+    accountName: '8a4a0db082802906ce1aa9b8cc779c82:4eee82a85edf0127792f07f993b23d97',
+    category: 'interest_income',
+    amount: 'NaN',
+    metadata: '557fbc6024e3c65e107969d06c834d5b:8ee96b47a2ea48d61495dc2df2b69377257f5a75bf47bf119e6763f7994f9110a87fb0d4a3a3326df4a2e6138e0042b2cf8148e124098047a2e0220d16dc7971bb6831fdc1bd1a285b5d81f6cfd2ef5d760f0dac5919e038a26e69a32ff7119cb2b533ac2356299ac2d28f4f1a4d45f32d7c41e72cbefa2ad9de7617c40cc99a4791b256f30328f533fb595cc5612dba8e9fc0852c2522301a5c92476a62811dbb265dccec503e816128844c6ba962a290a9a81f7107917d74638c9a099a2f91f52c5eb84ac6f0ee140eff7df3a168026b93a58230a45d2ace73e06d6e2c908f5da0e4a3af5ada0df791d10a16eb5e3206bea4f3cdb36b94e6a1d86ebde968461f4dc83b42bc9a0258efa7f87461296920306bf9c0bb8051a047e2c6d08aaeb35a59bcb7b9217b6783f3d1444d6bbced759599fd05571725543e7ea9f31dda8fd59a3bf4bbf50077e6b5da198adf5d49d1e9f64bcdbda9e64c812dce285f9b1472809f4013995badfa0d5b276d1bdf33a115852c73b256fb15f013db7b399630ea4beb694bd78eed19c71f11f9ac7e499289d185ce2f1963c389edb33efd1632fcbfbc446f0ce87020c3042c1e5370c6a20d627ccfe226f93db258b9d8a89c5282ebb0da83f534b814dd1da1fbdc41ecd70217ffd7566c203c536d3808eefe3f89ac7663d3bd431443a92c7daef00a35d27502eba847810110e726842cb132f246da83e9b53cdae295995ce734f0d090aa4de18d0c34063a62c66bf229b45f3f2dca8cfb7a3844c4f84489c7026fc8f88d8df42692f3f6e66f0a8e64e3898c597a6cedafb5e5ea8f63477c56ea76f975ec713de567856e7f7ce801b7b2ba07588ecb34f52fe7370d639525d68e2d7c01'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=a40875a1-851f-4772-b42c-7a83cc7dae41 200 in 1685ms
+ ✓ Compiled in 6.3s (1108 modules)
+ ✓ Compiled in 1192ms (1108 modules)
+ ✓ Compiled in 1474ms (1108 modules)
+ ✓ Compiled in 653ms (1108 modules)
+ ✓ Compiled in 710ms (1108 modules)
+ ✓ Compiled in 599ms (1108 modules)
+ ✓ Compiled in 1137ms (1108 modules)
+ ✓ Compiled in 1095ms (1108 modules)
+ GET /dashboard/company-admin/financial/a40875a1-851f-4772-b42c-7a83cc7dae41/dashboard 200 in 436ms
+ ○ Compiling /api/v1/companies/[id] ...
+ ✓ Compiled /api/v1/companies/[id] in 1384ms (711 modules)
+ ✓ Compiled (713 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 3172ms
+ GET /api/auth/me 200 in 355ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 3538ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 328ms
+ ✓ Compiled /api/v1/companies/[id]/financial-analytics in 315ms (717 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+Total line items: 76
+Categories found: [
+  'gain_on_sale',
+  'interest_income',
+  'revenue',
+  'cost_of_sales',
+  'bank_fees',
+  'other_income',
+  'other_expense',
+  'salaries_wages',
+  'benefits',
+  'marketing_advertising',
+  'travel_entertainment',
+  'office_supplies',
+  'rent_utilities',
+  'professional_services',
+  'interest_expense',
+  'depreciation',
+  'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'gain_on_sale', amount: 46287 },
+  { name: 'LLC transfers', category: 'interest_income', amount: 0 },
+  { name: 'Other Revenue', category: 'revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: '9a1ad8dd-5511-4cc1-afaf-9b587632bd20',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '9c09dfcf-702b-4ab1-bc1d-beacfb3d5375',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '0023e0d4-9125-46e6-97e5-b586486fd605',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'da8637ca-48e6-4d55-bf8a-589e18c46645',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '60dd7d5a-8955-46c2-aa9f-7ee6e7937dc0',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: '29f01112-6d88-463f-877e-5beae1bae82e',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: 'ae675142-eeff-403d-b0c2-e6c62557469b',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '0ba1f561-237b-4ce1-a822-ac5e86ac9e7e',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '985bd9f7-15d3-4f9b-96c5-c921a64aec23',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  },
+  {
+    id: 'f981ae58-a208-466d-b09e-3f054c59b758',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: 'd78cb398bf5e0c5103ee38aa7068c074:7012a932a31f96c08cb6f3d0adb5060d',
+    category: 'gain_on_sale',
+    amount: 'NaN',
+    metadata: '6cc38b495bbec8f72575883e52001563:02898e1606983bf032b15a78e168f3386345a3935966d35e5bda4a2efd15b781443d572d794d2559b759a0b0f910ed16e9a76f43b119693e5c5ee3e0f11f1ac6abe8d89fddd2a725933fd20205fddd22010f1857dfea6b4e275ed72bd3be7bc2a29ed02a5ea0082dc20ff546d30c154164f576e4a6de6109baa8fe05892ee0582ba1753e3ddda919d5e931c0604ac27d57429d9dad52c3cbd3bd8df583c49394bd36cf9cdf544d48ac20f0ce463bb83dca126d94197db24053e60d101bdcfd49602a653a729d65d333bdae67929b9945509d55a7b12dc65ea50da7842fb2d270f0aa57b753d589ce087053d9409ab6eb3215da8f3f15e043de94ea199f71128b68140c4c6205470fb16c9c4ecf59489173dbbadf05fa6b41dad587942eed01c85e99d918b2c9687868423e58af7e0ba5ea20a6b977726160a861d5d3275ee731c04168ca4620f6e17137d8b483e2eec475bc8b3836d4304c6f93a07fa462bf826b06ca0b0cd5bdb06d2449a708aca1d7ed6e3895e8884f73cb9adfb8f02051e3c52a62984088daf73b71c7d93be1d37e322e22a8673c6ae2ffb1d0a5427041615fcb08be164022f3e17c7c05e7ed9e0989573ab665c918629ff430d1a17a5f647fb54dec75b53aead586bb22d72605a516ac98f4b2c80c47e5260cc8d8f1c7588f7c651d1c36c29cb7646c9e17a778483a4868510b108ab06951193cd052c02bfb7017631b50904d5c11c3334b08cd2aa30018e0f2b2d4cfc92c857807bad3d86e1d09773e94f0afce31e43d8ceef89edd8734c0dd16a53d089467a8b455a2c715ba088c9664bd5b1b2777a7f3987306e52a29e3eb1b462004b17930ae387ccdf9fe1eaa6e141f1b8c9cd2bdc800190f9fdc5e148481e136ea445ab197dd234ae42844b27c97cf6f379daf62db22802a'
+  },
+  {
+    accountName: '8a4a0db082802906ce1aa9b8cc779c82:4eee82a85edf0127792f07f993b23d97',
+    category: 'interest_income',
+    amount: 'NaN',
+    metadata: '557fbc6024e3c65e107969d06c834d5b:8ee96b47a2ea48d61495dc2df2b69377257f5a75bf47bf119e6763f7994f9110a87fb0d4a3a3326df4a2e6138e0042b2cf8148e124098047a2e0220d16dc7971bb6831fdc1bd1a285b5d81f6cfd2ef5d760f0dac5919e038a26e69a32ff7119cb2b533ac2356299ac2d28f4f1a4d45f32d7c41e72cbefa2ad9de7617c40cc99a4791b256f30328f533fb595cc5612dba8e9fc0852c2522301a5c92476a62811dbb265dccec503e816128844c6ba962a290a9a81f7107917d74638c9a099a2f91f52c5eb84ac6f0ee140eff7df3a168026b93a58230a45d2ace73e06d6e2c908f5da0e4a3af5ada0df791d10a16eb5e3206bea4f3cdb36b94e6a1d86ebde968461f4dc83b42bc9a0258efa7f87461296920306bf9c0bb8051a047e2c6d08aaeb35a59bcb7b9217b6783f3d1444d6bbced759599fd05571725543e7ea9f31dda8fd59a3bf4bbf50077e6b5da198adf5d49d1e9f64bcdbda9e64c812dce285f9b1472809f4013995badfa0d5b276d1bdf33a115852c73b256fb15f013db7b399630ea4beb694bd78eed19c71f11f9ac7e499289d185ce2f1963c389edb33efd1632fcbfbc446f0ce87020c3042c1e5370c6a20d627ccfe226f93db258b9d8a89c5282ebb0da83f534b814dd1da1fbdc41ecd70217ffd7566c203c536d3808eefe3f89ac7663d3bd431443a92c7daef00a35d27502eba847810110e726842cb132f246da83e9b53cdae295995ce734f0d090aa4de18d0c34063a62c66bf229b45f3f2dca8cfb7a3844c4f84489c7026fc8f88d8df42692f3f6e66f0a8e64e3898c597a6cedafb5e5ea8f63477c56ea76f975ec713de567856e7f7ce801b7b2ba07588ecb34f52fe7370d639525d68e2d7c01'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=a40875a1-851f-4772-b42c-7a83cc7dae41 200 in 2896ms
+Total line items: 76
+Categories found: [
+  'gain_on_sale',
+  'interest_income',
+  'revenue',
+  'cost_of_sales',
+  'bank_fees',
+  'other_income',
+  'other_expense',
+  'salaries_wages',
+  'benefits',
+  'marketing_advertising',
+  'travel_entertainment',
+  'office_supplies',
+  'rent_utilities',
+  'professional_services',
+  'interest_expense',
+  'depreciation',
+  'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'gain_on_sale', amount: 46287 },
+  { name: 'LLC transfers', category: 'interest_income', amount: 0 },
+  { name: 'Other Revenue', category: 'revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: '9a1ad8dd-5511-4cc1-afaf-9b587632bd20',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '9c09dfcf-702b-4ab1-bc1d-beacfb3d5375',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '0023e0d4-9125-46e6-97e5-b586486fd605',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'da8637ca-48e6-4d55-bf8a-589e18c46645',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '60dd7d5a-8955-46c2-aa9f-7ee6e7937dc0',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: '29f01112-6d88-463f-877e-5beae1bae82e',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: 'ae675142-eeff-403d-b0c2-e6c62557469b',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '0ba1f561-237b-4ce1-a822-ac5e86ac9e7e',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '985bd9f7-15d3-4f9b-96c5-c921a64aec23',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  },
+  {
+    id: 'f981ae58-a208-466d-b09e-3f054c59b758',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: 'd78cb398bf5e0c5103ee38aa7068c074:7012a932a31f96c08cb6f3d0adb5060d',
+    category: 'gain_on_sale',
+    amount: 'NaN',
+    metadata: '6cc38b495bbec8f72575883e52001563:02898e1606983bf032b15a78e168f3386345a3935966d35e5bda4a2efd15b781443d572d794d2559b759a0b0f910ed16e9a76f43b119693e5c5ee3e0f11f1ac6abe8d89fddd2a725933fd20205fddd22010f1857dfea6b4e275ed72bd3be7bc2a29ed02a5ea0082dc20ff546d30c154164f576e4a6de6109baa8fe05892ee0582ba1753e3ddda919d5e931c0604ac27d57429d9dad52c3cbd3bd8df583c49394bd36cf9cdf544d48ac20f0ce463bb83dca126d94197db24053e60d101bdcfd49602a653a729d65d333bdae67929b9945509d55a7b12dc65ea50da7842fb2d270f0aa57b753d589ce087053d9409ab6eb3215da8f3f15e043de94ea199f71128b68140c4c6205470fb16c9c4ecf59489173dbbadf05fa6b41dad587942eed01c85e99d918b2c9687868423e58af7e0ba5ea20a6b977726160a861d5d3275ee731c04168ca4620f6e17137d8b483e2eec475bc8b3836d4304c6f93a07fa462bf826b06ca0b0cd5bdb06d2449a708aca1d7ed6e3895e8884f73cb9adfb8f02051e3c52a62984088daf73b71c7d93be1d37e322e22a8673c6ae2ffb1d0a5427041615fcb08be164022f3e17c7c05e7ed9e0989573ab665c918629ff430d1a17a5f647fb54dec75b53aead586bb22d72605a516ac98f4b2c80c47e5260cc8d8f1c7588f7c651d1c36c29cb7646c9e17a778483a4868510b108ab06951193cd052c02bfb7017631b50904d5c11c3334b08cd2aa30018e0f2b2d4cfc92c857807bad3d86e1d09773e94f0afce31e43d8ceef89edd8734c0dd16a53d089467a8b455a2c715ba088c9664bd5b1b2777a7f3987306e52a29e3eb1b462004b17930ae387ccdf9fe1eaa6e141f1b8c9cd2bdc800190f9fdc5e148481e136ea445ab197dd234ae42844b27c97cf6f379daf62db22802a'
+  },
+  {
+    accountName: '8a4a0db082802906ce1aa9b8cc779c82:4eee82a85edf0127792f07f993b23d97',
+    category: 'interest_income',
+    amount: 'NaN',
+    metadata: '557fbc6024e3c65e107969d06c834d5b:8ee96b47a2ea48d61495dc2df2b69377257f5a75bf47bf119e6763f7994f9110a87fb0d4a3a3326df4a2e6138e0042b2cf8148e124098047a2e0220d16dc7971bb6831fdc1bd1a285b5d81f6cfd2ef5d760f0dac5919e038a26e69a32ff7119cb2b533ac2356299ac2d28f4f1a4d45f32d7c41e72cbefa2ad9de7617c40cc99a4791b256f30328f533fb595cc5612dba8e9fc0852c2522301a5c92476a62811dbb265dccec503e816128844c6ba962a290a9a81f7107917d74638c9a099a2f91f52c5eb84ac6f0ee140eff7df3a168026b93a58230a45d2ace73e06d6e2c908f5da0e4a3af5ada0df791d10a16eb5e3206bea4f3cdb36b94e6a1d86ebde968461f4dc83b42bc9a0258efa7f87461296920306bf9c0bb8051a047e2c6d08aaeb35a59bcb7b9217b6783f3d1444d6bbced759599fd05571725543e7ea9f31dda8fd59a3bf4bbf50077e6b5da198adf5d49d1e9f64bcdbda9e64c812dce285f9b1472809f4013995badfa0d5b276d1bdf33a115852c73b256fb15f013db7b399630ea4beb694bd78eed19c71f11f9ac7e499289d185ce2f1963c389edb33efd1632fcbfbc446f0ce87020c3042c1e5370c6a20d627ccfe226f93db258b9d8a89c5282ebb0da83f534b814dd1da1fbdc41ecd70217ffd7566c203c536d3808eefe3f89ac7663d3bd431443a92c7daef00a35d27502eba847810110e726842cb132f246da83e9b53cdae295995ce734f0d090aa4de18d0c34063a62c66bf229b45f3f2dca8cfb7a3844c4f84489c7026fc8f88d8df42692f3f6e66f0a8e64e3898c597a6cedafb5e5ea8f63477c56ea76f975ec713de567856e7f7ce801b7b2ba07588ecb34f52fe7370d639525d68e2d7c01'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=a40875a1-851f-4772-b42c-7a83cc7dae41 200 in 1719ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1404ms (703 modules)
+ ✓ Compiled /dashboard/org-admin in 340ms (717 modules)
+ ✓ Compiled /api/v1/companies in 225ms (1024 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 1530ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 251ms
+ ○ Compiling /dashboard/platform-admin/settings ...
+ ✓ Compiled /dashboard/platform-admin/settings in 1281ms (1743 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 753ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 223ms
+ ✓ Compiled /dashboard/company-admin in 256ms (1040 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/v1/companies/[id]/financial-status in 347ms (1042 modules)
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ ✓ Compiled (1053 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 975ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ GET /api/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/users 200 in 1099ms
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 242ms
+ GET /api/v1/templates?companyId=b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 1158ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/stats 200 in 1538ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-status 200 in 1875ms
+ ✓ Compiled /api/v1/companies/[id] in 297ms (1055 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 981ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 216ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/upload-client in 241ms (1060 modules)
+ POST /api/upload-client 200 in 1089ms
+ GET /select-sheet?session=AF7kQJCkQ_N6dS_BG5o6M 200 in 160ms
+ ✓ Compiled /api/auth/me in 337ms (1062 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 1201ms
+ GET /api/auth/me 200 in 337ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 611ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 220ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/ai-analyze in 332ms (1156 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ POST /api/ai-analyze 200 in 6066ms
+Failed to parse AI response: {
+  "classifications": [
+    {
+      "accountName": "SRL Services",
+      "suggestedCategory": "service_revenue",
+      "isInflow": true,
+      "confidence": 90,
+      "reasoning": "Service revenue account related to SRL Services.",
+      "alternativeCategories": [
+        {
+          "category": "revenue",
+          "confidence": 80
+        }
+      ]
+    },
+    {
+      "accountName": "LLC transfers",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from LLC categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Revenue",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 95,
+      "reasoning": "General account for other sources of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Cost of Revenue",
+      "suggestedCategory": "cost_of_sales",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Cost directly related to generating revenue.",
+      "alternativeCategories": [
+        {
+          "category": "direct_materials",
+          "confidence": 85
+        },
+        {
+          "category": "direct_labor",
+          "confidence": 80
+        }
+      ]
+    },
+    {
+      "accountName": "Payroll Taxes (CoR)",
+      "suggestedCategory": "payroll_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payroll taxes directly related to cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Contract Services (CoR)",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Contract services directly related to cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Health Coverage (CoR)",
+      "suggestedCategory": "benefits",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Health coverage costs related to cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Training (CoR)",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Training costs directly related to cost of revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other (CoR)",
+      "suggestedCategory": "cost_of_sales",
+      "isInflow": false,
+      "confidence": 75,
+      "reasoning": "Other costs directly related to generating revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Operating Expenses",
+      "suggestedCategory": "operating_expenses",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "General operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Personnel Operating Salaries",
+      "suggestedCategory": "salaries_wages",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Salaries directly related to operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Payroll Operating Taxes",
+      "suggestedCategory": "payroll_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payroll taxes related to operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Contract Operating Services",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Contract services related to operating expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Severance and Compensation",
+      "suggestedCategory": "salaries_wages",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Severance and compensation costs related to personnel.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Business development investments (Sales & Marketing)",
+      "suggestedCategory": "marketing_advertising",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Investments in sales and marketing activities.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Marketing and Promotion",
+      "suggestedCategory": "marketing_advertising",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Costs related to marketing and promotion.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Meals and Entertainment",
+      "suggestedCategory": "travel_entertainment",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Costs related to meals and entertainment.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Travel, Transfers and Accommodation",
+      "suggestedCategory": "travel_entertainment",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Costs related to travel, transfers, and accommodation.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Bank Fees",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Bank fees categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Computer and Equipment",
+      "suggestedCategory": "depreciation",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Depreciation of computer and equipment.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Dues and Subscriptions",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Dues and subscriptions categorized as office supplies.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Expenses Reimbursement",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Reimbursement of expenses categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Office Supplies",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Costs related to office supplies.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Cell Phones",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Cell phone expenses categorized as office supplies.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Professional Services",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "General professional services expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Software & Subscriptions",
+      "suggestedCategory": "office_supplies",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Software and subscriptions categorized as office supplies.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Training and development programs",
+      "suggestedCategory": "professional_services",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Costs related to training and development programs.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Misc. Expense",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 80,
+      "reasoning": "Miscellaneous expenses categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Income / (Expense)",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "General account for other sources of income or expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Income",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "General account for other sources of income.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Expense",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "General account for other types of expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Transfers from A1 LLC",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from A1 LLC categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Expenses paid on behalf of Accelone",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Expenses paid on behalf of Accelone categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Transfers from DL",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Transfers from DL categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Payments to DL",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Payments to DL categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " EBITDA ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "EBITDA categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " EBITDA Margin ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "EBITDA Margin categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest income",
+      "suggestedCategory": "interest_income",
+      "isInflow": true,
+      "confidence": 90,
+      "reasoning": "Income earned from interest.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest Expense",
+      "suggestedCategory": "interest_expense",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Cost incurred from interest expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Gain on FX ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Gain on foreign exchange categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Loss on FX ",
+      "suggestedCategory": "other_expenses",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Loss on foreign exchange categorized as other expenses.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Depreciation",
+      "suggestedCategory": "depreciation",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Depreciation expense.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": " Earnings Before Tax ",
+      "suggestedCategory": "other_revenue",
+      "isInflow": true,
+      "confidence": 85,
+      "reasoning": "Earnings before tax categorized as other revenue.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Gross Income Tax (IIBB)",
+      "suggestedCategory": "income_tax",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Gross income tax categorized as income tax.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Income tax",
+      "suggestedCategory": "income_tax",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "Income tax expense.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Interest Tax",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Interest tax categorized as other taxes.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Withholding Tax",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 85,
+      "reasoning": "Withholding tax categorized as other taxes.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Other Taxes",
+      "suggestedCategory": "other_taxes",
+      "isInflow": false,
+      "confidence": 90,
+      "reasoning": "General account for other types of taxes.",
+      "alternativeCategories": []
+    },
+    {
+      "accountName": "Ex
+AI account classification failed: Error: Invalid JSON response from AI
+    at FinancialAI.parseAIResponse (webpack-internal:///(rsc)/./lib/ai-service.ts:248:23)
+    at FinancialAI.classifyAccounts (webpack-internal:///(rsc)/./lib/ai-service.ts:71:33)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async eval (webpack-internal:///(rsc)/./app/api/ai-analyze/route.ts:46:30)
+    at async withRBAC (webpack-internal:///(rsc)/./lib/auth/rbac.ts:202:16)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/diegovarela/AI Agents/warren-v2/node_modules/next/dist/server/lib/start-server.js:141:13)
+Using local classification fallback for 52 accounts
+ POST /api/ai-analyze 200 in 43251ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 504ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 814ms
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 251ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 253ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ○ Compiling /api/persist-encrypted ...
+ ✓ Compiled /api/persist-encrypted in 606ms (711 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User organization: a70129ac-4b7d-4872-ad42-ea230825f333
+Company ID: b1dea3ff-cac4-45cc-be78-5488e612c2a8
+Using actual database schema for persistence
+Period dates: {
+  firstPeriod: 'Jan-25',
+  lastPeriod: 'Dec-25',
+  periodStartDate: '2025-01-01',
+  periodEndDate: '2025-12-31'
+}
+Processing data: 76 items
+Item 0: {
+  name: 'SRL Services',
+  category: 'service_revenue',
+  periods: {
+    'Jan-25': ' $46,287 ',
+    'Feb-25': ' $49,171 ',
+    'Mar-25': ' $48,418 ',
+    'Apr-25': ' $45,689 ',
+    'May-25': ' $56,708 ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $46,287 '
+}
+Item 1: {
+  name: 'LLC transfers',
+  category: 'financial_transfers',
+  periods: {
+    'Jan-25': ' $-   ',
+    'Feb-25': ' $-   ',
+    'Mar-25': ' $-   ',
+    'Apr-25': ' $-   ',
+    'May-25': ' $-   ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $-   '
+}
+Item 2: {
+  name: 'Other Revenue',
+  category: 'other_revenue',
+  periods: {
+    'Jan-25': ' $-   ',
+    'Feb-25': ' $-   ',
+    'Mar-25': ' $-   ',
+    'Apr-25': ' $-   ',
+    'May-25': ' $-   ',
+    'Jun-25': ' $-   ',
+    'Jul-25': ' $-   ',
+    'Aug-25': ' $-   ',
+    'Sep-25': ' $-   ',
+    'Oct-25': ' $-   ',
+    'Nov-25': ' $-   ',
+    'Dec-25': ' $-   '
+  },
+  firstPeriodValue: ' $-   '
+}
+Successfully persisted encrypted financial data: {
+  statementId: '1683beb6-a70f-4611-ad8a-efcb44bb60cb',
+  companyId: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+  userId: 'e123a07d-e13e-46d2-b2ab-db73adb24d7f',
+  organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+  isEncrypted: true,
+  lineItemsCount: 76,
+  templateSaved: false
+}
+ POST /api/persist-encrypted 200 in 1867ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 460ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/v1/companies/[id]/financial-analytics in 201ms (714 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 404ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+Total line items: 76
+Categories found: [
+  'service_revenue',       'financial_transfers',
+  'other_revenue',         'total_revenue',
+  'cost_of_sales',         'payroll_taxes',
+  'health_insurance',      'training_development',
+  'office_supplies',       'other_income',
+  'operating_expense',     'salaries_wages',
+  'other_expense',         'benefits',
+  'revenue',               'marketing_advertising',
+  'travel_entertainment',  'bank_fees',
+  'rent_utilities',        'phones',
+  'professional_services', 'ebitda',
+  'ebitda_margin',         'interest_expense',
+  'depreciation',          'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'service_revenue', amount: 46287 },
+  { name: 'LLC transfers', category: 'financial_transfers', amount: 0 },
+  { name: 'Other Revenue', category: 'other_revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'total_revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: '00f4c9ac-1f86-44a6-ada4-81ff2af4256a',
+    accountCode: 'ROW_4',
+    accountName: 'SRL Services',
+    category: 'service_revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '9a90e7ba-4eb2-4199-b25a-ade38aa532c3',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'other_revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'f5ae13cb-aeb8-48b3-8fee-ee5f4a75f316',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'total_revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '4847725e-0821-4167-954b-01c05de2db70',
+    accountCode: 'ROW_86',
+    accountName: 'SRL Services',
+    category: 'service_revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '4ed9bd7e-f369-45cb-b6e6-1a566b0048bb',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '12ade49c-b042-467b-979f-cf0d727f3f03',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: 'c96bbc29-739c-407c-9b4e-f590341f23db',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'fb97def2-2ab8-49b8-b6a2-8fa302637d0c',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: 'f879072e-e528-45e9-9ddf-848b8ce050a7',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'fd419329-2ced-4697-ba19-5c487d46ceff',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '85c1b1b0-bd27-47bf-9b84-88f3fec9fb1b',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  },
+  {
+    id: '8ccbe8a5-d96c-4d00-a5d2-43e66fd02f14',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: '20268a7c980ebd73867facaf408e2804:125f34f877b596fa5edf7db51e45c3b6',
+    category: 'service_revenue',
+    amount: 'NaN',
+    metadata: '06d070cb23441bc92a4333b40b5e3e62:f4d17ab25eaef7edc67c9b00b9feec54f3f0233e37c520c1ac653ee2e52964083f4ed8cd391af6c0a60284c84bd11c6b0fb93d79715b4c2d46e16d2b6fbdcb1b01303747d79f044f53404d4ea5a130a3c2d9ebd5f917eaa2399ed403e07d058055fe1eacab8c188c552faee8cffc4783cb5b25fe497e382ec07228ff7c67a0ba89d44764d1187d8afe3b4b773291bc1fb2faf82af675c63b8f9a5d96200c98bdf867196ac803a2b9e26755d97108a81f72fc9475ea3aee3c8edf9a012c0034db265fa6a522a3da6d3facc6cb5bd07bacbe78f5cfc6000c6ceda1f03ea0ec624fe17c870f42a4ad89b27344b3f0092c4357a85aa06c01266924ff93226ccb1984cdc122d0a949ef7301056b7ca9140953dfe092278f3ed9af74d9f7fee9fec5bca05dc1795efeb173674b333400f1e8cd816c803bc3d0c89a29c83d7191f0b8061a3326eb90e732f302c290419b62b496c722ed05be95d331ad04fdb8a519ed0f25c173e99d9ac6ab8bddd75bd96ad2fae893c5f6adc750fc02a7baa8505f4869c13db78ea95c06bcce1cc7a9c7e43cbd5a4b23df12249ca85ae3a10cfd0e0d54746764d834d00e5997d8ee78abfb65a862b36d5e4a053ddbdab1ad9fe7af12189a79de6ada8eb2a89af9512d025f3f3500336fb32addbd74d6bdc801990a47ea3d736d3b7727722bf2e8676d9c6f3af0a574b738a4c845e3676cbf3f47f8c9d0e9fc02955ade21e33ffe7efde9330b133e2b4bbf619b99a16a4286f4eb95e83255306752844fdbbb42217ca62ca60765a26b7d34907bae5cc26f08eea4eeaa676c1a00d8124dba8fe41ff5c3f6f3616eaeae9552e4e0fdf417a5949cae93bd77d26316ab1447e88a27712987fe99cc6bb4204a5bf2777a9793dc839406a647ef075d4e9e3b8cc8121a19848618384a5a'
+  },
+  {
+    accountName: 'c461a6233519cce1cafcad327f711de0:b302cfc020f49da95e6640e525dec06b',
+    category: 'financial_transfers',
+    amount: 'NaN',
+    metadata: 'd7fac0564a4966d554a38ad3b5cd80ca:4d3bd7cd6a8164b646ce2851146897eadb91b24bb98165552ef19d8e0ad5cdee35e9e3327e229ccfd1cf929f445dd9ba0fbf5fd5bdcca3ddb8075595147a403bc4a853827176ff932ff177f488d27a5687975839672dc68103a53434bb5b562f495cb64ddd4d57700e658116d31adfb5b9680fc59d0b0916bebe0981ffd417c66b60f32414b4c0511cb51c2d125d5060c656925caaab4724b608f1a696cdc06ee449165693cbb7b57c0b5c2d77538aaa87ac5eeef835e8c08d69aae5d8e2abbf6734ed1d1ec7b3bf6dab74b3695586a4421328795d003e4ff4c0eaafb4bdc6ed3bea79c652d91a7813299f38054284e3442bcf7970f9fdc5a31414cb1a141288b78c7bae54bc2503bf55496f2c02d64561379b8de8bb0b372a0fd601c45f37329f987d8a966c1d397dd1181c849429d4d587d16fd4ddc7c50975280584cfa7268c9aaf75bc903dba50696c610cdb0fcd612fca7e55910fadc1634db60c4ea6eec76e5a440473e587f46004ca542fc2e9de9dba2977da1b140ba39fc1d7c412a39408d2161afe92bc13fa8d690006fc55e876e8b97bfc5bf3569d7374bdc246226ed0badaa0fce74f341e93512a76c6db70fe01fca692f69539f5366aaa059caafb68b330abe61a4e26599edb1b7836f34fe4a9f2a9b4185a0e7a49bc624bc5ba0f980c9ba9b812cab69e103c5c8d7f727dcda745d741ae090d5df8efe373705f907812ed784b063f4f9fc73ca367ef9c7b2d03c5ba683334d531b7fbb6597e3092a131baa016f24f17b044d0176663d71a89c705d682b4dbe7f0b5ae9d8b3d9a15453d916fa0306549994a93c76f91d106b0046f952359225ab43dcdcb0722a46259d483a1f8e403a24f5ee3adec4d8ae367c3f05ec6e210d9cf942c0d36c97a'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=1683beb6-a70f-4611-ad8a-efcb44bb60cb 200 in 2849ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+Total line items: 76
+Categories found: [
+  'service_revenue',       'financial_transfers',
+  'other_revenue',         'total_revenue',
+  'cost_of_sales',         'payroll_taxes',
+  'health_insurance',      'training_development',
+  'office_supplies',       'other_income',
+  'operating_expense',     'salaries_wages',
+  'other_expense',         'benefits',
+  'revenue',               'marketing_advertising',
+  'travel_entertainment',  'bank_fees',
+  'rent_utilities',        'phones',
+  'professional_services', 'ebitda',
+  'ebitda_margin',         'interest_expense',
+  'depreciation',          'other_taxes'
+]
+Sample items: [
+  { name: 'SRL Services', category: 'service_revenue', amount: 46287 },
+  { name: 'LLC transfers', category: 'financial_transfers', amount: 0 },
+  { name: 'Other Revenue', category: 'other_revenue', amount: 0 },
+  { name: ' Total Revenue ', category: 'total_revenue', amount: 46287 },
+  { name: 'Cost of Revenue', category: 'cost_of_sales', amount: 0 }
+]
+Revenue items: [
+  {
+    id: '00f4c9ac-1f86-44a6-ada4-81ff2af4256a',
+    accountCode: 'ROW_4',
+    accountName: 'SRL Services',
+    category: 'service_revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '9a90e7ba-4eb2-4199-b25a-ade38aa532c3',
+    accountCode: 'ROW_6',
+    accountName: 'Other Revenue',
+    category: 'other_revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'f5ae13cb-aeb8-48b3-8fee-ee5f4a75f316',
+    accountCode: 'ROW_7',
+    accountName: ' Total Revenue ',
+    category: 'total_revenue',
+    amount: 46287,
+    subcategory: null
+  },
+  {
+    id: '4847725e-0821-4167-954b-01c05de2db70',
+    accountCode: 'ROW_86',
+    accountName: 'SRL Services',
+    category: 'service_revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '4ed9bd7e-f369-45cb-b6e6-1a566b0048bb',
+    accountCode: 'ROW_28',
+    accountName: 'Business development investments (Sales & Marketing)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '12ade49c-b042-467b-979f-cf0d727f3f03',
+    accountCode: 'ROW_53',
+    accountName: ' Operating Income ',
+    category: 'revenue',
+    amount: 10856,
+    subcategory: null
+  },
+  {
+    id: 'c96bbc29-739c-407c-9b4e-f590341f23db',
+    accountCode: 'ROW_56',
+    accountName: 'Other Income',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'fb97def2-2ab8-49b8-b6a2-8fa302637d0c',
+    accountCode: 'ROW_67',
+    accountName: 'Interest income',
+    category: 'revenue',
+    amount: 638,
+    subcategory: null
+  },
+  {
+    id: 'f879072e-e528-45e9-9ddf-848b8ce050a7',
+    accountCode: 'ROW_75',
+    accountName: 'Gross Income Tax (IIBB)',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: 'fd419329-2ced-4697-ba19-5c487d46ceff',
+    accountCode: 'ROW_76',
+    accountName: 'Income tax',
+    category: 'revenue',
+    amount: 0,
+    subcategory: null
+  },
+  {
+    id: '85c1b1b0-bd27-47bf-9b84-88f3fec9fb1b',
+    accountCode: 'ROW_80',
+    accountName: ' Net income (loss) ',
+    category: 'revenue',
+    amount: 7988,
+    subcategory: null
+  },
+  {
+    id: '8ccbe8a5-d96c-4d00-a5d2-43e66fd02f14',
+    accountCode: 'ROW_81',
+    accountName: ' Net Income Margin ',
+    category: 'revenue',
+    amount: 17,
+    subcategory: null
+  }
+]
+Raw line items sample: [
+  {
+    accountName: '20268a7c980ebd73867facaf408e2804:125f34f877b596fa5edf7db51e45c3b6',
+    category: 'service_revenue',
+    amount: 'NaN',
+    metadata: '06d070cb23441bc92a4333b40b5e3e62:f4d17ab25eaef7edc67c9b00b9feec54f3f0233e37c520c1ac653ee2e52964083f4ed8cd391af6c0a60284c84bd11c6b0fb93d79715b4c2d46e16d2b6fbdcb1b01303747d79f044f53404d4ea5a130a3c2d9ebd5f917eaa2399ed403e07d058055fe1eacab8c188c552faee8cffc4783cb5b25fe497e382ec07228ff7c67a0ba89d44764d1187d8afe3b4b773291bc1fb2faf82af675c63b8f9a5d96200c98bdf867196ac803a2b9e26755d97108a81f72fc9475ea3aee3c8edf9a012c0034db265fa6a522a3da6d3facc6cb5bd07bacbe78f5cfc6000c6ceda1f03ea0ec624fe17c870f42a4ad89b27344b3f0092c4357a85aa06c01266924ff93226ccb1984cdc122d0a949ef7301056b7ca9140953dfe092278f3ed9af74d9f7fee9fec5bca05dc1795efeb173674b333400f1e8cd816c803bc3d0c89a29c83d7191f0b8061a3326eb90e732f302c290419b62b496c722ed05be95d331ad04fdb8a519ed0f25c173e99d9ac6ab8bddd75bd96ad2fae893c5f6adc750fc02a7baa8505f4869c13db78ea95c06bcce1cc7a9c7e43cbd5a4b23df12249ca85ae3a10cfd0e0d54746764d834d00e5997d8ee78abfb65a862b36d5e4a053ddbdab1ad9fe7af12189a79de6ada8eb2a89af9512d025f3f3500336fb32addbd74d6bdc801990a47ea3d736d3b7727722bf2e8676d9c6f3af0a574b738a4c845e3676cbf3f47f8c9d0e9fc02955ade21e33ffe7efde9330b133e2b4bbf619b99a16a4286f4eb95e83255306752844fdbbb42217ca62ca60765a26b7d34907bae5cc26f08eea4eeaa676c1a00d8124dba8fe41ff5c3f6f3616eaeae9552e4e0fdf417a5949cae93bd77d26316ab1447e88a27712987fe99cc6bb4204a5bf2777a9793dc839406a647ef075d4e9e3b8cc8121a19848618384a5a'
+  },
+  {
+    accountName: 'c461a6233519cce1cafcad327f711de0:b302cfc020f49da95e6640e525dec06b',
+    category: 'financial_transfers',
+    amount: 'NaN',
+    metadata: 'd7fac0564a4966d554a38ad3b5cd80ca:4d3bd7cd6a8164b646ce2851146897eadb91b24bb98165552ef19d8e0ad5cdee35e9e3327e229ccfd1cf929f445dd9ba0fbf5fd5bdcca3ddb8075595147a403bc4a853827176ff932ff177f488d27a5687975839672dc68103a53434bb5b562f495cb64ddd4d57700e658116d31adfb5b9680fc59d0b0916bebe0981ffd417c66b60f32414b4c0511cb51c2d125d5060c656925caaab4724b608f1a696cdc06ee449165693cbb7b57c0b5c2d77538aaa87ac5eeef835e8c08d69aae5d8e2abbf6734ed1d1ec7b3bf6dab74b3695586a4421328795d003e4ff4c0eaafb4bdc6ed3bea79c652d91a7813299f38054284e3442bcf7970f9fdc5a31414cb1a141288b78c7bae54bc2503bf55496f2c02d64561379b8de8bb0b372a0fd601c45f37329f987d8a966c1d397dd1181c849429d4d587d16fd4ddc7c50975280584cfa7268c9aaf75bc903dba50696c610cdb0fcd612fca7e55910fadc1634db60c4ea6eec76e5a440473e587f46004ca542fc2e9de9dba2977da1b140ba39fc1d7c412a39408d2161afe92bc13fa8d690006fc55e876e8b97bfc5bf3569d7374bdc246226ed0badaa0fce74f341e93512a76c6db70fe01fca692f69539f5366aaa059caafb68b330abe61a4e26599edb1b7836f34fe4a9f2a9b4185a0e7a49bc624bc5ba0f980c9ba9b812cab69e103c5c8d7f727dcda745d741ae090d5df8efe373705f907812ed784b063f4f9fc73ca367ef9c7b2d03c5ba683334d531b7fbb6597e3092a131baa016f24f17b044d0176663d71a89c705d682b4dbe7f0b5ae9d8b3d9a15453d916fa0306549994a93c76f91d106b0046f952359225ab43dcdcb0722a46259d483a1f8e403a24f5ee3adec4d8ae367c3f05ec6e210d9cf942c0d36c97a'
+  }
+]
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 210038 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14632 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 0 from 0 items
+COGS calculation: 0 from 0 cost items
+Operating expenses: 0 from 0 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+Revenue calculation: 65786 from 15 items
+COGS calculation: 0 from 1 cost items
+Operating expenses: 14676 from 17 expense items
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-analytics?statementId=1683beb6-a70f-4611-ad8a-efcb44bb60cb 200 in 2300ms
+ ✓ Compiled in 1592ms (1098 modules)
+ ✓ Compiled in 1293ms (1112 modules)
+ ✓ Compiled in 2.1s (1112 modules)
+ ✓ Compiled in 796ms (1112 modules)
+ ✓ Compiled in 1578ms (1098 modules)
+ ⨯ ./lib/local-classifier.ts
+Error: 
+  [31mx[0m Expected ',', got '!=='
+     ,-[[36;1;4m/Users/diegovarela/AI Agents/warren-v2/lib/local-classifier.ts[0m:292:1]
+ [2m292[0m |     }
+ [2m293[0m |     
+ [2m294[0m |     // If no keyword match, try value-based detection
+ [2m295[0m |     if (value !== undefined && value !== null) {
+     : [31;1m              ^^^[0m
+ [2m296[0m |       if (isNegativeValue) {
+ [2m297[0m |         // Negative values are typically expenses
+ [2m298[0m |         return {
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./lib/local-classifier.ts
+./app/mapper/page.tsx
+ ⨯ ./lib/local-classifier.ts
+Error: 
+  [31mx[0m Expected ',', got '!=='
+     ,-[[36;1;4m/Users/diegovarela/AI Agents/warren-v2/lib/local-classifier.ts[0m:293:1]
+ [2m293[0m |     }
+ [2m294[0m |     
+ [2m295[0m |     // If no keyword match, try value-based detection
+ [2m296[0m |     if (value !== undefined && value !== null) {
+     : [31;1m              ^^^[0m
+ [2m297[0m |       if (isNegativeValue) {
+ [2m298[0m |         // Negative values are typically expenses
+ [2m299[0m |         return {
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./lib/local-classifier.ts
+./app/mapper/page.tsx
+ ✓ Compiled in 344ms (1098 modules)
+ ✓ Compiled in 3.1s (1112 modules)
+ ✓ Compiled in 1000ms (1112 modules)
+ ✓ Compiled in 1232ms (1112 modules)
+ ✓ Compiled in 5s (1112 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 1045ms (707 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET / 200 in 1423ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 892ms (1019 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 2303ms
+ ✓ Compiled /dashboard in 166ms (1024 modules)
+ GET /api/auth/me 200 in 387ms
+ ✓ Compiled /dashboard/org-admin in 184ms (1038 modules)
+ ✓ Compiled /api/v1/companies in 206ms (1040 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 587ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 224ms
+ ✓ Compiled /dashboard/company-admin in 274ms (1047 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 280ms
+ ✓ Compiled /api/v1/companies/[id]/stats in 348ms (1049 modules)
+ ✓ Compiled (1055 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/users 200 in 766ms
+User: diego.varela@vort-ex.com Role: admin Accessible companies: [ '*' ]
+🔍 Fetching companies for admin user diego.varela@vort-ex.com (org: a70129ac-4b7d-4872-ad42-ea230825f333)
+ GET /api/v1/templates?companyId=b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 1096ms
+📊 Admin query result: Found 2 companies
+Companies found: [
+  {
+    id: 'b00f41e8-53f7-4350-8e98-94e818d7c542',
+    name: "Diego's Company",
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  },
+  {
+    id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8',
+    name: 'VTEX Solutions SRL',
+    organizationId: 'a70129ac-4b7d-4872-ad42-ea230825f333',
+    matchesUserOrg: true
+  }
+]
+Companies API: Found 2 companies for user diego.varela@vort-ex.com
+ GET /api/v1/companies 200 in 924ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/stats 200 in 1450ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8/financial-status 200 in 1755ms
+ ✓ Compiled /api/v1/companies/[id] in 271ms (1052 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 1405ms
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 250ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ ✓ Compiled /api/upload-client in 393ms (1057 modules)
+ POST /api/upload-client 200 in 1518ms
+ ✓ Compiled /select-sheet in 202ms (1027 modules)
+ GET /select-sheet?session=ZBe7Q47xuta5VXllCX-ix 200 in 371ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/auth/me 200 in 749ms
+ GET /api/auth/me 200 in 315ms
+ ✓ Compiled /mapper in 289ms (1062 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 267ms
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ GET /api/v1/companies/b1dea3ff-cac4-45cc-be78-5488e612c2a8 200 in 217ms
+ ○ Compiling /api/ai-analyze ...
+ ✓ Compiled /api/ai-analyze in 697ms (1096 modules)
+[dotenv@17.0.1] injecting env (10) from .env.local – [tip] encrypt with dotenvx: https://dotenvx.com
+🔌 Connecting to Neon database...
+ POST /api/ai-analyze 200 in 7851ms
+ POST /api/ai-analyze 200 in 16037ms
+ ✓ Compiled in 1890ms (1412 modules)
+ ✓ Compiled in 2.4s (1412 modules)
+ ✓ Compiled in 763ms (1412 modules)
+ ✓ Compiled in 849ms (1412 modules)
+ ✓ Compiled in 746ms (1412 modules)
+ ✓ Compiled in 701ms (1412 modules)
+ ✓ Compiled in 774ms (1412 modules)
+ ✓ Compiled in 2.6s (1412 modules)
+ ✓ Compiled in 971ms (1412 modules)
+ ✓ Compiled in 206ms (1398 modules)
+ ✓ Compiled in 318ms (1398 modules)
+ ✓ Compiled in 906ms (1398 modules)
+ ✓ Compiled in 268ms (1398 modules)
+ ✓ Compiled in 2.4s (1412 modules)
+ ✓ Compiled in 3.3s (1412 modules)
+ ✓ Compiled in 2.8s (1412 modules)
+[?25h

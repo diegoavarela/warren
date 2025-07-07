@@ -6,7 +6,7 @@
 export interface TotalDetectionResult {
   rowIndex: number;
   accountName: string;
-  totalType: 'section_total' | 'grand_total' | 'calculated_total' | 'subtotal';
+  totalType: 'section_total' | 'grand_total' | 'calculated_total' | 'subtotal' | 'section_header';
   confidence: number; // 0-1 score
   detectionReasons: string[]; // why this was detected as a total
   relatedDetailRows?: number[]; // rows that should sum to this total
@@ -48,6 +48,23 @@ const TOTAL_KEYWORDS = {
   ]
 };
 
+// Section header keywords (titles without values) - MUST BE EXACT OR VERY CLOSE MATCH
+const SECTION_HEADERS = {
+  spanish: [
+    'ingresos', 'egresos', 'gastos', 'costos', 'gastos operativos',
+    'gastos administrativos', 'gastos de operación', 'impuestos'
+  ],
+  english: [
+    'revenue', 'expenses', 'operating expenses',
+    'administrative expenses', 'cost of revenue', 'cost of sales', 'operating costs'
+  ]
+};
+
+// These patterns indicate it's NOT a section header
+const NOT_SECTION_PATTERNS = [
+  'other', 'total', 'net', 'gross', '(cor)', '(cogs)', 'taxes'
+];
+
 // Section-specific keywords
 const SECTION_KEYWORDS = {
   revenue: ['total revenue', 'total income', 'ingresos totales', 'ventas totales', 'total ingresos'],
@@ -64,12 +81,14 @@ const SECTION_KEYWORDS = {
 export function detectTotalRows(
   rawData: any[][],
   options: Partial<TotalDetectionOptions> = {},
-  accountNameColumn: number = -1
+  accountNameColumn: number = -1,
+  dataStartRow: number = 0
 ): TotalDetectionResult[] {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const results: TotalDetectionResult[] = [];
 
-  for (let rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
+  // Start from dataStartRow to skip headers
+  for (let rowIndex = dataStartRow; rowIndex < rawData.length; rowIndex++) {
     const row = rawData[rowIndex];
     if (!row || row.length === 0) continue;
 
@@ -113,8 +132,36 @@ function analyzeRowForTotal(
   const finalAccountName = accountName || String(row[0] || '').trim();
   const reasons: string[] = [];
   let totalScore = 0;
+  
+  // PRIORITY 1: Check if this is explicitly a total (before checking section headers)
+  const lowerName = finalAccountName.toLowerCase();
+  if (lowerName.includes('total') || lowerName.includes('subtotal')) {
+    // This is definitely a total, not a section header
+    const keywordScore = detectByKeywords(finalAccountName, reasons);
+    totalScore = Math.max(keywordScore, 0.9); // Ensure high confidence
+    
+    const totalType = determineTotalType(finalAccountName, rowIndex, rawData.length);
+    return {
+      rowIndex,
+      accountName: finalAccountName,
+      totalType,
+      confidence: totalScore,
+      detectionReasons: reasons
+    };
+  }
+  
+  // PRIORITY 2: Check if this is a section header (only if not a total)
+  if (isSectionHeader(row, finalAccountName)) {
+    return {
+      rowIndex,
+      accountName: finalAccountName,
+      totalType: 'section_header',
+      confidence: 0.9,
+      detectionReasons: ['Section header without numeric values']
+    };
+  }
 
-  // 1. Keyword-based detection
+  // 1. Keyword-based detection for other totals (utilidad, margen, etc.)
   const keywordScore = detectByKeywords(finalAccountName, reasons);
   totalScore += keywordScore * options.keywordWeight;
 
@@ -140,6 +187,47 @@ function analyzeRowForTotal(
     confidence: Math.min(totalScore, 1.0),
     detectionReasons: reasons
   };
+}
+
+/**
+ * Check if this is a section header (title without values)
+ */
+function isSectionHeader(row: any[], accountName: string): boolean {
+  const lowerName = accountName.toLowerCase();
+  
+  // First, check if it contains patterns that indicate it's NOT a section header
+  for (const pattern of NOT_SECTION_PATTERNS) {
+    if (lowerName.includes(pattern.toLowerCase())) {
+      return false;
+    }
+  }
+  
+  // Check if it's an exact match or very close match to section header keywords
+  const isHeader = [...SECTION_HEADERS.spanish, ...SECTION_HEADERS.english].some(header => {
+    const lowerHeader = header.toLowerCase();
+    return (
+      lowerName === lowerHeader || // Exact match
+      (lowerName === lowerHeader + 's') || // Plural form
+      (lowerName.replace(/\s+/g, '') === lowerHeader.replace(/\s+/g, '')) // Ignore spaces
+    );
+  });
+  
+  if (!isHeader) return false;
+  
+  // Additional check: if the name is ALL CAPS and matches, more likely to be a header
+  const isAllCaps = accountName === accountName.toUpperCase() && accountName.length > 3;
+  
+  // Check if row has any numeric values (headers typically don't)
+  let hasNumericValues = false;
+  for (let i = 1; i < row.length; i++) {
+    const value = row[i];
+    if (value && (typeof value === 'number' || String(value).match(/^[\d\$\-\(\),\.]+$/))) {
+      hasNumericValues = true;
+      break;
+    }
+  }
+  
+  return !hasNumericValues && (isHeader || isAllCaps);
 }
 
 /**

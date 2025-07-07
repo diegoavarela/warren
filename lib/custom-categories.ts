@@ -15,6 +15,7 @@ export interface CategoryOption {
   description?: string;
   parentCategory?: string;
   group?: string; // Category group for organization
+  categoryType?: 'account' | 'section' | 'total'; // New field for row type
 }
 
 export interface ExtendedFinancialCategory extends CategoryOption {
@@ -45,12 +46,28 @@ export const CATEGORY_GROUPS = {
 
 // Standard/default categories (same as before but marked as non-custom)
 export const DEFAULT_FINANCIAL_CATEGORIES: CategoryOption[] = [
+  // SECTION HEADERS - P&L
+  { value: 'section_revenue', label: 'INGRESOS', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_cost_of_sales', label: 'COSTO DE VENTAS', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_operating_expenses', label: 'GASTOS OPERATIVOS', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_other_income', label: 'OTROS INGRESOS/GASTOS', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_taxes', label: 'IMPUESTOS', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  
+  // SECTION HEADERS - Balance Sheet
+  { value: 'section_assets', label: 'ACTIVOS', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_current_assets', label: 'ACTIVOS CORRIENTES', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_non_current_assets', label: 'ACTIVOS NO CORRIENTES', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_liabilities', label: 'PASIVOS', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_current_liabilities', label: 'PASIVOS CORRIENTES', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_non_current_liabilities', label: 'PASIVOS NO CORRIENTES', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  { value: 'section_equity', label: 'PATRIMONIO', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Secciones', categoryType: 'section' },
+  
   // Balance Sheet
-  { value: 'current_assets', label: 'Activos Corrientes', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.ASSETS },
-  { value: 'non_current_assets', label: 'Activos No Corrientes', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.ASSETS },
-  { value: 'current_liabilities', label: 'Pasivos Corrientes', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.LIABILITIES },
-  { value: 'non_current_liabilities', label: 'Pasivos No Corrientes', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.LIABILITIES },
-  { value: 'equity', label: 'Patrimonio', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.EQUITY },
+  { value: 'current_assets', label: 'Activos Corrientes', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.ASSETS, categoryType: 'account' },
+  { value: 'non_current_assets', label: 'Activos No Corrientes', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.ASSETS, categoryType: 'account' },
+  { value: 'current_liabilities', label: 'Pasivos Corrientes', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.LIABILITIES, categoryType: 'account' },
+  { value: 'non_current_liabilities', label: 'Pasivos No Corrientes', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.LIABILITIES, categoryType: 'account' },
+  { value: 'equity', label: 'Patrimonio', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: CATEGORY_GROUPS.EQUITY, categoryType: 'account' },
   
   // P&L - Revenue
   { value: 'revenue', label: 'Ingresos por Ventas', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.REVENUE },
@@ -88,14 +105,26 @@ export const DEFAULT_FINANCIAL_CATEGORIES: CategoryOption[] = [
   { value: 'other_taxes', label: 'Otros Impuestos', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.TAXES },
   
   // P&L - Calculated Totals (Special categories for totals)
-  { value: 'total_revenue', label: 'Ingresos Totales', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
-  { value: 'gross_profit', label: 'Utilidad Bruta', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
-  { value: 'gross_margin', label: 'Margen Bruto', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
-  { value: 'operating_income', label: 'Utilidad Operativa', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
-  { value: 'ebitda', label: 'EBITDA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
-  { value: 'ebit', label: 'EBIT', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
-  { value: 'net_income', label: 'Utilidad Neta', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
-  { value: 'total_expenses', label: 'Gastos Totales', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.CALCULATED_TOTALS },
+  { value: 'total_revenue', label: 'TOTAL INGRESOS', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_cost_of_sales', label: 'TOTAL COSTO DE VENTAS', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_operating_expenses', label: 'TOTAL GASTOS OPERATIVOS', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'gross_profit', label: 'UTILIDAD BRUTA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'gross_margin', label: 'MARGEN BRUTO', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'operating_income', label: 'UTILIDAD OPERATIVA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'ebitda', label: 'EBITDA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'ebit', label: 'EBIT', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'net_income', label: 'UTILIDAD NETA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_expenses', label: 'GASTOS TOTALES', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  
+  // Balance Sheet Totals
+  { value: 'total_current_assets', label: 'TOTAL ACTIVOS CORRIENTES', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_non_current_assets', label: 'TOTAL ACTIVOS NO CORRIENTES', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_assets', label: 'TOTAL ACTIVOS', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_current_liabilities', label: 'TOTAL PASIVOS CORRIENTES', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_non_current_liabilities', label: 'TOTAL PASIVOS NO CORRIENTES', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_liabilities', label: 'TOTAL PASIVOS', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_equity', label: 'TOTAL PATRIMONIO', icon: null, isInflow: true, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'total_liabilities_equity', label: 'TOTAL PASIVOS Y PATRIMONIO', icon: null, isInflow: false, statementType: 'balance_sheet', isCustom: false, group: 'Totales', categoryType: 'total' },
   
   // Cash Flow - Operating
   { value: 'cash_from_customers', label: 'Efectivo de Clientes', icon: null, isInflow: true, statementType: 'cash_flow', isCustom: false, group: CATEGORY_GROUPS.OPERATING_ACTIVITIES },
@@ -127,7 +156,7 @@ export function getCombinedCategories(
   // Get default categories for the statement type
   const defaultCategories = DEFAULT_FINANCIAL_CATEGORIES
     .filter(cat => cat.statementType === statementType)
-    .map(cat => ({ ...cat, isCustom: false }));
+    .map(cat => ({ ...cat, isCustom: false, categoryType: cat.categoryType || 'account' }));
 
   // Convert custom categories to the expected format
   const customCats: ExtendedFinancialCategory[] = customCategories
@@ -139,6 +168,7 @@ export function getCombinedCategories(
       isInflow: cat.isInflow,
       statementType: cat.statementType as any,
       isCustom: true,
+      categoryType: cat.categoryType || 'account',
       description: cat.description || undefined,
       parentCategory: cat.parentCategory || undefined,
       group: cat.parentCategory || 'Custom', // Use parent category as group or 'Custom'
@@ -173,6 +203,7 @@ export function createCustomCategory(
     label: string;
     isInflow: boolean;
     statementType: 'balance_sheet' | 'profit_loss' | 'cash_flow';
+    categoryType?: 'account' | 'section' | 'total';
     description?: string;
     parentCategory?: string;
     sortOrder?: number;
@@ -184,6 +215,7 @@ export function createCustomCategory(
     label: categoryData.label,
     isInflow: categoryData.isInflow,
     statementType: categoryData.statementType,
+    categoryType: categoryData.categoryType || 'account',
     description: categoryData.description,
     parentCategory: categoryData.parentCategory,
     sortOrder: categoryData.sortOrder || 0,

@@ -19,25 +19,29 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/');
-    }
-  }, [isAuthenticated, isLoading, router]);
+  // Remove automatic redirect - users should be able to access login page even if authenticated
+  // This allows switching between users as requested
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔐 Login form submitted with:', { email: formData.email, passwordLength: formData.password.length });
     setError('');
     setLoading(true);
 
-    const result = await login(formData.email, formData.password);
-    
-    if (result.success) {
-      router.push('/');
-    } else {
-      setError(result.error || (locale?.startsWith('es') ? 'Error al iniciar sesión' : 'Login failed'));
+    try {
+      const result = await login(formData.email, formData.password);
+      console.log('🔐 Login result:', result);
+      
+      if (result.success) {
+        console.log('✅ Login successful, redirecting to dashboard');
+        router.push('/dashboard');
+      } else {
+        console.log('❌ Login failed:', result.error);
+        setError(result.error || (locale?.startsWith('es') ? 'Error al iniciar sesión' : 'Login failed'));
+      }
+    } catch (error) {
+      console.error('🚨 Login exception:', error);
+      setError(locale?.startsWith('es') ? 'Error inesperado al iniciar sesión' : 'Unexpected login error');
     }
     
     setLoading(false);
@@ -183,13 +187,28 @@ export default function LoginPage() {
 
           {/* Demo credentials */}
           <Card variant="flat" className="mt-8">
-            <CardBody className="text-center">
-              <p className="text-xs text-gray-600 mb-2">
+            <CardBody>
+              <p className="text-xs text-gray-600 mb-3 text-center font-medium">
                 {locale?.startsWith('es') ? 'Credenciales de demo:' : 'Demo credentials:'}
               </p>
-              <p className="text-xs text-gray-700 font-mono">
-                demo@warren.com / demo123
-              </p>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Admin Plataforma:' : 'Platform Admin:'}</span>
+                  <span className="font-mono text-gray-700">platform@warren.com / platform123</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Admin Empresa:' : 'Company Admin:'}</span>
+                  <span className="font-mono text-gray-700">companyadmin@demo.com / company123</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Admin Org:' : 'Org Admin:'}</span>
+                  <span className="font-mono text-gray-700">admin@demo.com / admin123</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Usuario:' : 'User:'}</span>
+                  <span className="font-mono text-gray-700">demo@warren.com / demo123</span>
+                </div>
+              </div>
             </CardBody>
           </Card>
         </div>

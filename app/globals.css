@@ -17,6 +17,256 @@
   }
 }
 
+/* Enhanced form inputs with professional styling */
+@layer components {
+  /* Base input styling */
+  .input-base {
+    @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 
+    bg-white text-gray-900 placeholder-gray-400
+    transition-all duration-200 ease-in-out
+    shadow-sm hover:shadow-md
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+    focus:shadow-lg focus:-translate-y-0.5;
+  }
+
+  /* Input variants */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    @apply input-base;
+  }
+
+  /* Textarea specific */
+  textarea {
+    @apply resize-none;
+  }
+
+  /* Select specific */
+  select {
+    @apply cursor-pointer bg-white;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+
+  /* Focus states with glow */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply shadow-blue-500/25;
+  }
+
+  /* Error states */
+  .input-error {
+    @apply border-red-500 focus:ring-red-500;
+  }
+
+  /* Success states */
+  .input-success {
+    @apply border-green-500 focus:ring-green-500;
+  }
+
+  /* Disabled states */
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    @apply opacity-60 cursor-not-allowed bg-gray-50 hover:shadow-sm;
+  }
+
+  /* Checkbox and Radio styling */
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply w-4 h-4 text-blue-600 border-gray-300 rounded
+    focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+    transition duration-200 cursor-pointer;
+  }
+
+  input[type="radio"] {
+    @apply rounded-full;
+  }
+
+  /* Label styling */
+  label {
+    @apply block text-sm font-medium text-gray-700 mb-1.5
+    transition-colors duration-200;
+  }
+
+  /* Form group styling */
+  .form-group {
+    @apply space-y-1.5;
+  }
+
+  /* Floating label effect */
+  .floating-label {
+    @apply relative;
+  }
+
+  .floating-label input:focus + label,
+  .floating-label input:not(:placeholder-shown) + label {
+    @apply text-xs -translate-y-6 text-blue-600;
+  }
+}
+
+/* Professional animations */
+@layer utilities {
+  /* Smooth fade animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Animation classes */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fadeOut 0.3s ease-out;
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  /* Skeleton loading effect */
+  .skeleton {
+    @apply relative overflow-hidden bg-gray-200 rounded;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply backdrop-blur-md bg-white/80 border border-white/20;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  }
+}
+
 /* Custom scrollbar for Excel viewer */
 .excel-scrollbar::-webkit-scrollbar {
   width: 8px;
@@ -24,50 +274,41 @@
 }
 
 .excel-scrollbar::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-gray-100 rounded;
 }
 
 .excel-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded;
+  @apply bg-gray-300 rounded hover:bg-gray-400 transition-colors;
 }
 
-.excel-scrollbar::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
-}
-
-/* Excel cell styles */
+/* Excel cell styles with enhanced hover */
 .excel-cell {
-  @apply border border-gray-200 p-2 text-sm min-w-[100px] bg-white;
+  @apply border border-gray-200 p-2 text-sm min-w-[100px] bg-white
+  transition-all duration-150 hover:shadow-md hover:z-10;
 }
 
 .excel-header-cell {
-  @apply excel-cell bg-gray-50 font-medium;
+  @apply excel-cell bg-gray-50 font-medium sticky top-0 z-20;
 }
 
 .excel-data-cell {
-  @apply excel-cell hover:bg-gray-50;
+  @apply excel-cell hover:bg-blue-50 hover:border-blue-300;
 }
 
-/* Confidence level indicators */
+/* Confidence level indicators with animations */
 .confidence-high {
-  @apply border-l-4 border-l-confidence-high bg-green-50;
+  @apply border-l-4 border-l-green-500 bg-green-50
+  transition-all duration-200 hover:bg-green-100;
 }
 
 .confidence-medium {
-  @apply border-l-4 border-l-confidence-medium bg-yellow-50;
+  @apply border-l-4 border-l-yellow-500 bg-yellow-50
+  transition-all duration-200 hover:bg-yellow-100;
 }
 
 .confidence-low {
-  @apply border-l-4 border-l-confidence-low bg-red-50;
-}
-
-/* Animation classes */
-.fade-in {
-  animation: fadeIn 0.2s ease-in-out;
-}
-
-.slide-up {
-  animation: slideUp 0.3s ease-out;
+  @apply border-l-4 border-l-red-500 bg-red-50
+  transition-all duration-200 hover:bg-red-100;
 }
 
 /* Loading states */
@@ -75,26 +316,37 @@
   @apply animate-pulse bg-gray-200 rounded;
 }
 
-/* File drop zone */
+/* File drop zone with enhanced states */
+.drop-zone {
+  @apply border-2 border-dashed border-gray-300 rounded-xl
+  transition-all duration-300 ease-in-out;
+}
+
 .drop-zone-active {
-  @apply border-primary-500 bg-primary-50;
+  @apply border-blue-500 bg-blue-50 shadow-lg scale-105;
 }
 
 .drop-zone-reject {
-  @apply border-danger-500 bg-danger-50;
+  @apply border-red-500 bg-red-50 animate-pulse;
 }
 
-/* Financial data tables */
+/* Financial data tables with hover effects */
 .financial-table {
   @apply w-full border-collapse;
 }
 
 .financial-table th {
-  @apply bg-gray-50 p-3 text-left font-medium text-gray-900 border-b;
+  @apply bg-gradient-to-r from-gray-50 to-gray-100 p-3 text-left 
+  font-medium text-gray-900 border-b transition-colors duration-200;
 }
 
 .financial-table td {
-  @apply p-3 border-b border-gray-200;
+  @apply p-3 border-b border-gray-200 transition-all duration-200
+  hover:bg-gray-50;
+}
+
+.financial-table tr:hover td {
+  @apply bg-gray-50;
 }
 
 /* Responsive grid for mobile */
@@ -106,5 +358,23 @@
   .financial-table th,
   .financial-table td {
     @apply p-2 text-sm;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    @apply bg-white;
+  }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-ready {
+    @apply bg-gray-900 text-gray-100;
   }
 }

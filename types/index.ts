@@ -144,6 +144,9 @@ export interface MatrixMapping {
   aiAnalysis?: DocumentStructure;
   accountClassifications?: AccountClassification[];
   detectedTotalRows?: any[];
+  
+  // Period column flow directions (optional)
+  periodColumnFlows?: Record<number, boolean>; // true = inflow, false = outflow
 }
 
 // AI-powered document analysis interfaces

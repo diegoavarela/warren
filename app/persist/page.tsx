@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { CompanySelector } from "@/components/CompanySelector";
-import { CheckCircleIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, CloudArrowUpIcon, BuildingOfficeIcon } from "@heroicons/react/24/outline";
 import { Card, CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
@@ -21,17 +21,39 @@ function PersistPageContent() {
   const [validationResults, setValidationResults] = useState<any>(null);
   const [accountMapping, setAccountMapping] = useState<any>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
+
+  const fetchCompanyDetails = async (companyId: string) => {
+    try {
+      const response = await fetch(`/api/v1/companies/${companyId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedCompany(data.data);
+      } else if (response.status === 403) {
+        console.warn('Permission denied to access company details');
+        setError(`Sin permisos para acceder a los datos de la empresa. Contacta al administrador.`);
+      } else {
+        console.warn('Failed to fetch company details:', response.status);
+        setError(`Error al cargar información de la empresa (${response.status})`);
+      }
+    } catch (err) {
+      console.warn('Error fetching company details:', err);
+      setError('Error de conexión al cargar información de la empresa');
+    }
+  };
 
   useEffect(() => {
     // Load validation results and mapping from session
     const resultsStr = sessionStorage.getItem('validationResults');
     const mappingStr = sessionStorage.getItem('accountMapping');
+    const companyId = sessionStorage.getItem('selectedCompanyId');
     
     console.log('Persist page - Loading data from sessionStorage');
     console.log('validationResults exists:', !!resultsStr);
     console.log('accountMapping exists:', !!mappingStr);
+    console.log('selectedCompanyId:', companyId);
     
     if (!resultsStr || !mappingStr) {
       console.log('No data in sessionStorage, redirecting to home page');
@@ -52,6 +74,13 @@ function PersistPageContent() {
       
       setValidationResults(parsedResults);
       setAccountMapping(parsedMapping);
+      
+      // Set company ID if available
+      if (companyId) {
+        setSelectedCompanyId(companyId);
+        // Fetch company details
+        fetchCompanyDetails(companyId);
+      }
     } catch (err) {
       console.error('Error parsing sessionStorage data:', err);
       // Redirect to home page if data is corrupted
@@ -68,22 +97,28 @@ function PersistPageContent() {
     setError(null);
 
     try {
+      // Get upload session from session storage
+      const uploadSession = sessionStorage.getItem('uploadSession');
+      
       const response = await fetch('/api/persist-encrypted', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          uploadSession: sessionStorage.getItem('uploadSession'),
+          uploadSession: uploadSession,
           validationResults,
           accountMapping,
           companyId: selectedCompanyId,
           saveAsTemplate,
           templateName: saveAsTemplate ? templateName : undefined,
-          encrypt: true // Enable encryption
+          encrypt: true, // Enable encryption
+          locale: locale
+          // Removed fileData and completeExcelData to avoid request size limits
         })
       });
 
       if (!response.ok) {
-        throw new Error('Error al guardar los datos');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`${response.status}: ${errorData.message || 'Error al guardar los datos'}`);
       }
 
       const result = await response.json();
@@ -95,14 +130,20 @@ function PersistPageContent() {
       sessionStorage.removeItem('validationResults');
       sessionStorage.removeItem('accountMapping');
       
-      // Redirect after 3 seconds
+      // Redirect to financial dashboard after 3 seconds
       setTimeout(() => {
-        router.push('/');
+        router.push(`/dashboard/company-admin/financial/${result.statementId}/dashboard`);
       }, 3000);
 
     } catch (err) {
       console.error('Persistence error:', err);
-      setError('Error al guardar los datos');
+      if (err instanceof Error && err.message.includes('403')) {
+        setError('Sin permisos para guardar datos financieros en esta empresa. Contacta al administrador.');
+      } else if (err instanceof Error && err.message.includes('500')) {
+        setError('Error interno del servidor. Intenta nuevamente o contacta soporte técnico.');
+      } else {
+        setError('Error al guardar los datos. Verifica tu conexión e intenta nuevamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -110,59 +151,82 @@ function PersistPageContent() {
 
   if (!validationResults || !accountMapping) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-lg text-gray-600">Cargando datos...</p>
-            <p className="text-sm text-gray-500 mt-2">Redirigiendo si no hay datos disponibles...</p>
+      <ProtectedRoute>
+        <AppLayout showFooter={false}>
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-lg text-gray-600">Cargando datos...</p>
+              <p className="text-sm text-gray-500 mt-2">Redirigiendo si no hay datos disponibles...</p>
+            </div>
           </div>
-        </div>
-      </div>
+        </AppLayout>
+      </ProtectedRoute>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="text-center">
-            <CheckCircleIcon className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Datos Guardados!</h2>
-            <p className="text-gray-600 mb-4">
-              Todos los datos han sido encriptados y almacenados de forma segura.
-            </p>
-            <p className="text-sm text-gray-500">Redirigiendo al inicio...</p>
+      <ProtectedRoute>
+        <AppLayout showFooter={false}>
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <CheckCircleIcon className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Datos Guardados!</h2>
+              <p className="text-gray-600 mb-4">
+                Todos los datos han sido encriptados y almacenados de forma segura.
+              </p>
+              <p className="text-sm text-gray-500">Redirigiendo al dashboard...</p>
+            </div>
           </div>
-        </div>
-      </div>
+        </AppLayout>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {locale?.startsWith('es') ? 'Guardar Datos Financieros' : 'Save Financial Data'}
-              </CardTitle>
-              <CardDescription>
-                {locale?.startsWith('es') 
-                  ? 'Los datos serán encriptados antes de almacenarse en la base de datos.'
-                  : 'Data will be encrypted before being stored in the database.'
-                }
-                {user && (
-                  <span className="block mt-2">
-                    {locale?.startsWith('es') ? 'Usuario:' : 'User:'} {user.firstName} {user.lastName}
-                  </span>
-                )}
-              </CardDescription>
-            </CardHeader>
+    <ProtectedRoute>
+      <AppLayout showFooter={false}>
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {locale?.startsWith('es') ? 'Guardar Datos Financieros' : 'Save Financial Data'}
+                </h1>
+                <p className="text-gray-600">
+                  {locale?.startsWith('es') 
+                    ? 'Los datos serán encriptados antes de almacenarse en la base de datos.'
+                    : 'Data will be encrypted before being stored in the database.'
+                  }
+                </p>
+              </div>
+              {/* Company Context Display */}
+              {selectedCompany && (
+                <div className="flex items-center space-x-3 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <BuildingOfficeIcon className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">{selectedCompany.name}</p>
+                    <p className="text-xs text-blue-600">
+                      {locale?.startsWith('es') ? 'Empresa seleccionada' : 'Selected company'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {locale?.startsWith('es') ? 'Resumen de Validación' : 'Validation Summary'}
+                </CardTitle>
+                <CardDescription>
+                  {user && (
+                    <span>
+                      {locale?.startsWith('es') ? 'Usuario:' : 'User:'} {user.firstName} {user.lastName}
+                    </span>
+                  )}
+                </CardDescription>
+              </CardHeader>
             <CardBody className="space-y-6">
 
               {/* Summary */}
@@ -295,16 +359,13 @@ function PersistPageContent() {
               </Button>
             </CardFooter>
           </Card>
+          </div>
         </div>
-      </main>
-    </div>
+      </AppLayout>
+    </ProtectedRoute>
   );
 }
 
 export default function PersistPage() {
-  return (
-    <ProtectedRoute>
-      <PersistPageContent />
-    </ProtectedRoute>
-  );
+  return <PersistPageContent />;
 }

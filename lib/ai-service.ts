@@ -4,6 +4,7 @@
  */
 
 import OpenAI from 'openai';
+import { LocalAccountClassifier } from './local-classifier';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -122,7 +123,7 @@ export class FinancialAI {
    * Classify accounts using AI with accounting knowledge
    */
   async classifyAccounts(
-    accounts: { name: string; rowIndex: number }[],
+    accounts: { name: string; rowIndex: number; value?: number | string }[],
     documentContext: {
       statementType: string;
       sampleData?: any[][];
@@ -130,15 +131,14 @@ export class FinancialAI {
     }
   ): Promise<AccountClassification[]> {
     try {
-      const accountNames = accounts.map(acc => acc.name);
-      const prompt = this.buildAccountClassificationPrompt(accountNames, documentContext);
+      const prompt = this.buildAccountClassificationPrompt(accounts, documentContext);
 
       const response = await openai.chat.completions.create({
         model: this.model,
         messages: [
           {
             role: 'system',
-            content: 'You are an expert accountant with knowledge of international accounting standards (GAAP, IFRS) and Latin American accounting practices. Classify financial accounts accurately based on their names and context. IMPORTANT: Always respond with valid JSON only, no additional text.'
+            content: 'You are an expert accountant with knowledge of international accounting standards (GAAP, IFRS) and Latin American accounting practices. Your PRIMARY GOAL is to classify financial accounts into the MOST SPECIFIC category possible. NEVER default to generic categories like "other_revenue" when specific patterns exist. Pay attention to Spanish and English keywords. Expenses/costs are ALWAYS outflows (isInflow: false). Revenues/income are ALWAYS inflows (isInflow: true). IMPORTANT: Always respond with valid JSON only, no additional text.'
           },
           {
             role: 'user',
@@ -400,7 +400,7 @@ Return a JSON response with this exact structure:
       "confidence": number (0-100)
     }
   ],
-  "currency": "USD|MXN|EUR|etc",
+  "currency": "USD|MXN|ARS|EUR|COP|CLP|PEN|BRL|etc (use 'ARS' for Argentine Pesos)",
   "fiscalYear": number (optional),
   "reasoning": "Detailed explanation of your analysis"
 }
@@ -414,17 +414,27 @@ Focus on identifying:
    - Columns with numeric codes (like "4000", "5000") indicate account codes (codeColumn)
 4. Which columns contain period/date information
 5. Currency and fiscal year if detectable
+   - Look for currency symbols ($, €, R$, etc.) and names (pesos, dollars, euros)
+   - For Argentine Pesos, return "ARS" not "Arg Pesos"
+   - Common mappings: Pesos Argentinos->ARS, Mexican Pesos->MXN, US Dollars->USD
 `;
   }
 
   private buildAccountClassificationPrompt(
-    accountNames: string[], 
+    accounts: { name: string; rowIndex: number; value?: number | string }[], 
     context: { statementType: string; currency?: string }
   ): string {
     return `
-Classify these financial accounts based on accounting principles and their names.
+Classify these financial accounts based on accounting principles, names, and values.
 
-ACCOUNTS: ${JSON.stringify(accountNames)}
+ACCOUNTS WITH VALUES:
+${accounts.map((acc, idx) => {
+  const valueInfo = acc.value !== undefined && acc.value !== null 
+    ? ` | Value: ${acc.value} ${typeof acc.value === 'number' && acc.value < 0 ? '(NEGATIVE - likely expense)' : ''}`
+    : '';
+  return `${idx + 1}. "${acc.name}"${valueInfo}`;
+}).join('\n')}
+
 STATEMENT TYPE: ${context.statementType}
 CURRENCY: ${context.currency || 'Unknown'}
 
@@ -447,15 +457,24 @@ Return a JSON response:
   ]
 }
 
-Use these category keys for ${context.statementType}:
+Available categories for ${context.statementType}:
 ${this.getCategoryKeysForStatement(context.statementType)}
 
-Consider:
-1. Standard accounting terminology
-2. Spanish/English variations
-3. Industry-specific naming
-4. Context from statement type
-5. Whether amounts should be positive (inflow) or negative (outflow)
+CRITICAL RULES:
+1. NEVER default to "other_revenue" unless it truly doesn't fit any category
+2. Look for keywords in Spanish AND English
+3. Use context clues:
+   - Accounts with "cost", "expense", "gasto", "costo" are ALWAYS outflows (isInflow: false)
+   - Accounts with "revenue", "income", "ingreso", "venta" are ALWAYS inflows (isInflow: true)
+   - Negative values typically indicate expenses (isInflow: false)
+   - Section position matters (expenses usually after revenue)
+4. Common patterns:
+   - "Sueldos", "Salarios", "Nómina" → salaries_wages
+   - "Renta", "Arrendamiento" → rent_utilities
+   - "Marketing", "Publicidad" → marketing_advertising
+   - "Servicios profesionales", "Consultoría" → professional_services
+   - "Ventas", "Ingresos por servicios" → revenue or service_revenue
+5. If unsure, use the most specific category that matches keywords
 `;
   }
 
@@ -506,14 +525,42 @@ Consider:
   }
 
   private validateAccountClassifications(classifications: any[]): AccountClassification[] {
-    return classifications.map(cls => ({
-      accountName: cls.accountName || '',
-      suggestedCategory: cls.suggestedCategory || 'other_revenue',
-      isInflow: Boolean(cls.isInflow),
-      confidence: Math.min(Math.max(cls.confidence || 0, 0), 100),
-      reasoning: cls.reasoning || 'AI classification',
-      alternativeCategories: cls.alternativeCategories || []
-    }));
+    return classifications.map(cls => {
+      // If AI didn't provide a valid category or defaulted to generic, use local classifier
+      const isGenericCategory = !cls.suggestedCategory || 
+                               cls.suggestedCategory === 'other_revenue' ||
+                               cls.suggestedCategory === 'other' ||
+                               cls.confidence < 50;
+                               
+      if (isGenericCategory) {
+        const localResult = LocalAccountClassifier.classifyAccount(
+          cls.accountName || '',
+          undefined,
+          { preferSpecific: true }
+        );
+        
+        // Use local result if it's more specific
+        if (localResult.confidence > (cls.confidence || 0) || localResult.suggestedCategory !== 'other') {
+          return {
+            accountName: cls.accountName || '',
+            suggestedCategory: localResult.suggestedCategory,
+            isInflow: localResult.isInflow,
+            confidence: localResult.confidence,
+            reasoning: `${localResult.reasoning} (enhanced by local classifier)`,
+            alternativeCategories: cls.alternativeCategories || []
+          };
+        }
+      }
+      
+      return {
+        accountName: cls.accountName || '',
+        suggestedCategory: cls.suggestedCategory,
+        isInflow: Boolean(cls.isInflow),
+        confidence: Math.min(Math.max(cls.confidence || 0, 0), 100),
+        reasoning: cls.reasoning || 'AI classification',
+        alternativeCategories: cls.alternativeCategories || []
+      };
+    });
   }
 
   private validateMappingSuggestions(result: any): MappingSuggestions {
@@ -544,16 +591,27 @@ Consider:
   }
 
   private fallbackAccountClassification(
-    accounts: { name: string; rowIndex: number }[],
+    accounts: { name: string; rowIndex: number; value?: number | string }[],
     context: any
   ): AccountClassification[] {
-    return accounts.map(acc => ({
-      accountName: acc.name,
-      suggestedCategory: 'other_revenue',
-      isInflow: true,
-      confidence: 30,
-      reasoning: 'Fallback classification - AI service unavailable'
-    }));
+    console.log('Using local classification fallback for', accounts.length, 'accounts');
+    
+    return accounts.map(acc => {
+      const localResult = LocalAccountClassifier.classifyAccount(
+        acc.name,
+        acc.value, // Now we have values!
+        { statementType: context.statementType }
+      );
+      
+      return {
+        accountName: acc.name,
+        suggestedCategory: localResult.suggestedCategory,
+        isInflow: localResult.isInflow,
+        confidence: localResult.confidence,
+        reasoning: `Local classification: ${localResult.reasoning}`,
+        alternativeCategories: []
+      };
+    });
   }
 
   private fallbackMappingSuggestions(rawData: any[][]): MappingSuggestions {

@@ -1,9 +1,30 @@
 // Database connection with fallback to mock for local development
-import * as schema from "./schema";
+// IMPORTANT: Using actual-schema.ts which matches the real database structure
+import * as schema from "./actual-schema";
 
-// Check if we're in development mode without a real database
-const isDevelopment = process.env.NODE_ENV === 'development';
-const hasRealDatabase = process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('mock');
+// Ensure .env.local is loaded (Next.js should handle this, but let's be explicit)
+if (typeof window === 'undefined') {
+  // Server-side: Load environment variables
+  const path = require('path');
+  const fs = require('fs');
+  
+  // Load .env.local if it exists (highest priority)
+  const envLocalPath = path.join(process.cwd(), '.env.local');
+  if (fs.existsSync(envLocalPath)) {
+    require('dotenv').config({ path: envLocalPath, override: true });
+  }
+}
+
+// Check if we have a real database URL (Neon database)
+// Only run database logic on server side
+const isServer = typeof window === 'undefined';
+const hasRealDatabase = isServer && process.env.DATABASE_URL && 
+  (process.env.DATABASE_URL.includes('neon.tech') || 
+   process.env.DATABASE_URL.includes('neondb') ||
+   process.env.DATABASE_URL.includes('aws.neon.tech') ||
+   (process.env.DATABASE_URL.startsWith('postgres://') && 
+    !process.env.DATABASE_URL.includes('localhost') && 
+    !process.env.DATABASE_URL.includes('username:password')));
 
 let db: any;
 let organizations: any;
@@ -17,11 +38,18 @@ let parsingLogs: any;
 let processingJobs: any;
 let eq: any;
 let desc: any;
+let count: any;
+let and: any;
+let gte: any;
+let like: any;
+let or: any;
+let sql: any;
 
-if (isDevelopment && !hasRealDatabase) {
+// Use real database if available, otherwise fall back to mock
+if (!hasRealDatabase) {
   // Use mock database for local development
   console.log('🚀 Using mock database for local development');
-  const { mockDb, mockTables, eq: mockEq, desc: mockDesc } = require('./mock');
+  const { mockDb, mockTables, eq: mockEq, desc: mockDesc, count: mockCount, and: mockAnd, gte: mockGte, like: mockLike, or: mockOr, sql: mockSql } = require('./mock');
   
   db = mockDb;
   organizations = mockTables.organizations;
@@ -35,19 +63,26 @@ if (isDevelopment && !hasRealDatabase) {
   processingJobs = mockTables.processingJobs;
   eq = mockEq;
   desc = mockDesc;
+  count = mockCount;
+  and = mockAnd;
+  gte = mockGte;
+  like = mockLike;
+  or = mockOr;
+  sql = mockSql;
   
 } else {
-  // Use real database for production
+  // Use real database
+  console.log('🔌 Connecting to Neon database...');
   const { drizzle } = require("drizzle-orm/neon-http");
   const { neon } = require("@neondatabase/serverless");
-  const { eq: realEq, desc: realDesc } = require("drizzle-orm");
+  const { eq: realEq, desc: realDesc, count: realCount, and: realAnd, gte: realGte, like: realLike, or: realOr, sql: realSql } = require("drizzle-orm");
   
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL environment variable is required");
   }
   
-  const sql = neon(process.env.DATABASE_URL);
-  db = drizzle(sql, { schema });
+  const neonSql = neon(process.env.DATABASE_URL);
+  db = drizzle(neonSql, { schema });
   
   // Use real schema tables
   organizations = schema.organizations;
@@ -61,6 +96,12 @@ if (isDevelopment && !hasRealDatabase) {
   processingJobs = schema.processingJobs;
   eq = realEq;
   desc = realDesc;
+  count = realCount;
+  and = realAnd;
+  gte = realGte;
+  like = realLike;
+  or = realOr;
+  sql = realSql;
 }
 
 export { 
@@ -75,7 +116,13 @@ export {
   parsingLogs,
   processingJobs,
   eq,
-  desc
+  desc,
+  count,
+  and,
+  gte,
+  like,
+  or,
+  sql
 };
 
-export * from "./schema";
+export * from "./actual-schema";

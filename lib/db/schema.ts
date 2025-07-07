@@ -11,16 +11,17 @@ import {
   text,
   unique,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 
 // Organizations (top-level tenant)
 export const organizations = pgTable("organizations", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   subdomain: varchar("subdomain", { length: 100 }).unique(),
   tier: varchar("tier", { length: 50 }).notNull().default("starter"), // starter, professional, enterprise
-  locale: varchar("locale", { length: 5 }).default("es-MX"),
-  baseCurrency: varchar("base_currency", { length: 3 }).default("MXN"),
+  locale: varchar("locale", { length: 5 }).default("en-US"),
+  baseCurrency: varchar("base_currency", { length: 3 }).default("USD"),
   fiscalYearStart: integer("fiscal_year_start").default(1), // January = 1
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -29,7 +30,7 @@ export const organizations = pgTable("organizations", {
 
 // Users with organization access
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   firstName: varchar("first_name", { length: 100 }).notNull(),
@@ -46,13 +47,14 @@ export const users = pgTable("users", {
 
 // Companies within organizations
 export const companies = pgTable("companies", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   taxId: varchar("tax_id", { length: 100 }), // RFC, EIN, etc.
   industry: varchar("industry", { length: 100 }),
   locale: varchar("locale", { length: 5 }),
   baseCurrency: varchar("base_currency", { length: 3 }),
+  displayUnits: varchar("display_units", { length: 20 }).default("units"), // units, thousands, millions
   fiscalYearStart: integer("fiscal_year_start"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -61,7 +63,7 @@ export const companies = pgTable("companies", {
 
 // Company-User relationships for role-based access
 export const companyUsers = pgTable("company_users", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
   userId: uuid("user_id").references(() => users.id).notNull(),
   role: varchar("role", { length: 50 }).notNull().default("user"), // company_admin, user, viewer
@@ -78,7 +80,7 @@ export const companyUsers = pgTable("company_users", {
 
 // Financial periods for time-series data
 export const financialPeriods = pgTable("financial_periods", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
   periodType: varchar("period_type", { length: 20 }).notNull(), // monthly, quarterly, yearly
   periodStart: date("period_start").notNull(),
@@ -91,7 +93,7 @@ export const financialPeriods = pgTable("financial_periods", {
 
 // Financial statements
 export const financialStatements = pgTable("financial_statements", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
   periodId: uuid("period_id").references(() => financialPeriods.id),
   statementType: varchar("statement_type", { length: 50 }).notNull(), // profit_loss, cash_flow, balance_sheet
@@ -107,7 +109,7 @@ export const financialStatements = pgTable("financial_statements", {
 
 // Line items with intelligent categorization and total detection
 export const financialLineItems = pgTable("financial_line_items", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   statementId: uuid("statement_id").references(() => financialStatements.id).notNull(),
   category: varchar("category", { length: 100 }).notNull(), // revenue, operating_expenses, etc.
   subcategory: varchar("subcategory", { length: 100 }), // salaries, rent, etc.
@@ -133,7 +135,7 @@ export const financialLineItems = pgTable("financial_line_items", {
 
 // Multi-currency exchange rates
 export const exchangeRates = pgTable("exchange_rates", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   fromCurrency: varchar("from_currency", { length: 3 }).notNull(),
   toCurrency: varchar("to_currency", { length: 3 }).notNull(),
   rate: decimal("rate", { precision: 10, scale: 6 }).notNull(),
@@ -146,13 +148,14 @@ export const exchangeRates = pgTable("exchange_rates", {
 
 // Custom financial categories per company
 export const customFinancialCategories = pgTable("custom_financial_categories", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
   categoryKey: varchar("category_key", { length: 100 }).notNull(), // unique identifier
   label: varchar("label", { length: 255 }).notNull(), // display name
   parentCategory: varchar("parent_category", { length: 100 }), // maps to standard categories
   isInflow: boolean("is_inflow").notNull(), // true for revenue/income, false for expenses
   statementType: varchar("statement_type", { length: 50 }).notNull(), // profit_loss, cash_flow, balance_sheet
+  categoryType: varchar("category_type", { length: 20 }).default('account'), // account, section, total
   description: text("description"), // optional description
   sortOrder: integer("sort_order").default(0), // for ordering in UI
   isActive: boolean("is_active").default(true),
@@ -164,7 +167,7 @@ export const customFinancialCategories = pgTable("custom_financial_categories", 
 
 // Saved mapping templates per company
 export const mappingTemplates = pgTable("mapping_templates", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
   templateName: varchar("template_name", { length: 255 }).notNull(),
   statementType: varchar("statement_type", { length: 50 }).notNull(),
@@ -181,7 +184,7 @@ export const mappingTemplates = pgTable("mapping_templates", {
 
 // Pre-calculated metrics for dashboard performance
 export const financialMetrics = pgTable("financial_metrics", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
   periodId: uuid("period_id").references(() => financialPeriods.id).notNull(),
   metricType: varchar("metric_type", { length: 100 }).notNull(), // revenue, gross_margin, etc.
@@ -197,7 +200,7 @@ export const financialMetrics = pgTable("financial_metrics", {
 
 // Parsing logs and errors for debugging
 export const parsingLogs = pgTable("parsing_logs", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id),
   uploadSession: varchar("upload_session", { length: 100 }).notNull(),
   fileName: varchar("file_name", { length: 255 }).notNull(),
@@ -210,7 +213,7 @@ export const parsingLogs = pgTable("parsing_logs", {
 
 // API keys for external application access
 export const apiKeys = pgTable("api_keys", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
   companyId: uuid("company_id").references(() => companies.id), // company-scoped keys
   keyHash: varchar("key_hash", { length: 255 }).notNull().unique(),
@@ -227,7 +230,7 @@ export const apiKeys = pgTable("api_keys", {
 
 // Webhook configurations for external notifications
 export const webhooks = pgTable("webhooks", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
   url: text("url").notNull(),
   events: jsonb("events").notNull(), // array of event types to subscribe to
@@ -241,7 +244,7 @@ export const webhooks = pgTable("webhooks", {
 
 // Job queue for async processing
 export const processingJobs = pgTable("processing_jobs", {
-  id: uuid("id").primaryKey().default("gen_random_uuid()"),
+  id: uuid("id").primaryKey().defaultRandom(),
   jobType: varchar("job_type", { length: 50 }).notNull(), // parse_excel, calculate_metrics, etc.
   status: varchar("status", { length: 50 }).notNull(), // pending, processing, completed, failed
   priority: integer("priority").default(0), // higher number = higher priority

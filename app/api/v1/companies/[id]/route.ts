@@ -111,14 +111,14 @@ export async function GET(
     try {
       const companyId = params.id;
 
-      // Check permissions
-      if (!hasPermission(user, PERMISSIONS.VIEW_COMPANY, companyId)) {
+      // Check permissions - use VIEW_FINANCIAL_DATA as viewing company details is part of financial data access
+      if (!hasPermission(user, PERMISSIONS.VIEW_FINANCIAL_DATA, companyId)) {
         return NextResponse.json(
           { 
             success: false,
             error: {
               code: 'INSUFFICIENT_PERMISSIONS',
-              message: 'Insufficient permissions to view company'
+              message: 'Insufficient permissions to view company details'
             }
           },
           { status: 403 }

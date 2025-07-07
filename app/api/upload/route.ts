@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { nanoid } from "nanoid";
 import { ExcelFileMetadata, ExcelSheet } from "@/types";
 import { addUpload } from "@/lib/db/mock-db";
+import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_TYPES = [
@@ -12,17 +13,31 @@ const ALLOWED_TYPES = [
 ];
 
 export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const locale = formData.get("locale") as string || "es-MX";
+  return withRBAC(request, async (req, user) => {
+    try {
+      const formData = await req.formData();
+      const file = formData.get("file") as File;
+      const locale = formData.get("locale") as string || "es-MX";
+      const companyId = formData.get("companyId") as string;
 
-    if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
-      );
-    }
+      // Check if user has permission to upload files
+      if (companyId && !hasPermission(user, PERMISSIONS.UPLOAD_FILES, companyId)) {
+        return NextResponse.json(
+          { 
+            error: "Insufficient permissions to upload files for this company",
+            required: PERMISSIONS.UPLOAD_FILES,
+            companyId 
+          },
+          { status: 403 }
+        );
+      }
+
+      if (!file) {
+        return NextResponse.json(
+          { error: "No file provided" },
+          { status: 400 }
+        );
+      }
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -138,15 +153,16 @@ export async function POST(request: NextRequest) {
       uploadSession,
     };
 
-    return NextResponse.json(metadata);
+      return NextResponse.json(metadata);
 
-  } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json(
-      { error: "Internal server error during file upload" },
-      { status: 500 }
-    );
-  }
+    } catch (error) {
+      console.error("Upload error:", error);
+      return NextResponse.json(
+        { error: "Internal server error during file upload" },
+        { status: 500 }
+      );
+    }
+  });
 }
 
 export async function GET() {

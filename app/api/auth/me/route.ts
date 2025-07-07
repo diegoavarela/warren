@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT } from '@/lib/auth/jwt';
 import { db, users, organizations, eq } from '@/lib/db';
+import { loadUserCompanyAccess } from '@/lib/auth/rbac';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,18 +26,19 @@ export async function GET(request: NextRequest) {
     const userResult = await db
       .select()
       .from(users)
-      .where(eq(users.id, payload.userId))
-      .where(eq(users.isActive, true))
-      .limit(1);
+      .where(eq(users.id, payload.userId));
+    
+    // Filter active users
+    const activeUsers = userResult.filter(u => u.isActive);
 
-    if (userResult.length === 0) {
+    if (activeUsers.length === 0) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'User not found or inactive' },
         { status: 404 }
       );
     }
 
-    const user = userResult[0];
+    const user = activeUsers[0];
 
     // Get organization details
     const orgResult = await db
@@ -41,6 +46,9 @@ export async function GET(request: NextRequest) {
       .from(organizations)
       .where(eq(organizations.id, user.organizationId))
       .limit(1);
+
+    // Load user's company access for RBAC
+    const companyAccess = await loadUserCompanyAccess(user.id);
 
     return NextResponse.json({
       success: true,
@@ -51,7 +59,8 @@ export async function GET(request: NextRequest) {
         lastName: user.lastName,
         organizationId: user.organizationId,
         role: user.role,
-        locale: user.locale
+        locale: user.locale,
+        companyAccess
       },
       organization: orgResult.length > 0 ? {
         id: orgResult[0].id,

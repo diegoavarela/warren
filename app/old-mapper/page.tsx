@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AccountRowMapper, AccountMapping } from "@/components/AccountRowMapper";
 import { Header } from "@/components/Header";
@@ -8,7 +8,7 @@ import { readExcelFile } from "@/lib/excel-reader";
 import { getMockDatabase } from "@/lib/db/mock-db";
 import { useLocale } from "@/contexts/LocaleContext";
 
-export default function MapperPage() {
+function MapperContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { locale } = useLocale();
@@ -199,5 +199,13 @@ export default function MapperPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function MapperPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <MapperContent />
+    </Suspense>
   );
 }
