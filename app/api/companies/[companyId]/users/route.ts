@@ -4,6 +4,9 @@ import { verifyJWT } from '@/lib/auth/jwt';
 import { db, companyUsers, users, companies, eq, and } from '@/lib/db';
 import { ROLES } from '@/lib/auth/rbac';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { companyId: string } }
@@ -140,7 +143,11 @@ export async function POST(
   } catch (error) {
     console.error('Company user assignment error:', error);
     return NextResponse.json(
-      { error: 'Failed to assign user to company' },
+      { 
+        error: 'Failed to assign user to company',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        debug: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     );
   }

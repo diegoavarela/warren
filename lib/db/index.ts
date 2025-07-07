@@ -18,8 +18,10 @@ if (typeof window === 'undefined') {
 // Check if we have a real database URL (Neon database)
 // Only run database logic on server side
 const isServer = typeof window === 'undefined';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
 const hasRealDatabase = isServer && process.env.DATABASE_URL && 
-  (process.env.DATABASE_URL.includes('neon.tech') || 
+  (isProduction || // Always use real DB in production
+   process.env.DATABASE_URL.includes('neon.tech') || 
    process.env.DATABASE_URL.includes('neondb') ||
    process.env.DATABASE_URL.includes('aws.neon.tech') ||
    (process.env.DATABASE_URL.startsWith('postgres://') && 
