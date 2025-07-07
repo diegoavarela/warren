@@ -152,9 +152,9 @@ export async function POST(request: NextRequest) {
 
 // Helper function to process data with template
 function processDataWithTemplate(rawData: any[][], columnMappings: any) {
-  const accounts = [];
-  const errors = [];
-  const warnings = [];
+  const accounts: any[] = [];
+  const errors: { row: number; message: string }[] = [];
+  const warnings: { row: number; message: string }[] = [];
   let validRows = 0;
   let invalidRows = 0;
 
@@ -221,7 +221,7 @@ function processDataWithTemplate(rawData: any[][], columnMappings: any) {
       console.error(`Error processing row ${i}:`, error);
       errors.push({
         row: i,
-        message: `Error processing row: ${error.message}`
+        message: `Error processing row: ${error instanceof Error ? error.message : String(error)}`
       });
       invalidRows++;
     }

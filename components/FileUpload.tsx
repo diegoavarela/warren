@@ -9,6 +9,7 @@ import {
   CheckCircleIcon 
 } from "@heroicons/react/24/outline";
 import { ExcelFileMetadata } from "@/types";
+import { Button } from "@/components/ui/Button";
 
 interface FileUploadProps {
   onFileUploaded?: (metadata: ExcelFileMetadata) => void;

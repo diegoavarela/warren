@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
           ));
         
         console.log(`📊 Admin query result: Found ${companyList.length} companies`);
-        console.log('Companies found:', companyList.map(c => ({
+        console.log('Companies found:', companyList.map((c: any) => ({
           id: c.id,
           name: c.name,
           organizationId: c.organizationId,

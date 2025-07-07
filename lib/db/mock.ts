@@ -8,7 +8,6 @@ import {
   FinancialStatement, 
   FinancialLineItem, 
   MappingTemplate,
-  ParsingLog,
   ProcessingJob 
 } from "./actual-schema";
 
@@ -234,6 +233,7 @@ let mockLineItems: FinancialLineItem[] = [];
 let mockTemplates: MappingTemplate[] = [
   {
     id: "tmpl-1",
+    organizationId: "org-1",
     companyId: "company-1",
     templateName: "Estado de Resultados Estándar",
     statementType: "profit_loss",
@@ -260,6 +260,7 @@ let mockTemplates: MappingTemplate[] = [
   },
   {
     id: "tmpl-2",
+    organizationId: "org-1",
     companyId: "company-1",
     templateName: "Balance General Trimestral",
     statementType: "balance_sheet",
@@ -284,6 +285,7 @@ let mockTemplates: MappingTemplate[] = [
   },
   {
     id: "tmpl-3",
+    organizationId: "org-1",
     companyId: "company-2",
     templateName: "P&L Monthly Report",
     statementType: "profit_loss",
@@ -308,7 +310,8 @@ let mockTemplates: MappingTemplate[] = [
     updatedAt: new Date()
   }
 ];
-let mockLogs: ParsingLog[] = [];
+// ParsingLog type not exported from actual-schema
+// let mockLogs: ParsingLog[] = [];
 let mockJobs: ProcessingJob[] = [];
 
 // Mock database operations
@@ -358,11 +361,12 @@ export const mockDb = {
           mockTemplates.push(newTemplate);
           return Promise.resolve([newTemplate]);
         }
-        if (table === mockTables.parsingLogs || table._symbol === mockTables.parsingLogs._symbol) {
-          const newLog = { ...data, id: `log-${Date.now()}`, createdAt: new Date() };
-          mockLogs.push(newLog);
-          return Promise.resolve([newLog]);
-        }
+        // ParsingLog handling commented out - type not exported
+        // if (table === mockTables.parsingLogs || table._symbol === mockTables.parsingLogs._symbol) {
+        //   const newLog = { ...data, id: `log-${Date.now()}`, createdAt: new Date() };
+        //   mockLogs.push(newLog);
+        //   return Promise.resolve([newLog]);
+        // }
         if (table === mockTables.processingJobs || table._symbol === mockTables.processingJobs._symbol) {
           const newJob = { ...data, id: data.id || `job-${Date.now()}`, createdAt: new Date(), updatedAt: new Date() };
           mockJobs.push(newJob);
@@ -605,4 +609,4 @@ export const or = (...conditions: any[]) => ({ type: 'or', conditions });
 export const sql = (strings: TemplateStringsArray, ...values: any[]) => ({ type: 'sql', strings, values });
 
 // Export the mock data for direct access if needed
-export { mockOrganizations, mockUsers, mockCompanies, mockCompanyUsers, mockStatements, mockLineItems, mockTemplates, mockLogs, mockJobs };
+export { mockOrganizations, mockUsers, mockCompanies, mockCompanyUsers, mockStatements, mockLineItems, mockTemplates, mockJobs };

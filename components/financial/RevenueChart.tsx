@@ -46,7 +46,7 @@ export function RevenueChart({
   };
 
   const ChartComponent = type === 'line' ? LineChart : AreaChart;
-  const DataComponent = type === 'line' ? Line : Area;
+  const DataComponent: any = type === 'line' ? Line : Area;
 
   return (
     <div className="w-full">

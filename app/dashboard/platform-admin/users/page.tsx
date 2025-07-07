@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleContext';
@@ -36,7 +36,7 @@ interface User {
   createdAt: Date;
 }
 
-export default function UsersPage() {
+function UsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { locale } = useLocale();
@@ -361,5 +361,13 @@ export default function UsersPage() {
         </div>
       </AppLayout>
     </ProtectedRoute>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <UsersPageContent />
+    </Suspense>
   );
 }

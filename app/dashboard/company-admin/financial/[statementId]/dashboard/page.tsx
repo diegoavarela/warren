@@ -74,8 +74,8 @@ function FinancialDashboardPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Get company ID from session storage or user context
-        const companyId = sessionStorage.getItem('selectedCompanyId') || user?.selectedCompanyId;
+        // Get company ID from session storage
+        const companyId = sessionStorage.getItem('selectedCompanyId');
         
         if (!companyId) {
           setError('No se ha seleccionado una empresa');
@@ -119,7 +119,7 @@ function FinancialDashboardPage() {
     };
 
     fetchDashboardData();
-  }, [user?.selectedCompanyId, params.statementId]);
+  }, [params.statementId]);
 
   if (loading) {
     return (

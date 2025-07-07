@@ -6,7 +6,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { UserCircleIcon, BuildingOfficeIcon, EnvelopeIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { UserCircleIcon, BuildingOfficeIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 export default function ProfilePage() {
   const { user, organization } = useAuth();
@@ -46,15 +46,6 @@ export default function ProfilePage() {
                     <p className="text-gray-900 flex items-center gap-2">
                       <EnvelopeIcon className="w-4 h-4 text-gray-500" />
                       {user?.email}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {locale?.startsWith('es') ? 'Teléfono' : 'Phone'}
-                    </label>
-                    <p className="text-gray-900 flex items-center gap-2">
-                      <PhoneIcon className="w-4 h-4 text-gray-500" />
-                      {user?.phone || '-'}
                     </p>
                   </div>
                 </div>

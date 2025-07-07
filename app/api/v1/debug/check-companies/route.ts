@@ -32,11 +32,11 @@ export async function GET(request: NextRequest) {
         .from(organizations);
 
       // Create org lookup map
-      const orgMap = new Map(allOrgs.map(org => [org.id, org]));
+      const orgMap = new Map(allOrgs.map((org: any) => [org.id, org as typeof organizations.$inferSelect]));
 
       // Categorize companies
-      const userOrgCompanies = allCompanies.filter(c => c.organizationId === user.organizationId);
-      const otherOrgCompanies = allCompanies.filter(c => c.organizationId !== user.organizationId);
+      const userOrgCompanies = allCompanies.filter((c: any) => c.organizationId === user.organizationId);
+      const otherOrgCompanies = allCompanies.filter((c: any) => c.organizationId !== user.organizationId);
 
       // Check what the API is returning
       const apiResponse = await fetch(`${request.nextUrl.origin}/api/v1/companies`, {
@@ -61,13 +61,13 @@ export async function GET(request: NextRequest) {
           otherOrgCompanies: otherOrgCompanies.length,
           apiReturnsCount: apiData.data?.length || 0
         },
-        userOrganizationCompanies: userOrgCompanies.map(c => ({
+        userOrganizationCompanies: userOrgCompanies.map((c: any) => ({
           ...c,
-          organizationName: orgMap.get(c.organizationId)?.name || 'Unknown'
+          organizationName: (orgMap.get(c.organizationId) as any)?.name || 'Unknown'
         })),
-        otherOrganizationCompanies: otherOrgCompanies.map(c => ({
+        otherOrganizationCompanies: otherOrgCompanies.map((c: any) => ({
           ...c,
-          organizationName: orgMap.get(c.organizationId)?.name || 'Unknown'
+          organizationName: (orgMap.get(c.organizationId) as any)?.name || 'Unknown'
         })),
         apiReturnedCompanies: apiData.data?.map((c: any) => ({
           id: c.id,

@@ -14,6 +14,7 @@ import { useTranslation } from '@/lib/translations';
 interface Company {
   id: string;
   name: string;
+  organizationId: string;
   taxId?: string;
   industry?: string;
   isActive: boolean;

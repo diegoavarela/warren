@@ -536,7 +536,7 @@ CRITICAL RULES:
         const localResult = LocalAccountClassifier.classifyAccount(
           cls.accountName || '',
           undefined,
-          { preferSpecific: true }
+          { statementType: 'profit_loss' }
         );
         
         // Use local result if it's more specific

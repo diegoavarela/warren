@@ -245,7 +245,7 @@ export class LocalAccountClassifier {
       }
       
       // Check exclusions
-      const hasExclusion = pattern.excludeIfContains?.some(exclusion =>
+      const hasExclusion = (pattern as any).excludeIfContains?.some((exclusion: string) =>
         normalizedName.includes(exclusion.toLowerCase())
       ) || false;
       

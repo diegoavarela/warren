@@ -156,7 +156,7 @@ export function getCombinedCategories(
   // Get default categories for the statement type
   const defaultCategories = DEFAULT_FINANCIAL_CATEGORIES
     .filter(cat => cat.statementType === statementType)
-    .map(cat => ({ ...cat, isCustom: false, categoryType: cat.categoryType || 'account' }));
+    .map(cat => ({ ...cat, isCustom: false, categoryType: (cat.categoryType || 'account') as 'account' | 'section' | 'total' }));
 
   // Convert custom categories to the expected format
   const customCats: ExtendedFinancialCategory[] = customCategories
@@ -168,7 +168,7 @@ export function getCombinedCategories(
       isInflow: cat.isInflow,
       statementType: cat.statementType as any,
       isCustom: true,
-      categoryType: cat.categoryType || 'account',
+      categoryType: (cat.categoryType || 'account') as 'account' | 'section' | 'total',
       description: cat.description || undefined,
       parentCategory: cat.parentCategory || undefined,
       group: cat.parentCategory || 'Custom', // Use parent category as group or 'Custom'

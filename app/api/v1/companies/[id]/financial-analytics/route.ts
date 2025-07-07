@@ -81,7 +81,7 @@ export async function GET(
         .where(eq(financialLineItems.statementId, statement.id));
 
       // Process and decrypt line items
-      const processedItems: ProcessedLineItem[] = lineItems.map(item => {
+      const processedItems: ProcessedLineItem[] = lineItems.map((item: any) => {
         let decryptedName = item.accountName;
         try {
           if (item.accountName && item.accountName.includes(':')) {
@@ -146,7 +146,7 @@ export async function GET(
 
       // Debug logging
       console.log('Total line items:', processedItems.length);
-      console.log('Categories found:', [...new Set(processedItems.map(item => item.category))]);
+      console.log('Categories found:', Array.from(new Set(processedItems.map(item => item.category))));
       console.log('Sample items:', processedItems.slice(0, 5).map(item => ({
         name: item.accountName,
         category: item.category,
@@ -157,7 +157,7 @@ export async function GET(
         item.accountName.toLowerCase().includes('ingreso') ||
         item.accountName.toLowerCase().includes('venta')
       ));
-      console.log('Raw line items sample:', lineItems.slice(0, 2).map(item => ({
+      console.log('Raw line items sample:', lineItems.slice(0, 2).map((item: any) => ({
         accountName: item.accountName,
         category: item.category,
         amount: item.amount,
@@ -521,7 +521,7 @@ async function getProcessedLineItems(statementId: string): Promise<ProcessedLine
     .from(financialLineItems)
     .where(eq(financialLineItems.statementId, statementId));
     
-  return items.map(item => {
+  return items.map((item: any) => {
     let decryptedName = item.accountName;
     try {
       if (item.accountName && item.accountName.includes(':')) {

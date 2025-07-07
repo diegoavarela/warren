@@ -154,7 +154,7 @@ export function useTranslation(locale: string = 'en-US') {
     if (!key) return '';
     
     // Direct lookup in translations object
-    const translation = translations[lang][key];
+    const translation = (translations[lang] as any)[key];
     
     // If found, return it
     if (translation) {
@@ -162,7 +162,7 @@ export function useTranslation(locale: string = 'en-US') {
     }
     
     // Try fallback to English
-    const fallback = translations.en[key];
+    const fallback = (translations.en as any)[key];
     
     // Return fallback or key if nothing found
     return fallback || key;

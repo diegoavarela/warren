@@ -14,7 +14,7 @@ export async function GET() {
       success: true,
       message: 'Database connected successfully',
       userCount: userCount.length,
-      users: userCount.map(u => ({ email: u.email, role: u.role }))
+      users: userCount.map((u: any) => ({ email: u.email, role: u.role }))
     });
   } catch (error) {
     console.error('Database test error:', error);

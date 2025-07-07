@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
           .from(financialLineItems)
           .where(eq(financialLineItems.statementId, newStatement.id));
 
-        const decryptedItems = retrievedLineItems.map(item => {
+        const decryptedItems = retrievedLineItems.map((item: any) => {
           try {
             const decryptedName = decrypt(item.accountName);
             const decryptedMetadata = item.metadata ? decryptObject(item.metadata as any) : null;
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
           success: true,
           details: {
             itemsRetrieved: retrievedLineItems.length,
-            decryptedSuccessfully: decryptedItems.filter(i => i.accountName !== 'DECRYPTION_FAILED').length
+            decryptedSuccessfully: decryptedItems.filter((i: any) => i.accountName !== 'DECRYPTION_FAILED').length
           }
         };
 

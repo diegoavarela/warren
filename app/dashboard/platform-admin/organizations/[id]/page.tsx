@@ -239,15 +239,19 @@ export default function EditOrganizationPage() {
           {/* Success/Error Messages */}
           {success && (
             <Toast
-              message={success}
-              type="success"
+              id="success-toast"
+              title="Success"
+              description={success}
+              variant="success"
               onClose={() => setSuccess(null)}
             />
           )}
           {error && (
             <Toast
-              message={error}
-              type="error"
+              id="error-toast"
+              title="Error"
+              description={error}
+              variant="error"
               onClose={() => setError(null)}
             />
           )}

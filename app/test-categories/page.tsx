@@ -11,8 +11,8 @@ export default function TestCategories() {
   const [testResult, setTestResult] = useState<string>("");
   const { user } = useAuth();
   
-  // Get company ID from user context or hardcode for testing
-  const companyId = user?.currentCompanyId || "550e8400-e29b-41d4-a716-446655440000"; // Replace with actual company ID
+  // Get company ID from session storage or hardcode for testing
+  const companyId = typeof window !== 'undefined' ? sessionStorage.getItem('selectedCompanyId') || "550e8400-e29b-41d4-a716-446655440000" : "550e8400-e29b-41d4-a716-446655440000"; // Replace with actual company ID
   
   useEffect(() => {
     if (companyId) {

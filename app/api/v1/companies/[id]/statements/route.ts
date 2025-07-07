@@ -45,7 +45,7 @@ export async function GET(
 
       // Process statements and optionally include line items
       const processedStatements = await Promise.all(
-        statements.map(async (statement) => {
+        statements.map(async (statement: any) => {
           const result: any = {
             id: statement.id,
             companyId: statement.companyId,
@@ -68,7 +68,7 @@ export async function GET(
               .orderBy(financialLineItems.displayOrder);
 
             // Decrypt line items
-            result.lineItems = lineItems.map(item => {
+            result.lineItems = lineItems.map((item: any) => {
               // Decrypt account name if it's encrypted
               let decryptedAccountName = item.accountName;
               try {
@@ -111,12 +111,12 @@ export async function GET(
             result.summary = {
               totalLineItems: lineItems.length,
               totalRevenue: lineItems
-                .filter(item => item.category === 'revenue' || item.category === 'sales')
-                .reduce((sum, item) => sum + parseFloat(item.amount as any), 0),
+                .filter((item: any) => item.category === 'revenue' || item.category === 'sales')
+                .reduce((sum: any, item: any) => sum + parseFloat(item.amount as any), 0),
               totalExpenses: lineItems
-                .filter(item => item.category === 'expenses' || item.category === 'costs')
-                .reduce((sum, item) => sum + parseFloat(item.amount as any), 0),
-              hasEncryptedData: lineItems.some(item => item.accountName?.includes(':'))
+                .filter((item: any) => item.category === 'expenses' || item.category === 'costs')
+                .reduce((sum: any, item: any) => sum + parseFloat(item.amount as any), 0),
+              hasEncryptedData: lineItems.some((item: any) => item.accountName?.includes(':'))
             };
           }
 

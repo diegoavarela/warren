@@ -262,7 +262,7 @@ function AdvancedMapperContent() {
         // Use local classifier with value information
         const localResult = LocalAccountClassifier.classifyAccount(
           accountName,
-          firstPeriodValue,
+          firstPeriodValue !== null ? firstPeriodValue : undefined,
           { statementType: mapping.aiAnalysis?.statementType || 'profit_loss' }
         );
         category = localResult.suggestedCategory;
