@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
       // Search users (admins only)
       if ((type === 'all' || type === 'users') && 
-          (user.role === 'super_admin' || user.role === 'organization_admin')) {
+          (user.role === 'super_admin' || user.role === 'admin')) {
         const usersQuery = db
           .select({
             id: users.id,
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
           .limit(5);
 
         // If org admin, filter by organization
-        if (user.role === 'organization_admin') {
+        if (user.role === 'admin') {
           usersQuery.where(eq(users.organizationId, user.organizationId));
         }
 
