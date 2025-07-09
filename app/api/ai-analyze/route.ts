@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     try {
       const body = await req.json();
       const { 
-        action, // 'structure' | 'classify' | 'validate' | 'suggest'
+        action, // 'structure' | 'classify' | 'validate' | 'suggest' | 'complete'
         rawData,
         fileName,
         accounts,
@@ -38,6 +38,11 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (action) {
+      case 'complete':
+        // NEW: Unified analysis - structure + classification in one call
+        result = await financialAI.analyzeExcelComplete(rawData, fileName);
+        break;
+        
       case 'structure':
         result = await financialAI.analyzeExcelStructure(rawData, fileName);
         break;

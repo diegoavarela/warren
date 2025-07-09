@@ -59,11 +59,11 @@ export function TemplateSelector({
         const data = await response.json();
         setTemplates(data.data || []);
         
-        // Auto-select default template if exists
-        const defaultTemplate = data.data?.find((t: Template) => t.isDefault);
-        if (defaultTemplate) {
-          setSelectedTemplate(defaultTemplate.id);
-        }
+        // Don't auto-select to give users a clear choice
+        // const defaultTemplate = data.data?.find((t: Template) => t.isDefault);
+        // if (defaultTemplate) {
+        //   setSelectedTemplate(defaultTemplate.id);
+        // }
       }
     } catch (error) {
       console.error('Failed to fetch templates:', error);
@@ -72,13 +72,6 @@ export function TemplateSelector({
     }
   };
 
-  const handleApplyTemplate = async () => {
-    const template = templates.find(t => t.id === selectedTemplate);
-    if (!template) return;
-    
-    // Immediately call parent handler which will do the processing
-    onTemplateSelect(template);
-  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Nunca usado';
@@ -127,87 +120,79 @@ export function TemplateSelector({
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Seleccionar Plantilla de Mapeo</CardTitle>
-          <CardDescription>
-            Selecciona una plantilla para aplicar automáticamente el mapeo y continuar
-          </CardDescription>
-        </CardHeader>
-        <CardBody>
-          <div className="grid gap-3 mb-6">
-            {templates.map((template) => (
-              <div
-                key={template.id}
-                className={`
-                  border rounded-lg p-4 cursor-pointer transition-all
-                  ${selectedTemplate === template.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                  }
-                `}
-                onClick={() => setSelectedTemplate(template.id)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-gray-900">
-                        {template.templateName}
-                      </h4>
-                      {template.isDefault && (
-                        <CheckBadgeIcon className="w-5 h-5 text-blue-600" title="Plantilla predeterminada" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <DocumentDuplicateIcon className="w-4 h-4" />
-                        {template.statementType === 'profit_loss' && 'Estado de Resultados'}
-                        {template.statementType === 'balance_sheet' && 'Balance General'}
-                        {template.statementType === 'cash_flow' && 'Flujo de Efectivo'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <SparklesIcon className="w-4 h-4" />
-                        Usado {template.usageCount} {template.usageCount === 1 ? 'vez' : 'veces'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <ClockIcon className="w-4 h-4" />
-                        {formatDate(template.lastUsedAt)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <input
-                      type="radio"
-                      name="template"
-                      value={template.id}
-                      checked={selectedTemplate === template.id}
-                      onChange={() => setSelectedTemplate(template.id)}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                  </div>
+      <div className="grid gap-3">
+        {templates.map((template) => (
+          <div
+            key={template.id}
+            className={`
+              border rounded-lg p-4 cursor-pointer transition-all
+              ${selectedTemplate === template.id 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-200 hover:border-gray-300'
+              }
+            `}
+            onClick={() => {
+              if (selectedTemplate === template.id) {
+                // Deselect if clicking the same template
+                setSelectedTemplate(null);
+                onSkip(); // Notify parent that no template is selected
+              } else {
+                setSelectedTemplate(template.id);
+                const selected = templates.find(t => t.id === template.id);
+                if (selected) {
+                  onTemplateSelect(selected);
+                }
+              }
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="font-medium text-gray-900">
+                    {template.templateName}
+                  </h4>
+                  {template.isDefault && (
+                    <CheckBadgeIcon className="w-5 h-5 text-blue-600" title="Plantilla predeterminada" />
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <DocumentDuplicateIcon className="w-4 h-4" />
+                    {template.statementType === 'profit_loss' && 'Estado de Resultados'}
+                    {template.statementType === 'balance_sheet' && 'Balance General'}
+                    {template.statementType === 'cash_flow' && 'Flujo de Efectivo'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <SparklesIcon className="w-4 h-4" />
+                    Usado {template.usageCount} {template.usageCount === 1 ? 'vez' : 'veces'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <ClockIcon className="w-4 h-4" />
+                    {formatDate(template.lastUsedAt)}
+                  </span>
                 </div>
               </div>
-            ))}
+              <div className="ml-4">
+                <input
+                  type="radio"
+                  name="template"
+                  value={template.id}
+                  checked={selectedTemplate === template.id}
+                  onChange={() => {}}
+                  className="w-4 h-4 text-blue-600"
+                />
+              </div>
+            </div>
           </div>
-          
-          <div className="flex justify-between">
-            <Button
-              variant="ghost"
-              onClick={onSkip}
-            >
-              Mapear manualmente
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleApplyTemplate}
-              disabled={!selectedTemplate}
-              leftIcon={<DocumentDuplicateIcon className="w-4 h-4" />}
-            >
-              Usar plantilla y continuar
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
+        ))}
+      </div>
+      
+      {selectedTemplate && (
+        <div className="mt-3 text-sm text-gray-600 flex items-center">
+          <CheckBadgeIcon className="w-4 h-4 text-green-600 mr-1" />
+          Plantilla seleccionada. Haz clic nuevamente para deseleccionar.
+        </div>
+      )}
     </div>
   );
 }

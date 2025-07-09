@@ -8,7 +8,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { ROLES } from '@/lib/auth/rbac';
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Building2, Users, Plus, Settings, Trash2 } from 'lucide-react';
+import { Building2, Users, Plus, Settings, Trash2, Search } from 'lucide-react';
 import { useTranslation } from '@/lib/translations';
 
 interface Company {
@@ -29,6 +29,7 @@ function OrgAdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchCompanies();
@@ -95,78 +96,57 @@ function OrgAdminDashboard() {
     router.push('/dashboard/company-admin');
   };
 
+  // Filter companies based on search term
+  const filteredCompanies = companies.filter(company => 
+    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.taxId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.industry?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <AppLayout showFooter={true}>
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Your Organization</h2>
-                <h1 className="text-3xl font-bold text-gray-900 mt-1">
+      <div className="max-w-6xl mx-auto p-4">
+        {/* Compact Header */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center space-x-4">
+                <h1 className="text-2xl font-bold text-gray-900">
                   {organization?.name || 'Loading...'}
                 </h1>
-                <p className="text-gray-600 mt-2">
-                  Welcome back, {user?.firstName}! You manage this organization and its companies.
-                </p>
+                <span className="text-sm text-gray-500 font-mono">
+                  ID: {organization?.id?.slice(0, 8)}...
+                </span>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Organization ID</p>
-                <p className="text-sm font-mono text-gray-700">{organization?.id?.slice(0, 8)}...</p>
-              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                Welcome back, {user?.firstName}! You manage this organization and its companies.
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs text-gray-500 uppercase">Your Role</span>
+              <p className="text-sm font-medium text-gray-900">Organization Admin</p>
+              <p className="text-xs text-gray-500">{organization?.locale || 'en-US'} • {organization?.baseCurrency || 'USD'}</p>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardBody>
-              <div className="text-2xl font-bold">{companies.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Active companies in your organization
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Organization Settings</CardTitle>
-              <Settings className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardBody>
-              <div className="text-lg font-semibold">{organization?.locale || 'en-US'}</div>
-              <p className="text-xs text-muted-foreground">
-                Default Language & Currency: {organization?.baseCurrency || 'USD'}
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Your Role</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardBody>
-              <div className="text-2xl font-bold">Organization Admin</div>
-              <p className="text-xs text-muted-foreground">
-                Full access to manage companies
-              </p>
-            </CardBody>
-          </Card>
-        </div>
-
+        {/* Companies Section */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Companies</CardTitle>
-                <CardDescription>
-                  Manage companies within your organization
-                </CardDescription>
+              <div className="flex items-center space-x-4">
+                <CardTitle>Companies ({companies.length})</CardTitle>
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Search companies..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
               <Button variant="primary" onClick={handleCreateCompany}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -174,7 +154,7 @@ function OrgAdminDashboard() {
               </Button>
             </div>
           </CardHeader>
-          <CardBody>
+          <CardBody className="p-0">
             {loading ? (
               <div className="text-center py-8">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -193,37 +173,55 @@ function OrgAdminDashboard() {
                 <p className="mt-2 text-gray-600">No companies yet</p>
                 <p className="text-sm text-gray-500">Create your first company to get started</p>
               </div>
+            ) : filteredCompanies.length === 0 ? (
+              <div className="text-center py-8">
+                <Search className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-2 text-gray-600">No companies found</p>
+                <p className="text-sm text-gray-500">Try a different search term</p>
+              </div>
             ) : (
-              <div className="grid gap-4">
-                {companies.map((company) => (
+              <div className="divide-y divide-gray-200">
+                {filteredCompanies.map((company) => (
                   <div
                     key={company.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between group"
                     onClick={() => handleSelectCompany(company.id)}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Building2 className="w-6 h-6 text-blue-600" />
+                      </div>
                       <div>
-                        <h3 className="font-semibold">{company.name}</h3>
-                        <p className="text-sm text-gray-600">
-                          {company.taxId && `Tax ID: ${company.taxId} • `}
-                          {company.industry || 'No industry specified'}
+                        <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                          {company.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Tax ID: {company.taxId || 'ABC'} • {company.industry || 'Tecnología'}
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="secondary" size="sm">
-                          Manage
-                        </Button>
-                        <Button 
-                          variant="danger" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCompany(company.id, company.name);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectCompany(company.id);
+                        }}
+                      >
+                        Manage
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCompany(company.id, company.name);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -231,13 +229,6 @@ function OrgAdminDashboard() {
             )}
           </CardBody>
         </Card>
-
-        <div className="mt-8 text-center text-sm text-gray-600">
-          <p>
-            As an organization admin, you can create and manage companies, 
-            but you need to be assigned to a specific company to access its data.
-          </p>
-        </div>
       </div>
     </AppLayout>
   );

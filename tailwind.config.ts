@@ -73,6 +73,7 @@ const config: Config = {
         'fade-in': 'fadeIn 0.2s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-slow': 'pulse 3s infinite',
+        'dialog-in': 'dialogIn 0.2s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -82,6 +83,10 @@ const config: Config = {
         slideUp: {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        dialogIn: {
+          '0%': { opacity: '0', transform: 'translate(-50%, -48%) scale(0.96)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
         },
       },
     },

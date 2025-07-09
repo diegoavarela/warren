@@ -98,6 +98,7 @@ export function MatrixExcelViewerV2({
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [showForceButton, setShowForceButton] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<'ai' | 'manual'>('ai');
   const [aiStarted, setAiStarted] = useState(false); // Control auto-start
   
   // Manual override state
@@ -110,9 +111,34 @@ export function MatrixExcelViewerV2({
     return excelMetadata?.data || rawData;
   }, [rawData, excelMetadata]);
 
+  // Function to check if a row has any meaningful data
+  const isRowEmpty = (row: any[], rowIndex: number) => {
+    // Don't filter header rows
+    if (rowIndex === 0) return false;
+    
+    // Check if all cells are empty, null, undefined, or just whitespace
+    return row.every(cell => {
+      if (cell === null || cell === undefined) return true;
+      const cellStr = String(cell).trim();
+      return cellStr === '' || cellStr === '-' || cellStr === '0' || cellStr === '0.00';
+    });
+  };
+
+  // Create array of row indices for non-empty rows when showing all rows
+  const visibleRowIndices = useMemo(() => {
+    if (!showAllRows) {
+      return Array.from({ length: Math.min(20, displayData.length) }, (_, i) => i);
+    }
+    
+    return displayData
+      .map((row, index) => ({ row, index }))
+      .filter(({ row, index }) => !isRowEmpty(row, index))
+      .map(({ index }) => index);
+  }, [displayData, showAllRows]);
+
   const maxRows = displayData.length;
   const maxCols = Math.max(...displayData.map(row => row.length));
-  const visibleRows = showAllRows ? maxRows : Math.min(20, maxRows);
+  const visibleRows = visibleRowIndices.length;
 
   // AI Analysis Effect - removed auto-start
   useEffect(() => {
@@ -130,38 +156,126 @@ export function MatrixExcelViewerV2({
     }
   }, [conceptColumns]);
 
-  // AI Analysis Functions
-  const performAIAnalysis = async () => {
+  // Auto-detect data range when entering data step
+  useEffect(() => {
+    if (mappingStep === 'data' && conceptColumns.length > 0 && dataRange.startRow === -1) {
+      // Auto-detect data range immediately when entering this step
+      const timer = setTimeout(() => {
+        detectDataRange();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [mappingStep]); // Only depend on mappingStep to ensure it runs when entering the step
+
+  // AI Analysis Functions - UNIFIED VERSION WITH CACHING
+  const performCompleteAIAnalysis = async () => {
+    // Generate data fingerprint for caching
+    const dataFingerprint = JSON.stringify({
+      dataHash: JSON.stringify(displayData.slice(0, 20)), // Use first 20 rows for fingerprint
+      dataLength: displayData.length,
+      columnCount: displayData[0]?.length || 0
+    });
+    
+    // Check cache first
+    const cacheKey = `aiAnalysisComplete_${btoa(dataFingerprint).slice(0, 32)}`;
+    const cachedResult = sessionStorage.getItem(cacheKey);
+    
+    if (cachedResult) {
+      try {
+        const parsed = JSON.parse(cachedResult);
+        console.log('🎯 Using cached AI analysis results - NO API CALL NEEDED!');
+        
+        setProgressPercentage(10);
+        setAiProgress('📦 Cargando resultados desde caché...');
+        
+        // Apply cached results
+        const { structure, classifications, confidence, processingTime } = parsed;
+        setAiAnalysis(structure);
+        setAccountClassifications(classifications);
+        
+        // Apply structure settings
+        if (structure.accountColumns.nameColumn !== undefined) {
+          setConceptColumns([{
+            columnIndex: structure.accountColumns.nameColumn,
+            columnType: 'account_name' as const
+          }]);
+        }
+        
+        if (structure.periodColumns.length > 0) {
+          setPeriodColumns(structure.periodColumns.map((pc: any) => ({
+            columnIndex: pc.columnIndex,
+            periodLabel: pc.periodLabel,
+            periodType: pc.periodType
+          })));
+        }
+        
+        if (structure.dataStartRow !== undefined) {
+          setDataRange({
+            startRow: structure.dataStartRow,
+            endRow: structure.dataEndRow,
+            startCol: 0,
+            endCol: displayData[0]?.length - 1 || 0
+          });
+        }
+        
+        if (structure.currency) {
+          const currencyMappings: Record<string, string> = {
+            'arg pesos': 'ARS', 'ars': 'ARS', 'mxn': 'MXN', 'usd': 'USD', 'cop': 'COP'
+          };
+          const mappedCurrency = currencyMappings[structure.currency.toLowerCase()] || structure.currency;
+          if (LATAM_CURRENCIES.some(c => c.code === mappedCurrency)) {
+            setSelectedCurrency(mappedCurrency);
+          }
+        }
+        
+        setProgressPercentage(100);
+        setAiProgress(`✅ Caché utilizado: ${classifications.length} clasificaciones aplicadas instantáneamente`);
+        setAnalysisComplete(true);
+        setAiLoading(false);
+        setClassificationLoading(false);
+        return;
+      } catch (e) {
+        console.log('Cache corrupted, proceeding with fresh analysis');
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
+    
+    // No cache or corrupted cache - proceed with fresh analysis
     setAiLoading(true);
     setAiError(null);
     setAnalysisComplete(false);
+    setClassificationLoading(true);
     setProgressPercentage(10);
-    setAiProgress('Analizando estructura del documento...');
+    setAiProgress('🚀 Iniciando análisis inteligente unificado... Estructura + Clasificación en una sola llamada');
     
     let structureResult: any = null;
     
     try {
-      const structureResponse = await fetch('/api/ai-analyze', {
+      // NEW: Single unified API call for complete analysis
+      const completeResponse = await fetch('/api/ai-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'structure',
+          action: 'complete', // NEW: Complete analysis action
           rawData: displayData,
           fileName: 'excel-file'
         })
       });
 
-      structureResult = await structureResponse.json();
+      structureResult = await completeResponse.json();
       setProgressPercentage(30);
+      setAiProgress('📊 Análisis completo recibido. Procesando estructura y clasificaciones...');
       
       if (structureResult.success) {
-        setAiAnalysis(structureResult.data);
+        const { structure, classifications, confidence, processingTime } = structureResult.data;
+        
+        // Set structure analysis results
+        setAiAnalysis(structure);
         setProgressPercentage(50);
-        setAiProgress('Identificando columnas y períodos...');
+        setAiProgress(`💰 ${structure.statementType === 'profit_loss' ? 'Estado de P&L' : structure.statementType === 'balance_sheet' ? 'Balance General' : 'Flujo de Caja'} detectado. Aplicando ${classifications.length} clasificaciones...`);
         
         // Auto-set detected currency if valid
-        if (structureResult.data.currency) {
-          // Map common currency names to codes
+        if (structure.currency) {
           const currencyMappings: Record<string, string> = {
             'arg pesos': 'ARS',
             'argentine pesos': 'ARS',
@@ -176,21 +290,20 @@ export function MatrixExcelViewerV2({
             'eur': 'EUR'
           };
           
-          const detectedCurrency = structureResult.data.currency.toLowerCase();
-          const mappedCurrency = currencyMappings[detectedCurrency] || structureResult.data.currency;
+          const detectedCurrency = structure.currency.toLowerCase();
+          const mappedCurrency = currencyMappings[detectedCurrency] || structure.currency;
           
           if (LATAM_CURRENCIES.some(c => c.code === mappedCurrency)) {
             setSelectedCurrency(mappedCurrency);
           }
         }
         
-        // Apply AI suggestions if available
+        // Apply AI suggestions for structure
         const conceptCols = [];
         let nameColIndex = -1;
         
-        // Look for account name column
-        if (structureResult.data.accountColumns.nameColumn !== undefined) {
-          const suggestedNameCol = structureResult.data.accountColumns.nameColumn;
+        if (structure.accountColumns.nameColumn !== undefined) {
+          const suggestedNameCol = structure.accountColumns.nameColumn;
           const headers = displayData[0] || [];
           nameColIndex = suggestedNameCol;
           
@@ -204,7 +317,6 @@ export function MatrixExcelViewerV2({
             }
           }
           
-          // If no description column found, then look for cuenta/account/concepto
           if (nameColIndex === suggestedNameCol) {
             for (let i = 0; i < headers.length; i++) {
               const headerValue = String(headers[i] || '').toLowerCase();
@@ -232,65 +344,84 @@ export function MatrixExcelViewerV2({
           setConceptColumns(uniqueConceptCols);
         }
         
-        if (structureResult.data.periodColumns.length > 0) {
-          setPeriodColumns(structureResult.data.periodColumns.map((pc: any) => ({
+        if (structure.periodColumns.length > 0) {
+          setPeriodColumns(structure.periodColumns.map((pc: any) => ({
             columnIndex: pc.columnIndex,
             periodLabel: pc.periodLabel,
             periodType: pc.periodType
           })));
           
-          if (structureResult.data.headerRows.length > 0) {
-            setPeriodHeaderRow(structureResult.data.headerRows[0]);
+          if (structure.headerRows.length > 0) {
+            setPeriodHeaderRow(structure.headerRows[0]);
           }
         }
         
-        if (structureResult.data.dataStartRow !== undefined) {
+        if (structure.dataStartRow !== undefined) {
           setDataRange({
-            startRow: structureResult.data.dataStartRow,
-            endRow: structureResult.data.dataEndRow,
+            startRow: structure.dataStartRow,
+            endRow: structure.dataEndRow,
             startCol: 0,
             endCol: maxCols - 1
           });
         }
         
-        setAiProgress('Análisis estructural completado');
-        setProgressPercentage(70);
-        setAiLoading(false);
+        setProgressPercentage(75);
+        setAiProgress(`🎨 Aplicando ${classifications.length} clasificaciones de cuentas...`);
         
-        // Check if we can do classification
-        if (conceptCols.length > 0 && structureResult.data.dataStartRow !== undefined) {
-          console.log('Starting account classification with', conceptCols.length, 'concept columns');
-          // Don't show classification loading if we won't have any accounts
-          const hasAccountNameColumn = conceptCols.some(cc => cc.columnType === 'account_name');
-          if (!hasAccountNameColumn) {
-            console.log('No account name column found, skipping classification');
-            setAnalysisComplete(true);
-            setProgressPercentage(100);
-          } else {
-            // Start classification
-            setClassificationLoading(true);
-            setProgressPercentage(75);
-            setTimeout(() => performAccountClassification(), 100);
-          }
-        } else {
-          console.log('No concept columns or data range, skipping classification');
-          setAnalysisComplete(true);
-          setProgressPercentage(100);
+        // Apply account classifications directly (no second API call needed!)
+        if (classifications && classifications.length > 0) {
+          setAccountClassifications(classifications);
+          setProgressPercentage(90);
+          setAiProgress(`✅ Análisis completo: ${conceptCols.length} columnas, ${structure.periodColumns?.length || 0} períodos, ${classifications.length} cuentas clasificadas`);
         }
+        
+        setProgressPercentage(100);
+        setAiProgress(`🚀 Análisis unificado completado en ${processingTime}ms - Confianza: ${confidence}%`);
+        setAnalysisComplete(true);
+        setAiLoading(false);
+        setClassificationLoading(false);
+        
+        // Cache the results for future use
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            structure,
+            classifications,
+            confidence,
+            processingTime,
+            timestamp: Date.now()
+          }));
+          console.log('💾 AI analysis results cached for future use');
+        } catch (e) {
+          console.warn('Failed to cache results:', e);
+        }
+        
+        console.log(`✅ Unified AI Analysis completed:
+          - Processing time: ${processingTime}ms  
+          - Document type: ${structure.statementType}
+          - Concept columns: ${conceptCols.length}
+          - Period columns: ${structure.periodColumns?.length || 0}
+          - Account classifications: ${classifications.length}
+          - Overall confidence: ${confidence}%
+          - Results cached: ✅
+          - NO REDUNDANT API CALLS! 🎉`);
+        
       } else {
         setAiError(structureResult.error || "El análisis automático no está disponible en este momento.");
         setAiLoading(false);
+        setClassificationLoading(false);
       }
     } catch (error) {
-      console.error('AI analysis error:', error);
+      console.error('Complete AI analysis error:', error);
       setAiError("No se pudo conectar con el servicio de IA. Continúa con el modo manual.");
       setAiLoading(false);
-    } finally {
-      // Only set loading to false if we're not continuing with classification
-      if (!structureResult?.success || conceptColumns.length === 0) {
-        setAiLoading(false);
-      }
+      setClassificationLoading(false);
     }
+  };
+
+  // Legacy function for backward compatibility - now delegates to unified analysis
+  const performAIAnalysis = async () => {
+    console.log('⚠️ Using legacy performAIAnalysis - delegating to unified analysis');
+    await performCompleteAIAnalysis();
   };
 
   const performAccountClassification = async () => {
@@ -313,7 +444,7 @@ export function MatrixExcelViewerV2({
     }
     
     setClassificationLoading(true);
-    setAiProgress('Detectando filas de totales y subtotales...');
+    setAiProgress('🎨 Detectando filas de totales y subtotales...');
     setProgressPercentage(78);
     
     // Add a timeout to prevent infinite loading
@@ -368,7 +499,7 @@ export function MatrixExcelViewerV2({
       
       const totalRowIndices = new Set(detectedTotals.map(t => t.rowIndex));
       
-      setAiProgress('Extrayendo cuentas para clasificación...');
+      setAiProgress('📝 Extrayendo cuentas individuales para clasificación...');
       setProgressPercentage(82);
       
       // Extract account names and values from the mapped data, excluding total rows and section headers
@@ -415,7 +546,7 @@ export function MatrixExcelViewerV2({
       }
       
       if (accounts.length === 0) {
-        setAiProgress('No se encontraron cuentas para clasificar - Continuando con mapeo manual');
+        setAiProgress('⚠️ No se encontraron cuentas para clasificar - Continuando con mapeo manual');
         setAnalysisComplete(true);
         setProgressPercentage(100);
         clearTimeout(timeoutId);
@@ -426,22 +557,33 @@ export function MatrixExcelViewerV2({
         return;
       }
       
-      setAiProgress(`Clasificando ${accounts.length} cuentas con inteligencia artificial...`);
+      setAiProgress(`🤖 Clasificando ${accounts.length} cuentas con inteligencia artificial...`);
       setProgressPercentage(85);
       
       // Add a small delay to ensure the UI updates
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setAiProgress('Enviando datos a OpenAI GPT-3.5...');
+      setAiProgress('🚀 Enviando datos a OpenAI GPT-3.5 para análisis semántico...');
       setProgressPercentage(88);
       
+      // Add surrounding context for better classification
+      const accountsWithContext = accounts.map(account => {
+        const rowIdx = account.rowIndex;
+        const context = {
+          ...account,
+          previousRows: displayData.slice(Math.max(0, rowIdx - 3), rowIdx).map(row => row[accountColumnIndex] || ''),
+          nextRows: displayData.slice(rowIdx + 1, Math.min(displayData.length, rowIdx + 4)).map(row => row[accountColumnIndex] || '')
+        };
+        return context;
+      });
+
       const classificationResponse = await fetch('/api/ai-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'classify',
           rawData: displayData,
-          accounts,
+          accounts: accountsWithContext,
           documentContext: {
             statementType: aiAnalysis.statementType,
             currency: aiAnalysis.currency
@@ -449,7 +591,7 @@ export function MatrixExcelViewerV2({
         })
       });
 
-      setAiProgress('Procesando respuesta de IA...');
+      setAiProgress('⚙️ Procesando respuesta de IA y aplicando clasificaciones...');
       setProgressPercentage(92);
       
       const classificationResult = await classificationResponse.json();
@@ -462,7 +604,7 @@ export function MatrixExcelViewerV2({
           return acc;
         }, {});
         const categorySummary = Object.entries(categories).slice(0, 3).map(([cat, count]) => `${count} ${cat}`).join(', ');
-        setAiProgress(`¡Clasificación completada! Detectadas: ${categorySummary}${Object.keys(categories).length > 3 ? '...' : ''}`);
+        setAiProgress(`✅ ¡Clasificación completada! Detectadas: ${categorySummary}${Object.keys(categories).length > 3 ? ' y más...' : ''}`);
       } else {
         // If classification failed, just log it but don't show error to user
         console.log('AI classification not available, using local detection');
@@ -702,6 +844,15 @@ export function MatrixExcelViewerV2({
     setEditingClassification(null);
   };
 
+  const getColumnName = (colIndex: number): string => {
+    let name = '';
+    while (colIndex >= 0) {
+      name = String.fromCharCode(65 + (colIndex % 26)) + name;
+      colIndex = Math.floor(colIndex / 26) - 1;
+    }
+    return name;
+  };
+
   const canProceedToNext = () => {
     switch (mappingStep) {
       case 'ai_analysis':
@@ -737,6 +888,34 @@ export function MatrixExcelViewerV2({
   };
 
   const handleNext = () => {
+    // Handle AI analysis step based on selected mode
+    if (mappingStep === 'ai_analysis' && !aiStarted) {
+      if (analysisMode === 'ai') {
+        // Start AI analysis
+        setAiStarted(true);
+        performCompleteAIAnalysis();
+      } else {
+        // Skip AI and go to manual mapping
+        setAiAnalysis({
+          statementType: 'profit_loss',
+          confidence: 0,
+          headerRows: [0],
+          dataStartRow: 1,
+          dataEndRow: displayData.length - 1,
+          totalRows: [],
+          subtotalRows: [],
+          accountColumns: { confidence: 0 },
+          periodColumns: [],
+          currency: selectedCurrency,
+          reasoning: 'Mapeo manual - IA omitida'
+        });
+        setAnalysisComplete(true);
+        setAiStarted(true);
+        setMappingStep('concepts');
+      }
+      return;
+    }
+    
     // Hide classification loading when moving away from AI analysis step
     if (mappingStep === 'ai_analysis' && classificationLoading) {
       setClassificationLoading(false);
@@ -797,56 +976,63 @@ export function MatrixExcelViewerV2({
             <div className="min-h-[200px] flex flex-col">
               {!aiStarted && !aiAnalysis && !aiLoading && !classificationLoading ? (
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center space-y-6 max-w-md mx-auto">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full">
-                      <SparklesIcon className="w-10 h-10 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <div className="space-y-4 max-w-md mx-auto">
+                    <div className="text-center mb-4">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-3">
+                        <SparklesIcon className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
                         Análisis Inteligente con IA
                       </h3>
-                      <p className="text-gray-600 mb-6">
-                        La IA puede analizar automáticamente tu documento y detectar la estructura, categorías y moneda. 
-                        También puedes omitir este paso y hacer el mapeo manualmente.
+                      <p className="text-sm text-gray-600 mt-1">
+                        Selecciona cómo deseas procesar tu documento
                       </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        onClick={() => {
-                          setAiStarted(true);
-                          performAIAnalysis();
-                        }}
-                        leftIcon={<SparklesIcon className="w-5 h-5" />}
-                      >
-                        Iniciar Análisis IA
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="lg"
-                        onClick={() => {
-                          // Skip AI entirely
-                          setAiAnalysis({
-                            statementType: 'profit_loss',
-                            confidence: 0,
-                            headerRows: [0],
-                            dataStartRow: 1,
-                            dataEndRow: displayData.length - 1,
-                            totalRows: [],
-                            subtotalRows: [],
-                            accountColumns: { confidence: 0 },
-                            periodColumns: [],
-                            currency: selectedCurrency,
-                            reasoning: 'Mapeo manual - IA omitida'
-                          });
-                          setAnalysisComplete(true);
-                          setAiStarted(true);
-                          setMappingStep('concepts');
-                        }}
-                      >
-                        Mapeo Manual
-                      </Button>
+                    
+                    <div className="space-y-3">
+                      <label className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        analysisMode === 'ai' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="analysisMode"
+                          value="ai"
+                          checked={analysisMode === 'ai'}
+                          onChange={() => setAnalysisMode('ai')}
+                          className="mt-1 text-blue-600"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 flex items-center space-x-2">
+                            <SparklesIcon className="w-4 h-4 text-blue-600" />
+                            <span>Usar Análisis IA</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            La IA detectará automáticamente la estructura, categorías y moneda
+                          </p>
+                        </div>
+                      </label>
+                      
+                      <label className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        analysisMode === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="analysisMode"
+                          value="manual"
+                          checked={analysisMode === 'manual'}
+                          onChange={() => setAnalysisMode('manual')}
+                          className="mt-1 text-blue-600"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 flex items-center space-x-2">
+                            <TableCellsIcon className="w-4 h-4 text-gray-600" />
+                            <span>Mapeo Manual</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Configurar manualmente la estructura del documento
+                          </p>
+                        </div>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -903,7 +1089,7 @@ export function MatrixExcelViewerV2({
                             }}
                             className="mt-4"
                           >
-                            Continuar al Mapeo →
+                            Siguiente →
                           </Button>
                         </>
                       ) : (
@@ -997,7 +1183,7 @@ export function MatrixExcelViewerV2({
                               Analizando...
                             </>
                           ) : analysisComplete || accountClassifications.length > 0 ? (
-                            'Continuar →'
+                            'Siguiente →'
                           ) : (
                             'Siguiente →'
                           )}
@@ -1065,7 +1251,7 @@ export function MatrixExcelViewerV2({
                             Analizando...
                           </>
                         ) : analysisComplete || accountClassifications.length > 0 ? (
-                          'Continuar →'
+                          'Siguiente →'
                         ) : (
                           'Siguiente →'
                         )}
@@ -1196,16 +1382,6 @@ export function MatrixExcelViewerV2({
                 </Button>
 
                 <div className="flex items-center space-x-3">
-                  {mappingStep === 'data' && (
-                    <Button
-                      variant="outline"
-                      onClick={detectDataRange}
-                      leftIcon={<ArrowsPointingOutIcon className="w-4 h-4" />}
-                    >
-                      Auto-detectar
-                    </Button>
-                  )}
-                  
                   {mappingStep === 'account_review' ? (
                     <Button
                       variant="primary"
@@ -1235,6 +1411,79 @@ export function MatrixExcelViewerV2({
                   )}
                 </div>
               </div>
+
+              {/* Data Range Display for Data Step */}
+              {mappingStep === 'data' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-blue-900 flex items-center">
+                      <DocumentTextIcon className="w-4 h-4 mr-2" />
+                      Rango de datos detectado
+                    </h4>
+                    {dataRange.startRow !== -1 && (
+                      <button
+                        onClick={detectDataRange}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center"
+                      >
+                        <ArrowsPointingOutIcon className="w-3 h-3 mr-1" />
+                        Re-detectar
+                      </button>
+                    )}
+                  </div>
+                  
+                  {dataRange.startRow === -1 ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-sm text-blue-700">Detectando rango de datos...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-gray-700">Fila inicial:</label>
+                          <input
+                            type="number"
+                            value={dataRange.startRow + 1}
+                            onChange={(e) => {
+                              const newRow = parseInt(e.target.value) - 1;
+                              if (!isNaN(newRow) && newRow >= 0) {
+                                setDataRange(prev => ({ ...prev, startRow: newRow }));
+                              }
+                            }}
+                            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            min="1"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-gray-700">Fila final:</label>
+                          <input
+                            type="number"
+                            value={dataRange.endRow + 1}
+                            onChange={(e) => {
+                              const newRow = parseInt(e.target.value) - 1;
+                              if (!isNaN(newRow) && newRow >= dataRange.startRow) {
+                                setDataRange(prev => ({ ...prev, endRow: newRow }));
+                              }
+                            }}
+                            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            min={dataRange.startRow + 1}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <p className="mb-1">
+                          <span className="font-medium">Columnas:</span> {getColumnName(dataRange.startCol)} - {getColumnName(dataRange.endCol)}
+                        </p>
+                        <p>
+                          <span className="font-medium">Total filas:</span> {dataRange.endRow - dataRange.startRow + 1}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="overflow-x-auto overflow-y-visible">
                 <table className="w-full">
@@ -1326,20 +1575,21 @@ export function MatrixExcelViewerV2({
                 </thead>
                 
                 <tbody>
-                  {displayData.slice(0, visibleRows).map((row, rowIndex) => {
+                  {visibleRowIndices.map((originalRowIndex) => {
+                    const row = displayData[originalRowIndex];
                     // Check manual override first, then AI detection
-                    const manualType = manualRowTypes[rowIndex];
-                    const totalRow = detectedTotalRows.find(t => t.rowIndex === rowIndex);
+                    const manualType = manualRowTypes[originalRowIndex];
+                    const totalRow = detectedTotalRows.find(t => t.rowIndex === originalRowIndex);
                     const isTotal = manualType === 'total' || (!manualType && !!totalRow && totalRow.totalType !== 'section_header');
                     const isSectionHeader = manualType === 'section_header' || (!manualType && totalRow?.totalType === 'section_header');
                     const isManuallySet = !!manualType;
                     
                     return (
                       <tr 
-                        key={rowIndex}
+                        key={originalRowIndex}
                         className={`
                           ${isSectionHeader ? 'bg-blue-50 text-blue-900 border-y border-blue-200' : isTotal ? 'bg-gray-100' : 'hover:bg-gray-50'}
-                          ${rowIndex === periodHeaderRow ? 'ring-2 ring-blue-500' : ''}
+                          ${originalRowIndex === periodHeaderRow ? 'ring-2 ring-blue-500' : ''}
                         `}
                       >
                         <td className={`px-3 py-2 text-sm font-mono sticky left-0 z-10 border-r ${
@@ -1350,7 +1600,7 @@ export function MatrixExcelViewerV2({
                             : 'bg-white text-gray-500 border-gray-200'
                         }`}>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs">{rowIndex + 1}</span>
+                            <span className="text-xs">{originalRowIndex + 1}</span>
                             {mappingStep === 'account_review' && (
                               <span className="text-base" title={
                                 isSectionHeader ? 'Sección' : isTotal ? 'Total' : 'Cuenta'
@@ -1361,10 +1611,10 @@ export function MatrixExcelViewerV2({
                             {mappingStep === 'periods' && !isSectionHeader && (
                               <Button
                                 size="sm"
-                                variant={rowIndex === periodHeaderRow ? 'primary' : 'secondary'}
-                                onClick={() => setPeriodHeaderRow(rowIndex)}
+                                variant={originalRowIndex === periodHeaderRow ? 'primary' : 'secondary'}
+                                onClick={() => setPeriodHeaderRow(originalRowIndex)}
                               >
-                                {rowIndex === periodHeaderRow ? '✓' : 'H'}
+                                {originalRowIndex === periodHeaderRow ? '✓' : 'H'}
                               </Button>
                             )}
                           </div>
@@ -1377,7 +1627,7 @@ export function MatrixExcelViewerV2({
                           return (
                             <td 
                               key={`concept-${cc.columnIndex}`}
-                              onClick={() => !isSectionHeader && setSelectedCell({row: rowIndex, col: cc.columnIndex})}
+                              onClick={() => !isSectionHeader && setSelectedCell({row: originalRowIndex, col: cc.columnIndex})}
                               className={`px-3 py-3 min-w-[250px] text-sm ${
                                 isSectionHeader ? 'font-bold text-blue-900 uppercase' : isTotal ? 'font-bold' : ''
                               }`}
@@ -1431,6 +1681,17 @@ export function MatrixExcelViewerV2({
                                       <span className="text-xs text-gray-500">
                                         {classification.confidence}%
                                       </span>
+                                      {/* Validation indicators */}
+                                      {classification.requiresReview && (
+                                        <span className="text-amber-600 text-xs" title="Requires manual review">
+                                          ⚠️
+                                        </span>
+                                      )}
+                                      {classification.validationCorrections && classification.validationCorrections > 0 && (
+                                        <span className="text-xs text-orange-600" title={`${classification.validationCorrections} validation corrections applied`}>
+                                          ({classification.validationCorrections})
+                                        </span>
+                                      )}
                                     </div>
                                   ) : (
                                     <button
@@ -1471,7 +1732,7 @@ export function MatrixExcelViewerV2({
                                       'account'
                                     }
                                     accountName={accountName}
-                                    onTypeChange={(type) => handleManualRowTypeChange(rowIndex, type as RowType)}
+                                    onTypeChange={(type) => handleManualRowTypeChange(originalRowIndex, type as RowType)}
                                     isManuallySet={isManuallySet}
                                   />
                                 </div>
@@ -1490,13 +1751,13 @@ export function MatrixExcelViewerV2({
                             return (
                               <td 
                                 key={`data-${colIndex}`}
-                                onClick={() => !isSectionHeader && setSelectedCell({row: rowIndex, col: colIndex})}
+                                onClick={() => !isSectionHeader && setSelectedCell({row: originalRowIndex, col: colIndex})}
                                 className={
                                   isSectionHeader ? 
                                     "px-3 py-2 bg-blue-50 text-blue-400 text-center" : 
                                   isTotal ? 
                                     "px-3 py-2 bg-gray-100 font-semibold border-y border-gray-300" : 
-                                    getCellStyle(rowIndex, colIndex)
+                                    getCellStyle(originalRowIndex, colIndex)
                                 }
                               >
                                 <div className="truncate max-w-[120px]">
@@ -1528,7 +1789,7 @@ export function MatrixExcelViewerV2({
                 variant="ghost"
                 onClick={() => setShowAllRows(true)}
               >
-                Mostrar todas las filas ({displayData.length})
+                Mostrar todas las filas con datos ({displayData.filter((row, index) => !isRowEmpty(row, index)).length})
               </Button>
             </div>
           )}
@@ -1550,7 +1811,7 @@ export function MatrixExcelViewerV2({
                 onClick={detectDataRange}
                 leftIcon={<ArrowsPointingOutIcon className="w-4 h-4" />}
               >
-                Auto-detectar
+                Re-detectar
               </Button>
             )}
             
@@ -1580,7 +1841,7 @@ export function MatrixExcelViewerV2({
                 loading={aiLoading}
               >
                 {mappingStep === 'periods' && periodColumns.length === 0 && periodHeaderRow === -1
-                  ? 'Omitir y Continuar →'
+                  ? 'Omitir y Siguiente →'
                   : 'Siguiente →'}
               </Button>
             )}

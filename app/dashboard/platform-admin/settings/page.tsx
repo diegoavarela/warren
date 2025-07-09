@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '@/components/ui/Card';
 import {
@@ -20,8 +19,12 @@ import {
   ServerIcon,
   KeyIcon,
   CloudArrowUpIcon,
-  CheckIcon
+  CheckIcon,
+  QuestionMarkCircleIcon,
+  XCircleIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { HelpIcon } from '@/components/HelpIcon';
 import { ROLES } from '@/lib/auth/rbac';
 
 interface SettingSection {
@@ -31,12 +34,38 @@ interface SettingSection {
   icon: any;
 }
 
+interface SystemSettings {
+  general: {
+    systemName: string;
+    systemUrl: string;
+    defaultLanguage: string;
+    timezone: string;
+  };
+  security: {
+    requireTwoFactor: boolean;
+    sessionTimeout: number;
+    passwordMinLength: number;
+    passwordRequireUppercase: boolean;
+    passwordRequireNumbers: boolean;
+  };
+  notifications: {
+    newUserNotification: boolean;
+    newCompanyNotification: boolean;
+    systemErrorNotification: boolean;
+    resourceUsageNotification: boolean;
+  };
+}
+
 export default function SettingsPage() {
   const router = useRouter();
   const { locale } = useLocale();
   const [activeSection, setActiveSection] = useState('general');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [error, setError] = useState<string | null>(null);
 
   const sections: SettingSection[] = [
     {
@@ -77,13 +106,76 @@ export default function SettingsPage() {
     }
   ];
 
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => {
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/platform/settings');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSettings(result.data);
+          setFormData(result.data);
+        }
+      } else {
+        console.error('Failed to fetch settings');
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const response = await fetch('/api/platform/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: activeSection,
+          settings: formData[activeSection] || {},
+        }),
+      });
+
+      if (response.ok) {
+        setSaved(true);
+        setError(null);
+        setTimeout(() => setSaved(false), 3000);
+        // Refresh settings
+        await fetchSettings();
+      } else {
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'Failed to save settings';
+        setError(locale?.startsWith('es') 
+          ? `Error al guardar: ${errorMessage}` 
+          : `Failed to save: ${errorMessage}`);
+        console.error('Failed to save settings:', errorData);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert(locale?.startsWith('es') 
+        ? 'Error de red al guardar' 
+        : 'Network error while saving');
+    } finally {
       setSaving(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }, 1000);
+    }
+  };
+
+  const updateFormData = (category: string, key: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [key]: value,
+      },
+    }));
   };
 
   const renderContent = () => {
@@ -92,13 +184,22 @@ export default function SettingsPage() {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {locale?.startsWith('es') ? 'Nombre del Sistema' : 'System Name'}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">
+                  {locale?.startsWith('es') ? 'Nombre del Sistema' : 'System Name'}
+                </label>
+                <HelpIcon 
+                  content={locale?.startsWith('es') 
+                    ? 'El nombre que se mostrará en toda la plataforma'
+                    : 'The name that will be displayed throughout the platform'} 
+                />
+              </div>
               <input
                 type="text"
-                defaultValue="Warren Financial Parser"
+                value={formData.general?.systemName || ''}
+                onChange={(e) => updateFormData('general', 'systemName', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
               />
             </div>
             
@@ -108,8 +209,10 @@ export default function SettingsPage() {
               </label>
               <input
                 type="url"
-                defaultValue="https://warren.com"
+                value={formData.general?.systemUrl || ''}
+                onChange={(e) => updateFormData('general', 'systemUrl', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
               />
             </div>
             
@@ -117,7 +220,12 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {locale?.startsWith('es') ? 'Idioma Predeterminado' : 'Default Language'}
               </label>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                value={formData.general?.defaultLanguage || 'es-MX'}
+                onChange={(e) => updateFormData('general', 'defaultLanguage', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
+              >
                 <option value="es-MX">Español (México)</option>
                 <option value="es-AR">Español (Argentina)</option>
                 <option value="es-CO">Español (Colombia)</option>
@@ -129,7 +237,12 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {locale?.startsWith('es') ? 'Zona Horaria' : 'Timezone'}
               </label>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                value={formData.general?.timezone || 'America/Mexico_City'}
+                onChange={(e) => updateFormData('general', 'timezone', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
+              >
                 <option value="America/Mexico_City">America/Mexico_City</option>
                 <option value="America/Buenos_Aires">America/Buenos_Aires</option>
                 <option value="America/Bogota">America/Bogota</option>
@@ -154,7 +267,13 @@ export default function SettingsPage() {
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={formData.security?.requireTwoFactor || false}
+                  onChange={(e) => updateFormData('security', 'requireTwoFactor', e.target.checked)}
+                  disabled={loading}
+                />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
@@ -232,7 +351,24 @@ export default function SettingsPage() {
                   <p className="text-sm text-gray-600">{notification.description}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked={index < 2} />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={
+                      index === 0 ? formData.notifications?.newUserNotification :
+                      index === 1 ? formData.notifications?.newCompanyNotification :
+                      index === 2 ? formData.notifications?.systemErrorNotification :
+                      formData.notifications?.resourceUsageNotification
+                    }
+                    onChange={(e) => {
+                      const key = index === 0 ? 'newUserNotification' :
+                                 index === 1 ? 'newCompanyNotification' :
+                                 index === 2 ? 'systemErrorNotification' :
+                                 'resourceUsageNotification';
+                      updateFormData('notifications', key, e.target.checked);
+                    }}
+                    disabled={loading}
+                  />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
@@ -255,11 +391,10 @@ export default function SettingsPage() {
   };
 
   return (
-    <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN, ROLES.ORG_ADMIN]}>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header />
-        
-        <main className="flex-1 container mx-auto px-4 py-8">
+    <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN]}>
+      <AppLayout showFooter={true}>
+        <div className="min-h-screen bg-gray-50">
+          <div className="container mx-auto px-4 py-8">
           {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -320,7 +455,35 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardBody>
-                  {renderContent()}
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-3 text-gray-600">
+                        {locale?.startsWith('es') ? 'Cargando configuración...' : 'Loading settings...'}
+                      </span>
+                    </div>
+                  ) : (
+                    renderContent()
+                  )}
+                  
+                  {/* Error/Success Messages */}
+                  {error && (
+                    <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+                      <XCircleIcon className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+                  
+                  {saved && (
+                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
+                      <CheckCircleIcon className="w-5 h-5 text-green-600 mr-3 flex-shrink-0" />
+                      <p className="text-sm text-green-700">
+                        {locale?.startsWith('es') 
+                          ? 'Configuración guardada exitosamente' 
+                          : 'Settings saved successfully'}
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Save Button */}
                   <div className="mt-8 flex justify-end space-x-4">
@@ -343,10 +506,8 @@ export default function SettingsPage() {
               </Card>
             </div>
           </div>
-        </main>
-        
-        <Footer />
-      </div>
+        </div>
+      </AppLayout>
     </ProtectedRoute>
   );
 }

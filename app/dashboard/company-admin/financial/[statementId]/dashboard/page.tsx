@@ -166,6 +166,41 @@ function FinancialDashboardPage() {
 
   const { currentMonth, previousMonth, chartData = [] } = dashboardData;
 
+  // Currency and display settings
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+  const [displayUnits, setDisplayUnits] = useState<'normal' | 'K' | 'M'>('normal');
+  const currency = selectedCurrency; // alias for compatibility
+
+  // Formatting functions
+  const formatValue = (value: number): string => {
+    let displayValue = value;
+    let suffix = '';
+    
+    if (displayUnits === 'K') {
+      displayValue = displayValue / 1000;
+      suffix = 'K';
+    } else if (displayUnits === 'M') {
+      displayValue = displayValue / 1000000;
+      suffix = 'M';
+    }
+    
+    const formatted = new Intl.NumberFormat(locale || 'en-US', {
+      style: 'currency',
+      currency: selectedCurrency,
+      minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+    }).format(displayValue);
+    
+    return formatted + suffix;
+  };
+
+  const formatPercentage = (value: number): string => {
+    if (value % 1 === 0) {
+      return `${value.toFixed(0)}%`;
+    }
+    return `${value.toFixed(1)}%`;
+  };
+
   // Ensure we have current month data
   if (!currentMonth) {
     return (
@@ -230,21 +265,33 @@ function FinancialDashboardPage() {
                   </div>
                 </div>
                 
-                {/* File Status Card */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+                {/* Historical Data Warning */}
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center space-x-3">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">PL</span>
+                    <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">📊</span>
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-green-900">
-                      Super Estado de PyG
+                    <h3 className="text-sm font-semibold text-orange-900">
+                      ⚠️ {locale?.startsWith('es') ? 'Estado Histórico' : 'Historical Statement'}
                     </h3>
-                    <p className="text-xs text-green-700">
-                      Actualmente cargado: {dashboardData.uploadedFileName || 'PnL_2024.xlsx'}
+                    <p className="text-xs text-orange-700">
+                      {locale?.startsWith('es') ? 
+                        'Estás viendo un período anterior. Este NO es el estado más reciente.' :
+                        'You are viewing a previous period. This is NOT the most recent statement.'
+                      }
+                    </p>
+                    <p className="text-xs text-orange-600 mt-1">
+                      {locale?.startsWith('es') ? 'Archivo:' : 'File:'} {dashboardData.uploadedFileName || 'PnL_2024.xlsx'}
                     </p>
                   </div>
+                  <button
+                    onClick={() => router.push('/dashboard/company-admin/pnl')}
+                    className="px-3 py-1 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors text-xs font-medium"
+                  >
+                    {locale?.startsWith('es') ? 'Ver Último' : 'View Latest'}
+                  </button>
                 </div>
               </div>
 
@@ -267,6 +314,11 @@ function FinancialDashboardPage() {
                   chartData={chartData}
                   currentMonth={currentMonth}
                   previousMonth={previousMonth}
+                  currency={currency}
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
+                  formatPercentage={formatPercentage}
+                  locale={locale}
                 />
                 
                 <PersonnelCostBreakdown 

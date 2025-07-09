@@ -16,8 +16,12 @@ export const metadata: Metadata = {
   keywords: ["Excel", "financial", "parser", "LATAM", "Spanish", "P&L", "cash flow"],
   authors: [{ name: "Warren Financial Solutions" }],
   icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" }
+    ],
+    apple: "/favicon.png",
+    shortcut: "/favicon.png",
   },
   openGraph: {
     title: "Warren Financial Parser",

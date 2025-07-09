@@ -12,7 +12,9 @@ import {
   BuildingOfficeIcon,
   UserGroupIcon,
   PlusIcon,
-  ArrowTrendingUpIcon
+  ArrowTrendingUpIcon,
+  CogIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
 
@@ -20,6 +22,7 @@ interface PlatformStats {
   totalOrganizations: number;
   totalCompanies: number;
   totalUsers: number;
+  systemHealth: 'healthy' | 'warning' | 'error';
 }
 
 function PlatformAdminDashboard() {
@@ -29,7 +32,8 @@ function PlatformAdminDashboard() {
   const [stats, setStats] = useState<PlatformStats>({
     totalOrganizations: 0,
     totalCompanies: 0,
-    totalUsers: 0
+    totalUsers: 0,
+    systemHealth: 'healthy'
   });
   const [loading, setLoading] = useState(true);
 
@@ -45,7 +49,8 @@ function PlatformAdminDashboard() {
         setStats({
           totalOrganizations: data.totalOrganizations || 0,
           totalCompanies: data.totalCompanies || 0,
-          totalUsers: data.totalUsers || 0
+          totalUsers: data.totalUsers || 0,
+          systemHealth: data.systemHealth || 'healthy'
         });
       }
     } catch (error) {
@@ -85,6 +90,16 @@ function PlatformAdminDashboard() {
       gradientFrom: 'from-purple-500',
       gradientTo: 'to-purple-600',
       route: '/dashboard/platform-admin/users'
+    },
+    {
+      title: locale?.startsWith('es') ? 'Estado del Sistema' : 'System Health',
+      value: stats.systemHealth === 'healthy' ? '100%' : stats.systemHealth === 'warning' ? '80%' : '60%',
+      icon: ShieldCheckIcon,
+      color: stats.systemHealth === 'healthy' ? 'text-green-600' : stats.systemHealth === 'warning' ? 'text-yellow-600' : 'text-red-600',
+      bgColor: stats.systemHealth === 'healthy' ? 'bg-green-100' : stats.systemHealth === 'warning' ? 'bg-yellow-100' : 'bg-red-100',
+      gradientFrom: stats.systemHealth === 'healthy' ? 'from-green-500' : stats.systemHealth === 'warning' ? 'from-yellow-500' : 'from-red-500',
+      gradientTo: stats.systemHealth === 'healthy' ? 'to-green-600' : stats.systemHealth === 'warning' ? 'to-yellow-600' : 'to-red-600',
+      route: '/dashboard/platform-admin/settings'
     }
   ];
 
@@ -94,14 +109,24 @@ function PlatformAdminDashboard() {
       icon: BuildingOfficeIcon,
       action: () => router.push('/dashboard/platform-admin/organizations'),
       color: 'bg-blue-600',
-      hoverColor: 'hover:bg-blue-700'
+      hoverColor: 'hover:bg-blue-700',
+      description: locale?.startsWith('es') ? 'Ver y gestionar todas las organizaciones' : 'View and manage all organizations'
     },
     {
       title: locale?.startsWith('es') ? 'Crear Organización' : 'Create Organization',
       icon: PlusIcon,
       action: () => router.push('/dashboard/platform-admin/organizations/new'),
       color: 'bg-emerald-600',
-      hoverColor: 'hover:bg-emerald-700'
+      hoverColor: 'hover:bg-emerald-700',
+      description: locale?.startsWith('es') ? 'Configurar una nueva organización' : 'Set up a new organization'
+    },
+    {
+      title: locale?.startsWith('es') ? 'Configuración del Sistema' : 'System Settings',
+      icon: CogIcon,
+      action: () => router.push('/dashboard/platform-admin/settings'),
+      color: 'bg-purple-600',
+      hoverColor: 'hover:bg-purple-700',
+      description: locale?.startsWith('es') ? 'Configuración global de la plataforma' : 'Global platform configuration'
     }
   ];
 
@@ -111,9 +136,9 @@ function PlatformAdminDashboard() {
 
   return (
     <AppLayout showFooter={true}>
-      <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         {/* Background pattern */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-blue-100 opacity-20 blur-3xl" />
           <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-purple-100 opacity-20 blur-3xl" />
         </div>
@@ -160,7 +185,7 @@ function PlatformAdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -216,7 +241,7 @@ function PlatformAdminDashboard() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             {locale?.startsWith('es') ? 'Acciones Rápidas' : 'Quick Actions'}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, index) => {
               const Icon = action.icon;
               return (
@@ -238,10 +263,7 @@ function PlatformAdminDashboard() {
                   {/* Text content */}
                   <h3 className="font-semibold text-xl mb-2">{action.title}</h3>
                   <p className="text-sm text-white/80 group-hover:text-white/90 transition-colors">
-                    {index === 0 
-                      ? (locale?.startsWith('es') ? 'Ver y gestionar todas las organizaciones' : 'View and manage all organizations')
-                      : (locale?.startsWith('es') ? 'Configurar una nueva organización' : 'Set up a new organization')
-                    }
+                    {action.description}
                   </p>
                   
                   {/* Arrow indicator */}

@@ -5,6 +5,7 @@
 
 import OpenAI from 'openai';
 import { LocalAccountClassifier } from './local-classifier';
+import { aiValidation } from './ai-validation';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -55,6 +56,14 @@ export interface ValidationIssue {
   suggestedFix?: string;
 }
 
+export interface CompleteAnalysisResult {
+  structure: DocumentStructure;
+  classifications: AccountClassification[];
+  validationIssues: ValidationIssue[];
+  confidence: number;
+  processingTime: number;
+}
+
 export interface MappingSuggestions {
   conceptColumns: {
     columnIndex: number;
@@ -81,6 +90,119 @@ export interface MappingSuggestions {
 export class FinancialAI {
   private model: string = 'gpt-3.5-turbo-16k'; // Using gpt-3.5-turbo-16k for better context and stability
   private fallbackModel: string = 'gpt-3.5-turbo';
+
+  /**
+   * Unified analysis: Structure + Classification in a single AI call
+   * This eliminates the redundancy of analyzing the same data twice
+   */
+  async analyzeExcelComplete(rawData: any[][], fileName?: string): Promise<CompleteAnalysisResult> {
+    const startTime = Date.now();
+    
+    try {
+      // Prepare data sample for analysis
+      const sampleData = rawData.slice(0, 25);
+      const dataString = this.formatDataForAI(sampleData);
+
+      const prompt = this.buildCompleteAnalysisPrompt(dataString, fileName);
+      
+      const response = await openai.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a CFO with 20+ years of experience analyzing financial statements. You understand both document structure and account classification. You can:
+            
+1. STRUCTURE ANALYSIS: Identify document type, layout, headers, data ranges, and currency
+2. ACCOUNT CLASSIFICATION: Classify accounts into proper categories with inflow/outflow determination
+
+CRITICAL RULES:
+- Not every summary line is a "total" - only lines explicitly labeled with "total", "subtotal", "suma"
+- Section headers are RARE and usually in ALL CAPS
+- Most rows (95%+) are individual accounts, NOT totals or headers
+- Account names like "Other Revenue", "Professional Services" are regular accounts, NOT totals
+- Expenses/costs are ALWAYS outflows (isInflow: false)
+- Revenues/income are ALWAYS inflows (isInflow: true)
+
+IMPORTANT: Always respond with valid JSON only, no additional text.`
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 4000
+      });
+
+      const content = response.choices[0].message.content || '{}';
+      const result = this.parseAIResponse(content);
+      
+      // Validate and structure the results
+      const structure = this.validateStructureResult(result.structure || {});
+      const initialClassifications = this.validateAccountClassifications(result.classifications || []);
+      
+      // Apply validation layer to classifications
+      const { results: validatedClassifications, validation } = await aiValidation.validateClassification(
+        initialClassifications,
+        {
+          documentType: structure.statementType === 'profit_loss' ? 'pnl' : 
+                        structure.statementType === 'cash_flow' ? 'cashflow' : 'other',
+          language: this.detectLanguage(initialClassifications.map(c => ({ name: c.accountName }))),
+          rawData: sampleData
+        }
+      );
+      
+      const processingTime = Date.now() - startTime;
+      
+      console.log(`Complete AI Analysis completed in ${processingTime}ms:
+        - Document Type: ${structure.statementType}
+        - Accounts Classified: ${validatedClassifications.length}
+        - Validation Corrections: ${validation.corrections.length}
+        - Overall Confidence: ${(validation.confidence * 100).toFixed(1)}%`);
+      
+      return {
+        structure,
+        classifications: validatedClassifications.map(cls => ({
+          ...cls,
+          validationApplied: true,
+          validationCorrections: validation.corrections.filter(c => 
+            c.accountName === cls.accountName
+          ).length
+        })),
+        validationIssues: validation.warnings.map(w => ({
+          type: 'warning' as const,
+          message: w.message,
+          rowIndex: w.rowIndex
+        })),
+        confidence: Math.round(validation.confidence * 100),
+        processingTime
+      };
+
+    } catch (error) {
+      console.error('Complete AI analysis failed:', error);
+      const processingTime = Date.now() - startTime;
+      
+      // Fallback to separate analysis if unified fails
+      const structure = await this.analyzeExcelStructure(rawData, fileName);
+      const accounts = this.extractAccountsFromData(rawData, structure);
+      const classifications = await this.classifyAccounts(accounts, {
+        statementType: structure.statementType,
+        sampleData: rawData.slice(0, 25),
+        currency: structure.currency
+      });
+      
+      return {
+        structure,
+        classifications,
+        validationIssues: [{
+          type: 'warning',
+          message: 'Used fallback analysis due to unified analysis failure'
+        }],
+        confidence: 70,
+        processingTime
+      };
+    }
+  }
 
   /**
    * Analyze Excel document structure using AI
@@ -138,7 +260,19 @@ export class FinancialAI {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert accountant with knowledge of international accounting standards (GAAP, IFRS) and Latin American accounting practices. Your PRIMARY GOAL is to classify financial accounts into the MOST SPECIFIC category possible. NEVER default to generic categories like "other_revenue" when specific patterns exist. Pay attention to Spanish and English keywords. Expenses/costs are ALWAYS outflows (isInflow: false). Revenues/income are ALWAYS inflows (isInflow: true). IMPORTANT: Always respond with valid JSON only, no additional text.'
+            content: `You are a CFO with 20+ years of experience analyzing financial statements. You understand that:
+- Not every summary line is a "total" - only lines explicitly labeled with words like "total", "subtotal", "suma"
+- Section headers are RARE in financial statements and usually appear in ALL CAPS or are clearly separated
+- Most rows (95%+) in a P&L are individual account items, NOT totals or section headers
+- Never assume something is a total unless it EXPLICITLY contains total-related keywords
+- Account names like "Other Revenue", "LLC transfers", "Professional Services" are regular accounts, NOT totals
+- Just because a row might summarize other accounts doesn't make it a "total" unless labeled as such
+
+Your role is to classify accounts accurately based on their actual names and context, not assumptions.
+Pay attention to Spanish and English keywords. 
+Expenses/costs are ALWAYS outflows (isInflow: false). 
+Revenues/income are ALWAYS inflows (isInflow: true).
+IMPORTANT: Always respond with valid JSON only, no additional text.`
           },
           {
             role: 'user',
@@ -151,7 +285,36 @@ export class FinancialAI {
 
       const content = response.choices[0].message.content || '{}';
       const result = this.parseAIResponse(content);
-      return this.validateAccountClassifications(result.classifications || []);
+      const initialClassifications = this.validateAccountClassifications(result.classifications || []);
+      
+      // Apply validation layer
+      const { results: validatedClassifications, validation } = await aiValidation.validateClassification(
+        initialClassifications,
+        {
+          documentType: documentContext.statementType === 'profit_loss' ? 'pnl' : 
+                        documentContext.statementType === 'cash_flow' ? 'cashflow' : 'other',
+          language: this.detectLanguage(accounts),
+          rawData: documentContext.sampleData
+        }
+      );
+      
+      // Log validation results
+      console.log(`AI Classification Validation:
+        - Corrections: ${validation.corrections.length}
+        - Warnings: ${validation.warnings.length}
+        - Confidence: ${(validation.confidence * 100).toFixed(1)}%
+        - Manual Review: ${validation.requiresManualReview}`);
+      
+      // Add validation metadata to results
+      return validatedClassifications.map((cls, idx) => ({
+        ...cls,
+        validationApplied: true,
+        validationCorrections: validation.corrections.filter(c => 
+          c.accountName === cls.accountName
+        ).length,
+        requiresReview: validation.requiresManualReview && 
+          validation.warnings.some(w => w.accountName === cls.accountName)
+      }));
 
     } catch (error) {
       console.error('AI account classification failed:', error);
@@ -335,6 +498,23 @@ Consider:
   }
 
   // Private helper methods
+  private detectLanguage(accounts: { name: string }[]): 'es' | 'en' {
+    // Simple language detection based on account names
+    const spanishKeywords = ['ingresos', 'gastos', 'costos', 'ventas', 'utilidad', 'pérdida', 'nómina', 'sueldos'];
+    const englishKeywords = ['revenue', 'expenses', 'costs', 'sales', 'profit', 'loss', 'payroll', 'salaries'];
+    
+    let spanishCount = 0;
+    let englishCount = 0;
+    
+    for (const account of accounts) {
+      const lower = account.name.toLowerCase();
+      if (spanishKeywords.some(kw => lower.includes(kw))) spanishCount++;
+      if (englishKeywords.some(kw => lower.includes(kw))) englishCount++;
+    }
+    
+    return spanishCount > englishCount ? 'es' : 'en';
+  }
+  
   private parseAIResponse(content: string): any {
     // Try to extract JSON if it's wrapped in markdown code blocks
     const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/);
@@ -367,6 +547,126 @@ Consider:
         String(cell)
       ).join(', ')}]`
     ).join('\n');
+  }
+
+  private buildCompleteAnalysisPrompt(dataString: string, fileName?: string): string {
+    return `
+Perform a complete analysis of this Excel financial data. Analyze BOTH structure and account classification in a single comprehensive response.
+
+EXCEL DATA:
+${dataString}
+
+FILE: ${fileName || 'Unknown'}
+
+Return a JSON response with this exact structure:
+{
+  "structure": {
+    "statementType": "profit_loss|balance_sheet|cash_flow|unknown",
+    "confidence": number (0-100),
+    "headerRows": [array of row indices that contain headers],
+    "dataStartRow": number,
+    "dataEndRow": number,
+    "totalRows": [array of row indices that contain totals],
+    "subtotalRows": [array of row indices that contain subtotals],
+    "accountColumns": {
+      "codeColumn": number (optional),
+      "nameColumn": number (optional),
+      "confidence": number (0-100)
+    },
+    "periodColumns": [
+      {
+        "columnIndex": number,
+        "periodLabel": "extracted label",
+        "periodType": "month|quarter|year|custom",
+        "confidence": number (0-100)
+      }
+    ],
+    "currency": "USD|MXN|ARS|EUR|COP|CLP|PEN|BRL|etc",
+    "fiscalYear": number (optional),
+    "reasoning": "Detailed explanation of structure analysis"
+  },
+  "classifications": [
+    {
+      "accountName": "exact account name from data",
+      "suggestedCategory": "category key",
+      "isInflow": boolean,
+      "confidence": number (0-100),
+      "reasoning": "Why this classification was chosen",
+      "alternativeCategories": [
+        {
+          "category": "alternative category",
+          "confidence": number
+        }
+      ]
+    }
+  ]
+}
+
+STRUCTURE ANALYSIS FOCUS:
+1. Identify document type (P&L, Balance Sheet, Cash Flow)
+2. Locate headers, data ranges, totals, and subtotals
+3. Identify account code and name columns
+4. Detect period/date columns
+5. Determine currency and fiscal year
+
+CLASSIFICATION ANALYSIS FOCUS:
+1. Extract ALL account names from the data rows
+2. Classify each account into appropriate categories
+3. Determine if each account is an inflow (revenue) or outflow (expense)
+4. Consider account context and naming patterns
+
+Available categories for classification:
+- Revenue: revenue, service_revenue, other_revenue, interest_income
+- Costs: cost_of_sales, direct_materials, direct_labor, manufacturing_overhead
+- Operating Expenses: salaries_wages, payroll_taxes, benefits, rent_utilities, marketing_advertising, professional_services, office_supplies, depreciation, insurance, travel_entertainment
+- Financial: interest_expense, income_tax, other_taxes
+
+CRITICAL RULES:
+- Only mark accounts as "totals" if explicitly labeled (containing "total", "subtotal", "suma", etc.)
+- Most accounts are individual line items, not totals or headers
+- Expenses/costs are always outflows (isInflow: false)
+- Revenues/income are always inflows (isInflow: true)
+- Use actual account names from the data, don't infer or modify them
+`;
+  }
+
+  private extractAccountsFromData(rawData: any[][], structure: DocumentStructure): { name: string; rowIndex: number; value?: number | string }[] {
+    const accounts = [];
+    const nameColumnIndex = structure.accountColumns.nameColumn;
+    
+    if (nameColumnIndex === undefined) {
+      // Try to guess the name column (usually first text column)
+      const firstRow = rawData[structure.dataStartRow] || rawData[0] || [];
+      const guessedNameColumn = firstRow.findIndex((cell, idx) => 
+        typeof cell === 'string' && cell.length > 0 && idx < 3
+      );
+      
+      if (guessedNameColumn >= 0) {
+        for (let i = structure.dataStartRow; i <= structure.dataEndRow && i < rawData.length; i++) {
+          const row = rawData[i];
+          if (row && row[guessedNameColumn]) {
+            accounts.push({
+              name: String(row[guessedNameColumn]),
+              rowIndex: i,
+              value: row[guessedNameColumn + 1] // Try to get value from next column
+            });
+          }
+        }
+      }
+    } else {
+      for (let i = structure.dataStartRow; i <= structure.dataEndRow && i < rawData.length; i++) {
+        const row = rawData[i];
+        if (row && row[nameColumnIndex]) {
+          accounts.push({
+            name: String(row[nameColumnIndex]),
+            rowIndex: i,
+            value: structure.periodColumns.length > 0 ? row[structure.periodColumns[0].columnIndex] : undefined
+          });
+        }
+      }
+    }
+    
+    return accounts.filter(acc => acc.name.trim().length > 0);
   }
 
   private buildStructureAnalysisPrompt(dataString: string, fileName?: string): string {
@@ -427,12 +727,21 @@ Focus on identifying:
     return `
 Classify these financial accounts based on accounting principles, names, and values.
 
-ACCOUNTS WITH VALUES:
+ACCOUNTS WITH VALUES AND CONTEXT:
 ${accounts.map((acc, idx) => {
   const valueInfo = acc.value !== undefined && acc.value !== null 
     ? ` | Value: ${acc.value} ${typeof acc.value === 'number' && acc.value < 0 ? '(NEGATIVE - likely expense)' : ''}`
     : '';
-  return `${idx + 1}. "${acc.name}"${valueInfo}`;
+  
+  let contextInfo = '';
+  if (acc.previousRows && acc.previousRows.length > 0) {
+    contextInfo += `\n   Previous accounts: ${acc.previousRows.filter(r => r).join(', ')}`;
+  }
+  if (acc.nextRows && acc.nextRows.length > 0) {
+    contextInfo += `\n   Following accounts: ${acc.nextRows.filter(r => r).join(', ')}`;
+  }
+  
+  return `${idx + 1}. "${acc.name}"${valueInfo}${contextInfo}`;
 }).join('\n')}
 
 STATEMENT TYPE: ${context.statementType}
@@ -443,6 +752,7 @@ Return a JSON response:
   "classifications": [
     {
       "accountName": "exact account name",
+      "rowType": "account|total|section_header", 
       "suggestedCategory": "category key",
       "isInflow": boolean,
       "confidence": number (0-100),
@@ -460,21 +770,34 @@ Return a JSON response:
 Available categories for ${context.statementType}:
 ${this.getCategoryKeysForStatement(context.statementType)}
 
-CRITICAL RULES:
-1. NEVER default to "other_revenue" unless it truly doesn't fit any category
-2. Look for keywords in Spanish AND English
-3. Use context clues:
+CRITICAL CLASSIFICATION RULES:
+
+1. ROW TYPE CLASSIFICATION:
+   - ONLY mark rowType as "total" if the name EXPLICITLY contains: "total", "subtotal", "suma", "utilidad neta", "utilidad bruta", "gross profit", "net income"
+   - ONLY mark rowType as "section_header" if: ALL CAPS with no values, or exactly matches: "INGRESOS", "REVENUE", "GASTOS", "EXPENSES", "COSTOS"
+   - DEFAULT rowType is "account" - 95% of rows are regular accounts
+   - Examples of regular accounts (NOT totals): "Other Revenue", "LLC transfers", "SRL Services", "Professional Services"
+
+2. CATEGORY CLASSIFICATION:
+   - NEVER default to "other_revenue" unless it truly doesn't fit any category
+   - Look for keywords in Spanish AND English
+   - Common patterns:
+     * "Sueldos", "Salarios", "Nómina" → salaries_wages
+     * "Renta", "Arrendamiento" → rent_utilities
+     * "Marketing", "Publicidad" → marketing_advertising
+     * "Servicios profesionales", "Consultoría" → professional_services
+     * "Ventas", "Ingresos por servicios" → service_revenue (not generic revenue)
+     * "LLC transfers", "Transferencias" → Consider as other_revenue only if truly miscellaneous
+
+3. INFLOW/OUTFLOW RULES:
    - Accounts with "cost", "expense", "gasto", "costo" are ALWAYS outflows (isInflow: false)
    - Accounts with "revenue", "income", "ingreso", "venta" are ALWAYS inflows (isInflow: true)
    - Negative values typically indicate expenses (isInflow: false)
-   - Section position matters (expenses usually after revenue)
-4. Common patterns:
-   - "Sueldos", "Salarios", "Nómina" → salaries_wages
-   - "Renta", "Arrendamiento" → rent_utilities
-   - "Marketing", "Publicidad" → marketing_advertising
-   - "Servicios profesionales", "Consultoría" → professional_services
-   - "Ventas", "Ingresos por servicios" → revenue or service_revenue
-5. If unsure, use the most specific category that matches keywords
+
+4. DO NOT ASSUME:
+   - Just because a row might summarize others doesn't make it a total
+   - Not every capitalized row is a section header
+   - Use the actual account name, not your interpretation
 `;
   }
 

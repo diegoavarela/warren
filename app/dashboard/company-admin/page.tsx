@@ -19,9 +19,11 @@ import {
   BuildingOfficeIcon,
   CheckCircleIcon,
   XCircleIcon,
-  UsersIcon
+  UsersIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
+import { UploadHistory } from '@/components/UploadHistory';
 
 interface Company {
   id: string;
@@ -295,25 +297,25 @@ function CompanyAdminDashboard() {
 
   const quickActions = [
     {
-      title: locale?.startsWith('es') ? 'Invitar Usuario' : 'Invite User',
-      description: locale?.startsWith('es') ? 'Agregar nuevo usuario a la empresa' : 'Add new user to company',
-      icon: UserGroupIcon,
+      title: locale?.startsWith('es') ? 'Estado de Resultados (P&L)' : 'Profit & Loss Statement',
+      description: locale?.startsWith('es') ? 'Análisis detallado de ingresos y gastos' : 'Detailed revenue and expense analysis',
+      icon: DocumentTextIcon,
       action: () => {
         sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-        router.push('/dashboard/company-admin/users/invite');
+        router.push('/dashboard/company-admin/pnl');
       },
-      color: 'blue',
+      color: 'emerald',
       requiresCompany: true
     },
     {
-      title: locale?.startsWith('es') ? 'Gestionar Usuarios' : 'Manage Users',
-      description: locale?.startsWith('es') ? 'Ver y administrar usuarios de la empresa' : 'View and manage company users',
-      icon: UsersIcon,
+      title: locale?.startsWith('es') ? 'Flujo de Caja' : 'Cash Flow',
+      description: locale?.startsWith('es') ? 'Análisis de entradas y salidas de efectivo' : 'Cash inflow and outflow analysis',
+      icon: BanknotesIcon,
       action: () => {
         sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-        router.push('/dashboard/company-admin/users');
+        router.push('/dashboard/company-admin/cashflow');
       },
-      color: 'green',
+      color: 'blue',
       requiresCompany: true
     },
     {
@@ -343,13 +345,13 @@ function CompanyAdminDashboard() {
       color: 'green'
     },
     {
-      title: locale?.startsWith('es') ? 'Documentos Subidos' : 'Uploaded Documents',
+      title: locale?.startsWith('es') ? 'Documentos' : 'Documents',
       value: stats.documentsThisMonth,
       icon: DocumentTextIcon,
       color: 'purple'
     },
     {
-      title: locale?.startsWith('es') ? 'Períodos Cubiertos' : 'Periods Covered',
+      title: locale?.startsWith('es') ? 'Períodos' : 'Periods',
       value: financialStatus?.totalPeriods || 0,
       icon: ChartBarIcon,
       color: 'orange'
@@ -370,10 +372,14 @@ function CompanyAdminDashboard() {
     return available ? '✓' : '⚠️';
   };
 
-  const handleViewData = (statementId: string) => {
-    // Navigate to financial dashboard
+  const handleViewData = (statementId: string, statementType?: string) => {
+    // Navigate to appropriate dashboard
     sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-    if (statementId) {
+    
+    // For P&L statements, use the new P&L dashboard with our improvements
+    if (statementType === 'profit_loss') {
+      router.push('/dashboard/company-admin/pnl');
+    } else if (statementId) {
       router.push(`/dashboard/company-admin/financial/${statementId}/dashboard`);
     } else {
       router.push('/dashboard/company-admin/financial');
@@ -590,55 +596,176 @@ function CompanyAdminDashboard() {
 
         {selectedCompanyId ? (
           <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Compact Stats Row */}
+            <div className="flex items-center space-x-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
               {statCards.map((stat, index) => (
-                <Card key={index}>
-                  <CardBody className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">{stat.title}</p>
-                      {statsLoading ? (
-                        <div className="h-8 bg-gray-200 rounded animate-pulse w-16 mt-1"></div>
-                      ) : (
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                      )}
-                    </div>
-                    <div className={`p-3 rounded-lg ${getColorClasses(stat.color)}`}>
-                      <stat.icon className="w-6 h-6" />
-                    </div>
-                  </CardBody>
-                </Card>
+                <div key={index} className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${getColorClasses(stat.color)}`}>
+                    <stat.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">{stat.title}</p>
+                    {statsLoading ? (
+                      <div className="h-5 bg-gray-200 rounded animate-pulse w-12 mt-0.5"></div>
+                    ) : (
+                      <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+                    )}
+                  </div>
+                  {index < statCards.length - 1 && (
+                    <div className="h-10 w-px bg-gray-200 ml-6" />
+                  )}
+                </div>
               ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                {locale?.startsWith('es') ? 'Acciones Rápidas' : 'Quick Actions'}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {quickActions.map((action, index) => (
-                  <Card 
-                    key={index} 
-                    className="hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={action.action}
-                  >
-                    <CardBody className="flex items-start space-x-4">
-                      <div className={`p-3 rounded-lg ${getColorClasses(action.color)}`}>
-                        <action.icon className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{action.title}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{action.description}</p>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
-            </div>
 
-            {/* Management Sections */}
+            {/* Management Sections - Financial Data First */}
             <div className="space-y-6">
+              {/* Financial Data Overview Section - Moved to Top */}
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>
+                        {locale?.startsWith('es') ? 'Datos Financieros' : 'Financial Data'}
+                        {templates.length > 0 && (
+                          <span className="ml-2 text-sm font-normal text-gray-500">
+                            ({templates.length} {locale?.startsWith('es') ? 'plantillas' : 'templates'})
+                          </span>
+                        )}
+                      </CardTitle>
+                      <CardDescription>
+                        {locale?.startsWith('es') 
+                          ? 'Resumen de datos financieros disponibles'
+                          : 'Overview of available financial data'}
+                        {templates.length > 0 && templates[0].lastUsedAt && (
+                          <span className="ml-2 text-xs">
+                            • {locale?.startsWith('es') ? 'Última plantilla usada' : 'Last template used'}: {templates[0].templateName} ({new Date(templates[0].lastUsedAt).toLocaleDateString()})
+                          </span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
+                      onClick={() => handleUploadNew()}
+                    >
+                      {locale?.startsWith('es') ? 'Subir Documento' : 'Upload Document'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  {financialLoading ? (
+                    <div className="text-center py-4">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {locale?.startsWith('es') ? 'Cargando estado financiero...' : 'Loading financial status...'}
+                      </p>
+                    </div>
+                  ) : !financialStatus || !financialStatus.hasData ? (
+                    <div className="text-center py-8">
+                      <ChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {locale?.startsWith('es') ? 'Sin datos financieros' : 'No financial data'}
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        {locale?.startsWith('es') 
+                          ? 'Sube tu primer documento financiero para comenzar'
+                          : 'Upload your first financial document to get started'}
+                      </p>
+                      <Button
+                        variant="gradient"
+                        onClick={() => handleUploadNew()}
+                        leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
+                      >
+                        {locale?.startsWith('es') ? 'Subir Primer Documento' : 'Upload First Document'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Only show P&L and Cash Flow */}
+                      {['profit_loss', 'cash_flow'].map((type) => {
+                        const statement = financialStatus.statements[type as keyof typeof financialStatus.statements];
+                        return (
+                          <div key={type} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-xl">
+                                {getStatementIcon(type, statement.available)}
+                              </span>
+                              <div>
+                                <p className="font-medium">
+                                  {getStatementLabel(type)}
+                                  {statement.available && statement.coverage && (
+                                    <span className="ml-2 text-sm text-gray-600">
+                                      • {statement.coverage}
+                                    </span>
+                                  )}
+                                </p>
+                                {statement.available && statement.lastUpload && (
+                                  <p className="text-xs text-gray-500">
+                                    {locale?.startsWith('es') ? 'Último: ' : 'Last: '}
+                                    {new Date(statement.lastUpload).toLocaleDateString(locale || 'en-US')}
+                                  </p>
+                                )}
+                                {!statement.available && (
+                                  <p className="text-xs text-gray-500">
+                                    {locale?.startsWith('es') ? 'Sin datos' : 'No data available'}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {statement.available && statement.statementId && (
+                                <Button
+                                  variant="soft"
+                                  size="sm"
+                                  onClick={() => handleViewData(statement.statementId!, type)}
+                                >
+                                  {locale?.startsWith('es') ? 'Ver Datos' : 'View Data'}
+                                </Button>
+                              )}
+                              <Button
+                                variant={statement.available ? "outline" : "primary"}
+                                size="sm"
+                                onClick={() => handleUploadNew(type)}
+                              >
+                                {statement.available 
+                                  ? (locale?.startsWith('es') ? 'Actualizar' : 'Update')
+                                  : (locale?.startsWith('es') ? 'Subir' : 'Upload')
+                                }
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {financialStatus.lastActivity && (
+                        <div className="text-center pt-4 border-t">
+                          <p className="text-sm text-gray-500 mb-2">
+                            {locale?.startsWith('es') ? 'Última actividad: ' : 'Last activity: '}
+                            {new Date(financialStatus.lastActivity).toLocaleDateString(locale || 'en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                          <button
+                            onClick={() => {
+                              sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                              router.push('/dashboard/company-admin/financial');
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            {locale?.startsWith('es') ? 'Ver todos los estados financieros →' : 'View all financial statements →'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+
               {/* Users Section */}
               <Card id="users-section">
                 <CardHeader>
@@ -799,136 +926,6 @@ function CompanyAdminDashboard() {
                 </CardBody>
               </Card>
 
-              {/* Financial Data Overview Section */}
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle>
-                        {locale?.startsWith('es') ? 'Estado Financiero' : 'Financial Data'}
-                      </CardTitle>
-                      <CardDescription>
-                        {locale?.startsWith('es') 
-                          ? 'Resumen de datos financieros disponibles'
-                          : 'Overview of available financial data'}
-                      </CardDescription>
-                    </div>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
-                      onClick={() => handleUploadNew()}
-                    >
-                      {locale?.startsWith('es') ? 'Subir Documento' : 'Upload Document'}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardBody>
-                  {financialLoading ? (
-                    <div className="text-center py-4">
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                      <p className="text-sm text-gray-500 mt-2">
-                        {locale?.startsWith('es') ? 'Cargando estado financiero...' : 'Loading financial status...'}
-                      </p>
-                    </div>
-                  ) : !financialStatus || !financialStatus.hasData ? (
-                    <div className="text-center py-8">
-                      <ChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        {locale?.startsWith('es') ? 'Sin datos financieros' : 'No financial data'}
-                      </h3>
-                      <p className="text-gray-600 mb-6">
-                        {locale?.startsWith('es') 
-                          ? 'Sube tu primer documento financiero para comenzar'
-                          : 'Upload your first financial document to get started'}
-                      </p>
-                      <Button
-                        variant="gradient"
-                        onClick={() => handleUploadNew()}
-                        leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
-                      >
-                        {locale?.startsWith('es') ? 'Subir Primer Documento' : 'Upload First Document'}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {Object.entries(financialStatus.statements).map(([type, statement]) => (
-                        <div key={type} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-xl">
-                              {getStatementIcon(type, statement.available)}
-                            </span>
-                            <div>
-                              <p className="font-medium">
-                                {getStatementLabel(type)}
-                                {statement.available && statement.coverage && (
-                                  <span className="ml-2 text-sm text-gray-600">
-                                    • {statement.coverage}
-                                  </span>
-                                )}
-                              </p>
-                              {statement.available && statement.lastUpload && (
-                                <p className="text-xs text-gray-500">
-                                  {locale?.startsWith('es') ? 'Último: ' : 'Last: '}
-                                  {new Date(statement.lastUpload).toLocaleDateString(locale || 'en-US')}
-                                </p>
-                              )}
-                              {!statement.available && (
-                                <p className="text-xs text-gray-500">
-                                  {locale?.startsWith('es') ? 'Sin datos' : 'No data available'}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {statement.available && statement.statementId && (
-                              <Button
-                                variant="soft"
-                                size="sm"
-                                onClick={() => handleViewData(statement.statementId!)}
-                              >
-                                {locale?.startsWith('es') ? 'Ver Datos' : 'View Data'}
-                              </Button>
-                            )}
-                            <Button
-                              variant={statement.available ? "outline" : "primary"}
-                              size="sm"
-                              onClick={() => handleUploadNew(type)}
-                            >
-                              {statement.available 
-                                ? (locale?.startsWith('es') ? 'Subir Nuevo' : 'Upload New')
-                                : (locale?.startsWith('es') ? 'Subir' : 'Upload')
-                              }
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {financialStatus.lastActivity && (
-                        <div className="text-center pt-4 border-t">
-                          <p className="text-sm text-gray-500 mb-2">
-                            {locale?.startsWith('es') ? 'Última actividad: ' : 'Last activity: '}
-                            {new Date(financialStatus.lastActivity).toLocaleDateString(locale || 'en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </p>
-                          <button
-                            onClick={() => {
-                              sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                              router.push('/dashboard/company-admin/financial');
-                            }}
-                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            {locale?.startsWith('es') ? 'Ver todos los estados financieros →' : 'View all financial statements →'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
             </div>
           </>
         ) : (

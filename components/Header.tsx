@@ -91,13 +91,18 @@ export function Header() {
       const path = '/' + paths.slice(0, i + 1).join('/');
       let label = paths[i];
       
+      // Skip dashboard in breadcrumbs
+      if (label === 'dashboard') continue;
+      
       // Translate common paths
-      if (label === 'dashboard') label = locale?.startsWith('es') ? 'Dashboard' : 'Dashboard';
       if (label === 'platform-admin') label = locale?.startsWith('es') ? 'Admin Plataforma' : 'Platform Admin';
       if (label === 'company-admin') label = locale?.startsWith('es') ? 'Admin Empresa' : 'Company Admin';
       if (label === 'users') label = locale?.startsWith('es') ? 'Usuarios' : 'Users';
       if (label === 'companies') label = locale?.startsWith('es') ? 'Empresas' : 'Companies';
       if (label === 'settings') label = locale?.startsWith('es') ? 'Configuración' : 'Settings';
+      if (label === 'pnl') label = locale?.startsWith('es') ? 'Estado de Resultados' : 'Profit & Loss';
+      if (label === 'cashflow') label = locale?.startsWith('es') ? 'Flujo de Caja' : 'Cash Flow';
+      if (label === 'uploads') label = locale?.startsWith('es') ? 'Historial de Cargas' : 'Upload History';
       
       breadcrumbs.push({ path, label: label.charAt(0).toUpperCase() + label.slice(1) });
     }

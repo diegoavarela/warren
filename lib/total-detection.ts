@@ -65,6 +65,17 @@ const NOT_SECTION_PATTERNS = [
   'other', 'total', 'net', 'gross', '(cor)', '(cogs)', 'taxes'
 ];
 
+// These patterns indicate it's NOT a total (false positive exclusions)
+const NOT_TOTAL_PATTERNS = [
+  'other revenue', 'other income', 'otros ingresos',
+  'llc transfers', 'transferencias llc', 
+  'professional services', 'servicios profesionales',
+  'other expenses', 'otros gastos',
+  'miscellaneous', 'varios', 'other',
+  'consulting', 'consultoría',
+  'management fees', 'honorarios de gestión'
+];
+
 // Section-specific keywords
 const SECTION_KEYWORDS = {
   revenue: ['total revenue', 'total income', 'ingresos totales', 'ventas totales', 'total ingresos'],
@@ -110,7 +121,7 @@ export function detectTotalRows(
     if (!accountName || accountName === '-') continue;
 
     const detection = analyzeRowForTotal(rawData, rowIndex, opts, accountName);
-    if (detection.confidence > 0.3) { // Lowered threshold for better detection
+    if (detection.confidence > 0.6) { // Higher threshold to reduce false positives
       results.push(detection);
       console.log(`🔍 Total detected: "${accountName}" (confidence: ${detection.confidence.toFixed(2)})`, detection.detectionReasons);
     }
@@ -237,7 +248,15 @@ function detectByKeywords(accountName: string, reasons: string[]): number {
   const lowerName = accountName.toLowerCase();
   let score = 0;
 
-  // Check for explicit total keywords - exact match or starts with pattern
+  // First check exclusion patterns - these are NOT totals
+  for (const exclusion of NOT_TOTAL_PATTERNS) {
+    if (lowerName.includes(exclusion.toLowerCase())) {
+      reasons.push(`Excluded pattern: "${exclusion}"`);
+      return 0; // Not a total
+    }
+  }
+
+  // Check for explicit total keywords - require word boundaries for better matching
   const allKeywords = [...TOTAL_KEYWORDS.spanish, ...TOTAL_KEYWORDS.english];
   for (const keyword of allKeywords) {
     const lowerKeyword = keyword.toLowerCase();

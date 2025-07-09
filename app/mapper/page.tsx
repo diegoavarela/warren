@@ -33,6 +33,7 @@ function AdvancedMapperContent() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [statementType, setStatementType] = useState<'profit_loss' | 'cash_flow'>('profit_loss');
   
 
   useEffect(() => {
@@ -41,6 +42,7 @@ function AdvancedMapperContent() {
         setLoadingStep("Verificando datos de sesión...");
         const uploadSession = searchParams.get('session') || sessionStorage.getItem('uploadSession');
         const uploadedFileStr = sessionStorage.getItem('uploadedFile');
+        const autoTemplate = searchParams.get('autoTemplate') === 'true';
         
         // Check for company context from dashboard navigation
         const preSelectedCompanyId = sessionStorage.getItem('selectedCompanyId');
@@ -68,6 +70,23 @@ function AdvancedMapperContent() {
         setLoadingStep("Cargando metadatos del archivo...");
         const uploadedFile = JSON.parse(uploadedFileStr);
         setFileName(uploadedFile.fileName);
+        
+        // Set statement type from upload configuration
+        if (uploadedFile.statementType) {
+          setStatementType(uploadedFile.statementType);
+        }
+        
+        // Check if a template was pre-selected in the upload page
+        if (autoTemplate && uploadedFile.selectedTemplate) {
+          console.log('Pre-selected template found:', uploadedFile.selectedTemplate);
+          setSelectedTemplate(uploadedFile.selectedTemplate);
+          
+          // Set company from template if not already set
+          if (!preSelectedCompanyId && uploadedFile.selectedTemplate.companyId) {
+            setSelectedCompanyId(uploadedFile.selectedTemplate.companyId);
+            setShowTemplateSelector(false);
+          }
+        }
 
         setLoadingStep("Recuperando datos del archivo...");
         // Get the file data from sessionStorage
@@ -117,6 +136,12 @@ function AdvancedMapperContent() {
         };
         setExcelMetadata(metadata);
         
+        // If we have a pre-selected template and autoTemplate is true, apply it automatically
+        if (autoTemplate && uploadedFile.selectedTemplate) {
+          setLoadingStep("Aplicando plantilla automáticamente...");
+          await applyTemplateAutomatically(uploadedFile.selectedTemplate, data.rawData, selectedSheet.name, uploadSession);
+        }
+        
       } catch (err) {
         console.error('Error loading Excel data:', err);
         setError('Error al cargar el archivo Excel');
@@ -127,6 +152,66 @@ function AdvancedMapperContent() {
 
     loadExcelData();
   }, [searchParams]);
+
+  const applyTemplateAutomatically = async (template: any, rawData: any[][], sheetName: string, uploadSession: string) => {
+    try {
+      setProcessing(true);
+      setLoadingStep("Procesando datos con plantilla...");
+      
+      // Apply template to the data
+      const response = await fetch('/api/v1/templates/auto-map', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: template.id,
+          rawData: rawData,
+          sheetName: sheetName,
+          uploadSession: uploadSession
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        setLoadingStep("Guardando resultados...");
+        
+        // Store results and redirect to persist
+        sessionStorage.setItem('validationResults', JSON.stringify(result.validationResults));
+        sessionStorage.setItem('accountMapping', JSON.stringify(result.accountMapping));
+        sessionStorage.setItem('selectedCompanyId', template.companyId);
+        
+        // Add template info to the results
+        const mappingWithTemplate = {
+          ...result.accountMapping,
+          templateApplied: {
+            id: template.id,
+            name: template.templateName,
+            appliedAt: new Date().toISOString()
+          }
+        };
+        sessionStorage.setItem('accountMapping', JSON.stringify(mappingWithTemplate));
+        
+        setLoadingStep("Redirigiendo a guardado...");
+        
+        // Redirect directly to persist page
+        setTimeout(() => {
+          router.push('/persist');
+        }, 500);
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to apply template:', errorData);
+        setError(`Error al aplicar la plantilla: ${errorData.error?.message || 'Error desconocido'}`);
+        setProcessing(false);
+        // Don't hide template selector on error, let user try manual mapping
+        setShowTemplateSelector(false);
+      }
+    } catch (err) {
+      console.error('Error applying template:', err);
+      setError('Error al aplicar la plantilla automáticamente');
+      setProcessing(false);
+      setShowTemplateSelector(false);
+    }
+  };
 
   const handleMappingComplete = async (mapping: MatrixMapping) => {
     setProcessing(true);
@@ -359,8 +444,8 @@ function AdvancedMapperContent() {
               </div>
             </div>
 
-          {/* Show template selector first */}
-          {excelData && showTemplateSelector && (
+          {/* Show template selector first - skip if already processing with pre-selected template */}
+          {excelData && showTemplateSelector && !processing && (
             <div className="mb-8">
               {/* Company selector - only show if no company context */}
               {!selectedCompanyId && (
@@ -450,28 +535,33 @@ function AdvancedMapperContent() {
             </div>
           )}
 
-          {excelData && !showTemplateSelector && (
+          {/* Show processing overlay when auto-applying template */}
+          {processing && excelData && (
+            <div className="bg-white rounded-lg shadow-sm p-8">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-lg text-gray-600 mb-2">
+                  {locale?.startsWith('es') ? 'Aplicando plantilla' : 'Applying template'}
+                </p>
+                <p className="text-sm text-blue-600 font-medium">{loadingStep}</p>
+                {selectedTemplate && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Plantilla: {selectedTemplate.templateName}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {excelData && !showTemplateSelector && !processing && (
             <div className="relative">
               <MatrixExcelViewerV2
                 rawData={excelData}
                 excelMetadata={excelMetadata}
                 onMappingComplete={handleMappingComplete}
                 locale={locale}
-                statementType="profit_loss"
+                statementType={statementType}
               />
-              
-              {/* Processing overlay */}
-              {processing && (
-                <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50 rounded-lg">
-                  <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                    <p className="text-lg text-gray-600 mb-2">
-                      {locale?.startsWith('es') ? 'Procesando mapeo' : 'Processing mapping'}
-                    </p>
-                    <p className="text-sm text-blue-600 font-medium">{loadingStep}</p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
           </div>

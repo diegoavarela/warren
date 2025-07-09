@@ -83,25 +83,27 @@ function SelectSheetContent() {
   const formatCellValue = (value: any) => {
     if (value === null || value === undefined) return '';
     if (typeof value === 'string' && value.trim() === '') return '';
-    return String(value);
+    // Truncate long values
+    const str = String(value);
+    return str.length > 20 ? str.substring(0, 20) + '...' : str;
   };
 
   const getSheetIcon = (sheet: ExcelSheet) => {
     if (!sheet.hasData) {
-      return <ExclamationTriangleIcon className="w-6 h-6 text-gray-400" />;
+      return <ExclamationTriangleIcon className="w-5 h-5 text-gray-400" />;
     }
     
     // Try to detect sheet type by name
     const name = sheet.name.toLowerCase();
     if (name.includes('balance') || name.includes('sheet')) {
-      return <DocumentIcon className="w-6 h-6 text-blue-600" />;
+      return <DocumentIcon className="w-5 h-5 text-blue-600" />;
     } else if (name.includes('p&l') || name.includes('profit') || name.includes('loss') || name.includes('resultado')) {
-      return <DocumentIcon className="w-6 h-6 text-green-600" />;
+      return <DocumentIcon className="w-5 h-5 text-green-600" />;
     } else if (name.includes('cash') || name.includes('flow') || name.includes('flujo')) {
-      return <DocumentIcon className="w-6 h-6 text-purple-600" />;
+      return <DocumentIcon className="w-5 h-5 text-purple-600" />;
     }
     
-    return <DocumentIcon className="w-6 h-6 text-blue-600" />;
+    return <DocumentIcon className="w-5 h-5 text-blue-600" />;
   };
 
   if (loading) {
@@ -146,29 +148,20 @@ function SelectSheetContent() {
   return (
     <ProtectedRoute>
       <AppLayout showFooter={true}>
-        <div className="container mx-auto px-4 py-4 pb-24">
+        <div className="container mx-auto px-4 py-2 pb-20">
           <div className="max-w-4xl mx-auto">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            <div className="mb-3">
+              <h1 className="text-xl font-bold text-gray-900">
                 Seleccionar Hoja de Cálculo
               </h1>
-              <p className="text-gray-600">
-                Archivo: <span className="font-medium">{fileName}</span> • 
-                {sheets.length} hoja{sheets.length !== 1 ? 's' : ''} encontrada{sheets.length !== 1 ? 's' : ''}
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">{fileName}</span> • 
+                {sheets.length} hoja{sheets.length !== 1 ? 's' : ''}
               </p>
             </div>
 
-            {/* Instructions */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-              <h3 className="font-medium text-blue-900 mb-1">Instrucciones</h3>
-              <p className="text-sm text-blue-800">
-                Selecciona la hoja que contiene los datos financieros que quieres mapear. 
-                Puedes ver una vista previa de cada hoja antes de seleccionarla.
-              </p>
-            </div>
-
-            {/* Sheets Grid */}
-            <div className="grid gap-4 mb-8">
+            {/* Sheets Grid - More Compact */}
+            <div className="grid gap-2 mb-4">
               {sheets.map((sheet, index) => (
                 <div 
                   key={index}
@@ -182,55 +175,54 @@ function SelectSheetContent() {
                     }
                   `}
                 >
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="p-3">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        {getSheetIcon(sheet)}
-                        <div>
-                          <h3 className={`text-lg font-semibold ${
+                        <div className="flex-shrink-0">
+                          {getSheetIcon(sheet)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className={`font-medium ${
                             sheet.hasData ? 'text-gray-900' : 'text-gray-500'
                           }`}>
                             {sheet.name}
                           </h3>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs text-gray-500">
                             {sheet.rows.toLocaleString()} filas • {sheet.cols} columnas
                             {!sheet.hasData && ' • Sin datos'}
                           </p>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 flex-shrink-0">
                         {selectedSheet === sheet.name && (
-                          <CheckCircleIcon className="w-6 h-6 text-blue-600" />
+                          <CheckCircleIcon className="w-5 h-5 text-blue-600" />
                         )}
                         {sheet.hasData && (
-                          <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                          <ChevronRightIcon className="w-4 h-4 text-gray-400" />
                         )}
                       </div>
                     </div>
 
-                    {/* Sheet Preview */}
-                    {sheet.hasData && sheet.preview && sheet.preview.length > 0 && (
-                      <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="bg-gray-50 px-2 py-1 border-b border-gray-200">
-                          <p className="text-xs font-medium text-gray-700">Vista previa</p>
-                        </div>
+                    {/* Compact Sheet Preview - Only show for selected sheet */}
+                    {selectedSheet === sheet.name && sheet.hasData && sheet.preview && sheet.preview.length > 0 && (
+                      <div className="mt-2 border border-gray-200 rounded overflow-hidden">
                         <div className="overflow-x-auto">
-                          <table className="min-w-full">
-                            <tbody className="divide-y divide-gray-200">
-                              {sheet.preview.slice(0, 3).map((row, rowIndex) => (
-                                <tr key={rowIndex} className="hover:bg-gray-50">
-                                  {row.slice(0, 8).map((cell, cellIndex) => (
+                          <table className="min-w-full text-xs">
+                            <tbody className="divide-y divide-gray-100">
+                              {sheet.preview.slice(0, 2).map((row, rowIndex) => (
+                                <tr key={rowIndex}>
+                                  {row.slice(0, 6).map((cell, cellIndex) => (
                                     <td 
                                       key={cellIndex} 
-                                      className="px-2 py-1 text-sm text-gray-900 max-w-[120px] truncate"
+                                      className="px-1 py-0.5 text-gray-700 max-w-[100px] truncate"
                                     >
                                       {formatCellValue(cell)}
                                     </td>
                                   ))}
-                                  {row.length > 8 && (
-                                    <td className="px-2 py-1 text-sm text-gray-500">
-                                      ... +{row.length - 8} más
+                                  {row.length > 6 && (
+                                    <td className="px-1 py-0.5 text-gray-400">
+                                      +{row.length - 6}
                                     </td>
                                   )}
                                 </tr>
@@ -238,13 +230,6 @@ function SelectSheetContent() {
                             </tbody>
                           </table>
                         </div>
-                        {sheet.preview.length > 3 && (
-                          <div className="bg-gray-50 px-2 py-1 border-t border-gray-200">
-                            <p className="text-xs text-gray-500">
-                              ... y {sheet.rows - 3} filas más
-                            </p>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -255,24 +240,24 @@ function SelectSheetContent() {
           </div>
         </div>
         
-        {/* Fixed Bottom Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 shadow-lg z-50">
+        {/* Fixed Bottom Action Bar - More Compact */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-lg z-50">
           <div className="container mx-auto max-w-4xl">
             <div className="flex justify-between items-center">
               <button
                 onClick={() => router.push('/upload')}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
               >
-                ← Cargar otro archivo
+                ← Cargar otro
               </button>
               
               <button
                 onClick={handleContinue}
                 disabled={!selectedSheet}
-                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2 shadow-md"
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2 shadow-md"
               >
-                <span>{selectedSheet ? `Continuar con "${selectedSheet}"` : 'Selecciona una hoja para continuar'}</span>
-                {selectedSheet && <ChevronRightIcon className="w-5 h-5" />}
+                <span>{selectedSheet ? 'Continuar' : 'Selecciona una hoja'}</span>
+                {selectedSheet && <ChevronRightIcon className="w-4 h-4" />}
               </button>
             </div>
           </div>

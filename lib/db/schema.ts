@@ -242,6 +242,19 @@ export const webhooks = pgTable("webhooks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// System-wide settings for platform configuration
+export const systemSettings = pgTable("system_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: jsonb("value").notNull(),
+  category: varchar("category", { length: 50 }).notNull(), // general, security, notifications, billing, integrations, advanced
+  description: text("description"),
+  isSecret: boolean("is_secret").default(false),
+  lastModifiedBy: uuid("last_modified_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Job queue for async processing
 export const processingJobs = pgTable("processing_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -292,3 +305,5 @@ export type Webhook = typeof webhooks.$inferSelect;
 export type NewWebhook = typeof webhooks.$inferInsert;
 export type ProcessingJob = typeof processingJobs.$inferSelect;
 export type NewProcessingJob = typeof processingJobs.$inferInsert;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type NewSystemSetting = typeof systemSettings.$inferInsert;

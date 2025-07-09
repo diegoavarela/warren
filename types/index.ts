@@ -184,6 +184,9 @@ export interface AccountClassification {
     category: string;
     confidence: number;
   }[];
+  validationApplied?: boolean;
+  validationCorrections?: number;
+  requiresReview?: boolean;
 }
 
 export interface ValidationIssue {

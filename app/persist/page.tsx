@@ -7,7 +7,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import { CompanySelector } from "@/components/CompanySelector";
-import { CheckCircleIcon, CloudArrowUpIcon, BuildingOfficeIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, CloudArrowUpIcon, BuildingOfficeIcon, DocumentTextIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { Card, CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
@@ -130,9 +130,12 @@ function PersistPageContent() {
       sessionStorage.removeItem('validationResults');
       sessionStorage.removeItem('accountMapping');
       
-      // Redirect to financial dashboard after 3 seconds
+      // Redirect to appropriate dashboard after 3 seconds based on statement type
       setTimeout(() => {
-        router.push(`/dashboard/company-admin/financial/${result.statementId}/dashboard`);
+        const dashboardPath = accountMapping.statementType === 'cash_flow' 
+          ? '/dashboard/company-admin/cashflow'
+          : '/dashboard/company-admin/pnl';
+        router.push(dashboardPath);
       }, 3000);
 
     } catch (err) {
@@ -187,14 +190,16 @@ function PersistPageContent() {
   return (
     <ProtectedRoute>
       <AppLayout showFooter={false}>
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="h-[calc(100vh-4rem)] overflow-hidden">
+          <div className="h-full overflow-y-auto">
+            <div className="container mx-auto px-4 py-4">
+              <div className="max-w-4xl mx-auto space-y-4">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl font-bold text-gray-900">
                   {locale?.startsWith('es') ? 'Guardar Datos Financieros' : 'Save Financial Data'}
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm text-gray-600">
                   {locale?.startsWith('es') 
                     ? 'Los datos serán encriptados antes de almacenarse en la base de datos.'
                     : 'Data will be encrypted before being stored in the database.'
@@ -227,47 +232,117 @@ function PersistPageContent() {
                   )}
                 </CardDescription>
               </CardHeader>
-            <CardBody className="space-y-6">
+            <CardBody className="space-y-4">
 
-              {/* Summary */}
-              <Card variant="flat">
-                <CardBody>
-                  <h3 className="font-semibold text-gray-900 mb-4">
-                    {locale?.startsWith('es') ? 'Resumen de Datos' : 'Data Summary'}
-                  </h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">
-                    {locale?.startsWith('es') ? 'Tipo de Estado:' : 'Statement Type:'}
-                  </span>
-                  <span className="ml-2 font-medium">
-                    {accountMapping.statementType === 'balance_sheet' 
-                      ? (locale?.startsWith('es') ? 'Balance General' : 'Balance Sheet')
-                      : accountMapping.statementType === 'profit_loss' 
-                      ? (locale?.startsWith('es') ? 'Estado de Resultados' : 'Profit & Loss')
-                      : (locale?.startsWith('es') ? 'Flujo de Efectivo' : 'Cash Flow')
-                    }
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">
-                    {locale?.startsWith('es') ? 'Moneda:' : 'Currency:'}
-                  </span>
-                  <span className="ml-2 font-medium">{accountMapping.currency}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">
-                    {locale?.startsWith('es') ? 'Filas procesadas:' : 'Rows processed:'}
-                  </span>
-                  <span className="ml-2 font-medium">{validationResults.totalRows}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">
-                    {locale?.startsWith('es') ? 'Cuentas mapeadas:' : 'Accounts mapped:'}
-                  </span>
-                  <span className="ml-2 font-medium">{accountMapping.accounts.length}</span>
-                </div>
+              {/* Enhanced Validation Summary */}
+              <Card variant="flat" className="bg-gradient-to-br from-green-50 to-blue-50 border-green-200">
+                <CardBody className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {locale?.startsWith('es') ? '✅ Validación Completada' : '✅ Validation Complete'}
+                        </h3>
+                        <p className="text-xs text-green-700">
+                          {locale?.startsWith('es') ? 'Todos los datos han sido procesados correctamente' : 'All data has been processed successfully'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-600">{accountMapping.accounts.length}</div>
+                      <div className="text-xs text-green-700 uppercase font-medium">
+                        {locale?.startsWith('es') ? 'Cuentas' : 'Accounts'}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Detailed Metrics Grid */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {/* Statement Type */}
+                    <div className="bg-white rounded-lg p-3 border border-blue-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <DocumentTextIcon className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500 uppercase font-medium truncate">
+                            {locale?.startsWith('es') ? 'Tipo' : 'Type'}
+                          </p>
+                          <p className="text-sm font-bold text-gray-900 truncate">
+                            {accountMapping.statementType === 'balance_sheet' 
+                              ? (locale?.startsWith('es') ? 'Balance General' : 'Balance Sheet')
+                              : accountMapping.statementType === 'profit_loss' 
+                              ? (locale?.startsWith('es') ? 'P&L' : 'P&L')
+                              : (locale?.startsWith('es') ? 'Flujo de Caja' : 'Cash Flow')
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Currency */}
+                    <div className="bg-white rounded-lg p-3 border border-amber-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <CurrencyDollarIcon className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500 uppercase font-medium truncate">
+                            {locale?.startsWith('es') ? 'Moneda' : 'Currency'}
+                          </p>
+                          <p className="text-sm font-bold text-gray-900">{accountMapping.currency}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Data Quality */}
+                    <div className="bg-white rounded-lg p-3 border border-purple-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <BuildingOfficeIcon className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500 uppercase font-medium truncate">
+                            {locale?.startsWith('es') ? 'Filas' : 'Rows'}
+                          </p>
+                          <p className="text-sm font-bold text-gray-900">{validationResults.totalRows}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-medium text-gray-700">
+                        {locale?.startsWith('es') ? 'Progreso de validación' : 'Validation Progress'}
+                      </span>
+                      <span className="text-xs font-bold text-green-600">100%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '100%'}}></div>
+                    </div>
+                  </div>
+
+                  {/* Additional Details */}
+                  {validationResults.errors && validationResults.errors.length > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <h4 className="font-medium text-yellow-900 text-sm mb-1">
+                        ⚠️ {locale?.startsWith('es') ? 'Advertencias' : 'Warnings'}
+                      </h4>
+                      <ul className="text-xs text-yellow-800 space-y-0.5">
+                        {validationResults.errors.slice(0, 2).map((error: any, index: number) => (
+                          <li key={index}>• {error.message || error}</li>
+                        ))}
+                        {validationResults.errors.length > 2 && (
+                          <li className="text-yellow-600">... y {validationResults.errors.length - 2} más</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
                 </CardBody>
               </Card>
 
@@ -279,8 +354,8 @@ function PersistPageContent() {
 
               {/* Template Option */}
               <Card variant="flat">
-                <CardBody>
-                  <label className="flex items-center space-x-3">
+                <CardBody className="p-3">
+                  <label className="flex items-center space-x-2">
                     <input 
                       type="checkbox"
                       checked={saveAsTemplate}
@@ -303,7 +378,7 @@ function PersistPageContent() {
                         ? 'Nombre de la plantilla (opcional)'
                         : 'Template name (optional)'
                       }
-                      className="mt-3 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-2 w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   )}
                 </CardBody>
@@ -311,14 +386,13 @@ function PersistPageContent() {
 
               {/* Security Notice */}
               <Card variant="flat" className="bg-blue-50 border-blue-200">
-                <CardBody>
-                  <div className="flex items-start space-x-3">
-                    <CloudArrowUpIcon className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <div className="text-sm text-blue-800">
-                      <p className="font-medium mb-1">Seguridad de Datos</p>
-                      <p>
-                        Todos los datos financieros serán encriptados usando AES-256 antes de 
-                        almacenarse. Solo usuarios autorizados podrán acceder a la información.
+                <CardBody className="p-3">
+                  <div className="flex items-start space-x-2">
+                    <CloudArrowUpIcon className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-blue-800">
+                      <p className="font-medium">Seguridad de Datos</p>
+                      <p className="mt-1">
+                        Todos los datos financieros serán encriptados usando AES-256 antes de almacenarse. Solo usuarios autorizados podrán acceder a la información.
                       </p>
                     </div>
                   </div>
@@ -359,6 +433,8 @@ function PersistPageContent() {
               </Button>
             </CardFooter>
           </Card>
+              </div>
+            </div>
           </div>
         </div>
       </AppLayout>

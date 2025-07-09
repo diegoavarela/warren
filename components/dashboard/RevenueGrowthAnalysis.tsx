@@ -1,115 +1,121 @@
+"use client";
+
 import React from 'react';
-import { Line } from 'react-chartjs-2';
-import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
+import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { WarrenChart } from '@/components/charts/WarrenChart';
+import { HelpIcon } from '@/components/HelpIcon';
+import { helpTopics } from '@/lib/help-content';
 
 interface RevenueGrowthProps {
   chartData: any[];
   currentMonth: any;
   previousMonth: any;
+  currency: string;
+  displayUnits: 'normal' | 'K' | 'M';
+  formatValue: (value: number) => string;
+  formatPercentage: (value: number) => string;
+  locale?: string;
 }
 
-export function RevenueGrowthAnalysis({ chartData, currentMonth, previousMonth }: RevenueGrowthProps) {
+export function RevenueGrowthAnalysis({ 
+  chartData, 
+  currentMonth, 
+  previousMonth, 
+  currency,
+  displayUnits,
+  formatValue,
+  formatPercentage,
+  locale = 'es-MX'
+}: RevenueGrowthProps) {
+  // Defensive check for required functions
+  if (!formatPercentage || !formatValue || !currentMonth) {
+    return <div>Loading...</div>;
+  }
   const revenueGrowth = previousMonth 
     ? ((currentMonth.revenue - previousMonth.revenue) / previousMonth.revenue) * 100 
     : 0;
 
-  const chartConfig = {
-    labels: chartData.map(d => d.month),
-    datasets: [
-      {
-        label: 'Ingresos',
-        data: chartData.map(d => d.revenue),
-        borderColor: '#7CB342',
-        backgroundColor: 'rgba(124, 179, 66, 0.1)',
-        tension: 0.3,
-        fill: true
-      },
-      {
-        label: 'Utilidad Bruta',
-        data: chartData.map(d => d.grossProfit),
-        borderColor: '#2196F3',
-        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-        tension: 0.3,
-        fill: true
-      }
-    ]
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': $';
-            }
-            if (context.parsed.y !== null) {
-              label += new Intl.NumberFormat('es-MX').format(context.parsed.y);
-            }
-            return label;
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: function(value: any) {
-            return '$' + new Intl.NumberFormat('es-MX').format(value);
-          }
-        }
-      }
-    }
-  };
+  const ytdTotal = chartData.reduce((sum, d) => sum + d.revenue, 0);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Análisis de Crecimiento de Ingresos</h3>
-        <div className={`flex items-center ${
-          revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-        }`}>
-          {revenueGrowth >= 0 ? (
-            <ArrowTrendingUpIcon className="w-5 h-5 mr-1" />
-          ) : (
-            <ArrowTrendingDownIcon className="w-5 h-5 mr-1" />
-          )}
-          <span className="font-semibold">{Math.abs(revenueGrowth).toFixed(1)}%</span>
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <ChartBarIcon className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">
+              {locale?.startsWith('es') ? 'Análisis de Crecimiento de Ingresos' : 'Revenue Growth Analysis'}
+            </h3>
+          </div>
+          <div className="flex items-center space-x-3">
+            <div className={`flex items-center space-x-1 ${
+              revenueGrowth >= 0 ? 'text-white' : 'text-red-200'
+            }`}>
+              {revenueGrowth >= 0 ? (
+                <ArrowTrendingUpIcon className="w-5 h-5" />
+              ) : (
+                <ArrowTrendingDownIcon className="w-5 h-5" />
+              )}
+              <span className="font-bold text-lg">{formatPercentage(revenueGrowth)}</span>
+            </div>
+            <HelpIcon topic={helpTopics['dashboard.revenue']} size="sm" className="text-white hover:text-gray-200" />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center">
-          <p className="text-sm text-gray-600">Ingresos Actuales</p>
-          <p className="text-xl font-bold text-gray-900">
-            ${new Intl.NumberFormat('es-MX').format(currentMonth.revenue)}
-          </p>
+      {/* Content */}
+      <div className="p-6">
+        {/* Key Metrics */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="text-center p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">
+              {locale?.startsWith('es') ? 'Ingresos Actuales' : 'Current Revenue'}
+            </p>
+            <p className="text-xl font-bold text-gray-900">
+              {formatValue(currentMonth.revenue)}
+            </p>
+          </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">
+              {locale?.startsWith('es') ? 'Margen Bruto' : 'Gross Margin'}
+            </p>
+            <p className="text-xl font-bold text-green-600">
+              {formatPercentage(currentMonth.grossMargin)}
+            </p>
+          </div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">
+              {locale?.startsWith('es') ? 'YTD Total' : 'YTD Total'}
+            </p>
+            <p className="text-xl font-bold text-blue-600">
+              {formatValue(ytdTotal)}
+            </p>
+          </div>
         </div>
-        <div className="text-center border-l border-r border-gray-200">
-          <p className="text-sm text-gray-600">Margen Bruto</p>
-          <p className="text-xl font-bold text-green-600">
-            {currentMonth.grossMargin.toFixed(1)}%
-          </p>
-        </div>
-        <div className="text-center">
-          <p className="text-sm text-gray-600">YTD Total</p>
-          <p className="text-xl font-bold text-gray-900">
-            ${new Intl.NumberFormat('es-MX').format(
-              chartData.reduce((sum, d) => sum + d.revenue, 0)
-            )}
-          </p>
-        </div>
-      </div>
 
-      <div className="h-64">
-        <Line data={chartConfig} options={options} />
+        {/* Chart */}
+        <WarrenChart
+          data={chartData.map(d => ({
+            month: d.month,
+            [locale?.startsWith('es') ? 'Ingresos' : 'Revenue']: d.revenue,
+            [locale?.startsWith('es') ? 'Utilidad Bruta' : 'Gross Profit']: d.grossProfit
+          }))}
+          config={{
+            xKey: 'month',
+            yKeys: [
+              locale?.startsWith('es') ? 'Ingresos' : 'Revenue',
+              locale?.startsWith('es') ? 'Utilidad Bruta' : 'Gross Profit'
+            ],
+            type: 'area',
+            height: 250,
+            colors: ['#10B981', '#3B82F6'],
+            gradient: true
+          }}
+          formatValue={formatValue}
+        />
       </div>
     </div>
   );
