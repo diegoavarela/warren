@@ -59,7 +59,7 @@ export async function GET(
             periodStart: financialStatements.periodStart,
             periodEnd: financialStatements.periodEnd,
             currency: financialStatements.currency,
-            metadata: financialStatements.metadata
+            sourceFile: financialStatements.sourceFile
           })
           .from(financialStatements)
           .where(and(
@@ -80,31 +80,9 @@ export async function GET(
             
             // Validate dates
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-              // Invalid dates, try to extract from metadata
-              console.warn('Invalid period dates, checking metadata');
-              
-              // Try to get period info from metadata
-              if (stmt.metadata && typeof stmt.metadata === 'object') {
-                const metadata = stmt.metadata as any;
-                if (metadata.periodColumns && Array.isArray(metadata.periodColumns) && metadata.periodColumns.length > 0) {
-                  const firstPeriod = metadata.periodColumns[0]?.label || metadata.periodColumns[0]?.periodLabel;
-                  const lastPeriod = metadata.periodColumns[metadata.periodColumns.length - 1]?.label || metadata.periodColumns[metadata.periodColumns.length - 1]?.periodLabel;
-                  
-                  if (firstPeriod && lastPeriod) {
-                    if (firstPeriod === lastPeriod) {
-                      coverage = firstPeriod;
-                    } else {
-                      coverage = `${firstPeriod} - ${lastPeriod}`;
-                    }
-                  } else {
-                    coverage = 'Period data available';
-                  }
-                } else {
-                  coverage = 'Period info unavailable';
-                }
-              } else {
-                coverage = 'No period data';
-              }
+              // Invalid dates, use fallback display
+              console.warn('Invalid period dates, using fallback display');
+              coverage = 'Period data available';
             } else {
               // Use English month abbreviations for consistency
               const options: Intl.DateTimeFormatOptions = { month: 'short' };
