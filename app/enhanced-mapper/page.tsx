@@ -94,69 +94,73 @@ function EnhancedMapperContent() {
   });
   // Main categories structure
   const [mainCategories] = useState([
-    { value: 'revenue', label: 'Revenue', isInflow: true },
-    { value: 'cogs', label: 'Cost of Sales', isInflow: false },
-    { value: 'operating_expenses', label: 'Operating Expenses', isInflow: false },
-    { value: 'financial_expenses', label: 'Financial Expenses', isInflow: false },
-    { value: 'taxes', label: 'Taxes', isInflow: false },
-    { value: 'profitability_metrics', label: 'Profitability Metrics', isInflow: false },
-    { value: 'margin_ratios', label: 'Margin & Ratios', isInflow: false },
-    { value: 'financial_calculations', label: 'Financial Calculations', isInflow: false },
-    { value: 'other', label: 'Other', isInflow: false }
+    { value: 'revenue', label: 'Revenue', isInflow: true, isOutflow: false },
+    { value: 'cogs', label: 'Cost of Sales', isInflow: false, isOutflow: true },
+    { value: 'operating_expenses', label: 'Operating Expenses', isInflow: false, isOutflow: true },
+    { value: 'financial_expenses', label: 'Financial Expenses', isInflow: false, isOutflow: true },
+    { value: 'other_income_expense', label: 'Other Income Expense', isInflow: true, isOutflow: true },
+    { value: 'earnings_before_tax', label: 'Earnings Before Tax', isInflow: true, isOutflow: true },
+    { value: 'taxes', label: 'Taxes', isInflow: false, isOutflow: true },
+    { value: 'profitability_metrics', label: 'Profitability Metrics', isInflow: false, isOutflow: true },
+    { value: 'margin_ratios', label: 'Margin & Ratios', isInflow: false, isOutflow: true },
+    { value: 'financial_calculations', label: 'Financial Calculations', isInflow: false, isOutflow: true },
+    { value: 'other', label: 'Other', isInflow: false, isOutflow: true }
   ]);
 
-  // Subcategories by main category
+  // Subcategories organized by income/outcome type
   const [subcategoriesData] = useState({
-    revenue: [
+    income: [
       { value: 'sales', label: 'Sales' },
       { value: 'services', label: 'Services' },
       { value: 'other_income', label: 'Other Income' },
       { value: 'interest_income', label: 'Interest Income' },
-      { value: 'investment_income', label: 'Investment Income' }
+      { value: 'investment_income', label: 'Investment Income' },
+      { value: 'extraordinary_income', label: 'Extraordinary Income' },
+      { value: 'gain_on_sale', label: 'Gain on Sale' },
+      { value: 'miscellaneous_income', label: 'Miscellaneous Income' }
     ],
-    cogs: [
-      { value: 'materials', label: 'Materials' },
-      { value: 'direct_labor', label: 'Direct Labor' },
-      { value: 'manufacturing', label: 'Manufacturing Costs' },
-      { value: 'inventory', label: 'Inventory' },
-      { value: 'direct_costs', label: 'Direct Costs' }
-    ],
-    operating_expenses: [
+    outcome: [
+      // Labor & Personnel
       { value: 'salaries', label: 'Salaries & Wages' },
+      { value: 'direct_labor', label: 'Direct Labor' },
+      { value: 'payroll_taxes', label: 'Payroll Taxes' },
+      
+      // Materials & Inventory
+      { value: 'materials', label: 'Materials' },
+      { value: 'inventory', label: 'Inventory' },
+      { value: 'manufacturing', label: 'Manufacturing Costs' },
+      { value: 'direct_costs', label: 'Direct Costs' },
+      
+      // Operating Expenses
       { value: 'rent', label: 'Rent' },
       { value: 'utilities', label: 'Utilities' },
       { value: 'marketing', label: 'Marketing & Advertising' },
       { value: 'professional_services', label: 'Professional Services' },
       { value: 'insurance', label: 'Insurance' },
       { value: 'travel', label: 'Travel & Entertainment' },
-      { value: 'banking', label: 'Banking Fees' },
       { value: 'office_supplies', label: 'Office Supplies' },
       { value: 'maintenance', label: 'Maintenance' },
-      { value: 'depreciation', label: 'Depreciation' },
-      { value: 'amortization', label: 'Amortization' }
-    ],
-    financial_expenses: [
+      
+      // Financial & Accounting
       { value: 'interest_expense', label: 'Interest Expense' },
       { value: 'bank_fees', label: 'Bank Fees' },
+      { value: 'banking', label: 'Banking Fees' },
       { value: 'foreign_exchange', label: 'Foreign Exchange' },
-      { value: 'financial_costs', label: 'Other Financial Costs' }
-    ],
-    taxes: [
+      { value: 'financial_costs', label: 'Other Financial Costs' },
+      { value: 'depreciation', label: 'Depreciation' },
+      { value: 'amortization', label: 'Amortization' },
+      
+      // Taxes
       { value: 'income_tax', label: 'Income Tax' },
       { value: 'vat', label: 'VAT' },
-      { value: 'payroll_taxes', label: 'Payroll Taxes' },
       { value: 'property_taxes', label: 'Property Taxes' },
-      { value: 'other_taxes', label: 'Other Taxes' }
-    ],
-    other: [
+      { value: 'other_taxes', label: 'Other Taxes' },
+      
+      // Other Expenses
       { value: 'extraordinary_items', label: 'Extraordinary Items' },
       { value: 'other_expenses', label: 'Other Expenses' },
       { value: 'miscellaneous', label: 'Miscellaneous' }
-    ],
-    // Calculated fields don't typically need subcategories, but we'll provide empty arrays
-    profitability_metrics: [],
-    margin_ratios: [],
-    financial_calculations: []
+    ]
   });
 
   // Custom subcategories (user-added)
@@ -166,18 +170,36 @@ function EnhancedMapperContent() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
 
-  // Helper function to get subcategories for a main category
-  const getSubcategoriesForMainCategory = (mainCategory: string) => {
-    const standard = (subcategoriesData as any)[mainCategory] || [];
-    const custom = (customSubcategories as any)[mainCategory] || [];
-    return [...standard, ...custom];
+  // Helper function to get subcategories for a main category based on income/outcome
+  const getSubcategoriesForMainCategory = (mainCategory: string, isInflow: boolean): { value: string; label: string }[] => {
+    const selectedCategory = mainCategories.find(cat => cat.value === mainCategory);
+    if (!selectedCategory) return [];
+    
+    let availableSubcategories: { value: string; label: string }[] = [];
+    
+    // If category supports inflow and this is an inflow account, show income subcategories
+    if (selectedCategory.isInflow && isInflow) {
+      availableSubcategories = [...availableSubcategories, ...subcategoriesData.income];
+    }
+    
+    // If category supports outflow and this is an outflow account, show outcome subcategories  
+    if (selectedCategory.isOutflow && !isInflow) {
+      availableSubcategories = [...availableSubcategories, ...subcategoriesData.outcome];
+    }
+    
+    // Add custom subcategories for this category
+    const customKey = `${mainCategory}_${isInflow ? 'income' : 'outcome'}`;
+    const custom = (customSubcategories as any)[customKey] || [];
+    
+    return [...availableSubcategories, ...custom];
   };
 
   // Helper function to add custom subcategory
-  const addCustomSubcategory = (mainCategory: string, subcategory: { value: string; label: string }) => {
+  const addCustomSubcategory = (mainCategory: string, isInflow: boolean, subcategory: { value: string; label: string }) => {
+    const customKey = `${mainCategory}_${isInflow ? 'income' : 'outcome'}`;
     setCustomSubcategories(prev => ({
       ...prev,
-      [mainCategory]: [...((prev as any)[mainCategory] || []), subcategory]
+      [customKey]: [...((prev as any)[customKey] || []), subcategory]
     }));
   };
 
@@ -1236,9 +1258,9 @@ function EnhancedMapperContent() {
                   onChange={(subcategory) => {
                     updateAccountCategoryAndSubcategory(node.id, node.category, subcategory);
                   }}
-                  subcategories={getSubcategoriesForMainCategory(node.category)}
+                  subcategories={getSubcategoriesForMainCategory(node.category, node.isInflow)}
                   onAddSubcategory={(newSubcategory) => {
-                    addCustomSubcategory(node.category, newSubcategory);
+                    addCustomSubcategory(node.category, node.isInflow, newSubcategory);
                   }}
                   placeholder="Select subcategory..."
                   className="w-full"
