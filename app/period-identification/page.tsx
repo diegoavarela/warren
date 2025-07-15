@@ -7,14 +7,9 @@ import { AppLayout } from '@/components/AppLayout';
 import { CheckCircleIcon, QuestionMarkCircleIcon, XCircleIcon, ChevronRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/lib/translations';
 import { WorkflowBreadcrumbs } from '@/components/Breadcrumbs';
+import { detectPeriodsWithData, formatPeriodDisplay, getPeriodColor, DetectedPeriod } from '@/lib/utils/period-detection';
 
-interface PeriodColumn {
-  columnIndex: number;
-  label: string;
-  confidence: number;
-  isManuallySelected?: boolean;
-  parsedDate?: string;
-}
+// Remove old interface - using DetectedPeriod from utility
 
 function PeriodIdentificationContent() {
   const router = useRouter();
@@ -25,13 +20,15 @@ function PeriodIdentificationContent() {
   console.log('Period Identification Page Loaded');
   
   const [excelData, setExcelData] = useState<any[][]>([]);
-  const [periodColumns, setPeriodColumns] = useState<PeriodColumn[]>([]);
+  const [detectedPeriods, setDetectedPeriods] = useState<DetectedPeriod[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<Set<number>>(new Set());
-  const [yearContext, setYearContext] = useState<number>(new Date().getFullYear());
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [headerRow, setHeaderRow] = useState<any[]>([]);
   const [fileName, setFileName] = useState<string>('');
   const [headerRowIndex, setHeaderRowIndex] = useState<number>(0);
+  const [currentPeriod, setCurrentPeriod] = useState<DetectedPeriod | null>(null);
+  const [effectiveDate, setEffectiveDate] = useState<Date>(new Date());
 
   useEffect(() => {
     loadExcelData();
@@ -66,58 +63,36 @@ function PeriodIdentificationContent() {
       const rawData = data.data || [];
       setExcelData(rawData);
       
-      // First, use AI to detect periods
-      console.log('🤖 Using AI to detect periods...');
-      const aiResponse = await fetch('/api/ai-analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'detect-periods',
-          rawData: rawData.slice(0, Math.min(10, rawData.length)),
-          fileName: fileName
-        })
+      // Use the new universal period detection
+      console.log('🤖 Using universal period detection...');
+      const detectionResult = detectPeriodsWithData(rawData, currentDate);
+      
+      console.log('✅ Period detection result:', {
+        totalPeriods: detectionResult.periods.length,
+        actualPeriods: detectionResult.actualPeriods.length,
+        forecastPeriods: detectionResult.forecastPeriods.length,
+        currentPeriod: detectionResult.currentPeriod?.label,
+        effectiveDate: detectionResult.effectiveDate,
+        headerRowIndex: detectionResult.headerRowIndex
       });
       
-      let detectedPeriods: PeriodColumn[] = [];
-      let headerRowIndex = 0;
+      setDetectedPeriods(detectionResult.periods);
+      setCurrentPeriod(detectionResult.currentPeriod);
+      setEffectiveDate(detectionResult.effectiveDate);
+      setHeaderRowIndex(detectionResult.headerRowIndex);
       
-      if (aiResponse.ok) {
-        const aiResult = await aiResponse.json();
-        if (aiResult.success && aiResult.data?.periodColumns) {
-          console.log('✅ AI detected periods:', aiResult.data.periodColumns);
-          detectedPeriods = aiResult.data.periodColumns.map((col: any) => ({
-            columnIndex: col.columnIndex,
-            label: col.label,
-            confidence: 95, // High confidence for AI detection
-            isManuallySelected: false
-          }));
-          headerRowIndex = aiResult.data.headerRowIndex || 0;
-        }
-      }
-      
-      // If AI didn't detect periods, fall back to local detection
-      if (detectedPeriods.length === 0) {
-        console.log('⚠️ AI detection failed, using local detection');
-        const result = detectPeriodColumnsWithHeaderRow(rawData);
-        detectedPeriods = result.periods;
-        headerRowIndex = result.headerRowIndex;
-      }
-      
-      setPeriodColumns(detectedPeriods);
-      
-      // Auto-select high confidence periods
+      // Auto-select periods with data (both actual and forecast)
       const autoSelected = new Set<number>();
-      detectedPeriods.forEach(p => {
-        if (p.confidence >= 80) {
+      detectionResult.periods.forEach(p => {
+        if (p.hasData) {
           autoSelected.add(p.columnIndex);
         }
       });
       setSelectedColumns(autoSelected);
       
       // Set the correct header row
-      const headerRow = rawData[headerRowIndex] || [];
+      const headerRow = rawData[detectionResult.headerRowIndex] || [];
       setHeaderRow(headerRow);
-      setHeaderRowIndex(headerRowIndex);
       
     } catch (error) {
       console.error('Error loading Excel data:', error);
@@ -126,71 +101,7 @@ function PeriodIdentificationContent() {
     }
   };
 
-  const detectPeriodColumnsWithHeaderRow = (data: any[][]): { periods: PeriodColumn[], headerRowIndex: number } => {
-    const periods: PeriodColumn[] = [];
-    if (!data || data.length < 2) return { periods, headerRowIndex: 0 };
-
-    // Find the row with the most period-like headers
-    let bestRow = 0;
-    let bestScore = 0;
-    let bestPeriods: PeriodColumn[] = [];
-    
-    // Check first 10 rows for headers
-    for (let rowIndex = 0; rowIndex < Math.min(10, data.length); rowIndex++) {
-      const row = data[rowIndex];
-      if (!row || !Array.isArray(row)) continue;
-      
-      const currentPeriods: PeriodColumn[] = [];
-      let rowScore = 0;
-      
-      row.forEach((cell, colIndex) => {
-        if (!cell || colIndex === 0) return; // Skip first column (usually account names)
-        
-        const cellStr = String(cell).trim();
-        let confidence = 0;
-        
-        // Check for various period patterns
-        if (cellStr.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-_\s]\d{2,4}$/i)) {
-          confidence = 95;
-        } else if (cellStr.match(/^(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)[-_\s]\d{2,4}$/i)) {
-          confidence = 95;
-        } else if (cellStr.match(/^\d{1,2}\/\d{4}$/)) {
-          confidence = 90;
-        } else if (cellStr.match(/^Q[1-4][\s_-]\d{4}$/i)) {
-          confidence = 90;
-        } else if (cellStr.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i)) {
-          confidence = 70; // Lower confidence without year
-        } else if (cellStr.match(/^\d{4}$/)) {
-          confidence = 60; // Could be a year
-        } else if (cellStr.toLowerCase() === 'total') {
-          confidence = 50; // Total column
-        }
-        
-        if (confidence > 0) {
-          currentPeriods.push({
-            columnIndex: colIndex,
-            label: cellStr,
-            confidence
-          });
-          rowScore += confidence;
-        }
-      });
-      
-      // If this row has more period-like columns, use it
-      if (rowScore > bestScore && currentPeriods.length > 0) {
-        bestScore = rowScore;
-        bestRow = rowIndex;
-        bestPeriods = currentPeriods;
-      }
-    }
-    
-    console.log(`Found best period row at index ${bestRow} with score ${bestScore}:`, bestPeriods);
-    
-    return {
-      periods: bestPeriods.sort((a, b) => a.columnIndex - b.columnIndex),
-      headerRowIndex: bestRow
-    };
-  };
+  // Old detection function removed - now using universal period detection utility
 
   const toggleColumnSelection = (colIndex: number) => {
     const newSelected = new Set(selectedColumns);
@@ -220,22 +131,34 @@ function PeriodIdentificationContent() {
 
     // Create final period columns array with selected columns
     const finalPeriods = Array.from(selectedColumns).map(colIndex => {
-      const detected = periodColumns.find(p => p.columnIndex === colIndex);
+      const detected = detectedPeriods.find(p => p.columnIndex === colIndex);
       const label = detected?.label || headerRow[colIndex] || `Column ${colIndex}`;
       
       return {
         columnIndex: colIndex,
         label: label,
         periodLabel: label,
-        periodType: 'month', // Default, could be enhanced
+        periodType: detected?.periodType || 'monthly',
         confidence: detected?.confidence || 100,
-        isManuallySelected: !detected || detected.confidence < 80
+        isManuallySelected: !detected || detected.confidence < 80,
+        classification: detected?.classification || 'EMPTY',
+        hasData: detected?.hasData || false,
+        dataPoints: detected?.dataPoints || 0,
+        parsedDate: detected?.parsedDate,
+        month: detected?.month || 0,
+        year: detected?.year || 0
       };
     });
 
-    // Store period configuration
+    // Store enhanced period configuration
     sessionStorage.setItem('confirmedPeriods', JSON.stringify(finalPeriods));
-    sessionStorage.setItem('periodYearContext', yearContext.toString());
+    sessionStorage.setItem('currentPeriod', JSON.stringify(currentPeriod));
+    sessionStorage.setItem('effectiveDate', effectiveDate.toISOString());
+    sessionStorage.setItem('periodClassification', JSON.stringify({
+      actual: detectedPeriods.filter(p => p.classification === 'ACTUAL'),
+      current: currentPeriod,
+      forecast: detectedPeriods.filter(p => p.classification === 'FORECAST')
+    }));
 
     // Navigate to enhanced mapper
     const session = searchParams.get('session') || sessionStorage.getItem('uploadSession');
@@ -280,21 +203,23 @@ function PeriodIdentificationContent() {
               </p>
             </div>
 
-            {/* Year Context Selector */}
+            {/* Period Summary */}
             <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+              <div className="flex items-center space-x-2 mb-2">
                 <CalendarIcon className="w-5 h-5 text-blue-600" />
-                <span>Contexto del año (para periodos sin año explícito):</span>
-                <select
-                  value={yearContext}
-                  onChange={(e) => setYearContext(Number(e.target.value))}
-                  className="ml-2 px-3 py-1 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {[2023, 2024, 2025, 2026].map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </label>
+                <span className="text-sm font-medium text-gray-700">Resumen de períodos detectados:</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Período actual:</span> {currentPeriod ? formatPeriodDisplay(currentPeriod) : 'No detectado'}
+                </div>
+                <div>
+                  <span className="font-medium">Fecha efectiva:</span> {effectiveDate.toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="font-medium">Períodos con datos:</span> {detectedPeriods.filter(p => p.hasData).length}
+                </div>
+              </div>
             </div>
 
             {/* Column Headers Table */}
@@ -309,13 +234,16 @@ function PeriodIdentificationContent() {
                       Encabezado
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Detección
+                      Clasificación
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Confianza
+                      Datos
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Fecha
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Es Periodo
+                      Incluir
                     </th>
                   </tr>
                 </thead>
@@ -323,7 +251,7 @@ function PeriodIdentificationContent() {
                   {headerRow.map((header, index) => {
                     if (index === 0) return null; // Skip first column
                     
-                    const detected = periodColumns.find(p => p.columnIndex === index);
+                    const detected = detectedPeriods.find(p => p.columnIndex === index);
                     const isSelected = selectedColumns.has(index);
                     
                     return (
@@ -336,22 +264,38 @@ function PeriodIdentificationContent() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {detected ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              AI detectado
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPeriodColor(detected.classification)}`}>
+                              {detected.classification}
                             </span>
                           ) : (
                             <span className="text-gray-400">No detectado</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center space-x-2">
-                            {detected && (
-                              <>
-                                {getConfidenceIcon(detected.confidence)}
-                                <span className="text-gray-600">{detected.confidence}%</span>
-                              </>
-                            )}
-                          </div>
+                          {detected ? (
+                            <div className="flex items-center space-x-2">
+                              {detected.hasData ? (
+                                <>
+                                  <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                                  <span className="text-gray-600">{detected.dataPoints} valores</span>
+                                </>
+                              ) : (
+                                <>
+                                  <XCircleIcon className="w-4 h-4 text-gray-400" />
+                                  <span className="text-gray-400">Sin datos</span>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {detected && detected.parsedDate ? (
+                            formatPeriodDisplay(detected)
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <input

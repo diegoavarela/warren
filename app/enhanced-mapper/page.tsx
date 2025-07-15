@@ -459,12 +459,27 @@ function EnhancedMapperContent() {
     
     // First check for confirmed periods from period identification page
     const confirmedPeriodsStr = sessionStorage.getItem('confirmedPeriods');
+    const currentPeriodStr = sessionStorage.getItem('currentPeriod');
+    const effectiveDateStr = sessionStorage.getItem('effectiveDate');
+    const periodClassificationStr = sessionStorage.getItem('periodClassification');
+    
     let finalPeriodColumns = [];
     
     if (confirmedPeriodsStr) {
       console.log('✅ Using confirmed periods from period identification');
       finalPeriodColumns = JSON.parse(confirmedPeriodsStr);
       setPeriodColumns(finalPeriodColumns);
+      
+      // Log period classification info
+      if (periodClassificationStr) {
+        const classification = JSON.parse(periodClassificationStr);
+        console.log('📊 Period Classification:', {
+          actual: classification.actual.length,
+          current: classification.current?.label,
+          forecast: classification.forecast.length,
+          effectiveDate: effectiveDateStr
+        });
+      }
       
       // Still run AI analysis for other structure detection but skip period detection
       try {
