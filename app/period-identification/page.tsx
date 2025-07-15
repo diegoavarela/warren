@@ -31,6 +31,7 @@ function PeriodIdentificationContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [headerRow, setHeaderRow] = useState<any[]>([]);
   const [fileName, setFileName] = useState<string>('');
+  const [headerRowIndex, setHeaderRowIndex] = useState<number>(0);
 
   useEffect(() => {
     loadExcelData();
@@ -62,10 +63,46 @@ function PeriodIdentificationContent() {
       }
 
       const data = await response.json();
-      setExcelData(data.data || []);
+      const rawData = data.data || [];
+      setExcelData(rawData);
       
-      // Detect periods automatically
-      const detectedPeriods = detectPeriodColumns(data.data);
+      // First, use AI to detect periods
+      console.log('🤖 Using AI to detect periods...');
+      const aiResponse = await fetch('/api/ai-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'detect-periods',
+          rawData: rawData.slice(0, Math.min(10, rawData.length)),
+          fileName: fileName
+        })
+      });
+      
+      let detectedPeriods: PeriodColumn[] = [];
+      let headerRowIndex = 0;
+      
+      if (aiResponse.ok) {
+        const aiResult = await aiResponse.json();
+        if (aiResult.success && aiResult.data?.periodColumns) {
+          console.log('✅ AI detected periods:', aiResult.data.periodColumns);
+          detectedPeriods = aiResult.data.periodColumns.map((col: any) => ({
+            columnIndex: col.columnIndex,
+            label: col.label,
+            confidence: 95, // High confidence for AI detection
+            isManuallySelected: false
+          }));
+          headerRowIndex = aiResult.data.headerRowIndex || 0;
+        }
+      }
+      
+      // If AI didn't detect periods, fall back to local detection
+      if (detectedPeriods.length === 0) {
+        console.log('⚠️ AI detection failed, using local detection');
+        const result = detectPeriodColumnsWithHeaderRow(rawData);
+        detectedPeriods = result.periods;
+        headerRowIndex = result.headerRowIndex;
+      }
+      
       setPeriodColumns(detectedPeriods);
       
       // Auto-select high confidence periods
@@ -77,9 +114,10 @@ function PeriodIdentificationContent() {
       });
       setSelectedColumns(autoSelected);
       
-      // Set header row (assuming row 1 or 2 has headers)
-      const possibleHeaderRow = data.data[1] || data.data[0] || [];
-      setHeaderRow(possibleHeaderRow);
+      // Set the correct header row
+      const headerRow = rawData[headerRowIndex] || [];
+      setHeaderRow(headerRow);
+      setHeaderRowIndex(headerRowIndex);
       
     } catch (error) {
       console.error('Error loading Excel data:', error);
@@ -88,15 +126,22 @@ function PeriodIdentificationContent() {
     }
   };
 
-  const detectPeriodColumns = (data: any[][]): PeriodColumn[] => {
+  const detectPeriodColumnsWithHeaderRow = (data: any[][]): { periods: PeriodColumn[], headerRowIndex: number } => {
     const periods: PeriodColumn[] = [];
-    if (!data || data.length < 2) return periods;
+    if (!data || data.length < 2) return { periods, headerRowIndex: 0 };
 
-    // Check first few rows for headers
-    const rowsToCheck = data.slice(0, 4);
+    // Find the row with the most period-like headers
+    let bestRow = 0;
+    let bestScore = 0;
+    let bestPeriods: PeriodColumn[] = [];
     
-    rowsToCheck.forEach((row, rowIndex) => {
-      if (!row) return;
+    // Check first 10 rows for headers
+    for (let rowIndex = 0; rowIndex < Math.min(10, data.length); rowIndex++) {
+      const row = data[rowIndex];
+      if (!row || !Array.isArray(row)) continue;
+      
+      const currentPeriods: PeriodColumn[] = [];
+      let rowScore = 0;
       
       row.forEach((cell, colIndex) => {
         if (!cell || colIndex === 0) return; // Skip first column (usually account names)
@@ -117,26 +162,34 @@ function PeriodIdentificationContent() {
           confidence = 70; // Lower confidence without year
         } else if (cellStr.match(/^\d{4}$/)) {
           confidence = 60; // Could be a year
+        } else if (cellStr.toLowerCase() === 'total') {
+          confidence = 50; // Total column
         }
         
         if (confidence > 0) {
-          // Check if we already detected this column
-          const existing = periods.find(p => p.columnIndex === colIndex);
-          if (!existing || existing.confidence < confidence) {
-            if (existing) {
-              periods.splice(periods.indexOf(existing), 1);
-            }
-            periods.push({
-              columnIndex: colIndex,
-              label: cellStr,
-              confidence
-            });
-          }
+          currentPeriods.push({
+            columnIndex: colIndex,
+            label: cellStr,
+            confidence
+          });
+          rowScore += confidence;
         }
       });
-    });
+      
+      // If this row has more period-like columns, use it
+      if (rowScore > bestScore && currentPeriods.length > 0) {
+        bestScore = rowScore;
+        bestRow = rowIndex;
+        bestPeriods = currentPeriods;
+      }
+    }
     
-    return periods.sort((a, b) => a.columnIndex - b.columnIndex);
+    console.log(`Found best period row at index ${bestRow} with score ${bestScore}:`, bestPeriods);
+    
+    return {
+      periods: bestPeriods.sort((a, b) => a.columnIndex - b.columnIndex),
+      headerRowIndex: bestRow
+    };
   };
 
   const toggleColumnSelection = (colIndex: number) => {
@@ -279,12 +332,12 @@ function PeriodIdentificationContent() {
                           {String.fromCharCode(65 + index)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {header || `Columna ${index}`}
+                          <span className="font-medium">{header || `Columna ${index}`}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {detected ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              Periodo detectado
+                              AI detectado
                             </span>
                           ) : (
                             <span className="text-gray-400">No detectado</span>
@@ -321,16 +374,19 @@ function PeriodIdentificationContent() {
               <div className="overflow-x-auto border border-gray-200 rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200 text-xs">
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {excelData.slice(0, 10).map((row, rowIndex) => (
-                      <tr key={rowIndex}>
+                    {excelData.slice(0, Math.min(8, excelData.length)).map((row, rowIndex) => (
+                      <tr key={rowIndex} className={rowIndex === headerRowIndex ? 'bg-blue-50' : ''}>
                         {row.map((cell, colIndex) => {
                           const isSelectedPeriod = selectedColumns.has(colIndex);
+                          const isDetectedHeaderRow = rowIndex === headerRowIndex;
                           return (
                             <td
                               key={colIndex}
                               className={`px-3 py-2 whitespace-nowrap ${
                                 isSelectedPeriod ? 'bg-purple-100 font-medium' : ''
-                              } ${colIndex === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}`}
+                              } ${colIndex === 0 ? 'font-medium text-gray-900' : 'text-gray-600'} ${
+                                isDetectedHeaderRow ? 'font-bold bg-blue-50' : ''
+                              }`}
                             >
                               {cell || '-'}
                             </td>
@@ -341,6 +397,9 @@ function PeriodIdentificationContent() {
                   </tbody>
                 </table>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                La fila azul (fila {headerRowIndex + 1}) muestra los encabezados detectados. Las columnas púrpuras son los períodos seleccionados.
+              </p>
             </div>
 
             {/* Action Buttons */}
