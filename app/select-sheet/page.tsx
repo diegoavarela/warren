@@ -75,9 +75,9 @@ function SelectSheetContent() {
     // Store selected sheet in session storage
     sessionStorage.setItem('selectedSheet', selectedSheet);
     
-    // Redirect to enhanced mapper
+    // Redirect to period identification page
     const uploadSession = searchParams.get('session') || sessionStorage.getItem('uploadSession');
-    router.push(`/enhanced-mapper?session=${uploadSession}&sheet=${selectedSheet}`);
+    router.push(`/period-identification?session=${uploadSession}&sheet=${selectedSheet}`);
   };
 
 

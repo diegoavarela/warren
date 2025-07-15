@@ -457,8 +457,55 @@ function EnhancedMapperContent() {
   const runAIAnalysis = async (rawData: any[][]) => {
     setLoadingStep("🤖 Analizando con Inteligencia Artificial...");
     
+    // First check for confirmed periods from period identification page
+    const confirmedPeriodsStr = sessionStorage.getItem('confirmedPeriods');
+    let finalPeriodColumns = [];
+    
+    if (confirmedPeriodsStr) {
+      console.log('✅ Using confirmed periods from period identification');
+      finalPeriodColumns = JSON.parse(confirmedPeriodsStr);
+      setPeriodColumns(finalPeriodColumns);
+      
+      // Still run AI analysis for other structure detection but skip period detection
+      try {
+        const response = await fetch('/api/ai-analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'complete',
+            rawData: rawData.slice(0, Math.min(30, rawData.length)),
+            fileName: fileName
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { structure, classifications } = result.data;
+          setDetectedStructure(structure);
+          setCurrency(structure.currency || "USD");
+          
+          // Calculate actual data range
+          if (finalPeriodColumns.length > 0) {
+            setActualDataRange({
+              first: finalPeriodColumns[0].label,
+              last: finalPeriodColumns[finalPeriodColumns.length - 1].label
+            });
+          }
+          
+          // Build account tree with confirmed periods
+          const tree = buildAccountTree(rawData, { ...structure, periodColumns: finalPeriodColumns }, classifications);
+          setAccountTree(tree);
+          setAiAnalysisComplete(true);
+          return; // Exit early since we have everything we need
+        }
+      } catch (error) {
+        console.error('AI Analysis failed with confirmed periods:', error);
+      }
+    }
+    
+    // If no confirmed periods, continue with original AI analysis logic
     try {
-      // Run AI analysis - send first 30 rows for structure detection only
       const response = await fetch('/api/ai-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

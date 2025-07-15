@@ -58,7 +58,7 @@ export function Breadcrumbs({ steps, className = "" }: BreadcrumbsProps) {
 }
 
 interface WorkflowBreadcrumbsProps {
-  currentStep: 'upload' | 'select-sheet' | 'map-accounts' | 'save';
+  currentStep: 'upload' | 'select-sheet' | 'identify-periods' | 'map-accounts' | 'save';
   fileName?: string;
   className?: string;
 }
@@ -69,12 +69,12 @@ export function WorkflowBreadcrumbs({
   className = "" 
 }: WorkflowBreadcrumbsProps) {
   const getStepNumber = (step: string) => {
-    const steps = ['upload', 'select-sheet', 'map-accounts', 'save'];
+    const steps = ['upload', 'select-sheet', 'identify-periods', 'map-accounts', 'save'];
     return steps.indexOf(step) + 1;
   };
 
   const isCompleted = (step: string) => {
-    const steps = ['upload', 'select-sheet', 'map-accounts', 'save'];
+    const steps = ['upload', 'select-sheet', 'identify-periods', 'map-accounts', 'save'];
     const currentIndex = steps.indexOf(currentStep);
     const stepIndex = steps.indexOf(step);
     return stepIndex < currentIndex;
@@ -99,6 +99,12 @@ export function WorkflowBreadcrumbs({
       completed: isCompleted('select-sheet')
     },
     {
+      label: "Identify Periods",
+      href: currentStep === 'identify-periods' ? undefined : (isCompleted('identify-periods') ? "/period-identification" : undefined),
+      current: currentStep === 'identify-periods',
+      completed: isCompleted('identify-periods')
+    },
+    {
       label: "Map Accounts",
       href: currentStep === 'map-accounts' ? undefined : (isCompleted('map-accounts') ? "/enhanced-mapper" : undefined),
       current: currentStep === 'map-accounts',
@@ -117,7 +123,7 @@ export function WorkflowBreadcrumbs({
       
       {/* Progress indicator */}
       <div className="flex items-center space-x-3 text-xs text-gray-500">
-        <span>Step {getStepNumber(currentStep)} of 4</span>
+        <span>Step {getStepNumber(currentStep)} of 5</span>
         {fileName && (
           <>
             <span>•</span>
