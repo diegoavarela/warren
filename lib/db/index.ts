@@ -44,6 +44,8 @@ let mappingTemplates: any;
 let parsingLogs: any;
 let processingJobs: any;
 let systemSettings: any;
+let organizationSubcategories: any;
+let companySubcategories: any;
 let eq: any;
 let desc: any;
 let count: any;
@@ -106,6 +108,8 @@ if (!isServer) {
   parsingLogs = schema.parsingLogs;
   processingJobs = schema.processingJobs;
   systemSettings = schema.systemSettings;
+  organizationSubcategories = schema.organizationSubcategories;
+  companySubcategories = schema.companySubcategories;
   eq = realEq;
   desc = realDesc;
   count = realCount;
@@ -128,6 +132,8 @@ export {
   parsingLogs,
   processingJobs,
   systemSettings,
+  organizationSubcategories,
+  companySubcategories,
   eq,
   desc,
   count,

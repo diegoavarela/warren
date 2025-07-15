@@ -198,6 +198,38 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Organization Subcategories table
+export const organizationSubcategories = pgTable("organization_subcategories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
+  value: varchar("value", { length: 100 }).notNull(),
+  label: varchar("label", { length: 255 }).notNull(),
+  mainCategories: jsonb("main_categories"), // Array of main categories this subcategory applies to
+  isActive: boolean("is_active").default(true),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueOrgValue: unique().on(table.organizationId, table.value),
+}));
+
+// Company Subcategories table (for company-specific overrides)
+export const companySubcategories = pgTable("company_subcategories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  organizationSubcategoryId: uuid("organization_subcategory_id").references(() => organizationSubcategories.id),
+  value: varchar("value", { length: 100 }).notNull(),
+  label: varchar("label", { length: 255 }).notNull(),
+  mainCategories: jsonb("main_categories"), // Array of main categories this subcategory applies to
+  isActive: boolean("is_active").default(true),
+  isOverride: boolean("is_override").default(false), // True if this overrides an org subcategory
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyValue: unique().on(table.companyId, table.value),
+}));
+
 // Export types
 export type Organization = typeof organizations.$inferSelect;
 export type User = typeof users.$inferSelect;
@@ -209,3 +241,5 @@ export type MappingTemplate = typeof mappingTemplates.$inferSelect;
 export type ProcessingJob = typeof processingJobs.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type SystemSetting = typeof systemSettings.$inferSelect;
+export type OrganizationSubcategory = typeof organizationSubcategories.$inferSelect;
+export type CompanySubcategory = typeof companySubcategories.$inferSelect;

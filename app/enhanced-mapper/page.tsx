@@ -82,6 +82,16 @@ function EnhancedMapperContent() {
   // Data period range state
   const [actualDataRange, setActualDataRange] = useState<{first: string, last: string} | null>(null);
   
+  // Bulk assignment state
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [bulkAssignHeaderId, setBulkAssignHeaderId] = useState<string | null>(null);
+  const [bulkAssignCategory, setBulkAssignCategory] = useState<string>('');
+  const [bulkAssignSubcategory, setBulkAssignSubcategory] = useState<string>('');
+  const [selectedChildrenIds, setSelectedChildrenIds] = useState<string[]>([]);
+  const [bulkAssignProgress, setBulkAssignProgress] = useState(false);
+  const [bulkAssignSuccess, setBulkAssignSuccess] = useState<string | null>(null);
+  const [bulkAssignError, setBulkAssignError] = useState<string | null>(null);
+  
   // Column width states for resizable columns
   const [columnWidths, setColumnWidths] = useState({
     row: 4, // Row numbers
@@ -124,12 +134,15 @@ function EnhancedMapperContent() {
       { value: 'salaries', label: 'Salaries & Wages' },
       { value: 'direct_labor', label: 'Direct Labor' },
       { value: 'payroll_taxes', label: 'Payroll Taxes' },
+      { value: 'employee_benefits', label: 'Employee Benefits' },
+      { value: 'contractor_fees', label: 'Contractor Fees' },
       
       // Materials & Inventory
       { value: 'materials', label: 'Materials' },
       { value: 'inventory', label: 'Inventory' },
       { value: 'manufacturing', label: 'Manufacturing Costs' },
       { value: 'direct_costs', label: 'Direct Costs' },
+      { value: 'production_supplies', label: 'Production Supplies' },
       
       // Operating Expenses
       { value: 'rent', label: 'Rent' },
@@ -140,6 +153,8 @@ function EnhancedMapperContent() {
       { value: 'travel', label: 'Travel & Entertainment' },
       { value: 'office_supplies', label: 'Office Supplies' },
       { value: 'maintenance', label: 'Maintenance' },
+      { value: 'technology', label: 'Technology & Software' },
+      { value: 'communications', label: 'Communications' },
       
       // Financial & Accounting
       { value: 'interest_expense', label: 'Interest Expense' },
@@ -209,6 +224,178 @@ function EnhancedMapperContent() {
     if (node.isCalculated) return 'calculated';
     if (node.isTotal) return 'total';
     return 'detail';
+  };
+
+  // Helper function to get all children of a node recursively
+  const getAllChildren = (node: AccountNode): AccountNode[] => {
+    let children: AccountNode[] = [];
+    
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        children.push(child);
+        children = children.concat(getAllChildren(child));
+      }
+    }
+    
+    return children;
+  };
+
+  // Helper function to check if account is eligible for bulk assignment
+  const getAssignmentEligibility = (node: AccountNode): { eligible: boolean; reason: string } => {
+    if (node.isSectionHeader) {
+      return { eligible: false, reason: 'Section header' };
+    }
+    if (node.isCalculated) {
+      return { eligible: false, reason: 'Calculated field' };
+    }
+    if (node.isTotal) {
+      return { eligible: false, reason: 'Total/Subtotal' };
+    }
+    if (!node.isActive) {
+      return { eligible: false, reason: 'Deactivated' };
+    }
+    return { eligible: true, reason: 'Detail account' };
+  };
+
+  // Helper function to get all available accounts for manual selection
+  const getAllAvailableAccounts = (headerNodeId: string) => {
+    try {
+      const headerNode = findNodeInTree(accountTree, headerNodeId);
+      if (!headerNode) return [];
+      
+      // Find the index of the header in the account tree
+      const headerIndex = accountTree.findIndex(account => account.id === headerNodeId);
+      if (headerIndex === -1) return [];
+      
+      // Get only accounts that come AFTER this header in the tree
+      const availableAccounts = [];
+      
+      for (let i = headerIndex + 1; i < accountTree.length; i++) {
+        const account = accountTree[i];
+        
+        // For maximum flexibility, we have two modes:
+        // 1. If there's another header, stop there (section mode)
+        // 2. If no more headers, include all remaining accounts
+        
+        // Only stop at another header if it's a section header
+        if (account.isSectionHeader) {
+          // Option: Include a setting to control whether to stop at headers
+          break;
+        }
+        
+        // Include active accounts that are not empty
+        if (account.isActive && account.accountName && account.accountName.trim() !== '') {
+          // Additional checks for valid accounts
+          const hasData = account.hasFinancialData || 
+                         Object.values(account.periods || {}).some(val => val !== 0);
+          
+          if (hasData || getAccountType(account) === 'detail') {
+            availableAccounts.push(account);
+          }
+        }
+      }
+      
+      // If no accounts found after header, try alternative approach
+      if (availableAccounts.length === 0) {
+        // Get all non-header active accounts as fallback
+        const fallbackAccounts = accountTree.filter((account, index) => 
+          index > headerIndex && 
+          !account.isSectionHeader && 
+          account.isActive &&
+          account.accountName && 
+          account.accountName.trim() !== ''
+        );
+        
+        return fallbackAccounts.map(account => ({
+          ...account,
+          eligibility: getAssignmentEligibility(account)
+        }));
+      }
+      
+      return availableAccounts.map(account => ({
+        ...account,
+        eligibility: getAssignmentEligibility(account)
+      }));
+    } catch (error) {
+      console.error('Error getting available accounts:', error);
+      return [];
+    }
+  };
+
+  // Helper function to start bulk assignment
+  const startBulkAssignment = (headerNodeId: string) => {
+    const headerNode = findNodeInTree(accountTree, headerNodeId);
+    if (!headerNode || !headerNode.category) return;
+    
+    const availableAccounts = getAllAvailableAccounts(headerNodeId);
+    const eligibleAccounts = availableAccounts.filter(acc => acc.eligibility.eligible);
+    
+    setBulkAssignHeaderId(headerNodeId);
+    setBulkAssignCategory(headerNode.category);
+    setBulkAssignSubcategory(headerNode.subcategory || '');
+    // Pre-select eligible accounts by default
+    setSelectedChildrenIds(eligibleAccounts.map(acc => acc.id));
+    setShowBulkAssignModal(true);
+  };
+
+  // Helper function to execute bulk assignment
+  const executeBulkAssignment = async () => {
+    if (!bulkAssignHeaderId || !bulkAssignCategory || selectedChildrenIds.length === 0) return;
+    
+    setBulkAssignProgress(true);
+    
+    try {
+      // Apply category to each selected child
+      const updateNode = (nodes: AccountNode[]): AccountNode[] => {
+        return nodes.map(node => {
+          if (selectedChildrenIds.includes(node.id)) {
+            // Update isInflow based on main category
+            const categoryInfo = mainCategories.find(cat => cat.value === bulkAssignCategory);
+            const isInflow = categoryInfo?.isInflow || false;
+            
+            return {
+              ...node,
+              category: bulkAssignCategory,
+              subcategory: bulkAssignSubcategory,
+              isInflow: isInflow
+            };
+          }
+          
+          if (node.children.length > 0) {
+            return { ...node, children: updateNode(node.children) };
+          }
+          return node;
+        });
+      };
+      
+      setAccountTree(updateNode(accountTree));
+      
+      // Close modal and reset state
+      setShowBulkAssignModal(false);
+      setBulkAssignHeaderId(null);
+      setBulkAssignCategory('');
+      setBulkAssignSubcategory('');
+      setSelectedChildrenIds([]);
+      
+      // Show success message
+      setBulkAssignSuccess(`Successfully applied category to ${selectedChildrenIds.length} accounts`);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setBulkAssignSuccess(null);
+      }, 5000);
+      
+    } catch (error) {
+      console.error('Error during bulk assignment:', error);
+      setBulkAssignError('Error occurred during bulk assignment. Please try again.');
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setBulkAssignError(null);
+      }, 5000);
+    } finally {
+      setBulkAssignProgress(false);
+    }
   };
 
   // Helper function to update account classification type
@@ -948,7 +1135,8 @@ function EnhancedMapperContent() {
           } else if (!isInflow && ['revenue', 'other_income'].includes(category)) {
             category = 'operating_expenses';
           }
-          return { ...node, isInflow, category };
+          // Clear subcategory when switching type as available subcategories will change
+          return { ...node, isInflow, category, subcategory: '' };
         }
         if (node.children.length > 0) {
           return { ...node, children: updateNode(node.children) };
@@ -967,7 +1155,7 @@ function EnhancedMapperContent() {
       } else if (!isInflow && ['revenue', 'other_income'].includes(category)) {
         category = 'operating_expenses';
       }
-      setSelectedAccount({ ...selectedAccount, isInflow, category });
+      setSelectedAccount({ ...selectedAccount, isInflow, category, subcategory: '' });
     }
   };
 
@@ -1207,11 +1395,25 @@ function EnhancedMapperContent() {
                   <span className="text-xs font-medium leading-none">
                     {node.isSectionHeader ? 'Hdr' : node.isCalculated ? 'Cal' : node.isTotal ? 'Tot' : 'Det'}
                   </span>
-                  <span className={`text-xs leading-none ${
-                    node.isCalculated ? 'text-amber-600' : node.isInflow ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {node.isCalculated ? '=' : node.isInflow ? '↗' : '↘'}
-                  </span>
+                  {!node.isCalculated && !node.isSectionHeader && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateAccountType(node.id, !node.isInflow);
+                      }}
+                      className={`text-xs leading-none ml-1 px-1 py-0.5 rounded transition-colors ${
+                        node.isInflow 
+                          ? 'text-green-600 bg-green-50 hover:bg-green-100' 
+                          : 'text-red-600 bg-red-50 hover:bg-red-100'
+                      }`}
+                      title={`Click to toggle: Currently ${node.isInflow ? 'Income' : 'Outcome'}`}
+                    >
+                      {node.isInflow ? '↓' : '↑'}
+                    </button>
+                  )}
+                  {node.isCalculated && (
+                    <span className="text-xs leading-none text-amber-600 ml-1">=</span>
+                  )}
                 </button>
               )}
             </div>
@@ -1239,15 +1441,30 @@ function EnhancedMapperContent() {
             
             {/* Main Category */}
             <div style={{ width: `${columnWidths.mainCategory}%` }} className="flex-shrink-0">
-              <MainCategoryDropdown
-                value={node.category}
-                onChange={(mainCategory) => {
-                  updateAccountCategoryAndSubcategory(node.id, mainCategory, '');
-                }}
-                categories={mainCategories}
-                placeholder="Select main category..."
-                className="w-full"
-              />
+              <div className="flex gap-1">
+                <MainCategoryDropdown
+                  value={node.category}
+                  onChange={(mainCategory) => {
+                    updateAccountCategoryAndSubcategory(node.id, mainCategory, '');
+                  }}
+                  categories={mainCategories}
+                  placeholder="Select main category..."
+                  className="flex-1"
+                />
+                
+                {/* Apply to Children Button */}
+                {node.isSectionHeader && 
+                 node.category && 
+                 node.category !== 'uncategorized' && (
+                  <button
+                    onClick={() => startBulkAssignment(node.id)}
+                    className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 hover:border-blue-400 transition-colors whitespace-nowrap"
+                    title={`Apply "${node.category}" to selected accounts`}
+                  >
+                    Apply to Accounts
+                  </button>
+                )}
+              </div>
             </div>
             
             {/* Subcategory */}
@@ -1293,7 +1510,12 @@ function EnhancedMapperContent() {
                 {/* Amount on the right */}
                 {node.hasFinancialData && Object.values(node.periods).length > 0 ? (
                   <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className={`text-sm font-medium ${
+                      Object.values(node.periods)[0] >= 0 
+                        ? 'text-green-700' 
+                        : 'text-red-700'
+                    }`}>
+                      {Object.values(node.periods)[0] >= 0 ? '+' : ''}
                       {Object.values(node.periods)[0]?.toLocaleString() || '0'}
                     </div>
                     <div className="text-xs text-gray-500">
@@ -1468,6 +1690,24 @@ function EnhancedMapperContent() {
                 fileName={fileName}
               />
             </div>
+            
+            {/* Success/Error Messages */}
+            {bulkAssignSuccess && (
+              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center">
+                  <CheckCircleIcon className="h-5 w-5 text-green-600 mr-2" />
+                  <span className="text-green-800">{bulkAssignSuccess}</span>
+                </div>
+              </div>
+            )}
+            
+            {bulkAssignError && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center">
+                  <span className="text-red-800">⚠️ {bulkAssignError}</span>
+                </div>
+              </div>
+            )}
             
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
@@ -2016,6 +2256,168 @@ function EnhancedMapperContent() {
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Assignment Modal */}
+        {showBulkAssignModal && bulkAssignHeaderId && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Apply Category to Accounts
+                </h3>
+                <button
+                  onClick={() => setShowBulkAssignModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  disabled={bulkAssignProgress}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Header Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Header Account:</h4>
+                  <p className="text-blue-800">
+                    <strong>{findNodeInTree(accountTree, bulkAssignHeaderId)?.accountName}</strong>
+                  </p>
+                  <p className="text-blue-700 mt-1">
+                    Category: <strong>{bulkAssignCategory}</strong>
+                    {bulkAssignSubcategory && (
+                      <span> → <strong>{bulkAssignSubcategory}</strong></span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Available Accounts */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Accounts Below This Header ({getAllAvailableAccounts(bulkAssignHeaderId).length} found)
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Select accounts below "<strong>{findNodeInTree(accountTree, bulkAssignHeaderId)?.accountName}</strong>" 
+                    to apply the category "<strong>{bulkAssignCategory}</strong>" to them.
+                    <br/>
+                    <span className="text-xs text-gray-500">
+                      {getAllAvailableAccounts(bulkAssignHeaderId).length === 0 
+                        ? "No eligible accounts found below this header. Make sure accounts are active and have data."
+                        : "Showing accounts from this header until the next header or end of list."}
+                    </span>
+                  </p>
+                  {getAllAvailableAccounts(bulkAssignHeaderId).length === 0 ? (
+                    <div className="border rounded-lg p-8 text-center text-gray-500">
+                      <p className="mb-2">No accounts available for bulk assignment.</p>
+                      <p className="text-sm">This could be because:</p>
+                      <ul className="text-sm mt-2 space-y-1">
+                        <li>• There are no accounts after this header</li>
+                        <li>• All following accounts are headers or totals</li>
+                        <li>• Following accounts are deactivated</li>
+                        <li>• This is the last header in the list</li>
+                      </ul>
+                    </div>
+                  ) : (
+                  <div className="border rounded-lg">
+                    <div className="bg-gray-50 border-b px-4 py-2 flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Select accounts to apply category ({selectedChildrenIds.length} selected)
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const eligibleAccounts = getAllAvailableAccounts(bulkAssignHeaderId)
+                              .filter(account => account.eligibility.eligible);
+                            setSelectedChildrenIds(eligibleAccounts.map(account => account.id));
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                          disabled={bulkAssignProgress}
+                        >
+                          Select All Eligible
+                        </button>
+                        <button
+                          onClick={() => setSelectedChildrenIds([])}
+                          className="text-sm text-red-600 hover:text-red-800"
+                          disabled={bulkAssignProgress}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {getAllAvailableAccounts(bulkAssignHeaderId).map((account) => (
+                        <div
+                          key={account.id}
+                          className={`border-b last:border-b-0 px-4 py-3 flex items-center justify-between ${
+                            !account.eligibility.eligible ? 'bg-gray-50 opacity-75' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedChildrenIds.includes(account.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedChildrenIds([...selectedChildrenIds, account.id]);
+                                } else {
+                                  setSelectedChildrenIds(selectedChildrenIds.filter(id => id !== account.id));
+                                }
+                              }}
+                              disabled={!account.eligibility.eligible || bulkAssignProgress}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {account.accountName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                Current: {account.category || 'Uncategorized'}
+                                {account.subcategory && ` → ${account.subcategory}`}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-sm">
+                            {account.eligibility.eligible ? (
+                              <span className="text-green-600">✓ Eligible</span>
+                            ) : (
+                              <span className="text-red-500">
+                                ✗ {account.eligibility.reason}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    onClick={() => setShowBulkAssignModal(false)}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                    disabled={bulkAssignProgress}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={executeBulkAssignment}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    disabled={selectedChildrenIds.length === 0 || bulkAssignProgress}
+                  >
+                    {bulkAssignProgress ? (
+                      <>
+                        <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                        Applying...
+                      </>
+                    ) : (
+                      `Apply to ${selectedChildrenIds.length} Account${selectedChildrenIds.length !== 1 ? 's' : ''}`
+                    )}
                   </button>
                 </div>
               </div>
