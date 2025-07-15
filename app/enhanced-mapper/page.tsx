@@ -1281,11 +1281,45 @@ function EnhancedMapperContent() {
       return [];
     };
     
+    // Get period columns that actually have data
+    const getValidPeriodColumns = () => {
+      // If we have detected period columns, filter them to only include those with data
+      if (periodColumns.length > 0) {
+        console.log('🔍 Original period columns:', periodColumns.map(pc => pc.label || pc.periodLabel));
+        
+        // Find all unique periods that have data in any account
+        const periodsWithData = new Set<string>();
+        allAccounts.forEach(account => {
+          if (account.hasFinancialData && account.periods) {
+            Object.keys(account.periods).forEach(period => {
+              // Include period if it has any non-null value (including 0 for totals)
+              if (account.periods[period] !== null && account.periods[period] !== undefined) {
+                periodsWithData.add(period);
+              }
+            });
+          }
+        });
+        
+        console.log('📊 Periods with actual data:', Array.from(periodsWithData));
+        
+        // Filter period columns to only include those with data
+        const validPeriods = periodColumns.filter(pc => 
+          periodsWithData.has(pc.label) || periodsWithData.has(pc.periodLabel)
+        );
+        
+        console.log('✅ Valid period columns:', validPeriods.map(pc => pc.label || pc.periodLabel));
+        return validPeriods;
+      }
+      
+      // Fallback to generating from actual data
+      return generatePeriodColumns();
+    };
+
     // Prepare data for persistence
     const accountMapping = {
       statementType: detectedStructure?.statementType || 'profit_loss',
       currency: currency,
-      periodColumns: periodColumns.length > 0 ? periodColumns : generatePeriodColumns(),
+      periodColumns: getValidPeriodColumns(),
       accounts: allAccounts,
       hierarchyDetected: true,
       totalItemsCount: allAccounts.length,

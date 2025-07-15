@@ -288,8 +288,29 @@ function calculateCashRunway(currentMonth: any): number {
 function generateForecasts(historicalPeriods: Period[], currentPeriod: Period) {
   if (historicalPeriods.length < 3) return undefined;
 
+  // Month names in Spanish
+  const monthNamesES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  
+  // Get the last period with data (either current or last historical)
+  const lastPeriod = currentPeriod || historicalPeriods[0];
+  const lastMonthIndex = monthNamesES.findIndex(m => m.toLowerCase() === lastPeriod.month.toLowerCase());
+  const lastYear = lastPeriod.year;
+  
+  // Generate next 6 months from the last period
+  const months: string[] = [];
+  let monthIndex = lastMonthIndex;
+  let year = lastYear;
+  
+  for (let i = 0; i < 6; i++) {
+    monthIndex++;
+    if (monthIndex >= 12) {
+      monthIndex = 0;
+      year++;
+    }
+    months.push(monthNamesES[monthIndex]);
+  }
+  
   // Simple linear projection for demo
-  const months = ['Dic', 'Ene', 'Feb', 'Mar', 'Abr', 'May'];
   const revenueGrowthRate = 0.05; // 5% monthly growth
   const optimisticMultiplier = 1.2;
   const pessimisticMultiplier = 0.8;
