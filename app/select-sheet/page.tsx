@@ -77,6 +77,11 @@ function SelectSheetContent() {
     
     // Redirect to period identification page
     const uploadSession = searchParams.get('session') || sessionStorage.getItem('uploadSession');
+    console.log('Navigating to period identification:', {
+      uploadSession,
+      selectedSheet,
+      url: `/period-identification?session=${uploadSession}&sheet=${selectedSheet}`
+    });
     router.push(`/period-identification?session=${uploadSession}&sheet=${selectedSheet}`);
   };
 

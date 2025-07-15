@@ -22,6 +22,8 @@ function PeriodIdentificationContent() {
   const locale = searchParams.get('locale') || 'es-MX';
   const t = useTranslation(locale);
   
+  console.log('Period Identification Page Loaded');
+  
   const [excelData, setExcelData] = useState<any[][]>([]);
   const [periodColumns, setPeriodColumns] = useState<PeriodColumn[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<Set<number>>(new Set());
