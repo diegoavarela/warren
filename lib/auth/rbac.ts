@@ -212,6 +212,18 @@ export async function withRBAC(
   try {
     const token = request.cookies.get('auth-token')?.value;
 
+    // Mock auth for development - temporarily bypass org check
+    if (process.env.NODE_ENV === 'development' && token === 'mock-session-token') {
+      const mockUser: UserContext = {
+        id: 'clz1234567890abcdef', // CUID2 format
+        email: 'platform@warren.com', 
+        organizationId: 'clz1234567890abcdef', // Use same ID to avoid FK constraint
+        role: ROLES.SUPER_ADMIN,
+        companyAccess: []
+      };
+      return await handler(request, mockUser);
+    }
+
     if (!token) {
       return NextResponse.json(
         { error: 'Not authenticated' },

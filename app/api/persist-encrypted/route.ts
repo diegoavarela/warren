@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { encrypt, encryptObject } from "@/lib/encryption";
 import { nanoid } from "nanoid";
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
-import { db, financialStatements, financialLineItems, mappingTemplates } from "@/lib/db";
+import { db, financialStatements, financialLineItems, mappingTemplates, organizations, eq } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
@@ -56,8 +56,43 @@ export async function POST(request: NextRequest) {
       console.log('Company ID:', companyId);
       console.log('Using actual database schema for persistence');
 
+      // In development, ensure we have a valid organizationId
+      let validOrganizationId = user.organizationId;
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          // Check if any organization exists
+          const existingOrgs = await db.select().from(organizations).limit(1);
+          if (existingOrgs.length > 0) {
+            validOrganizationId = existingOrgs[0].id;
+            console.log('🔧 Development mode: Using existing organization:', validOrganizationId);
+          } else {
+            // Create a default organization for development
+            const [newOrg] = await db.insert(organizations).values({
+              name: 'Development Organization',
+              subdomain: 'dev',
+              tier: 'enterprise',
+              locale: 'en-US',
+              baseCurrency: 'USD',
+              fiscalYearStart: 1,
+              isActive: true,
+            }).returning();
+            validOrganizationId = newOrg.id;
+            console.log('🔧 Development mode: Created new organization:', validOrganizationId);
+          }
+        } catch (orgError) {
+          console.error('Failed to handle organization in dev mode:', orgError);
+          // Fallback to user's organizationId
+        }
+      }
+
       // Extract period from the first period column
       const periodColumns = accountMapping.periodColumns || [];
+      console.log('🔍 Period columns received:', {
+        periodColumns,
+        firstColumn: periodColumns[0],
+        isEmpty: periodColumns.length === 0
+      });
+      
       const firstPeriod = periodColumns[0]?.label || periodColumns[0]?.periodLabel || 'Unknown';
       const lastPeriod = periodColumns[periodColumns.length - 1]?.label || periodColumns[periodColumns.length - 1]?.periodLabel || firstPeriod;
 
@@ -123,31 +158,76 @@ export async function POST(request: NextRequest) {
         }
       };
 
-      const periodStartDate = parsePeriodDate(firstPeriod, false);
-      const periodEndDate = parsePeriodDate(lastPeriod, true);
+      // Handle special case where TOTAL is included in periods
+      const validPeriods = periodColumns.filter((p: any) => 
+        p.label && 
+        p.label.toLowerCase() !== 'total' && 
+        p.label.toLowerCase() !== 'ytd'
+      );
+      
+      const actualFirstPeriod = validPeriods.length > 0 ? validPeriods[0].label : firstPeriod;
+      const actualLastPeriod = validPeriods.length > 0 ? validPeriods[validPeriods.length - 1].label : lastPeriod;
+      
+      const periodStartDate = parsePeriodDate(actualFirstPeriod, false);
+      const periodEndDate = parsePeriodDate(actualLastPeriod, true);
 
-      console.log('Period dates:', { firstPeriod, lastPeriod, periodStartDate, periodEndDate });
+      console.log('Period processing:', { 
+        totalPeriods: periodColumns.length,
+        validPeriods: validPeriods.length,
+        firstPeriod: actualFirstPeriod, 
+        lastPeriod: actualLastPeriod, 
+        periodStartDate, 
+        periodEndDate 
+      });
 
-      // Create financial statement record - adapt to current database schema
-      const [newStatement] = await db.insert(financialStatements).values({
+      // Prepare line items data
+      const dataToProcess = accountMapping.accounts || validationResults.data || [];
+      const fileName = accountMapping.fileName || validationResults.fileName || 'financial_data';
+
+      // Validate data before processing
+      if (!dataToProcess || dataToProcess.length === 0) {
+        console.error('❌ No accounts data to process');
+        return NextResponse.json({
+          error: "No se encontraron datos de cuentas para procesar",
+          details: "dataToProcess is empty or undefined"
+        }, { status: 400 });
+      }
+
+      // Prepare financial statement data - removing metadata as it doesn't exist in actual schema
+      const statementData = {
         companyId,
-        organizationId: user.organizationId, // Required by current schema
+        organizationId: validOrganizationId,
         statementType: accountMapping.statementType || 'profit_loss',
-        periodStart: periodStartDate, // Date string in YYYY-MM-DD format
-        periodEnd: periodEndDate,     // Date string in YYYY-MM-DD format  
+        periodStart: periodStartDate,
+        periodEnd: periodEndDate,
         currency: accountMapping.currency || 'MXN',
-        sourceFile: uploadSession,
-        processingJobId: null,
-        isAudited: false
-      }).returning();
+        sourceFile: `${uploadSession}.xlsx`, // Using correct column name
+        // Note: metadata moved to line items where it exists in the schema
+      };
+      
+      console.log('💾 Creating financial statement with data:', {
+        companyId: statementData.companyId,
+        organizationId: statementData.organizationId,
+        statementType: statementData.statementType,
+        periodStart: statementData.periodStart,
+        periodEnd: statementData.periodEnd,
+        currency: statementData.currency,
+        sourceFile: statementData.sourceFile
+      });
+
+      // Create financial statement record - using actual database schema
+      const [newStatement] = await db.insert(financialStatements).values(statementData).returning();
 
       // Note: File data is no longer passed to avoid size limits
       // The data is already processed and available in validationResults and accountMapping
-      
-      // Prepare line items for bulk insert - adapt to current database schema
-      // Use accountMapping.accounts if available, otherwise fall back to validationResults.data
-      const dataToProcess = accountMapping.accounts || validationResults.data || [];
-      console.log('Processing data:', dataToProcess.length, 'items');
+      console.log('📊 Processing hierarchical data:', dataToProcess.length, 'items');
+      console.log('📊 Data summary:', {
+        totalItems: accountMapping.totalItemsCount || dataToProcess.length,
+        totalRows: accountMapping.totalRowsCount || 0,
+        detailRows: accountMapping.detailRowsCount || 0,
+        hierarchyDetected: accountMapping.hierarchyDetected || false,
+        sampleAccount: dataToProcess[0]
+      });
       
       const lineItems = dataToProcess.map((row: any, index: number) => {
         // Extract period values from the row for multiple periods
@@ -155,64 +235,83 @@ export async function POST(request: NextRequest) {
         const firstPeriodValue = Object.values(periodData)[0] || row.amount || 0;
         
         // Debug logging for first few items
-        if (index < 3) {
-          console.log(`Item ${index}:`, {
+        if (index < 5) {
+          console.log(`📝 Processing item ${index}:`, {
             name: row.accountName || row.name,
+            originalName: row.originalAccountName,
             category: row.category,
-            periods: periodData,
+            isTotal: row.isTotal,
+            parentTotalId: row.parentTotalId,
+            hasData: row.hasFinancialData,
+            periods: Object.keys(periodData),
             firstPeriodValue: firstPeriodValue
           });
         }
         
         const baseData = {
           statementId: newStatement.id,
-          accountCode: row.accountCode || row.code || null,
+          accountCode: row.accountCode || `ACC_${index + 1}`,
           accountName: row.accountName || row.name || `Account ${index + 1}`,
-          lineItemType: 'financial_data',
+          lineItemType: row.isCalculated ? 'calculated' : (row.isTotal ? 'total' : 'detail'),
           category: row.category || 'other',
           subcategory: row.subcategory || null,
           amount: parseFloat(firstPeriodValue || '0'),
-          percentageOfRevenue: null,
-          yearOverYearChange: null,
-          notes: null,
-          isCalculated: false,
+          percentageOfRevenue: null, // Explicitly set to null to avoid numeric overflow
+          yearOverYearChange: null, // Explicitly set to null to avoid numeric overflow
+          isCalculated: row.isCalculated || false,
           isSubtotal: row.isSubtotal || false,
           isTotal: row.isTotal || false,
-          parentItemId: null,
+          parentItemId: row.parentTotalId || null,
           displayOrder: index,
-          originalText: shouldEncrypt ? encrypt(row.accountName || row.name || `Account ${index + 1}`) : (row.accountName || row.name || `Account ${index + 1}`),
-          confidenceScore: parseFloat(row.confidence || '0.95'),
-          metadata: shouldEncrypt ? 
-            encryptObject({
-              originalRow: row,
-              uploadSession: uploadSession,
-              detectedAsTotal: row.detectedAsTotal || false,
-              periodData: periodData
-              // Removed completeExcelData and fileDataBase64 to avoid exceeding size limits
-            }) : {
-              originalRow: row,
-              uploadSession: uploadSession,
-              detectedAsTotal: row.detectedAsTotal || false,
-              periodData: periodData
-              // Removed completeExcelData and fileDataBase64 to avoid exceeding size limits
+          originalText: row.originalAccountName || row.accountName || row.name,
+          // Convert confidence from percentage (0-100) to decimal (0-1) if needed
+          confidenceScore: (() => {
+            const conf = parseFloat(row.confidence || row.totalConfidence || '95');
+            // If confidence is > 1, assume it's a percentage and convert to decimal
+            const normalizedConf = conf > 1 ? conf / 100 : conf;
+            // Ensure it fits in the database field (max 0.99 for precision 3, scale 2)
+            return Math.min(0.99, normalizedConf);
+          })(),
+          metadata: {
+            originalRowIndex: row.rowIndex || index,
+            hasFinancialData: row.hasFinancialData,
+            periods: row.periods || {},
+            detectedAsTotal: row.isTotal || false,
+            uploadSession: uploadSession,
+            // Statement-level metadata moved here since it doesn't exist in financialStatements table
+            statementMetadata: {
+              periodColumns: accountMapping.periodColumns || [],
+              totalAccounts: dataToProcess.length,
+              fileName: fileName || 'financial_data.xlsx',
+              hierarchyDetected: accountMapping.hierarchyDetected || false,
+              totalItemsCount: accountMapping.totalItemsCount || dataToProcess.length,
+              totalRowsCount: accountMapping.totalRowsCount || 0,
+              detailRowsCount: accountMapping.detailRowsCount || 0
             }
+          }
         };
 
         // Handle encryption for sensitive data
         if (shouldEncrypt) {
           return {
             ...baseData,
-            accountName: encrypt(baseData.accountName),
-            // Note: amount should stay as number for database, encryption is in metadata
-            amount: baseData.amount // Ensure amount is preserved
+            accountName: encrypt(baseData.accountName)
           };
         }
 
         return baseData;
       });
 
+      console.log(`💾 Creating ${lineItems.length} line items...`);
+      console.log('📝 Sample line item structure:', {
+        sampleItem: lineItems[0],
+        fieldsCount: Object.keys(lineItems[0] || {}).length
+      });
+
       // Insert all line items
       const insertedLineItems = await db.insert(financialLineItems).values(lineItems).returning();
+      
+      console.log(`✅ Successfully created ${insertedLineItems.length} line items`);
 
       const result = {
         statement: newStatement,
@@ -225,7 +324,7 @@ export async function POST(request: NextRequest) {
         // Check if user has permission to manage company templates
         if (hasPermission(user, PERMISSIONS.MANAGE_COMPANY, companyId)) {
           const templateData = {
-            organizationId: user.organizationId, // Required by actual database schema
+            organizationId: validOrganizationId, // Required by actual database schema
             companyId,
             templateName,
             statementType: accountMapping.statementType || 'profit_loss',
@@ -238,13 +337,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      console.log('Successfully persisted encrypted financial data:', {
+      console.log('✅ Successfully persisted hierarchical financial data:', {
         statementId: result.statement.id,
         companyId,
         userId: user.id,
         organizationId: user.organizationId,
         isEncrypted: shouldEncrypt,
         lineItemsCount: result.lineItems.length,
+        hierarchyInfo: {
+          totalItems: accountMapping.totalItemsCount || result.lineItems.length,
+          totalRows: accountMapping.totalRowsCount || 0,
+          detailRows: accountMapping.detailRowsCount || 0,
+          hierarchyDetected: accountMapping.hierarchyDetected || false
+        },
         templateSaved: !!savedTemplate
       });
 
@@ -258,14 +363,45 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (error) {
-      console.error("Persistence error:", error);
+      console.error("❌ Persistence error:", error);
       console.error("Error stack:", error instanceof Error ? error.stack : 'Unknown error');
       console.error("Error message:", error instanceof Error ? error.message : String(error));
       
+      // More detailed error logging for debugging
+      let errorCategory = 'unknown';
+      let userMessage = "Error al guardar los datos";
+      let hint = undefined;
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        
+        if (errorMsg.includes('column') || errorMsg.includes('does not exist')) {
+          errorCategory = 'schema_mismatch';
+          userMessage = "Error de estructura de base de datos";
+          hint = 'Database schema mismatch - column names don\'t match';
+        } else if (errorMsg.includes('null') || errorMsg.includes('not-null')) {
+          errorCategory = 'missing_required_field';
+          userMessage = "Faltan campos requeridos";
+          hint = 'Missing required fields in data structure';
+        } else if (errorMsg.includes('foreign key') || errorMsg.includes('constraint')) {
+          errorCategory = 'data_integrity';
+          userMessage = "Error de integridad de datos";
+          hint = 'Data references or constraints failed';
+        } else if (errorMsg.includes('permission') || errorMsg.includes('access')) {
+          errorCategory = 'permission_error';
+          userMessage = "Error de permisos";
+          hint = 'User lacks required permissions';
+        }
+      }
+      
+      console.error(`Error category: ${errorCategory}`);
+      
       return NextResponse.json(
         { 
-          error: "Error al guardar los datos",
-          details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined
+          error: userMessage,
+          category: errorCategory,
+          details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined,
+          hint: process.env.NODE_ENV === 'development' ? hint : undefined
         },
         { status: 500 }
       );

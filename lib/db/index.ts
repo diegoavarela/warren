@@ -19,14 +19,19 @@ if (typeof window === 'undefined') {
 // Only run database logic on server side
 const isServer = typeof window === 'undefined';
 const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
-const hasRealDatabase = isServer && process.env.DATABASE_URL && 
-  (isProduction || // Always use real DB in production
-   process.env.DATABASE_URL.includes('neon.tech') || 
-   process.env.DATABASE_URL.includes('neondb') ||
-   process.env.DATABASE_URL.includes('aws.neon.tech') ||
-   (process.env.DATABASE_URL.startsWith('postgres://') && 
-    !process.env.DATABASE_URL.includes('localhost') && 
-    !process.env.DATABASE_URL.includes('username:password')));
+
+// Only check for database on server side
+let hasRealDatabase = false;
+if (isServer) {
+  hasRealDatabase = !!(process.env.DATABASE_URL && 
+    (isProduction || // Always use real DB in production
+     process.env.DATABASE_URL.includes('neon.tech') || 
+     process.env.DATABASE_URL.includes('neondb') ||
+     process.env.DATABASE_URL.includes('aws.neon.tech') ||
+     (process.env.DATABASE_URL.startsWith('postgres://') && 
+      !process.env.DATABASE_URL.includes('localhost') && 
+      !process.env.DATABASE_URL.includes('username:password'))));
+}
 
 let db: any;
 let organizations: any;
@@ -38,6 +43,7 @@ let financialLineItems: any;
 let mappingTemplates: any;
 let parsingLogs: any;
 let processingJobs: any;
+let systemSettings: any;
 let eq: any;
 let desc: any;
 let count: any;
@@ -47,31 +53,34 @@ let like: any;
 let or: any;
 let sql: any;
 
-// Use real database if available, otherwise fall back to mock
-if (!hasRealDatabase) {
-  // Use mock database for local development
-  console.log('🚀 Using mock database for local development');
-  const { mockDb, mockTables, eq: mockEq, desc: mockDesc, count: mockCount, and: mockAnd, gte: mockGte, like: mockLike, or: mockOr, sql: mockSql } = require('./mock');
-  
-  db = mockDb;
-  organizations = mockTables.organizations;
-  users = mockTables.users;
-  companies = mockTables.companies;
-  companyUsers = mockTables.companyUsers;
-  financialStatements = mockTables.financialStatements;
-  financialLineItems = mockTables.financialLineItems;
-  mappingTemplates = mockTables.mappingTemplates;
-  parsingLogs = mockTables.parsingLogs;
-  processingJobs = mockTables.processingJobs;
-  eq = mockEq;
-  desc = mockDesc;
-  count = mockCount;
-  and = mockAnd;
-  gte = mockGte;
-  like = mockLike;
-  or = mockOr;
-  sql = mockSql;
-  
+// Always use real database
+if (!isServer) {
+  // Client-side: Create empty stubs to avoid errors
+  console.log('🌐 Client-side: Database operations not available');
+  db = null;
+  organizations = null;
+  users = null;
+  companies = null;
+  companyUsers = null;
+  financialStatements = null;
+  financialLineItems = null;
+  mappingTemplates = null;
+  parsingLogs = null;
+  processingJobs = null;
+  systemSettings = null;
+  eq = () => {};
+  desc = () => {};
+  count = () => {};
+  and = () => {};
+  gte = () => {};
+  like = () => {};
+  or = () => {};
+  sql = () => {};
+} else if (!hasRealDatabase) {
+  // Server-side without database configured
+  throw new Error(
+    'DATABASE_URL environment variable is not set. Please configure your database connection in .env.local'
+  );
 } else {
   // Use real database
   console.log('🔌 Connecting to Neon database...');
@@ -96,6 +105,7 @@ if (!hasRealDatabase) {
   mappingTemplates = schema.mappingTemplates;
   parsingLogs = schema.parsingLogs;
   processingJobs = schema.processingJobs;
+  systemSettings = schema.systemSettings;
   eq = realEq;
   desc = realDesc;
   count = realCount;
@@ -117,6 +127,7 @@ export {
   mappingTemplates,
   parsingLogs,
   processingJobs,
+  systemSettings,
   eq,
   desc,
   count,

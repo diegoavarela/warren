@@ -82,7 +82,7 @@ export const companyUsers = pgTable("company_users", {
 export const financialStatements = pgTable("financial_statements", {
   id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
-  organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
+  organizationId: uuid("organization_id").references(() => organizations.id),
   statementType: varchar("statement_type", { length: 50 }).notNull(),
   periodStart: date("period_start").notNull(),
   periodEnd: date("period_end").notNull(),
@@ -185,6 +185,19 @@ export const parsingLogs = pgTable("parsing_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// System Settings table (for platform configuration)
+export const systemSettings = pgTable("system_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: jsonb("value").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  description: text("description"),
+  isSecret: boolean("is_secret").default(false),
+  lastModifiedBy: uuid("last_modified_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Export types
 export type Organization = typeof organizations.$inferSelect;
 export type User = typeof users.$inferSelect;
@@ -195,3 +208,4 @@ export type FinancialLineItem = typeof financialLineItems.$inferSelect;
 export type MappingTemplate = typeof mappingTemplates.$inferSelect;
 export type ProcessingJob = typeof processingJobs.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
+export type SystemSetting = typeof systemSettings.$inferSelect;
