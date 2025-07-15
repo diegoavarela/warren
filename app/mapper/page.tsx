@@ -35,6 +35,7 @@ function AdvancedMapperContent() {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [statementType, setStatementType] = useState<'profit_loss' | 'cash_flow'>('profit_loss');
   
+  
 
   useEffect(() => {
     const loadExcelData = async () => {
@@ -89,11 +90,20 @@ function AdvancedMapperContent() {
         }
 
         setLoadingStep("Recuperando datos del archivo...");
-        // Get the file data from sessionStorage
-        const fileDataBase64 = sessionStorage.getItem(`fileData_${uploadSession}`);
+        // Get the file data from server temporary storage
+        const fileDataResponse = await fetch(`/api/upload-session/${uploadSession}`);
+        
+        if (!fileDataResponse.ok) {
+          console.error('File data not found on server');
+          setError('No se pudo recuperar el archivo. Por favor, vuelve a cargarlo.');
+          return;
+        }
+        
+        const fileDataResult = await fileDataResponse.json();
+        const fileDataBase64 = fileDataResult.fileData;
         
         if (!fileDataBase64) {
-          console.error('File data not found in session storage');
+          console.error('File data empty in server response');
           setError('No se pudo recuperar el archivo. Por favor, vuelve a cargarlo.');
           return;
         }
@@ -113,6 +123,12 @@ function AdvancedMapperContent() {
         const selectedSheet = uploadedFile.sheets.find((s: any) => s.name === selectedSheetName) || 
                              uploadedFile.sheets.find((s: any) => s.hasData) || 
                              uploadedFile.sheets[0];
+        
+        if (!selectedSheet) {
+          setError('No se pudo encontrar una hoja válida en el archivo.');
+          return;
+        }
+        
         setSheetName(selectedSheet.name);
         
         setLoadingStep(`Analizando hoja "${selectedSheet.name}"...`);
@@ -247,38 +263,29 @@ function AdvancedMapperContent() {
         statementType: mapping.aiAnalysis?.statementType || 'profit_loss',
         currency: mapping.currency || 'MXN',
         periodColumns: mapping.periodColumns || [], // Include period columns for date extraction
-        accounts: processedData.map((row: any) => {
-          // Try to find AI classification for this account
-          const aiClassification = mapping.accountClassifications?.find(
-            (c: any) => c.accountName === row.accountName
-          );
-          
-          // Use AI classification if available, otherwise fall back to local detection
-          const category = aiClassification?.suggestedCategory || row.category;
-          const isInflow = aiClassification ? aiClassification.isInflow : 
-            (category?.includes('revenue') || category?.includes('income') || category?.includes('other_income'));
-          
-          return {
-            code: row.accountCode,
-            name: row.accountName,
-            category: category,
-            isInflow: isInflow,
-            periods: row.periods
-          };
-        })
+        accounts: processedData,  // Pass all processed data including hierarchy
+        hierarchyDetected: true,
+        totalItemsCount: processedData.length,
+        totalRowsCount: processedData.filter((r: any) => r.isTotal).length,
+        detailRowsCount: processedData.filter((r: any) => !r.isTotal && r.hasFinancialData).length
       };
       
       // Store results for persistence
-      console.log('Mapper page - Storing data to sessionStorage');
+      console.log('Mapper page - Storing comprehensive data to sessionStorage');
       console.log('accountMapping:', {
         statementType: accountMapping.statementType,
         currency: accountMapping.currency,
-        accountsCount: accountMapping.accounts.length
+        accountsCount: accountMapping.accounts.length,
+        totalItemsCount: accountMapping.totalItemsCount,
+        totalRowsCount: accountMapping.totalRowsCount,
+        detailRowsCount: accountMapping.detailRowsCount,
+        hierarchyDetected: accountMapping.hierarchyDetected
       });
       console.log('validationResults:', {
         totalRows: results.totalRows,
         validRows: results.validRows
       });
+      console.log('📊 Sample of processed data:', accountMapping.accounts.slice(0, 3));
       
       sessionStorage.setItem('validationResults', JSON.stringify(results));
       sessionStorage.setItem('accountMapping', JSON.stringify(accountMapping));
@@ -295,10 +302,19 @@ function AdvancedMapperContent() {
     }
   };
 
-  // Simple local processing function for matrix mapping
+  // Process matrix mapping with hierarchy detection and save ALL data
   const processMatrixMapping = (rawData: any[][], mapping: MatrixMapping) => {
-    const results = [];
+    console.log('🔄 Processing matrix mapping with hierarchy detection...');
     
+    // First, detect total rows to establish hierarchy
+    const accountNameColumn = mapping.conceptColumns.find(cc => cc.columnType === 'account_name')?.columnIndex || 0;
+    const detectedTotals = [] as any[]; // detectTotalRows function not imported
+    console.log(`📊 Detected ${detectedTotals.length} total rows:`, detectedTotals.map((t: any) => t.accountName));
+    
+    const results = [];
+    const totalRowIndices = new Set(detectedTotals.map((t: any) => t.rowIndex));
+    
+    // Process ALL rows in the data range (not just named ones)
     for (let rowIdx = mapping.dataRange.startRow; rowIdx <= mapping.dataRange.endRow; rowIdx++) {
       const row = rawData[rowIdx];
       if (!row) continue;
@@ -310,62 +326,129 @@ function AdvancedMapperContent() {
       mapping.conceptColumns.forEach(cc => {
         const value = row[cc.columnIndex];
         if (value) {
-          if (cc.columnType === 'account_name') accountName = String(value);
-          if (cc.columnType === 'account_code') accountCode = String(value);
+          if (cc.columnType === 'account_name') accountName = String(value).trim();
+          if (cc.columnType === 'account_code') accountCode = String(value).trim();
         }
       });
-      
-      // Skip empty rows
-      if (!accountName && !accountCode) continue;
       
       // Extract period data
       const periodData: any = {};
       let firstPeriodValue = null;
+      let hasAnyData = false;
+      
       mapping.periodColumns.forEach((pc, idx) => {
         const value = row[pc.columnIndex];
-        if (value !== null && value !== undefined) {
-          periodData[pc.periodLabel] = value;
-          if (idx === 0) {
-            firstPeriodValue = value;
+        if (value !== null && value !== undefined && value !== '') {
+          const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+          if (!isNaN(numericValue)) {
+            periodData[pc.periodLabel] = numericValue;
+            if (idx === 0) {
+              firstPeriodValue = numericValue;
+            }
+            hasAnyData = true;
           }
         }
       });
       
-      // Check if we have AI classification for this account
-      const aiClassification = mapping.accountClassifications?.find(
-        (c: any) => c.accountName === accountName
-      );
-      
-      // Use AI classification if available, otherwise use local classifier
-      let category = 'other';
-      let isInflow = true;
-      
-      if (aiClassification) {
-        category = aiClassification.suggestedCategory;
-        isInflow = aiClassification.isInflow;
-      } else {
-        // Use local classifier with value information
-        const localResult = LocalAccountClassifier.classifyAccount(
-          accountName,
-          firstPeriodValue !== null ? firstPeriodValue : undefined,
-          { statementType: mapping.aiAnalysis?.statementType || 'profit_loss' }
-        );
-        category = localResult.suggestedCategory;
-        isInflow = localResult.isInflow;
+      // Skip only if completely empty (no name, no code, no data)
+      if (!accountName && !accountCode && !hasAnyData) {
+        continue;
       }
       
-      results.push({
+      // Check if this row is a detected total
+      const isTotal = totalRowIndices.has(rowIdx);
+      const totalInfo = detectedTotals.find((t: any) => t.rowIndex === rowIdx);
+      
+      // Generate a meaningful name for unnamed rows with data
+      let finalAccountName = accountName;
+      if (!accountName && hasAnyData) {
+        // For detail rows without names, create a descriptive name
+        finalAccountName = `Detail Item ${rowIdx} (${Object.keys(periodData).length} periods)`;
+      }
+      
+      // Determine hierarchy and parent relationships
+      let parentTotalId = null;
+      let category = 'other';
+      let subcategory = null;
+      
+      if (isTotal && totalInfo) {
+        // This is a total row
+        category = totalInfo.suggestedCategory || 'other';
+        subcategory = totalInfo.type;
+      } else {
+        // This is a detail row - find its parent total
+        for (let i = detectedTotals.length - 1; i >= 0; i--) {
+          const potentialParent = detectedTotals[i];
+          if (potentialParent.rowIndex < rowIdx) {
+            // Check if there's a closer total after this one
+            const nextTotal = detectedTotals.find((t: any) => t.rowIndex > potentialParent.rowIndex && t.rowIndex < rowIdx);
+            if (!nextTotal) {
+              parentTotalId = `ROW_${potentialParent.rowIndex}`;
+              category = potentialParent.suggestedCategory || 'other';
+              break;
+            }
+          }
+        }
+        
+        // If no parent found and we have AI classification, use it
+        if (!parentTotalId) {
+          const aiClassification = mapping.accountClassifications?.find(
+            (c: any) => c.accountName === finalAccountName
+          );
+          
+          if (aiClassification) {
+            category = aiClassification.suggestedCategory;
+          } else if (finalAccountName) {
+            // Use local classifier as last resort
+            const localResult = LocalAccountClassifier.classifyAccount(
+              finalAccountName,
+              firstPeriodValue !== null ? firstPeriodValue : undefined,
+              { statementType: mapping.aiAnalysis?.statementType || 'profit_loss' }
+            );
+            category = localResult.suggestedCategory;
+          }
+        }
+      }
+      
+      // Determine if this is an inflow based on category
+      const isInflow = ['revenue', 'sales', 'income', 'other_income'].includes(category.toLowerCase());
+      
+      const processedItem = {
         rowIndex: rowIdx,
         accountCode: accountCode || `ROW_${rowIdx}`,
-        accountName: accountName || 'Sin nombre',
+        accountName: finalAccountName || `Row ${rowIdx}`,
+        originalAccountName: accountName, // Keep original for reference
         category: category,
+        subcategory: subcategory,
         isInflow: isInflow,
+        isTotal: isTotal,
+        isSubtotal: totalInfo?.type === 'subtotal' || false,
+        parentTotalId: parentTotalId,
         periods: periodData,
         isValid: true,
         errors: [],
-        warnings: []
-      });
+        warnings: [],
+        detectedAsTotal: isTotal,
+        totalConfidence: totalInfo?.confidence || 0,
+        hasFinancialData: hasAnyData
+      };
+      
+      results.push(processedItem);
+      
+      // Log first few items for debugging
+      if (results.length <= 5) {
+        console.log(`📝 Processed item ${results.length}:`, {
+          name: processedItem.accountName,
+          isTotal: processedItem.isTotal,
+          category: processedItem.category,
+          parentTotalId: processedItem.parentTotalId,
+          hasData: hasAnyData,
+          periods: Object.keys(periodData)
+        });
+      }
     }
+    
+    console.log(`✅ Processed ${results.length} total items (including ${results.filter(r => r.isTotal).length} totals and ${results.filter(r => !r.isTotal && r.hasFinancialData).length} detail items)`);
     
     return results;
   };
@@ -443,6 +526,7 @@ function AdvancedMapperContent() {
                 )}
               </div>
             </div>
+
 
           {/* Show template selector first - skip if already processing with pre-selected template */}
           {excelData && showTemplateSelector && !processing && (
@@ -561,6 +645,7 @@ function AdvancedMapperContent() {
                 onMappingComplete={handleMappingComplete}
                 locale={locale}
                 statementType={statementType}
+                companyId={selectedCompanyId}
               />
             </div>
           )}

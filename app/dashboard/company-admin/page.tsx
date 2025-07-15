@@ -408,9 +408,9 @@ function CompanyAdminDashboard() {
   return (
     <AppLayout showFooter={true}>
       <div className="min-h-screen flex flex-col">
-        <div className="flex-1 container mx-auto px-4 py-8">
+        <div className="flex-1 container mx-auto px-4 py-4">
         {/* Welcome Section */}
-        <div className="mb-8">
+        <div className="mb-4">
           <h1 className="text-3xl font-bold text-gray-900">
             {selectedCompanyId && getSelectedCompany() ? (
               locale?.startsWith('es') 
@@ -579,7 +579,7 @@ function CompanyAdminDashboard() {
             </CardBody>
           </Card>
         ) : selectedCompanyId && (user?.role === ROLES.ORG_ADMIN || user?.role === 'admin') ? (
-          <div className="mb-8">
+          <div className="mb-4">
             <Button
               variant="ghost"
               onClick={() => {
@@ -587,7 +587,7 @@ function CompanyAdminDashboard() {
                 setSelectedCompanyId('');
                 sessionStorage.removeItem('selectedCompanyId');
               }}
-              className="mb-4"
+              className="mb-2"
             >
               ← {locale?.startsWith('es') ? 'Volver a empresas' : 'Back to companies'}
             </Button>
@@ -597,7 +597,7 @@ function CompanyAdminDashboard() {
         {selectedCompanyId ? (
           <>
             {/* Compact Stats Row */}
-            <div className="flex items-center space-x-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="flex items-center space-x-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
               {statCards.map((stat, index) => (
                 <div key={index} className="flex items-center space-x-3">
                   <div className={`p-2 rounded-lg ${getColorClasses(stat.color)}`}>
@@ -620,7 +620,7 @@ function CompanyAdminDashboard() {
 
 
             {/* Management Sections - Financial Data First */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Financial Data Overview Section - Moved to Top */}
               <Card>
                 <CardHeader>
@@ -651,7 +651,7 @@ function CompanyAdminDashboard() {
                       leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
                       onClick={() => handleUploadNew()}
                     >
-                      {locale?.startsWith('es') ? 'Subir Documento' : 'Upload Document'}
+                      {locale?.startsWith('es') ? 'Subir Documento Financiero' : 'Upload Financial Document'}
                     </Button>
                   </div>
                 </CardHeader>
@@ -721,18 +721,20 @@ function CompanyAdminDashboard() {
                                   variant="soft"
                                   size="sm"
                                   onClick={() => handleViewData(statement.statementId!, type)}
+                                  leftIcon={<ChartBarIcon className="w-4 h-4" />}
                                 >
-                                  {locale?.startsWith('es') ? 'Ver Datos' : 'View Data'}
+                                  {locale?.startsWith('es') ? 'Ver Dashboard' : 'View Dashboard'}
                                 </Button>
                               )}
                               <Button
                                 variant={statement.available ? "outline" : "primary"}
                                 size="sm"
                                 onClick={() => handleUploadNew(type)}
+                                leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
                               >
                                 {statement.available 
-                                  ? (locale?.startsWith('es') ? 'Actualizar' : 'Update')
-                                  : (locale?.startsWith('es') ? 'Subir' : 'Upload')
+                                  ? (locale?.startsWith('es') ? 'Subir Nuevos Datos' : 'Upload New Data')
+                                  : (locale?.startsWith('es') ? 'Subir Datos' : 'Upload Data')
                                 }
                               </Button>
                             </div>

@@ -28,10 +28,11 @@ interface UseFinancialDataOptions {
   periodType?: 'monthly' | 'quarterly' | 'yearly';
   autoRefresh?: boolean;
   refreshInterval?: number;
+  selectedPeriod?: string;
 }
 
 export function useFinancialData(options: UseFinancialDataOptions) {
-  const { companyId, statementId, autoRefresh = false, refreshInterval = 60000 } = options;
+  const { companyId, statementId, autoRefresh = false, refreshInterval = 60000, selectedPeriod } = options;
   
   const [data, setData] = useState<FinancialDataResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,9 +50,15 @@ export function useFinancialData(options: UseFinancialDataOptions) {
       setError(null);
 
       // Fetch financial analytics
+      const params = new URLSearchParams();
+      if (statementId) params.append('statementId', statementId);
+      if (selectedPeriod && selectedPeriod !== 'current') params.append('selectedPeriod', selectedPeriod);
+      
       const analyticsUrl = `/api/v1/companies/${companyId}/financial-analytics${
-        statementId ? `?statementId=${statementId}` : ''
+        params.toString() ? `?${params.toString()}` : ''
       }`;
+      
+      console.log('Fetching financial data from:', analyticsUrl);
       
       const response = await fetch(analyticsUrl);
       
@@ -61,8 +68,11 @@ export function useFinancialData(options: UseFinancialDataOptions) {
 
       const result: FinancialDataResponse = await response.json();
       
+      console.log('Financial data response:', result);
+      
       if (result.success && result.data) {
         setData(result.data);
+        console.log('Current month data:', result.data.currentMonth);
         // Update exchange rates if needed
         await currencyService.fetchLatestRates();
       } else {
@@ -74,7 +84,7 @@ export function useFinancialData(options: UseFinancialDataOptions) {
     } finally {
       setLoading(false);
     }
-  }, [companyId, statementId]);
+  }, [companyId, statementId, selectedPeriod]);
 
   useEffect(() => {
     fetchFinancialData();
@@ -116,7 +126,9 @@ export function useCompanies() {
 
         const result = await response.json();
         
-        if (result.success && result.companies) {
+        if (result.success && result.data) {
+          setCompanies(result.data);
+        } else if (result.success && result.companies) {
           setCompanies(result.companies);
         } else {
           throw new Error(result.error || 'Failed to fetch companies');

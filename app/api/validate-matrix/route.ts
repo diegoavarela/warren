@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readExcelFile } from "@/lib/excel-reader";
-import { getMockDatabase } from "@/lib/db/mock-db";
+import { getUploadBySession } from "@/lib/services/upload-storage";
 import { MatrixMapping, ParseResults, Locale } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -25,9 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch the file from mock storage
-    const db = getMockDatabase();
-    const uploadRecord = db.uploads.find(u => u.uploadSession === uploadSession);
+    // Fetch the file from temporary storage
+    const uploadRecord = getUploadBySession(uploadSession);
     
     if (!uploadRecord || !uploadRecord.fileBuffer) {
       return NextResponse.json(

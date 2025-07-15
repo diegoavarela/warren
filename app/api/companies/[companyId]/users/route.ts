@@ -35,11 +35,12 @@ export async function POST(
 
     const { companyId } = params;
     const body = await request.json();
-    const { userId, role = 'user' } = body;
+    const { userId, email, firstName, lastName, role = 'user' } = body;
 
-    if (!userId) {
+    // Handle both existing user assignment and new user invitation
+    if (!userId && !email) {
       return NextResponse.json(
-        { error: 'userId is required' },
+        { error: 'Either userId or email is required' },
         { status: 400 }
       );
     }
@@ -67,22 +68,63 @@ export async function POST(
       );
     }
 
-    // Check if user exists and belongs to the same organization
-    const userResult = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    
-    if (userResult.length === 0) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const targetUser = userResult[0];
+    let targetUser;
     const company = companyResult[0];
+
+    if (userId) {
+      // Handle existing user assignment
+      const userResult = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      
+      if (userResult.length === 0) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
+      targetUser = userResult[0];
+    } else {
+      // Handle new user invitation by email
+      if (!email || !firstName || !lastName) {
+        return NextResponse.json(
+          { error: 'Email, firstName, and lastName are required for new user invitation' },
+          { status: 400 }
+        );
+      }
+
+      // Check if user already exists with this email
+      const existingUserResult = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingUserResult.length > 0) {
+        targetUser = existingUserResult[0];
+      } else {
+        // Create new user
+        const newUserResult = await db
+          .insert(users)
+          .values({
+            email,
+            firstName,
+            lastName,
+            role: 'user', // Default organization role
+            organizationId: company.organizationId,
+            isActive: true,
+            emailVerified: false,
+            passwordHash: '', // Will be set when user accepts invitation
+            locale: 'en-US',
+            twoFactorEnabled: false
+          })
+          .returning();
+
+        targetUser = newUserResult[0];
+      }
+    }
 
     // Verify user is in the same organization as the company
     if (targetUser.organizationId !== company.organizationId) {
@@ -98,7 +140,7 @@ export async function POST(
       .from(companyUsers)
       .where(and(
         eq(companyUsers.companyId, companyId),
-        eq(companyUsers.userId, userId)
+        eq(companyUsers.userId, targetUser.id)
       ))
       .limit(1);
 
@@ -113,7 +155,7 @@ export async function POST(
         })
         .where(and(
           eq(companyUsers.companyId, companyId),
-          eq(companyUsers.userId, userId)
+          eq(companyUsers.userId, targetUser.id)
         ));
     } else {
       // Create new access
@@ -121,7 +163,7 @@ export async function POST(
         .insert(companyUsers)
         .values({
           companyId,
-          userId,
+          userId: targetUser.id,
           role,
           isActive: true,
           invitedBy: payload.userId
@@ -134,7 +176,7 @@ export async function POST(
       success: true,
       message: `User assigned to company successfully`,
       assignment: {
-        userId,
+        userId: targetUser.id,
         companyId,
         role
       }

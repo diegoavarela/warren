@@ -113,32 +113,67 @@ interface ForecastData {
 interface PnLDashboardProps {
   companyId?: string;
   statementId?: string;
-  currency?: string;
+  currency?: string; // Deprecated - will use from API
   locale?: string;
   useMockData?: boolean;
+  onPeriodChange?: (period: string, lastUpdate: Date | null) => void;
 }
 
-export function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false }: PnLDashboardProps) {
+export function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, onPeriodChange }: PnLDashboardProps) {
   const { t } = useTranslation(locale);
+  const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
+  
   // Fetch real data using the hook
   const { data: apiData, loading: apiLoading, error, refetch } = useFinancialData({
     companyId: useMockData ? undefined : companyId,
     statementId,
-    autoRefresh: true,
-    refreshInterval: 60000 // Refresh every minute
+    autoRefresh: false, // Disable auto-refresh to prevent constant page updates
+    selectedPeriod: selectedPeriod || undefined
   });
+  
+  // Refetch data when selected period changes
+  useEffect(() => {
+    if (selectedPeriod && selectedPeriod !== 'current' && companyId) {
+      refetch();
+    }
+  }, [selectedPeriod]);
+  
+  // Update currency and units from API response
+  useEffect(() => {
+    if (apiData) {
+      // Set original currency from API
+      if ((apiData as any).currency) {
+        setOriginalCurrency((apiData as any).currency);
+        setSelectedCurrency((apiData as any).currency);
+      }
+      
+      // Set display units from API
+      if ((apiData as any).displayUnits) {
+        setOriginalUnits((apiData as any).displayUnits);
+        // Convert displayUnits to the format used in the UI
+        if ((apiData as any).displayUnits === 'thousands') {
+          setDisplayUnits('K');
+        } else if ((apiData as any).displayUnits === 'millions') {
+          setDisplayUnits('M');
+        } else {
+          setDisplayUnits('normal');
+        }
+      }
+    }
+  }, [apiData]);
 
   // Transform API data to dashboard format or use mock data
   const [mockData, setMockData] = useState<PnLData | null>(null);
   const data = useMockData || !companyId ? mockData : transformToPnLData(apiData);
   const loading = useMockData || !companyId ? !mockData : apiLoading;
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('current');
   const [comparisonPeriod, setComparisonPeriod] = useState<string>('previous');
   const [expandedExpenseCategory, setExpandedExpenseCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'ytd'>('current');
   const [showAllPeriods, setShowAllPeriods] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
   const [displayUnits, setDisplayUnits] = useState<'normal' | 'K' | 'M'>('normal');
+  const [originalCurrency, setOriginalCurrency] = useState<string>('USD');
+  const [originalUnits, setOriginalUnits] = useState<string>('units');
   const [showRateEditor, setShowRateEditor] = useState(false);
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
   const [editingRates, setEditingRates] = useState<Record<string, string>>({});
@@ -155,6 +190,52 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     fetchExchangeRates();
   }, []);
 
+  // Track if we've already notified the parent about the period
+  const [hasNotifiedPeriod, setHasNotifiedPeriod] = useState(false);
+
+  // Determine the latest period from data and notify parent component
+  useEffect(() => {
+    if (data && data.periods.length > 0) {
+      // Filter only periods with actual data (revenue > 0)
+      const periodsWithData = data.periods.filter(p => p.revenue > 0);
+      
+      if (periodsWithData.length > 0) {
+        // Find the latest period based on year and month
+        const sortedPeriods = [...periodsWithData].sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          
+          // Convert month names to numbers for comparison (support both Spanish and English)
+          const monthOrderEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+          const monthOrderEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          
+          let monthA = monthOrderEs.indexOf(a.month);
+          let monthB = monthOrderEs.indexOf(b.month);
+          
+          // Try English if Spanish didn't match
+          if (monthA === -1) monthA = monthOrderEn.indexOf(a.month);
+          if (monthB === -1) monthB = monthOrderEn.indexOf(b.month);
+          return monthB - monthA;
+        });
+
+        const latestPeriod = sortedPeriods[0];
+        if (latestPeriod) {
+          // Set the selected period to the latest period's ID if not already set
+          if (!selectedPeriod) {
+            setSelectedPeriod(latestPeriod.id);
+          }
+          
+          // Notify parent about the period
+          if (onPeriodChange && !hasNotifiedPeriod) {
+            const periodDisplay = `${latestPeriod.month} ${latestPeriod.year}`;
+            const lastUpdate = new Date();
+            onPeriodChange(periodDisplay, lastUpdate);
+            setHasNotifiedPeriod(true);
+          }
+        }
+      }
+    }
+  }, [data, onPeriodChange, hasNotifiedPeriod, selectedPeriod]);
+
   const fetchExchangeRates = async () => {
     const rates = await currencyService.fetchLatestRates('USD');
     setExchangeRates(rates);
@@ -169,9 +250,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
 
   const getMockPnLData = (): PnLData => {
     const currentMonth = {
-      id: '2024-12',
-      month: 'Diciembre',
-      year: 2024,
+      id: '2025-05',
+      month: 'Mayo',
+      year: 2025,
       revenue: 2500000,
       cogs: 1000000,
       grossProfit: 1500000,
@@ -191,25 +272,25 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       currentPeriod: currentMonth,
       previousPeriod: {
         ...currentMonth,
-        id: '2024-11',
-        month: 'Noviembre',
+        id: '2025-04',
+        month: 'Abril',
         revenue: 2300000,
         netIncome: 420000
       },
       yearToDate: {
-        revenue: 28500000,
-        cogs: 11400000,
-        grossProfit: 17100000,
+        revenue: 11875000,  // 5 months worth
+        cogs: 4750000,
+        grossProfit: 7125000,
         grossMargin: 60,
-        operatingExpenses: 9120000,
-        operatingIncome: 7980000,
+        operatingExpenses: 3800000,
+        operatingIncome: 3325000,
         operatingMargin: 28,
-        taxes: 2394000,
-        netIncome: 5586000,
+        taxes: 997500,
+        netIncome: 2327500,
         netMargin: 19.6,
-        ebitda: 8550000,
+        ebitda: 3562500,
         ebitdaMargin: 30,
-        monthsIncluded: 12
+        monthsIncluded: 5
       },
       categories: {
         revenue: [
@@ -253,24 +334,25 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           trend: [2500000, 2600000, 2700000, 2800000, 2900000, 3000000],
           optimistic: [2500000, 2750000, 3000000, 3250000, 3500000, 3750000],
           pessimistic: [2500000, 2450000, 2400000, 2350000, 2300000, 2250000],
-          months: ['Dic', 'Ene', 'Feb', 'Mar', 'Abr', 'May']
+          months: ['May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct']
         },
         netIncome: {
           trend: [490000, 509600, 529200, 548800, 568400, 588000],
           optimistic: [490000, 539000, 588000, 637000, 686000, 735000],
           pessimistic: [490000, 480200, 470400, 460600, 450800, 441000],
-          months: ['Dic', 'Ene', 'Feb', 'Mar', 'Abr', 'May']
+          months: ['May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct']
         }
       }
     };
   };
 
   const generateHistoricalPeriods = (): Period[] => {
-    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May'];
     const periods: Period[] = [];
     
-    for (let i = 0; i < 12; i++) {
-      const baseRevenue = 2000000 + Math.random() * 500000;
+    // Generate periods for Jan-May 2025
+    for (let i = 0; i < 5; i++) {
+      const baseRevenue = 2200000 + i * 100000 + Math.random() * 200000;
       const cogs = baseRevenue * 0.4;
       const grossProfit = baseRevenue - cogs;
       const operatingExpenses = baseRevenue * 0.32;
@@ -279,8 +361,38 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       const netIncome = operatingIncome - taxes;
       
       periods.push({
-        id: `2024-${(i + 1).toString().padStart(2, '0')}`,
+        id: `2025-${(i + 1).toString().padStart(2, '0')}`,
         month: months[i],
+        year: 2025,
+        revenue: baseRevenue,
+        cogs,
+        grossProfit,
+        grossMargin: (grossProfit / baseRevenue) * 100,
+        operatingExpenses,
+        operatingIncome,
+        operatingMargin: (operatingIncome / baseRevenue) * 100,
+        taxes,
+        netIncome,
+        netMargin: (netIncome / baseRevenue) * 100,
+        ebitda: operatingIncome + 50000,
+        ebitdaMargin: ((operatingIncome + 50000) / baseRevenue) * 100
+      });
+    }
+    
+    // Also add some 2024 historical data for comparison
+    const months2024 = ['Oct', 'Nov', 'Dic'];
+    for (let i = 0; i < 3; i++) {
+      const baseRevenue = 2000000 + Math.random() * 300000;
+      const cogs = baseRevenue * 0.4;
+      const grossProfit = baseRevenue - cogs;
+      const operatingExpenses = baseRevenue * 0.32;
+      const operatingIncome = grossProfit - operatingExpenses;
+      const taxes = operatingIncome * 0.3;
+      const netIncome = operatingIncome - taxes;
+      
+      periods.push({
+        id: `2024-${(10 + i).toString().padStart(2, '0')}`,
+        month: months2024[i],
         year: 2024,
         revenue: baseRevenue,
         cogs,
@@ -330,10 +442,18 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   };
 
   const formatValue = (value: number): string => {
-    // Apply currency conversion from USD base
-    let convertedValue = currencyService.convertValue(value, 'USD', selectedCurrency);
+    // First, convert the value based on original units to actual value
+    let actualValue = value;
+    if (originalUnits === 'thousands') {
+      actualValue = value * 1000;
+    } else if (originalUnits === 'millions') {
+      actualValue = value * 1000000;
+    }
     
-    // Apply units
+    // Apply currency conversion from original currency to selected currency
+    let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
+    
+    // Apply display units
     let suffix = '';
     if (displayUnits === 'K') {
       convertedValue = convertedValue / 1000;
@@ -362,14 +482,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   };
 
   const getCurrentPeriodDisplay = (): string => {
-    if (selectedPeriod === 'current') {
-      return `${current.month} ${current.year}`;
-    } else if (selectedPeriod === 'ytd') {
+    if (selectedPeriod === 'ytd') {
       return `YTD ${current.year}`;
-    } else {
+    } else if (selectedPeriod) {
       // Find the selected period
       const period = data?.periods.find(p => p.id === selectedPeriod);
       return period ? `${period.month} ${period.year}` : `${current.month} ${current.year}`;
+    } else {
+      return `${current.month} ${current.year}`;
     }
   };
 
@@ -393,93 +513,33 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     );
   }
 
-  const current = data.currentPeriod;
-  const previous = data.previousPeriod;
+  // Use selected period data or fall back to current period
+  let current = data.currentPeriod;
+  let previous = data.previousPeriod;
   const ytd = data.yearToDate;
-
-  // Calculate executive metrics
-  const executiveMetrics = current && previous ? {
-    currentCashPosition: current.revenue * 2.5, // Estimate based on revenue
-    revenueGrowthYTD: ytd ? ((ytd.revenue - (previous.revenue * ytd.monthsIncluded)) / (previous.revenue * ytd.monthsIncluded)) * 100 : 0,
-    cashRunwayMonths: current.revenue > (current.cogs + current.operatingExpenses) ? 999 : Math.floor((current.revenue * 2.5) / ((current.cogs + current.operatingExpenses) - current.revenue)),
-    cashFlow: current.revenue - current.cogs - current.operatingExpenses
-  } : null;
-
-  const heroCards = executiveMetrics ? [
-    {
-      title: t('kpi.cashPosition'),
-      value: formatValue(executiveMetrics.currentCashPosition),
-      icon: <BanknotesIcon className="h-6 w-6" />,
-      color: 'emerald' as const,
-      subtitle: t('kpi.estimatedLiquidity'),
-      trend: 'up' as const,
-      changePercent: 5.2,
-      sparkle: true
-    },
-    {
-      title: t('kpi.revenueGrowth'),
-      value: formatPercentage(executiveMetrics.revenueGrowthYTD),
-      icon: <ArrowTrendingUpIcon className="h-6 w-6" />,
-      color: 'blue' as const,
-      subtitle: t('kpi.yearToDate'),
-      trend: executiveMetrics.revenueGrowthYTD > 0 ? 'up' as const : 'down' as const,
-      changePercent: Math.abs(executiveMetrics.revenueGrowthYTD),
-      sparkle: true
-    },
-    {
-      title: t('kpi.cashRunway'),
-      value: `${executiveMetrics.cashRunwayMonths > 100 ? '∞' : executiveMetrics.cashRunwayMonths} Mo`,
-      icon: <ClockIcon className="h-6 w-6" />,
-      color: executiveMetrics.cashRunwayMonths > 6 ? 'emerald' as const : executiveMetrics.cashRunwayMonths > 3 ? 'orange' as const : 'rose' as const,
-      subtitle: t('kpi.monthsRemaining'),
-      trend: 'neutral' as const,
-      sparkle: true
-    },
-    {
-      title: t('kpi.cashFlow'),
-      value: formatValue(executiveMetrics.cashFlow),
-      icon: <ChartBarIcon className="h-6 w-6" />,
-      color: executiveMetrics.cashFlow > 0 ? 'emerald' as const : 'rose' as const,
-      subtitle: t('kpi.currentMonth'),
-      trend: executiveMetrics.cashFlow > 0 ? 'up' as const : 'down' as const,
-      changePercent: previous ? Math.abs(calculateVariation(executiveMetrics.cashFlow, previous.revenue - previous.cogs - previous.operatingExpenses)) : 0,
-      sparkle: true
+  
+  // Handle period selection
+  if (selectedPeriod === 'ytd') {
+    // When YTD is selected, use YTD data as current
+    current = ytd as unknown as Period;
+    previous = undefined; // No comparison for YTD
+  } else if (selectedPeriod && selectedPeriod !== 'ytd') {
+    // When a specific month is selected, use that period's data
+    const selectedPeriodData = data.periods.find(p => p.id === selectedPeriod);
+    if (selectedPeriodData) {
+      current = selectedPeriodData;
+      // Find the previous period
+      const currentIndex = data.periods.findIndex(p => p.id === selectedPeriod);
+      if (currentIndex > 0 && currentIndex < data.periods.length - 1) {
+        previous = data.periods[currentIndex + 1]; // periods are sorted newest to oldest
+      } else {
+        previous = undefined;
+      }
     }
-  ] : [];
+  }
 
   return (
     <div className="space-y-8">
-      {/* Executive KPIs Section */}
-      {heroCards.length > 0 && (
-        <div className="mb-8">
-          <div className="mb-6">
-            <div className="flex items-center space-x-2">
-              <h2 className="text-lg font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent">
-                {t('dashboard.pnl.executiveMetrics')}
-              </h2>
-              <HelpIcon topic={helpTopics['dashboard.profitability']} size="sm" />
-            </div>
-            <p className="text-gray-600 mt-1">{t('dashboard.pnl.executiveMetricsSubtitle')}</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {heroCards.map((card, index) => (
-              <KPICard
-                key={index}
-                title={card.title}
-                value={card.value}
-                icon={card.icon}
-                color={card.color}
-                subtitle={card.subtitle}
-                trend={card.trend}
-                changePercent={card.changePercent}
-                sparkle={card.sparkle}
-                large={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Global Controls */}
       <div className="bg-gradient-to-r from-gray-50 to-purple-50 rounded-2xl shadow-lg p-6 border border-purple-100 mb-8">
@@ -489,19 +549,41 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
               <CalendarIcon className="h-4 w-4 text-purple-600" />
               <span>{t('dashboard.pnl.period')}</span>
+              <HelpIcon topic={helpTopics['filters.period']} size="sm" />
             </label>
             <select
-              value={selectedPeriod}
+              value={selectedPeriod || ''}
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
             >
-              <option value="current">{current.month} {current.year}</option>
-              <option value="ytd">Año a la fecha (YTD)</option>
-              {data.periods.map((period) => (
-                <option key={period.id} value={period.id}>
-                  {period.month} {period.year}
-                </option>
-              ))}
+              {/* Generate period options based on the data's period range */}
+              {data.periods.length > 0 && (() => {
+                // Get unique periods and sort them by year and month
+                const monthOrderEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                const monthOrderEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                const uniquePeriods = [...data.periods]
+                  .filter(p => p.revenue > 0) // Only show periods with data
+                  .sort((a, b) => {
+                    if (a.year !== b.year) return b.year - a.year;
+                    let monthA = monthOrderEs.indexOf(a.month);
+                    let monthB = monthOrderEs.indexOf(b.month);
+                    if (monthA === -1) monthA = monthOrderEn.indexOf(a.month);
+                    if (monthB === -1) monthB = monthOrderEn.indexOf(b.month);
+                    return monthB - monthA;
+                  });
+                
+                return (
+                  <>
+                    {uniquePeriods.map((period) => (
+                      <option key={period.id} value={period.id}>
+                        {period.month} {period.year}
+                      </option>
+                    ))}
+                    <option value="ytd">Año a la fecha (YTD)</option>
+                  </>
+                );
+              })()}
             </select>
           </div>
 
@@ -511,6 +593,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
                 <ChartBarIcon className="h-4 w-4 text-purple-600" />
                 <span>{t('dashboard.pnl.compareWith')}</span>
+                <HelpIcon topic={helpTopics['filters.comparison']} size="sm" />
               </label>
               <select
                 value={comparisonPeriod}
@@ -529,6 +612,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
               <CurrencyDollarIcon className="h-4 w-4 text-purple-600" />
               <span>{t('dashboard.pnl.currency')}</span>
+              <HelpIcon topic={helpTopics['filters.currency']} size="sm" />
             </label>
             <div className="flex items-center space-x-2">
               <select
@@ -613,6 +697,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
               <ChartBarIcon className="h-4 w-4 text-purple-600" />
               <span>{t('dashboard.pnl.units')}</span>
+              <HelpIcon topic={helpTopics['filters.units']} size="sm" />
             </label>
             <select
               value={displayUnits}
@@ -627,88 +712,13 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         </div>
       </div>
 
-      {/* YTD Summary Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-white font-semibold">{t('dashboard.pnl.ytdSummary')}</h3>
-            <HelpIcon topic={helpTopics['dashboard.ytd']} size="sm" className="text-white/80 hover:text-white" />
-          </div>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Financial Summary */}
-            <div className="space-y-4">
-              <div className="relative">
-                <div className="flex justify-between items-end mb-1">
-                  <span className="text-sm text-gray-600">{t('ytd.revenueYtd')}</span>
-                  <span className="text-xl font-bold text-purple-600">{formatValue(ytd.revenue)}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <div className="flex justify-between items-end mb-1">
-                  <span className="text-sm text-gray-600">{t('ytd.expensesYtd')}</span>
-                  <span className="text-xl font-bold text-rose-600">{formatValue(ytd.cogs + ytd.operatingExpenses)}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className="bg-rose-600 h-1.5 rounded-full" style={{ width: `${((ytd.cogs + ytd.operatingExpenses) / ytd.revenue) * 100}%` }}></div>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <div className="flex justify-between items-end mb-1">
-                  <span className="text-sm text-gray-600">{t('ytd.netIncomeYtd')}</span>
-                  <span className="text-xl font-bold text-emerald-600">{formatValue(ytd.netIncome)}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${(ytd.netIncome / ytd.revenue) * 100}%` }}></div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Margins Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-50 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-blue-600">{formatPercentage(ytd.grossMargin)}</div>
-                <div className="text-xs text-gray-600 mt-1">{t('ytd.grossMargin')}</div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-purple-600">{formatPercentage(ytd.operatingMargin)}</div>
-                <div className="text-xs text-gray-600 mt-1">{t('ytd.operatingMargin')}</div>
-              </div>
-              <div className="bg-amber-50 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-amber-600">{formatPercentage(ytd.ebitdaMargin)}</div>
-                <div className="text-xs text-gray-600 mt-1">{t('ytd.ebitdaMargin')}</div>
-              </div>
-              <div className="bg-emerald-50 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-emerald-600">{formatPercentage(ytd.netMargin)}</div>
-                <div className="text-xs text-gray-600 mt-1">{t('ytd.netMargin')}</div>
-              </div>
-            </div>
-            
-            {/* Period Info */}
-            <div className="flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-700">{ytd.monthsIncluded}</div>
-                <div className="text-sm text-gray-600 mt-2">{t('ytd.monthsIncluded')}</div>
-                <div className="text-xs text-gray-500 mt-1">Enero - Diciembre 2024</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Revenue Section */}
+      {/* Revenue and Profitability Section */}
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-6">
           <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.revenueSection')} - {getCurrentPeriodDisplay()}</h3>
           <HelpIcon topic={helpTopics['dashboard.revenue']} size="sm" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 w-full metric-cards-container">
           <MetricCard
             title={t('metrics.totalRevenue')}
             currentValue={current.revenue}
@@ -726,50 +736,118 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               color: 'bg-purple-600'
             }))}
             colorScheme="revenue"
+            helpTopic={helpTopics['metrics.totalRevenue']}
+            helpContext={{
+              currentValue: current.revenue,
+              previousValue: previous?.revenue,
+              ytdValue: ytd.revenue,
+              changePercent: calculateVariation(current.revenue, previous?.revenue || 0),
+              benchmarks: {
+                industry: current.revenue * 1.1,
+                topPerformers: current.revenue * 1.3,
+                average: current.revenue * 0.9
+              }
+            }}
           />
-
           <MetricCard
-            title={t('metrics.growthVsPrevious')}
-            currentValue={calculateVariation(current.revenue, previous?.revenue || 0)}
-            format="percentage"
-            icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
-            trend={calculateVariation(current.revenue, previous?.revenue || 0) > 0 ? 'up' : 'down'}
-            colorScheme="revenue"
+            title={t('metrics.grossProfit')}
+            currentValue={current.grossProfit}
+            previousValue={previous?.grossProfit}
+            ytdValue={ytd.grossProfit}
+            format="currency"
+            {...currencyProps}
+            icon={<BanknotesIcon className="h-5 w-5" />}
+            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.grossMargin)}`}
+            colorScheme="profit"
+            helpTopic={helpTopics['metrics.grossProfit']}
+            helpContext={{
+              currentValue: current.grossProfit,
+              previousValue: previous?.grossProfit,
+              ytdValue: ytd.grossProfit,
+              changePercent: calculateVariation(current.grossProfit, previous?.grossProfit || 0),
+              margin: current.grossMargin,
+              benchmarks: {
+                industry: current.revenue * 0.65,
+                target: current.revenue * 0.7,
+                bestInClass: current.revenue * 0.75
+              }
+            }}
           />
-
           <MetricCard
-            title={t('metrics.monthlyProjection')}
-            currentValue={current.revenue * 1.05}
+            title={t('metrics.operatingIncome')}
+            currentValue={current.operatingIncome}
+            previousValue={previous?.operatingIncome}
+            ytdValue={ytd.operatingIncome}
             format="currency"
             {...currencyProps}
             icon={<ChartBarIcon className="h-5 w-5" />}
-            subtitle={t('metrics.basedOnTrend')}
-            colorScheme="revenue"
+            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.operatingMargin)}`}
+            colorScheme={current.operatingIncome >= 0 ? "profit" : "cost"}
+            helpTopic={helpTopics['metrics.operatingIncome']}
+            helpContext={{
+              currentValue: current.operatingIncome,
+              previousValue: previous?.operatingIncome,
+              ytdValue: ytd.operatingIncome,
+              changePercent: calculateVariation(current.operatingIncome, previous?.operatingIncome || 0),
+              margin: current.operatingMargin,
+              benchmarks: {
+                industry: current.revenue * 0.15,
+                target: current.revenue * 0.2,
+                bestInClass: current.revenue * 0.25
+              }
+            }}
           />
-
           <MetricCard
-            title={t('metrics.percentageOfTarget')}
-            currentValue={87.5}
-            format="percentage"
+            title={t('metrics.netIncome')}
+            currentValue={current.netIncome}
+            previousValue={previous?.netIncome}
+            ytdValue={ytd.netIncome}
+            format="currency"
+            {...currencyProps}
+            icon={<BanknotesIcon className="h-5 w-5" />}
+            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.netMargin)}`}
+            colorScheme={current.netIncome >= 0 ? "profit" : "cost"}
+            helpTopic={helpTopics['metrics.netIncome']}
+            helpContext={{
+              currentValue: current.netIncome,
+              previousValue: previous?.netIncome,
+              ytdValue: ytd.netIncome,
+              changePercent: calculateVariation(current.netIncome, previous?.netIncome || 0),
+              margin: current.netMargin,
+              benchmarks: {
+                industry: current.revenue * 0.1,
+                target: current.revenue * 0.15,
+                bestInClass: current.revenue * 0.2
+              }
+            }}
+          />
+          <MetricCard
+            title={t('metrics.ebitda')}
+            currentValue={current.ebitda}
+            previousValue={previous?.ebitda}
+            ytdValue={ytd.ebitda}
+            format="currency"
+            {...currencyProps}
             icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
-            trend="up"
-            subtitle={`${t('metrics.target')}: $2.86M`}
-            colorScheme="revenue"
+            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.ebitdaMargin)}`}
+            colorScheme={current.ebitda >= 0 ? "profit" : "cost"}
+            helpTopic={helpTopics['metrics.ebitda']}
+            helpContext={{
+              currentValue: current.ebitda,
+              previousValue: previous?.ebitda,
+              ytdValue: ytd.ebitda,
+              changePercent: calculateVariation(current.ebitda, previous?.ebitda || 0),
+              margin: current.ebitdaMargin,
+              benchmarks: {
+                industry: current.revenue * 0.2,
+                target: current.revenue * 0.25,
+                bestInClass: current.revenue * 0.3
+              }
+            }}
           />
         </div>
       </div>
 
-      {/* Revenue Growth Analysis */}
-      <RevenueGrowthAnalysis
-        chartData={data.periods}
-        currentMonth={current}
-        previousMonth={previous}
-        currency={selectedCurrency}
-        displayUnits={displayUnits}
-        formatValue={formatValue}
-        formatPercentage={formatPercentage}
-        locale={locale}
-      />
 
       {/* Cost Structure Section */}
       <div className="mb-8">
@@ -794,6 +872,18 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               color: 'bg-rose-600'
             }))}
             colorScheme="cost"
+            helpTopic={helpTopics['metrics.cogs']}
+            helpContext={{
+              currentValue: current.cogs,
+              previousValue: previous?.cogs,
+              ytdValue: ytd.cogs,
+              changePercent: calculateVariation(current.cogs, previous?.cogs || 0),
+              benchmarks: {
+                industry: current.revenue * 0.35,
+                efficient: current.revenue * 0.30,
+                target: current.revenue * 0.40
+              }
+            }}
           />
 
           <MetricCard
@@ -825,6 +915,18 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               </div>
             }
             colorScheme="cost"
+            helpTopic={helpTopics['metrics.operatingExpenses']}
+            helpContext={{
+              currentValue: current.operatingExpenses,
+              previousValue: previous?.operatingExpenses,
+              ytdValue: ytd.operatingExpenses,
+              changePercent: calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0),
+              benchmarks: {
+                industry: current.revenue * 0.20,
+                efficient: current.revenue * 0.15,
+                target: current.revenue * 0.25
+              }
+            }}
           />
 
           <MetricCard
@@ -834,6 +936,18 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             icon={<ChartBarIcon className="h-5 w-5" />}
             subtitle={`YTD: ${((ytd.cogs / ytd.revenue) * 100).toFixed(1)}%`}
             colorScheme="cost"
+            helpTopic={helpTopics['metrics.cogsPercentage']}
+            helpContext={{
+              currentValue: (current.cogs / current.revenue) * 100,
+              previousValue: previous ? (previous.cogs / previous.revenue) * 100 : undefined,
+              ytdValue: (ytd.cogs / ytd.revenue) * 100,
+              benchmarks: {
+                excellent: 30,
+                good: 35,
+                average: 40,
+                poor: 45
+              }
+            }}
           />
 
           <MetricCard
@@ -843,66 +957,72 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             icon={<ChartBarIcon className="h-5 w-5" />}
             subtitle={`YTD: ${((ytd.operatingExpenses / ytd.revenue) * 100).toFixed(1)}%`}
             colorScheme="cost"
+            helpTopic={helpTopics['metrics.opexPercentage']}
+            helpContext={{
+              currentValue: (current.operatingExpenses / current.revenue) * 100,
+              previousValue: previous ? (previous.operatingExpenses / previous.revenue) * 100 : undefined,
+              ytdValue: (ytd.operatingExpenses / ytd.revenue) * 100,
+              benchmarks: {
+                excellent: 15,
+                good: 20,
+                average: 25,
+                poor: 30
+              }
+            }}
           />
         </div>
       </div>
 
-      {/* Profitability Metrics */}
+      {/* YTD Section - Only show when not viewing YTD */}
+      {selectedPeriod !== 'ytd' && (
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.profitabilitySection')} - {getCurrentPeriodDisplay()}</h3>
-          <HelpIcon topic={helpTopics['dashboard.profitability']} size="sm" />
+          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.ytdSection')}</h3>
+          <HelpIcon topic={helpTopics['dashboard.ytd']} size="sm" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            title={t('metrics.grossProfit')}
-            currentValue={current.grossProfit}
-            previousValue={previous?.grossProfit}
-            ytdValue={ytd.grossProfit}
-            format="currency"
-            {...currencyProps}
-            icon={<BanknotesIcon className="h-5 w-5" />}
-            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.grossMargin)}`}
-            colorScheme="profit"
-          />
-
-          <MetricCard
-            title={t('metrics.operatingIncome')}
-            currentValue={current.operatingIncome}
-            previousValue={previous?.operatingIncome}
-            ytdValue={ytd.operatingIncome}
-            format="currency"
-            {...currencyProps}
-            icon={<ChartBarIcon className="h-5 w-5" />}
-            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.operatingMargin)}`}
-            colorScheme="profit"
-          />
-
-          <MetricCard
-            title={t('metrics.ebitda')}
-            currentValue={current.ebitda}
-            previousValue={previous?.ebitda}
-            ytdValue={ytd.ebitda}
-            format="currency"
-            {...currencyProps}
-            icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
-            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.ebitdaMargin)}`}
-            colorScheme="profit"
-          />
-
-          <MetricCard
-            title={t('metrics.netIncome')}
-            currentValue={current.netIncome}
-            previousValue={previous?.netIncome}
-            ytdValue={ytd.netIncome}
+            title={t('metrics.ytdRevenue')}
+            currentValue={ytd.revenue}
             format="currency"
             {...currencyProps}
             icon={<CurrencyDollarIcon className="h-5 w-5" />}
-            subtitle={`${t('metrics.margin')}: ${formatPercentage(current.netMargin)}`}
-            colorScheme="profit"
+            subtitle={`${ytd.monthsIncluded} ${t('metrics.months')}`}
+            colorScheme="revenue"
+            helpTopic={helpTopics['metrics.ytdRevenue']}
+          />
+          <MetricCard
+            title={t('metrics.ytdExpenses')}
+            currentValue={ytd.cogs + ytd.operatingExpenses}
+            format="currency"
+            {...currencyProps}
+            icon={<CalculatorIcon className="h-5 w-5" />}
+            colorScheme="cost"
+            helpTopic={helpTopics['metrics.ytdExpenses']}
+          />
+          <MetricCard
+            title={t('metrics.ytdNetIncome')}
+            currentValue={ytd.netIncome}
+            format="currency"
+            {...currencyProps}
+            icon={<BanknotesIcon className="h-5 w-5" />}
+            subtitle={`${t('metrics.margin')}: ${formatPercentage(ytd.netMargin)}`}
+            colorScheme={ytd.netIncome >= 0 ? "profit" : "cost"}
+            helpTopic={helpTopics['metrics.ytdNetIncome']}
+          />
+          <MetricCard
+            title={t('metrics.ytdEbitda')}
+            currentValue={ytd.ebitda}
+            format="currency"
+            {...currencyProps}
+            icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
+            subtitle={`${t('metrics.margin')}: ${formatPercentage(ytd.ebitdaMargin)}`}
+            colorScheme={ytd.ebitda >= 0 ? "profit" : "cost"}
+            helpTopic={helpTopics['metrics.ytdEbitda']}
           />
         </div>
       </div>
+      )}
 
       {/* Operating Expenses Analysis */}
       {data.categories.operatingExpenses && data.categories.operatingExpenses.length > 0 && (
@@ -1000,23 +1120,23 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       <PersonnelCostsWidget 
         data={{
           currentMonth: {
-            salaries: 400000,
-            benefits: 80000,
-            bonuses: 40000,
-            total: 520000
+            salaries: ((current as any).personnelSalariesCoR || 0) + ((current as any).personnelSalariesOp || 0),
+            benefits: ((current as any).personnelBenefits || 0) + ((current as any).healthCoverage || 0),
+            bonuses: 0, // Not available in current data structure
+            total: (current as any).totalPersonnelCost || 0
           },
           previousMonth: {
-            total: 495000
+            total: previous ? ((previous as any).totalPersonnelCost || 0) : 0
           },
           ytd: {
-            salaries: 4400000,
-            benefits: 880000,
-            bonuses: 440000,
-            total: 5720000
+            salaries: data.periods.reduce((sum, p) => sum + (((p as any).personnelSalariesCoR || 0) + ((p as any).personnelSalariesOp || 0)), 0),
+            benefits: data.periods.reduce((sum, p) => sum + (((p as any).personnelBenefits || 0) + ((p as any).healthCoverage || 0)), 0),
+            bonuses: 0, // Not available in current data structure
+            total: data.periods.reduce((sum, p) => sum + ((p as any).totalPersonnelCost || 0), 0)
           },
           headcount: {
-            current: 150,
-            previous: 145
+            current: 0, // Not available in current data structure
+            previous: 0 // Not available in current data structure
           }
         }}
         currency={selectedCurrency}

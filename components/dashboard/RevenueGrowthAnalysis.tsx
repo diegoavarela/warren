@@ -5,6 +5,17 @@ import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, ChartBarIcon } from '@heroi
 import { WarrenChart } from '@/components/charts/WarrenChart';
 import { HelpIcon } from '@/components/HelpIcon';
 import { helpTopics } from '@/lib/help-content';
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 interface RevenueGrowthProps {
   chartData: any[];
@@ -97,25 +108,83 @@ export function RevenueGrowthAnalysis({
         </div>
 
         {/* Chart */}
-        <WarrenChart
-          data={chartData.map(d => ({
-            month: d.month,
-            [locale?.startsWith('es') ? 'Ingresos' : 'Revenue']: d.revenue,
-            [locale?.startsWith('es') ? 'Utilidad Bruta' : 'Gross Profit']: d.grossProfit
-          }))}
-          config={{
-            xKey: 'month',
-            yKeys: [
-              locale?.startsWith('es') ? 'Ingresos' : 'Revenue',
-              locale?.startsWith('es') ? 'Utilidad Bruta' : 'Gross Profit'
-            ],
-            type: 'area',
-            height: 250,
-            colors: ['#10B981', '#3B82F6'],
-            gradient: true
-          }}
-          formatValue={formatValue}
-        />
+        <ResponsiveContainer width="100%" height={250}>
+          <ComposedChart
+            data={chartData.map(d => ({
+              month: d.month,
+              [locale?.startsWith('es') ? 'Ingresos' : 'Revenue']: d.revenue,
+              [locale?.startsWith('es') ? 'Utilidad Bruta' : 'Gross Profit']: d.grossProfit,
+              [locale?.startsWith('es') ? 'Margen Bruto' : 'Gross Margin']: d.grossMargin
+            }))}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis 
+              dataKey="month" 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: '#6B7280' }}
+            />
+            <YAxis 
+              yAxisId="left"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tickFormatter={(value) => formatValue(value)}
+            />
+            <YAxis 
+              yAxisId="right"
+              orientation="right"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tickFormatter={(value) => `${value}%`}
+            />
+            <Tooltip
+              formatter={(value: any, name: string) => {
+                if (name.includes('Margin') || name.includes('Margen')) {
+                  return [`${value.toFixed(1)}%`, name];
+                }
+                return [formatValue(value), name];
+              }}
+              contentStyle={{
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                padding: '8px 12px'
+              }}
+            />
+            <Legend 
+              wrapperStyle={{
+                paddingTop: '20px'
+              }}
+            />
+            <Bar 
+              yAxisId="left"
+              dataKey={locale?.startsWith('es') ? 'Ingresos' : 'Revenue'} 
+              fill="#10B981" 
+              radius={[4, 4, 0, 0]}
+              isAnimationActive={false}
+            />
+            <Bar 
+              yAxisId="left"
+              dataKey={locale?.startsWith('es') ? 'Utilidad Bruta' : 'Gross Profit'} 
+              fill="#3B82F6" 
+              radius={[4, 4, 0, 0]}
+              isAnimationActive={false}
+            />
+            <Line 
+              yAxisId="right"
+              type="monotone" 
+              dataKey={locale?.startsWith('es') ? 'Margen Bruto' : 'Gross Margin'} 
+              stroke="#F59E0B" 
+              strokeWidth={3}
+              dot={{ r: 4, strokeWidth: 2 }}
+              activeDot={{ r: 6, strokeWidth: 2 }}
+              isAnimationActive={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

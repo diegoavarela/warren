@@ -18,7 +18,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 
 interface CompanyContextBarProps {
   companyId?: string;
-  lastUpdate?: Date | string;
+  lastUpdate?: Date | string | null;
   currentPeriod?: string;
   onUploadClick?: () => void;
   className?: string;
@@ -45,7 +45,7 @@ export function CompanyContextBar({
   const isSpanish = locale?.startsWith('es');
   
   // Parse last update date
-  const updateDate = lastUpdate ? new Date(lastUpdate) : null;
+  const updateDate = lastUpdate && lastUpdate !== null ? new Date(lastUpdate) : null;
   const isDataStale = updateDate ? 
     (Date.now() - updateDate.getTime()) > (30 * 24 * 60 * 60 * 1000) : // 30 days
     true;
@@ -127,17 +127,6 @@ export function CompanyContextBar({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center space-x-3">
-            {/* Upload Button */}
-            <button
-              onClick={handleUploadClick}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-            >
-              <ArrowUpTrayIcon className="h-4 w-4" />
-              <span>{isSpanish ? 'Subir Datos' : 'Upload Data'}</span>
-            </button>
-          </div>
         </div>
 
         {/* Historical Data Warning */}

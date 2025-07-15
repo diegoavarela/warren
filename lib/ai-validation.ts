@@ -1,4 +1,11 @@
-import { ClassificationResult } from '@/types/financial';
+// Types for validation
+interface ClassificationResult {
+  rowIndex: number;
+  accountName: string;
+  classification: string;
+  confidence: number;
+  [key: string]: any;
+}
 
 interface ValidationResult {
   validated: boolean;
@@ -52,13 +59,13 @@ export class AIValidationService {
    * Validates and corrects AI classification results
    */
   async validateClassification(
-    results: ClassificationResult[],
+    results: any[],
     context?: {
       documentType?: 'pnl' | 'cashflow';
       language?: string;
       companyIndustry?: string;
     }
-  ): Promise<{ results: ClassificationResult[]; validation: ValidationResult }> {
+  ): Promise<{ results: any[]; validation: ValidationResult }> {
     this.reset();
     
     const validatedResults = [...results];

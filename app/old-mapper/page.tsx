@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AccountRowMapper, AccountMapping } from "@/components/AccountRowMapper";
 import { Header } from "@/components/Header";
 import { readExcelFile } from "@/lib/excel-reader";
-import { getMockDatabase } from "@/lib/db/mock-db";
 import { useLocale } from "@/contexts/LocaleContext";
 
 function MapperContent() {

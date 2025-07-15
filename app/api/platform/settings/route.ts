@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { systemSettings } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { authMiddleware, requireRole } from '@/lib/auth/middleware';
-import { ROLES } from '@/lib/auth/rbac';
+import { db, systemSettings, eq, and } from '@/lib/db';
+import { withRBAC, ROLES } from '@/lib/auth/rbac';
 
 // Default system settings
 const DEFAULT_SETTINGS = {
@@ -44,31 +41,35 @@ const DEFAULT_SETTINGS = {
 
 // GET /api/platform/settings
 export async function GET(request: NextRequest) {
-  try {
-    // Authenticate and check permissions
-    const authResult = await authMiddleware(request);
-    if (!authResult.success || !authResult.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return withRBAC(request, async (req, user) => {
+    console.log('Platform settings GET request started');
+    console.log('systemSettings table:', systemSettings);
+    
+    // Only platform admins can access settings
+    if (user.role !== ROLES.SUPER_ADMIN) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
     }
 
-    // Check if user is platform admin
-    const hasAccess = await requireRole(authResult.user, [ROLES.SUPER_ADMIN]);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
+    try {
+      // Get category from query params
+      const { searchParams } = new URL(request.url);
+      const category = searchParams.get('category');
 
-    // Get category from query params
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
+      console.log('Querying systemSettings table...');
+      console.log('Category filter:', category);
 
-    // Build query
-    let query = db.select().from(systemSettings);
-    if (category) {
-      query = query.where(eq(systemSettings.category, category));
-    }
+      // Build query
+      let query = db.select().from(systemSettings);
+      if (category) {
+        query = query.where(eq(systemSettings.category, category));
+      }
 
-    // Execute query
-    const settings = await query;
+      // Execute query
+      const settings = await query;
+      console.log('Query result:', settings);
 
     // Transform settings into a more usable format
     const settingsMap: Record<string, any> = {};
@@ -79,48 +80,61 @@ export async function GET(request: NextRequest) {
     });
 
     // Override with database values
-    settings.forEach((setting) => {
+    settings.forEach((setting: any) => {
       if (!settingsMap[setting.category]) {
         settingsMap[setting.category] = {};
       }
       settingsMap[setting.category][setting.key] = setting.value;
     });
 
-    return NextResponse.json({
-      success: true,
-      data: category ? settingsMap[category] : settingsMap,
-      defaults: DEFAULT_SETTINGS,
-    });
-  } catch (error) {
-    console.error('Error fetching platform settings:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch settings' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({
+        success: true,
+        data: category ? settingsMap[category] : settingsMap,
+        defaults: DEFAULT_SETTINGS,
+      });
+    } catch (error) {
+      console.error('Error fetching platform settings:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        error: error
+      });
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch settings', details: error instanceof Error ? error.message : 'Unknown error' },
+        { status: 500 }
+      );
+    }
+  });
 }
 
 // PUT /api/platform/settings
 export async function PUT(request: NextRequest) {
-  try {
-    // Authenticate and check permissions
-    const authResult = await authMiddleware(request);
-    if (!authResult.success || !authResult.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return withRBAC(request, async (req, user) => {
+    // Only platform admins can update settings
+    if (user.role !== ROLES.SUPER_ADMIN) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
     }
 
-    // Check if user is platform admin
-    const hasAccess = await requireRole(authResult.user, [ROLES.SUPER_ADMIN]);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
+    try {
 
     const body = await request.json();
     const { category, settings } = body;
 
+    console.log('Received settings update request:', { category, settings });
+
     if (!category || !settings) {
       return NextResponse.json(
         { error: 'Category and settings are required' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof settings !== 'object' || Object.keys(settings).length === 0) {
+      return NextResponse.json(
+        { error: 'Settings must be a non-empty object' },
         { status: 400 }
       );
     }
@@ -154,7 +168,7 @@ export async function PUT(request: NextRequest) {
             .update(systemSettings)
             .set({
               value: value,
-              lastModifiedBy: authResult.user.id,
+              lastModifiedBy: user.id,
               updatedAt: new Date(),
             })
             .where(eq(systemSettings.id, existing[0].id))
@@ -166,7 +180,7 @@ export async function PUT(request: NextRequest) {
             key,
             value,
             category,
-            lastModifiedBy: authResult.user.id,
+            lastModifiedBy: user.id,
             isSecret: key.toLowerCase().includes('password') || key.toLowerCase().includes('secret'),
           })
         );
@@ -174,20 +188,31 @@ export async function PUT(request: NextRequest) {
     }
 
     // Execute all updates
-    await Promise.all(updates);
+    try {
+      await Promise.all(updates);
+      console.log(`Successfully updated ${updates.length} settings`);
+    } catch (dbError) {
+      console.error('Database error during settings update:', dbError);
+      return NextResponse.json(
+        { error: 'Database error while saving settings' },
+        { status: 500 }
+      );
+    }
 
-    // Log the change
-    console.log(`Platform settings updated by ${authResult.user.email} - Category: ${category}`);
+      // Log the change
+      console.log(`Platform settings updated by ${user.email} - Category: ${category}, Keys: ${Object.keys(settings).join(', ')}`);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Settings updated successfully',
-    });
-  } catch (error) {
-    console.error('Error updating platform settings:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to update settings' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({
+        success: true,
+        message: 'Settings updated successfully',
+        updatedKeys: Object.keys(settings),
+      });
+    } catch (error) {
+      console.error('Error updating platform settings:', error);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update settings' },
+        { status: 500 }
+      );
+    }
+  });
 }

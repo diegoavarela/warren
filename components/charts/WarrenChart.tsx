@@ -176,6 +176,7 @@ export function WarrenChart({
                 strokeWidth={3}
                 dot={{ r: 4, strokeWidth: 2 }}
                 activeDot={{ r: 6, strokeWidth: 2 }}
+                isAnimationActive={false}
               />
             ))}
           </LineChart>
@@ -212,6 +213,7 @@ export function WarrenChart({
                 stroke={colors[index % colors.length]}
                 fill={gradient ? `url(#gradient-${index})` : colors[index % colors.length]}
                 fillOpacity={0.6}
+                isAnimationActive={false}
               />
             ))}
             {gradient && (
@@ -256,6 +258,7 @@ export function WarrenChart({
                 stackId={stacked ? "1" : undefined}
                 fill={colors[index % colors.length]}
                 radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
               />
             ))}
           </BarChart>

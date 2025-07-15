@@ -7,7 +7,6 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { CashFlowDashboard } from '@/components/dashboard/CashFlowDashboard';
-import { CompanySelector } from '@/components/dashboard/CompanySelector';
 import { CompanyContextBar } from '@/components/dashboard/CompanyContextBar';
 import { ROLES } from '@/lib/auth/rbac';
 
@@ -54,34 +53,12 @@ export default function CashFlowDashboardPage() {
                 </div>
                 <div className="flex space-x-4">
                   <button
-                    onClick={() => {
-                      // Set company context and navigate to upload with cash flow type
-                      if (selectedCompanyId) {
-                        sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                        sessionStorage.setItem('uploadStatementType', 'cash_flow');
-                      }
-                      router.push('/upload');
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    {locale?.startsWith('es') ? 'Subir Flujo de Caja' : 'Upload Cash Flow'}
-                  </button>
-                  <button
                     onClick={() => router.push('/dashboard/company-admin/pnl')}
                     className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
                   </button>
                 </div>
-              </div>
-              
-              {/* Company Selector */}
-              <div className="flex justify-end mt-4">
-                <CompanySelector
-                  selectedCompanyId={selectedCompanyId}
-                  onCompanyChange={setSelectedCompanyId}
-                  className="w-full max-w-xs"
-                />
               </div>
             </div>
 

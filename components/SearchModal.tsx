@@ -172,7 +172,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="block w-full border-0 py-4 pl-11 pr-12 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-sm"
+              className="block w-full border-0 py-4 pl-12 pr-12 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-sm"
               placeholder={locale?.startsWith('es') ? 'Buscar organizaciones, empresas, usuarios...' : 'Search organizations, companies, users...'}
             />
             <button

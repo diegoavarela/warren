@@ -295,21 +295,22 @@ function UploadPage() {
                         statementType: statementType
                       }));
                       
-                      // Store the actual file data
-                      if (metadata.fileData) {
-                        sessionStorage.setItem(`fileData_${metadata.uploadSession}`, metadata.fileData);
+                      // File is now stored on server temporarily, no need for sessionStorage
+                      
+                      // Store company ID for mapper
+                      if (selectedCompany) {
+                        sessionStorage.setItem('uploadCompanyId', selectedCompany.id);
                       }
                       
-                      // If template is selected, try to apply it automatically
                       if (selectedTemplate) {
-                        // Go directly to mapper which will handle template application
+                        // Go directly to enhanced mapper which will handle template application
                         setTimeout(() => {
-                          router.push(`/mapper?session=${metadata.uploadSession}&autoTemplate=true`);
+                          router.push(`/enhanced-mapper?session=${metadata.uploadSession}&autoTemplate=true`);
                         }, 500);
                       } else {
                         // Redirect to sheet selection page for manual mapping
                         setTimeout(() => {
-                          window.location.href = `/select-sheet?session=${metadata.uploadSession}`;
+                          router.push(`/select-sheet?session=${metadata.uploadSession}`);
                         }, 500);
                       }
                     }}

@@ -42,7 +42,49 @@ next-env.d.ts
 # IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
 
 # Testing
 /test-data
 /uploads
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Temporary upload files
+/tmp/uploads
+/tmp-uploads
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# OS files
+Thumbs.db
+
+# Database dumps
+*.sql
+*.dump
+
+# Certificates
+*.key
+*.crt
+
+# Python (if any scripts)
+__pycache__/
+*.py[cod]
+
+# Logs
+logs
+*.log
+
+# Upload session files
+/upload-sessions
+
+# Generated files
+/public/sw.js
+/public/workbox-*.js

@@ -58,7 +58,8 @@ export async function GET(
             createdAt: financialStatements.createdAt,
             periodStart: financialStatements.periodStart,
             periodEnd: financialStatements.periodEnd,
-            currency: financialStatements.currency
+            currency: financialStatements.currency,
+            metadata: financialStatements.metadata
           })
           .from(financialStatements)
           .where(and(
@@ -77,13 +78,55 @@ export async function GET(
             const startDate = new Date(stmt.periodStart);
             const endDate = new Date(stmt.periodEnd);
             
-            // Simple date range format
-            if (startDate.getTime() === endDate.getTime()) {
-              // Same date - probably placeholder
-              coverage = startDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+            // Validate dates
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+              // Invalid dates, try to extract from metadata
+              console.warn('Invalid period dates, checking metadata');
+              
+              // Try to get period info from metadata
+              if (stmt.metadata && typeof stmt.metadata === 'object') {
+                const metadata = stmt.metadata as any;
+                if (metadata.periodColumns && Array.isArray(metadata.periodColumns) && metadata.periodColumns.length > 0) {
+                  const firstPeriod = metadata.periodColumns[0]?.label || metadata.periodColumns[0]?.periodLabel;
+                  const lastPeriod = metadata.periodColumns[metadata.periodColumns.length - 1]?.label || metadata.periodColumns[metadata.periodColumns.length - 1]?.periodLabel;
+                  
+                  if (firstPeriod && lastPeriod) {
+                    if (firstPeriod === lastPeriod) {
+                      coverage = firstPeriod;
+                    } else {
+                      coverage = `${firstPeriod} - ${lastPeriod}`;
+                    }
+                  } else {
+                    coverage = 'Period data available';
+                  }
+                } else {
+                  coverage = 'Period info unavailable';
+                }
+              } else {
+                coverage = 'No period data';
+              }
             } else {
-              // Date range
-              coverage = `${startDate.toLocaleDateString('es-ES', { month: 'short' })}-${endDate.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
+              // Use English month abbreviations for consistency
+              const options: Intl.DateTimeFormatOptions = { month: 'short' };
+              const yearOptions: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric' };
+              
+              if (startDate.getTime() === endDate.getTime()) {
+                // Same date - show single month
+                coverage = startDate.toLocaleDateString('en-US', yearOptions);
+              } else {
+                // Date range - show start month to end month with year
+                const startMonth = startDate.toLocaleDateString('en-US', options);
+                const endMonth = endDate.toLocaleDateString('en-US', yearOptions);
+                
+                // If same year, show: Jan-Dec 2025
+                if (startDate.getFullYear() === endDate.getFullYear()) {
+                  coverage = `${startMonth}-${endMonth}`;
+                } else {
+                  // Different years: Jan 2024-Feb 2025
+                  const startWithYear = startDate.toLocaleDateString('en-US', yearOptions);
+                  coverage = `${startWithYear}-${endMonth}`;
+                }
+              }
             }
           }
 

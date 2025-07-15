@@ -378,3 +378,26 @@
     @apply bg-gray-900 text-gray-100;
   }
 }
+
+/* Equal width metric cards */
+@layer components {
+  .metric-cards-container {
+    @apply flex flex-col lg:flex-row gap-6 w-full;
+  }
+  
+  @media (min-width: 1024px) {
+    .metric-cards-container > div {
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      width: auto !important;
+    }
+    
+    /* Target the card directly if needed */
+    .metric-cards-container .relative.bg-white {
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+    }
+  }
+}

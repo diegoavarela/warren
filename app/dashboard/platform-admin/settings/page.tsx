@@ -12,13 +12,6 @@ import {
   CogIcon,
   BellIcon,
   ShieldCheckIcon,
-  GlobeAltIcon,
-  DocumentTextIcon,
-  CreditCardIcon,
-  UserGroupIcon,
-  ServerIcon,
-  KeyIcon,
-  CloudArrowUpIcon,
   CheckIcon,
   QuestionMarkCircleIcon,
   XCircleIcon,
@@ -66,6 +59,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const sections: SettingSection[] = [
     {
@@ -85,24 +79,6 @@ export default function SettingsPage() {
       title: locale?.startsWith('es') ? 'Notificaciones' : 'Notifications',
       description: locale?.startsWith('es') ? 'Alertas y notificaciones del sistema' : 'System alerts and notifications',
       icon: BellIcon
-    },
-    {
-      id: 'billing',
-      title: locale?.startsWith('es') ? 'Facturación' : 'Billing',
-      description: locale?.startsWith('es') ? 'Planes y métodos de pago' : 'Plans and payment methods',
-      icon: CreditCardIcon
-    },
-    {
-      id: 'integrations',
-      title: locale?.startsWith('es') ? 'Integraciones' : 'Integrations',
-      description: locale?.startsWith('es') ? 'APIs y servicios externos' : 'APIs and external services',
-      icon: CloudArrowUpIcon
-    },
-    {
-      id: 'advanced',
-      title: locale?.startsWith('es') ? 'Avanzado' : 'Advanced',
-      description: locale?.startsWith('es') ? 'Configuración avanzada del sistema' : 'Advanced system configuration',
-      icon: ServerIcon
     }
   ];
 
@@ -113,18 +89,29 @@ export default function SettingsPage() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
+      console.log('Fetching platform settings...');
       const response = await fetch('/api/platform/settings');
+      console.log('Settings response status:', response.status);
+      
       if (response.ok) {
         const result = await response.json();
+        console.log('Settings response data:', result);
         if (result.success) {
           setSettings(result.data);
           setFormData(result.data);
+          console.log('Settings loaded successfully:', result.data);
+        } else {
+          console.error('Settings fetch failed:', result.error);
+          setError(result.error || 'Failed to load settings');
         }
       } else {
-        console.error('Failed to fetch settings');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Settings fetch HTTP error:', response.status, errorData);
+        setError(`HTTP ${response.status}: ${errorData.error || 'Failed to load settings'}`);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
+      setError('Network error while loading settings');
     } finally {
       setLoading(false);
     }
@@ -133,34 +120,47 @@ export default function SettingsPage() {
   const handleSave = async () => {
     try {
       setSaving(true);
+      setError(null);
+      
+      const saveData = {
+        category: activeSection,
+        settings: formData[activeSection] || {},
+      };
+      
+      console.log('Saving settings for category:', activeSection);
+      console.log('Settings data:', saveData.settings);
+      
       const response = await fetch('/api/platform/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          category: activeSection,
-          settings: formData[activeSection] || {},
-        }),
+        body: JSON.stringify(saveData),
       });
+      
+      console.log('Save response status:', response.status);
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('Save response data:', result);
+        
         setSaved(true);
         setError(null);
         setTimeout(() => setSaved(false), 3000);
-        // Refresh settings
+        
+        // Refresh settings to confirm persistence
         await fetchSettings();
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || 'Failed to save settings';
+        console.error('Save failed:', response.status, errorData);
         setError(locale?.startsWith('es') 
           ? `Error al guardar: ${errorMessage}` 
           : `Failed to save: ${errorMessage}`);
-        console.error('Failed to save settings:', errorData);
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert(locale?.startsWith('es') 
+      setError(locale?.startsWith('es') 
         ? 'Error de red al guardar' 
         : 'Network error while saving');
     } finally {
@@ -169,13 +169,18 @@ export default function SettingsPage() {
   };
 
   const updateFormData = (category: string, key: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: value,
-      },
-    }));
+    console.log(`Updating ${category}.${key} to:`, value);
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [category]: {
+          ...prev[category],
+          [key]: value,
+        },
+      };
+      console.log('Updated form data:', updated);
+      return updated;
+    });
   };
 
   const renderContent = () => {
@@ -183,71 +188,70 @@ export default function SettingsPage() {
       case 'general':
         return (
           <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">
-                  {locale?.startsWith('es') ? 'Nombre del Sistema' : 'System Name'}
-                </label>
-                <HelpIcon 
-                  content={locale?.startsWith('es') 
-                    ? 'El nombre que se mostrará en toda la plataforma'
-                    : 'The name that will be displayed throughout the platform'} 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    {locale?.startsWith('es') ? 'Nombre del Sistema' : 'System Name'}
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  value={formData.general?.systemName || ''}
+                  onChange={(e) => updateFormData('general', 'systemName', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  disabled={loading}
                 />
               </div>
-              <input
-                type="text"
-                value={formData.general?.systemName || ''}
-                onChange={(e) => updateFormData('general', 'systemName', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={loading}
-              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {locale?.startsWith('es') ? 'URL del Sistema' : 'System URL'}
+                </label>
+                <input
+                  type="url"
+                  value={formData.general?.systemUrl || ''}
+                  onChange={(e) => updateFormData('general', 'systemUrl', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  disabled={loading}
+                />
+              </div>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {locale?.startsWith('es') ? 'URL del Sistema' : 'System URL'}
-              </label>
-              <input
-                type="url"
-                value={formData.general?.systemUrl || ''}
-                onChange={(e) => updateFormData('general', 'systemUrl', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={loading}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {locale?.startsWith('es') ? 'Idioma Predeterminado' : 'Default Language'}
-              </label>
-              <select 
-                value={formData.general?.defaultLanguage || 'es-MX'}
-                onChange={(e) => updateFormData('general', 'defaultLanguage', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={loading}
-              >
-                <option value="es-MX">Español (México)</option>
-                <option value="es-AR">Español (Argentina)</option>
-                <option value="es-CO">Español (Colombia)</option>
-                <option value="en-US">English (US)</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {locale?.startsWith('es') ? 'Zona Horaria' : 'Timezone'}
-              </label>
-              <select 
-                value={formData.general?.timezone || 'America/Mexico_City'}
-                onChange={(e) => updateFormData('general', 'timezone', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={loading}
-              >
-                <option value="America/Mexico_City">America/Mexico_City</option>
-                <option value="America/Buenos_Aires">America/Buenos_Aires</option>
-                <option value="America/Bogota">America/Bogota</option>
-                <option value="America/New_York">America/New_York</option>
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {locale?.startsWith('es') ? 'Idioma Predeterminado' : 'Default Language'}
+                </label>
+                <select 
+                  value={formData.general?.defaultLanguage || 'es-MX'}
+                  onChange={(e) => updateFormData('general', 'defaultLanguage', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  disabled={loading}
+                >
+                  <option value="es-MX">Español (México)</option>
+                  <option value="es-AR">Español (Argentina)</option>
+                  <option value="es-CO">Español (Colombia)</option>
+                  <option value="en-US">English (US)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {locale?.startsWith('es') ? 'Zona Horaria' : 'Timezone'}
+                </label>
+                <select 
+                  value={formData.general?.timezone || 'America/Mexico_City'}
+                  onChange={(e) => updateFormData('general', 'timezone', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  disabled={loading}
+                >
+                  <option value="America/Mexico_City">America/Mexico_City</option>
+                  <option value="America/Buenos_Aires">America/Buenos_Aires</option>
+                  <option value="America/Bogota">America/Bogota</option>
+                  <option value="America/New_York">America/New_York</option>
+                </select>
+              </div>
             </div>
           </div>
         );
@@ -255,59 +259,150 @@ export default function SettingsPage() {
       case 'security':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h4 className="font-medium text-gray-900">
-                  {locale?.startsWith('es') ? 'Autenticación de Dos Factores' : 'Two-Factor Authentication'}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {locale?.startsWith('es') 
-                    ? 'Requiere 2FA para todos los administradores'
-                    : 'Require 2FA for all administrators'}
-                </p>
+            {/* Two-Factor Authentication */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <ShieldCheckIcon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {locale?.startsWith('es') ? 'Autenticación de Dos Factores' : 'Two-Factor Authentication'}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {locale?.startsWith('es') 
+                        ? 'Requiere 2FA para todos los administradores'
+                        : 'Require 2FA for all administrators'}
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={formData.security?.requireTwoFactor || false}
+                    onChange={(e) => updateFormData('security', 'requireTwoFactor', e.target.checked)}
+                    disabled={loading}
+                  />
+                  <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 hover:bg-gray-300"></div>
+                </label>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={formData.security?.requireTwoFactor || false}
-                  onChange={(e) => updateFormData('security', 'requireTwoFactor', e.target.checked)}
-                  disabled={loading}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500">
+                  {locale?.startsWith('es') ? 'Recomendado para mayor seguridad' : 'Recommended for enhanced security'}
+                </span>
+              </div>
             </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h4 className="font-medium text-gray-900">
-                  {locale?.startsWith('es') ? 'Sesiones Activas' : 'Active Sessions'}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {locale?.startsWith('es') 
-                    ? 'Tiempo máximo de sesión: 24 horas'
-                    : 'Maximum session time: 24 hours'}
-                </p>
+
+            {/* Session Timeout */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <CogIcon className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {locale?.startsWith('es') ? 'Tiempo de Sesión' : 'Session Timeout'}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {locale?.startsWith('es') 
+                        ? 'Configurar tiempo máximo de sesión'
+                        : 'Configure maximum session duration'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <Button variant="outline" size="sm">
-                {locale?.startsWith('es') ? 'Configurar' : 'Configure'}
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {locale?.startsWith('es') ? 'Tiempo máximo (horas)' : 'Maximum time (hours)'}
+                  </label>
+                  <select 
+                    value={formData.security?.sessionTimeout || 24}
+                    onChange={(e) => updateFormData('security', 'sessionTimeout', parseInt(e.target.value))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    disabled={loading}
+                  >
+                    <option value={1}>1 hora</option>
+                    <option value={2}>2 horas</option>
+                    <option value={4}>4 horas</option>
+                    <option value={8}>8 horas</option>
+                    <option value={24}>24 horas</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <span className="text-sm text-gray-500">
+                    {locale?.startsWith('es') ? 'Actual: 24 horas' : 'Current: 24 hours'}
+                  </span>
+                </div>
+              </div>
             </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h4 className="font-medium text-gray-900">
-                  {locale?.startsWith('es') ? 'Política de Contraseñas' : 'Password Policy'}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {locale?.startsWith('es') 
-                    ? 'Mínimo 8 caracteres, mayúsculas y números'
-                    : 'Minimum 8 characters, uppercase and numbers'}
-                </p>
+
+            {/* Password Policy */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <ShieldCheckIcon className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {locale?.startsWith('es') ? 'Política de Contraseñas' : 'Password Policy'}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {locale?.startsWith('es') 
+                        ? 'Configurar requisitos de contraseña'
+                        : 'Configure password requirements'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <Button variant="outline" size="sm">
-                {locale?.startsWith('es') ? 'Editar' : 'Edit'}
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {locale?.startsWith('es') ? 'Longitud mínima' : 'Minimum length'}
+                  </label>
+                  <select 
+                    value={formData.security?.passwordMinLength || 8}
+                    onChange={(e) => updateFormData('security', 'passwordMinLength', parseInt(e.target.value))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    disabled={loading}
+                  >
+                    <option value={6}>6 caracteres</option>
+                    <option value={8}>8 caracteres</option>
+                    <option value={10}>10 caracteres</option>
+                    <option value={12}>12 caracteres</option>
+                  </select>
+                </div>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.security?.passwordRequireUppercase || false}
+                      onChange={(e) => updateFormData('security', 'passwordRequireUppercase', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      disabled={loading}
+                    />
+                    <span className="text-sm text-gray-700">
+                      {locale?.startsWith('es') ? 'Requiere mayúsculas' : 'Require uppercase'}
+                    </span>
+                  </label>
+                  <label className="flex items-center space-x-3">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.security?.passwordRequireNumbers || false}
+                      onChange={(e) => updateFormData('security', 'passwordRequireNumbers', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      disabled={loading}
+                    />
+                    <span className="text-sm text-gray-700">
+                      {locale?.startsWith('es') ? 'Requiere números' : 'Require numbers'}
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -315,64 +410,154 @@ export default function SettingsPage() {
       case 'notifications':
         return (
           <div className="space-y-6">
-            <h4 className="font-medium text-gray-900">
-              {locale?.startsWith('es') ? 'Notificaciones por Email' : 'Email Notifications'}
-            </h4>
-            
-            {[
-              {
-                title: locale?.startsWith('es') ? 'Nuevos Usuarios' : 'New Users',
-                description: locale?.startsWith('es') 
-                  ? 'Recibir notificación cuando se registre un nuevo usuario'
-                  : 'Receive notification when a new user registers'
-              },
-              {
-                title: locale?.startsWith('es') ? 'Nuevas Empresas' : 'New Companies',
-                description: locale?.startsWith('es')
-                  ? 'Recibir notificación cuando se cree una nueva empresa'
-                  : 'Receive notification when a new company is created'
-              },
-              {
-                title: locale?.startsWith('es') ? 'Errores del Sistema' : 'System Errors',
-                description: locale?.startsWith('es')
-                  ? 'Recibir alertas de errores críticos del sistema'
-                  : 'Receive alerts for critical system errors'
-              },
-              {
-                title: locale?.startsWith('es') ? 'Uso de Recursos' : 'Resource Usage',
-                description: locale?.startsWith('es')
-                  ? 'Alertas cuando el uso de recursos supere el 80%'
-                  : 'Alerts when resource usage exceeds 80%'
-              }
-            ].map((notification, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <h5 className="font-medium text-gray-900">{notification.title}</h5>
-                  <p className="text-sm text-gray-600">{notification.description}</p>
+            {/* Email Configuration */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <BellIcon className="w-5 h-5 text-purple-600" />
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
-                    checked={
-                      index === 0 ? formData.notifications?.newUserNotification :
-                      index === 1 ? formData.notifications?.newCompanyNotification :
-                      index === 2 ? formData.notifications?.systemErrorNotification :
-                      formData.notifications?.resourceUsageNotification
-                    }
-                    onChange={(e) => {
-                      const key = index === 0 ? 'newUserNotification' :
-                                 index === 1 ? 'newCompanyNotification' :
-                                 index === 2 ? 'systemErrorNotification' :
-                                 'resourceUsageNotification';
-                      updateFormData('notifications', key, e.target.checked);
-                    }}
+                <div>
+                  <h4 className="font-semibold text-gray-900">
+                    {locale?.startsWith('es') ? 'Configuración de Email' : 'Email Configuration'}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {locale?.startsWith('es') 
+                      ? 'Configure el servicio de email para notificaciones'
+                      : 'Configure email service for notifications'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {locale?.startsWith('es') ? 'Proveedor de Email' : 'Email Provider'}
+                  </label>
+                  <select 
+                    value={formData.notifications?.emailProvider || 'smtp'}
+                    onChange={(e) => updateFormData('notifications', 'emailProvider', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    disabled={loading}
+                  >
+                    <option value="smtp">SMTP</option>
+                    <option value="ses">AWS SES</option>
+                    <option value="sendgrid">SendGrid</option>
+                    <option value="console">Console (Development)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {locale?.startsWith('es') ? 'Email Remitente' : 'From Email'}
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.notifications?.fromEmail || 'noreply@warren.com'}
+                    onChange={(e) => updateFormData('notifications', 'fromEmail', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                     disabled={loading}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Email Notifications */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <h4 className="font-semibold text-gray-900 mb-4">
+                {locale?.startsWith('es') ? 'Notificaciones por Email' : 'Email Notifications'}
+              </h4>
+              
+              <div className="space-y-4">
+                {[
+                  {
+                    title: locale?.startsWith('es') ? 'Nuevos Usuarios' : 'New Users',
+                    description: locale?.startsWith('es') 
+                      ? 'Recibir notificación cuando se registre un nuevo usuario'
+                      : 'Receive notification when a new user registers',
+                    icon: '👤',
+                    color: 'blue',
+                    key: 'newUserNotification'
+                  },
+                  {
+                    title: locale?.startsWith('es') ? 'Nuevas Empresas' : 'New Companies',
+                    description: locale?.startsWith('es')
+                      ? 'Recibir notificación cuando se cree una nueva empresa'
+                      : 'Receive notification when a new company is created',
+                    icon: '🏢',
+                    color: 'green',
+                    key: 'newCompanyNotification'
+                  },
+                  {
+                    title: locale?.startsWith('es') ? 'Errores del Sistema' : 'System Errors',
+                    description: locale?.startsWith('es')
+                      ? 'Recibir alertas de errores críticos del sistema'
+                      : 'Receive alerts for critical system errors',
+                    icon: '🚨',
+                    color: 'red',
+                    key: 'systemErrorNotification'
+                  },
+                  {
+                    title: locale?.startsWith('es') ? 'Uso de Recursos' : 'Resource Usage',
+                    description: locale?.startsWith('es')
+                      ? 'Alertas cuando el uso de recursos supere el 80%'
+                      : 'Alerts when resource usage exceeds 80%',
+                    icon: '📊',
+                    color: 'yellow',
+                    key: 'resourceUsageNotification'
+                  }
+                ].map((notification, index) => (
+                  <div key={index} className={`flex items-center justify-between p-4 border rounded-lg transition-all hover:shadow-sm ${
+                    notification.color === 'blue' ? 'border-blue-200 bg-blue-50' :
+                    notification.color === 'green' ? 'border-green-200 bg-green-50' :
+                    notification.color === 'red' ? 'border-red-200 bg-red-50' :
+                    'border-yellow-200 bg-yellow-50'
+                  }`}>
+                    <div className="flex items-center space-x-3">
+                      <div className="text-2xl">{notification.icon}</div>
+                      <div>
+                        <h5 className="font-medium text-gray-900">{notification.title}</h5>
+                        <p className="text-sm text-gray-600">{notification.description}</p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={formData.notifications?.[notification.key] || false}
+                        onChange={(e) => updateFormData('notifications', notification.key, e.target.checked)}
+                        disabled={loading}
+                      />
+                      <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 hover:bg-gray-300"></div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Email Test */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900">
+                    {locale?.startsWith('es') ? 'Probar Configuración' : 'Test Configuration'}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {locale?.startsWith('es') 
+                      ? 'Enviar un email de prueba para verificar la configuración'
+                      : 'Send a test email to verify configuration'}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // TODO: Implement test email functionality
+                    console.log('Test email functionality to be implemented');
+                  }}
+                >
+                  {locale?.startsWith('es') ? 'Enviar Prueba' : 'Send Test'}
+                </Button>
+              </div>
+            </div>
           </div>
         );
         
@@ -393,68 +578,79 @@ export default function SettingsPage() {
   return (
     <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN]}>
       <AppLayout showFooter={true}>
-        <div className="min-h-screen bg-gray-50">
-          <div className="container mx-auto px-4 py-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+          <div className="container mx-auto px-4 py-6">
           {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {locale?.startsWith('es') ? 'Configuración del Sistema' : 'System Settings'}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {locale?.startsWith('es') 
-                ? 'Gestiona la configuración global del sistema'
-                : 'Manage global system configuration'}
-            </p>
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {locale?.startsWith('es') ? 'Configuración del Sistema' : 'System Settings'}
+                </h1>
+                <p className="text-gray-600 mt-1 text-sm">
+                  {locale?.startsWith('es') 
+                    ? 'Gestiona la configuración global del sistema'
+                    : 'Manage global system configuration'}
+                </p>
+              </div>
+              {/* Connection Status */}
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  error ? 'bg-red-500' : loading ? 'bg-yellow-500' : 'bg-green-500'
+                } ${loading ? 'animate-pulse' : ''}`} />
+                <span className="text-xs text-gray-600">
+                  {error ? 'Connection Error' : loading ? 'Loading...' : 'Connected'}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Settings Navigation */}
             <div className="lg:col-span-1">
-              <Card>
-                <CardBody className="p-0">
-                  <nav className="space-y-1">
-                    {sections.map((section) => (
-                      <button
-                        key={section.id}
-                        onClick={() => setActiveSection(section.id)}
-                        className={`w-full flex items-start space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                          activeSection === section.id 
-                            ? 'bg-blue-50 border-l-4 border-blue-600' 
-                            : ''
-                        }`}
-                      >
-                        <section.icon className={`w-5 h-5 mt-0.5 ${
-                          activeSection === section.id ? 'text-blue-600' : 'text-gray-400'
-                        }`} />
-                        <div>
-                          <p className={`font-medium ${
-                            activeSection === section.id ? 'text-blue-900' : 'text-gray-900'
-                          }`}>
-                            {section.title}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {section.description}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </nav>
-                </CardBody>
-              </Card>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <nav className="space-y-1 p-2">
+                  {sections.map((section) => (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveSection(section.id)}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 text-left rounded-lg transition-all duration-200 ${
+                        activeSection === section.id 
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm' 
+                          : 'hover:bg-gray-50 text-gray-700 hover:text-gray-900'
+                      }`}
+                    >
+                      <section.icon className={`w-5 h-5 ${
+                        activeSection === section.id ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
+                      <div className="flex-1">
+                        <p className={`font-medium text-sm ${
+                          activeSection === section.id ? 'text-blue-900' : 'text-gray-900'
+                        }`}>
+                          {section.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {section.description}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </nav>
+              </div>
             </div>
 
             {/* Settings Content */}
             <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-100">
+                  <h2 className="text-lg font-semibold text-gray-900">
                     {sections.find(s => s.id === activeSection)?.title}
-                  </CardTitle>
-                  <CardDescription>
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
                     {sections.find(s => s.id === activeSection)?.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardBody>
+                  </p>
+                </div>
+                <div className="p-6">
                   {loading ? (
                     <div className="flex items-center justify-center py-12">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -487,24 +683,35 @@ export default function SettingsPage() {
                   
                   {/* Save Button */}
                   <div className="mt-8 flex justify-end space-x-4">
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      disabled={saving}
+                      onClick={() => {
+                        setFormData(settings || {});
+                        setError(null);
+                      }}
+                    >
                       {locale?.startsWith('es') ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button
                       variant="primary"
                       loading={saving}
                       onClick={handleSave}
+                      disabled={loading || !formData[activeSection] || Object.keys(formData[activeSection] || {}).length === 0}
                       leftIcon={saved ? <CheckIcon className="w-4 h-4" /> : undefined}
                     >
-                      {saved 
-                        ? (locale?.startsWith('es') ? 'Guardado' : 'Saved')
+                      {saving
+                        ? (locale?.startsWith('es') ? 'Guardando...' : 'Saving...')
+                        : saved 
+                        ? (locale?.startsWith('es') ? 'Guardado ✓' : 'Saved ✓')
                         : (locale?.startsWith('es') ? 'Guardar Cambios' : 'Save Changes')
                       }
                     </Button>
                   </div>
-                </CardBody>
-              </Card>
+                </div>
+              </div>
             </div>
+          </div>
           </div>
         </div>
       </AppLayout>

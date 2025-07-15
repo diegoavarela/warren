@@ -4,8 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppLayout } from "@/components/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { WorkflowBreadcrumbs } from "@/components/Breadcrumbs";
 import { 
-  DocumentIcon, 
   CheckCircleIcon, 
   ExclamationTriangleIcon,
   ChevronRightIcon 
@@ -75,36 +75,11 @@ function SelectSheetContent() {
     // Store selected sheet in session storage
     sessionStorage.setItem('selectedSheet', selectedSheet);
     
-    // Redirect to mapper
+    // Redirect to enhanced mapper
     const uploadSession = searchParams.get('session') || sessionStorage.getItem('uploadSession');
-    router.push(`/mapper?session=${uploadSession}&sheet=${selectedSheet}`);
+    router.push(`/enhanced-mapper?session=${uploadSession}&sheet=${selectedSheet}`);
   };
 
-  const formatCellValue = (value: any) => {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string' && value.trim() === '') return '';
-    // Truncate long values
-    const str = String(value);
-    return str.length > 20 ? str.substring(0, 20) + '...' : str;
-  };
-
-  const getSheetIcon = (sheet: ExcelSheet) => {
-    if (!sheet.hasData) {
-      return <ExclamationTriangleIcon className="w-5 h-5 text-gray-400" />;
-    }
-    
-    // Try to detect sheet type by name
-    const name = sheet.name.toLowerCase();
-    if (name.includes('balance') || name.includes('sheet')) {
-      return <DocumentIcon className="w-5 h-5 text-blue-600" />;
-    } else if (name.includes('p&l') || name.includes('profit') || name.includes('loss') || name.includes('resultado')) {
-      return <DocumentIcon className="w-5 h-5 text-green-600" />;
-    } else if (name.includes('cash') || name.includes('flow') || name.includes('flujo')) {
-      return <DocumentIcon className="w-5 h-5 text-purple-600" />;
-    }
-    
-    return <DocumentIcon className="w-5 h-5 text-blue-600" />;
-  };
 
   if (loading) {
     return (
@@ -150,6 +125,14 @@ function SelectSheetContent() {
       <AppLayout showFooter={true}>
         <div className="container mx-auto px-4 py-2 pb-20">
           <div className="max-w-4xl mx-auto">
+            {/* Breadcrumbs */}
+            <div className="mb-4">
+              <WorkflowBreadcrumbs 
+                currentStep="select-sheet" 
+                fileName={fileName}
+              />
+            </div>
+
             <div className="mb-3">
               <h1 className="text-xl font-bold text-gray-900">
                 Seleccionar Hoja de Cálculo
@@ -160,79 +143,47 @@ function SelectSheetContent() {
               </p>
             </div>
 
-            {/* Sheets Grid - More Compact */}
-            <div className="grid gap-2 mb-4">
+            {/* Slim Sheet List */}
+            <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200 mb-4">
               {sheets.map((sheet, index) => (
                 <div 
                   key={index}
                   onClick={() => sheet.hasData && handleSheetSelect(sheet.name)}
                   className={`
-                    border rounded-lg transition-all cursor-pointer
-                    ${!sheet.hasData ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-60' :
+                    p-3 transition-all cursor-pointer flex items-center justify-between
+                    ${!sheet.hasData ? 'bg-gray-50 cursor-not-allowed opacity-60' :
                       selectedSheet === sheet.name 
-                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
-                        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 bg-white'
+                        ? 'bg-blue-50 border-l-4 border-l-blue-500' 
+                        : 'hover:bg-gray-50'
                     }
                   `}
                 >
-                  <div className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          {getSheetIcon(sheet)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className={`font-medium ${
-                            sheet.hasData ? 'text-gray-900' : 'text-gray-500'
-                          }`}>
-                            {sheet.name}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            {sheet.rows.toLocaleString()} filas • {sheet.cols} columnas
-                            {!sheet.hasData && ' • Sin datos'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        {selectedSheet === sheet.name && (
-                          <CheckCircleIcon className="w-5 h-5 text-blue-600" />
-                        )}
-                        {sheet.hasData && (
-                          <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                        )}
-                      </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="sheet"
+                      value={sheet.name}
+                      checked={selectedSheet === sheet.name}
+                      onChange={() => {}}
+                      disabled={!sheet.hasData}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div>
+                      <h3 className={`font-medium ${
+                        sheet.hasData ? 'text-gray-900' : 'text-gray-500'
+                      }`}>
+                        {sheet.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {sheet.rows.toLocaleString()} filas • {sheet.cols} columnas
+                        {!sheet.hasData && ' • Sin datos'}
+                      </p>
                     </div>
-
-                    {/* Compact Sheet Preview - Only show for selected sheet */}
-                    {selectedSheet === sheet.name && sheet.hasData && sheet.preview && sheet.preview.length > 0 && (
-                      <div className="mt-2 border border-gray-200 rounded overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-xs">
-                            <tbody className="divide-y divide-gray-100">
-                              {sheet.preview.slice(0, 2).map((row, rowIndex) => (
-                                <tr key={rowIndex}>
-                                  {row.slice(0, 6).map((cell, cellIndex) => (
-                                    <td 
-                                      key={cellIndex} 
-                                      className="px-1 py-0.5 text-gray-700 max-w-[100px] truncate"
-                                    >
-                                      {formatCellValue(cell)}
-                                    </td>
-                                  ))}
-                                  {row.length > 6 && (
-                                    <td className="px-1 py-0.5 text-gray-400">
-                                      +{row.length - 6}
-                                    </td>
-                                  )}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
                   </div>
+                  
+                  {selectedSheet === sheet.name && (
+                    <CheckCircleIcon className="w-5 h-5 text-blue-600" />
+                  )}
                 </div>
               ))}
             </div>

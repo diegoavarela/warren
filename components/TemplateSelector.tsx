@@ -107,12 +107,9 @@ export function TemplateSelector({
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No hay plantillas guardadas
           </h3>
-          <p className="text-gray-600 mb-6">
-            Puedes crear una plantilla al guardar tu mapeo actual
+          <p className="text-gray-600">
+            Puedes crear una plantilla al guardar tu mapeo actual. Procede con el mapeo manual usando el botón de abajo.
           </p>
-          <Button variant="primary" onClick={onSkip}>
-            Continuar sin plantilla
-          </Button>
         </CardBody>
       </Card>
     );

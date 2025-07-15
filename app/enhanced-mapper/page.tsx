@@ -279,8 +279,8 @@ function EnhancedMapperContent() {
     };
     
     // Check if we have a direct mapping
-    if (categoryMapping[oldCategory]) {
-      return categoryMapping[oldCategory];
+    if ((categoryMapping as any)[oldCategory]) {
+      return (categoryMapping as any)[oldCategory];
     }
     
     // Try to match partial keywords for unmapped categories
@@ -646,7 +646,7 @@ function EnhancedMapperContent() {
         subcategory: mappedCategory.sub,
         isInflow: classification.isInflow,
         isTotal: isTotal,
-        isSubtotal: totalInfo?.type === 'subtotal',
+        isSubtotal: (totalInfo as any)?.type === 'subtotal',
         isExpanded: true,
         children: [],
         parentId: null,
@@ -681,7 +681,7 @@ function EnhancedMapperContent() {
 
   const detectPeriodColumns = (rawData: any[][]): any[] => {
     // Enhanced period detection - check multiple rows for period headers
-    const periodCols = [];
+    const periodCols: any[] = [];
     
     // Check rows 1, 2, and 3 for period headers (Excel files often have periods in different rows)
     const rowsToCheck = [rawData[1], rawData[2], rawData[3]].filter(row => row && row.length > 0);
@@ -724,8 +724,8 @@ function EnhancedMapperContent() {
       console.log('🎯 Best period header row found with score:', bestScore);
       
       // First pass: collect all potential period columns
-      const allPotentialPeriods = [];
-      bestRow.forEach((cell, index) => {
+      const allPotentialPeriods: any[] = [];
+      (bestRow as any[]).forEach((cell: any, index: number) => {
         if (cell && index > 0) { // Skip first column (account names)
           const cellStr = String(cell).trim();
           

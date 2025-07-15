@@ -104,6 +104,156 @@ export const helpTopics: Record<string, HelpTopic> = {
     contentKey: 'help.mapper.classification.content',
     category: 'mapper',
     relatedTopics: ['mapper.aiAnalysis', 'mapper.dataRange']
+  },
+  
+  // P&L Metric Topics - Revenue
+  'metrics.totalRevenue': {
+    id: 'metrics.totalRevenue',
+    titleKey: 'help.metrics.totalRevenue.title',
+    contentKey: 'help.metrics.totalRevenue.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.growthVsPrevious', 'metrics.percentageOfTarget']
+  },
+  'metrics.growthVsPrevious': {
+    id: 'metrics.growthVsPrevious',
+    titleKey: 'help.metrics.growthVsPrevious.title',
+    contentKey: 'help.metrics.growthVsPrevious.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.totalRevenue', 'metrics.monthlyProjection']
+  },
+  'metrics.monthlyProjection': {
+    id: 'metrics.monthlyProjection',
+    titleKey: 'help.metrics.monthlyProjection.title',
+    contentKey: 'help.metrics.monthlyProjection.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.totalRevenue', 'metrics.growthVsPrevious']
+  },
+  'metrics.percentageOfTarget': {
+    id: 'metrics.percentageOfTarget',
+    titleKey: 'help.metrics.percentageOfTarget.title',
+    contentKey: 'help.metrics.percentageOfTarget.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.totalRevenue', 'metrics.growthVsPrevious']
+  },
+  
+  // P&L Metric Topics - Costs
+  'metrics.cogs': {
+    id: 'metrics.cogs',
+    titleKey: 'help.metrics.cogs.title',
+    contentKey: 'help.metrics.cogs.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.cogsPercentage', 'metrics.grossProfit']
+  },
+  'metrics.operatingExpenses': {
+    id: 'metrics.operatingExpenses',
+    titleKey: 'help.metrics.operatingExpenses.title',
+    contentKey: 'help.metrics.operatingExpenses.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.opexPercentage', 'metrics.operatingIncome']
+  },
+  'metrics.cogsPercentage': {
+    id: 'metrics.cogsPercentage',
+    titleKey: 'help.metrics.cogsPercentage.title',
+    contentKey: 'help.metrics.cogsPercentage.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.cogs', 'metrics.grossProfit']
+  },
+  'metrics.opexPercentage': {
+    id: 'metrics.opexPercentage',
+    titleKey: 'help.metrics.opexPercentage.title',
+    contentKey: 'help.metrics.opexPercentage.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.operatingExpenses', 'metrics.operatingIncome']
+  },
+  
+  // P&L Metric Topics - Profitability
+  'metrics.grossProfit': {
+    id: 'metrics.grossProfit',
+    titleKey: 'help.metrics.grossProfit.title',
+    contentKey: 'help.metrics.grossProfit.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.cogs', 'metrics.operatingIncome']
+  },
+  'metrics.operatingIncome': {
+    id: 'metrics.operatingIncome',
+    titleKey: 'help.metrics.operatingIncome.title',
+    contentKey: 'help.metrics.operatingIncome.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.grossProfit', 'metrics.ebitda']
+  },
+  'metrics.ebitda': {
+    id: 'metrics.ebitda',
+    titleKey: 'help.metrics.ebitda.title',
+    contentKey: 'help.metrics.ebitda.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.operatingIncome', 'metrics.netIncome']
+  },
+  'metrics.netIncome': {
+    id: 'metrics.netIncome',
+    titleKey: 'help.metrics.netIncome.title',
+    contentKey: 'help.metrics.netIncome.content',
+    category: 'metrics',
+    relatedTopics: ['metrics.ebitda', 'metrics.operatingIncome']
+  },
+  
+  // YTD Metrics
+  'metrics.ytdRevenue': {
+    id: 'metrics.ytdRevenue',
+    titleKey: 'help.ytd.revenue.title',
+    contentKey: 'help.ytd.revenue.content',
+    category: 'ytd',
+    relatedTopics: ['metrics.totalRevenue', 'metrics.ytdNetIncome']
+  },
+  'metrics.ytdExpenses': {
+    id: 'metrics.ytdExpenses',
+    titleKey: 'help.ytd.expenses.title',
+    contentKey: 'help.ytd.expenses.content',
+    category: 'ytd',
+    relatedTopics: ['metrics.cogs', 'metrics.operatingExpenses']
+  },
+  'metrics.ytdNetIncome': {
+    id: 'metrics.ytdNetIncome',
+    titleKey: 'help.ytd.netIncome.title',
+    contentKey: 'help.ytd.netIncome.content',
+    category: 'ytd',
+    relatedTopics: ['metrics.netIncome', 'metrics.ytdRevenue']
+  },
+  'metrics.ytdEbitda': {
+    id: 'metrics.ytdEbitda',
+    titleKey: 'help.ytd.ebitda.title',
+    contentKey: 'help.ytd.ebitda.content',
+    category: 'ytd',
+    relatedTopics: ['metrics.ebitda', 'metrics.ytdNetIncome']
+  },
+  
+  // Filter Help Topics
+  'filters.period': {
+    id: 'filters.period',
+    titleKey: 'help.filters.period.title',
+    contentKey: 'help.filters.period.content',
+    category: 'filters',
+    relatedTopics: ['filters.comparison', 'dashboard.ytd']
+  },
+  'filters.comparison': {
+    id: 'filters.comparison',
+    titleKey: 'help.filters.comparison.title',
+    contentKey: 'help.filters.comparison.content',
+    category: 'filters',
+    relatedTopics: ['filters.period', 'dashboard.revenue']
+  },
+  'filters.currency': {
+    id: 'filters.currency',
+    titleKey: 'help.filters.currency.title',
+    contentKey: 'help.filters.currency.content',
+    category: 'filters',
+    relatedTopics: ['dashboard.currency', 'filters.units']
+  },
+  'filters.units': {
+    id: 'filters.units',
+    titleKey: 'help.filters.units.title',
+    contentKey: 'help.filters.units.content',
+    category: 'filters',
+    relatedTopics: ['dashboard.units', 'filters.currency']
   }
 };
 

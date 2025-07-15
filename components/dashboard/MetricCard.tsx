@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { useTranslation } from '@/lib/translations';
 import { useLocale } from '@/contexts/LocaleContext';
 import { ArrowUpIcon, ArrowDownIcon, MinusIcon } from '@heroicons/react/24/solid';
-import { InformationCircleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { InformationCircleIcon, ChevronDownIcon, ChevronUpIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { HelpIcon } from '../HelpIcon';
+import { HelpTopic } from '../HelpModal';
 
 interface BreakdownItem {
   label: string;
@@ -30,6 +32,16 @@ interface MetricCardProps {
   expandedContent?: React.ReactNode;
   colorScheme?: 'revenue' | 'cost' | 'profit' | 'neutral' | 'warning';
   locale?: string;
+  helpTopic?: HelpTopic;
+  helpContext?: {
+    currentValue: number;
+    previousValue?: number;
+    trend?: string;
+    ytdValue?: number;
+    changePercent?: number;
+    margin?: number;
+    benchmarks?: Record<string, number>;
+  };
 }
 
 export function MetricCard({
@@ -48,7 +60,9 @@ export function MetricCard({
   onClick,
   expandedContent,
   colorScheme = 'neutral',
-  locale
+  locale,
+  helpTopic,
+  helpContext
 }: MetricCardProps) {
   const { locale: contextLocale } = useLocale();
   const { t } = useTranslation(locale || contextLocale);
@@ -177,110 +191,99 @@ export function MetricCard({
   const colorStyles = getColorSchemeStyles();
 
   return (
-    <div className="space-y-4 h-full">
+    <>
       <div 
-        className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 relative group min-h-[240px] flex flex-col border ${
+        className={`relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border ${
           colorStyles.border
-        } ${isClickable ? 'cursor-pointer' : ''} overflow-hidden`}
+        } ${isClickable ? 'cursor-pointer' : ''} p-6 min-h-[200px] flex flex-col flex-1`}
         onClick={handleClick}
       >
-        {/* Color accent bar */}
-        <div className={`h-1 w-full ${
-          colorScheme === 'revenue' ? 'bg-purple-500' :
-          colorScheme === 'cost' ? 'bg-rose-500' :
-          colorScheme === 'profit' ? 'bg-emerald-500' :
-          colorScheme === 'warning' ? 'bg-amber-500' :
-          'bg-blue-500'
-        }`} />
+        {/* Header with icon and help */}
+        <div className="flex items-center justify-between mb-4">
+          <div className={`${colorStyles.iconBg} p-2 rounded-xl shadow-sm`}>
+            <div className={colorStyles.iconColor}>
+              {icon || <div className="w-6 h-6 bg-current rounded opacity-20" />}
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {helpTopic && (
+              <HelpIcon 
+                topic={{
+                  ...helpTopic,
+                  context: {
+                    ...helpContext,
+                    title,
+                    format,
+                    currency,
+                    displayUnits,
+                    colorScheme,
+                    changeValue: change?.value
+                  }
+                }}
+                size="sm"
+                className="opacity-60 hover:opacity-100"
+              />
+            )}
+            {isClickable && (
+              <div className={`h-5 w-5 ${colorStyles.iconColor}`}>
+                {isExpanded ? 
+                  <ChevronUpIcon className="h-5 w-5" /> :
+                  <ChevronDownIcon className="h-5 w-5" />
+                }
+              </div>
+            )}
+          </div>
+        </div>
         
-        <div className="p-6 flex-1 flex flex-col">
-          {/* Header - Compact design */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3 min-w-0 flex-1">
-              {icon && (
-                <div className={`p-2.5 rounded-xl ${colorStyles.iconBg} ${colorStyles.iconColor} flex-shrink-0`}>
-                  {icon}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-gray-700 truncate flex items-center space-x-1">
-                  <span>{title}</span>
-                  {isClickable && (
-                    isExpanded ? 
-                      <ChevronUpIcon className="h-4 w-4 text-gray-400 flex-shrink-0" /> :
-                      <ChevronDownIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                  )}
-                </h3>
-                {subtitle && (
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{subtitle}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Main Value - Larger and more prominent */}
-          <div className="mb-4 flex-1 flex items-center">
-            <div className={`text-4xl font-bold ${
-              colorScheme === 'revenue' ? 'text-purple-700' :
-              colorScheme === 'cost' ? 'text-rose-700' :
-              colorScheme === 'profit' ? 'text-emerald-700' :
-              colorScheme === 'warning' ? 'text-amber-700' :
-              'text-gray-900'
-            }`}>
+        {/* Title */}
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 leading-tight">
+          {title}
+        </h3>
+        
+        {/* Main Value - Flex grow to take available space */}
+        <div className="flex-grow flex flex-col justify-center">
+          <div className="flex items-baseline mb-2">
+            <span className={`text-2xl font-bold text-gray-900`}>
               {formatValue(currentValue)}
-            </div>
+            </span>
           </div>
 
-          {/* Change Indicator - Enhanced with better colors */}
-          {change && (
-            <div className="flex items-center justify-between mb-3">
-              <div className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${
-                change.trend === 'up' ? 
-                  (colorScheme === 'cost' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700') :
-                change.trend === 'down' ? 
-                  (colorScheme === 'cost' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700') :
-                'bg-gray-100 text-gray-600'
-              }`}>
-                {getTrendIcon()}
-                <span>{Math.abs(change.value).toFixed(1)}%</span>
-              </div>
-              {previousValue !== undefined && (
-                <span className="text-xs text-gray-500 font-medium">
-                  vs {formatValue(previousValue)}
-                </span>
-              )}
-            </div>
+          {/* Subtitle */}
+          {subtitle && (
+            <p className="text-sm text-gray-600">{subtitle}</p>
           )}
-
-          {/* YTD Value - More prominent */}
-          {ytdValue !== undefined && (
-            <div className="mt-auto pt-3 border-t border-gray-200">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('metrics.ytd')}</span>
-                <span className={`text-sm font-bold ${
-                  colorScheme === 'revenue' ? 'text-purple-600' :
-                  colorScheme === 'cost' ? 'text-rose-600' :
-                  colorScheme === 'profit' ? 'text-emerald-600' :
-                  colorScheme === 'warning' ? 'text-amber-600' :
-                  'text-gray-700'
-                }`}>
-                  {formatValue(ytdValue)}
-                </span>
-              </div>
+        </div>
+        
+        {/* Trend and Previous Value - Always at bottom */}
+        <div className="flex items-center justify-between mt-auto pt-4">
+          {previousValue !== undefined && (
+            <p className="text-xs text-gray-500">
+              {t('metrics.previous')}: {formatValue(previousValue)}
+            </p>
+          )}
+          
+          {change && (
+            <div className={`flex items-center text-sm font-medium ${
+              change.trend === 'up' 
+                ? colorScheme === 'cost' ? 'text-rose-600' : 'text-emerald-600'
+                : change.trend === 'down'
+                  ? colorScheme === 'cost' ? 'text-emerald-600' : 'text-rose-600'
+                  : 'text-gray-600'
+            }`}>
+              {getTrendIcon()}
+              {Math.abs(change.value).toFixed(1)}%
             </div>
           )}
         </div>
 
-        {/* Enhanced hover effect for clickable cards */}
-        {isClickable && (
-          <div className={`absolute inset-0 rounded-2xl ring-2 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-200 pointer-events-none ${
-            colorScheme === 'revenue' ? 'ring-purple-400' :
-            colorScheme === 'cost' ? 'ring-rose-400' :
-            colorScheme === 'profit' ? 'ring-emerald-400' :
-            colorScheme === 'warning' ? 'ring-amber-400' :
-            'ring-blue-400'
-          }`} />
-        )}
+        {/* Optional gradient overlay for premium feel */}
+        <div className={`absolute inset-0 ${
+          colorScheme === 'revenue' ? 'bg-purple-50' :
+          colorScheme === 'cost' ? 'bg-rose-50' :
+          colorScheme === 'profit' ? 'bg-emerald-50' :
+          colorScheme === 'warning' ? 'bg-amber-50' :
+          'bg-blue-50'
+        } opacity-5 rounded-2xl pointer-events-none`} />
       </div>
 
       {/* Expanded Content */}
@@ -313,6 +316,6 @@ export function MetricCard({
           ) : null}
         </div>
       )}
-    </div>
+    </>
   );
 }

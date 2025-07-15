@@ -14,6 +14,20 @@ export interface Period {
   netMargin: number;
   ebitda: number;
   ebitdaMargin: number;
+  // Personnel costs
+  totalPersonnelCost?: number;
+  personnelSalariesCoR?: number;
+  payrollTaxesCoR?: number;
+  personnelSalariesOp?: number;
+  payrollTaxesOp?: number;
+  healthCoverage?: number;
+  personnelBenefits?: number;
+  // Contract services
+  contractServicesCoR?: number;
+  contractServicesOp?: number;
+  professionalServices?: number;
+  salesMarketing?: number;
+  facilitiesAdmin?: number;
 }
 
 export interface YTDMetrics {

@@ -35,30 +35,68 @@ function CategoryButton({
   isSelected: boolean;
   onClick: () => void;
 }) {
+  // Enhanced styling for different category types
+  const getButtonStyle = () => {
+    const baseStyle = "w-full p-3 rounded-lg border text-left transition-all hover:shadow-sm";
+    
+    if (isSelected) {
+      return `${baseStyle} border-purple-500 bg-purple-50`;
+    }
+    
+    // Different colors for different types
+    switch (category.categoryType) {
+      case 'section':
+        return `${baseStyle} border-blue-200 hover:border-blue-300 hover:bg-blue-50`;
+      case 'total':
+        return `${baseStyle} border-green-200 hover:border-green-300 hover:bg-green-50`;
+      default:
+        return `${baseStyle} border-gray-200 hover:border-purple-300 hover:bg-gray-50`;
+    }
+  };
+
+  const getIconColor = () => {
+    switch (category.categoryType) {
+      case 'section':
+        return 'text-blue-600';
+      case 'total':
+        return 'text-green-600';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
   return (
     <button
       onClick={onClick}
-      className={`
-        w-full p-3 rounded-lg border text-left transition-all
-        hover:shadow-sm hover:border-purple-300
-        ${isSelected 
-          ? 'border-purple-500 bg-purple-50' 
-          : 'border-gray-200 hover:bg-gray-50'
-        }
-      `}
+      className={getButtonStyle()}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-2">
             {category.categoryType === 'section' && (
-              <FolderIcon className="w-4 h-4 text-gray-500" />
+              <FolderIcon className={`w-4 h-4 ${getIconColor()}`} />
             )}
             {category.categoryType === 'total' && (
-              <span className="text-gray-500 font-mono text-sm">Σ</span>
+              <span className={`${getIconColor()} font-mono text-sm font-bold`}>Σ</span>
             )}
-            <div className="font-medium text-sm text-gray-900">
+            <div className={`font-medium text-sm ${
+              category.categoryType === 'section' || category.categoryType === 'total' 
+                ? 'text-gray-900 font-semibold' 
+                : 'text-gray-900'
+            }`}>
               {category.label}
             </div>
+            {/* Type indicator badge */}
+            {category.categoryType === 'section' && (
+              <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                SECCIÓN
+              </span>
+            )}
+            {category.categoryType === 'total' && (
+              <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                TOTAL
+              </span>
+            )}
           </div>
           {category.description && (
             <p className="text-xs text-gray-600 mt-0.5">
@@ -116,7 +154,7 @@ export function ManualCategorySelector({
     }
   }, [companyId]);
 
-  // Add escape key handler
+  // Add escape key handler and prevent body scroll
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -124,8 +162,17 @@ export function ManualCategorySelector({
       }
     };
 
+    // Prevent body scroll when modal is open
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      // Restore original overflow
+      document.body.style.overflow = originalOverflow;
+    };
   }, [onClose]);
   
   const fetchCustomCategories = async () => {
@@ -211,7 +258,23 @@ export function ManualCategorySelector({
   };
   
   const handleCreateCategory = async () => {
-    if (!newCategoryName.trim() || !companyId) return;
+    if (!newCategoryName.trim()) {
+      console.warn('Cannot create category: Category name is empty');
+      return;
+    }
+    
+    if (!companyId) {
+      console.warn('Cannot create category: Company ID is missing');
+      alert('Error: No se pudo identificar la empresa. Por favor recarga la página.');
+      return;
+    }
+    
+    console.log('Creating category:', {
+      name: newCategoryName,
+      companyId,
+      isInflow: newCategoryIsInflow,
+      type: newCategoryType
+    });
     
     // Generate a key from the name
     const categoryKey = newCategoryName
@@ -295,6 +358,18 @@ export function ManualCategorySelector({
                   ({classification.confidence}% confianza)
                 </span>
               </div>
+              
+              {/* Instructions for users */}
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  💡 <strong>Tip:</strong> Puedes seleccionar cualquier tipo de categoría:
+                </p>
+                <ul className="text-xs text-blue-700 mt-1 ml-4">
+                  <li>• <span className="inline-block w-3 h-3 bg-blue-200 rounded mr-1"></span> <strong>SECCIONES</strong> para agrupar cuentas (ej: INGRESOS, GASTOS)</li>
+                  <li>• <span className="inline-block w-3 h-3 bg-green-200 rounded mr-1"></span> <strong>TOTALES</strong> para líneas de suma (ej: TOTAL INGRESOS, UTILIDAD NETA)</li>
+                  <li>• <span className="inline-block w-3 h-3 bg-gray-200 rounded mr-1"></span> <strong>CUENTAS</strong> para elementos individuales</li>
+                </ul>
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -338,7 +413,10 @@ export function ManualCategorySelector({
                     <input
                       type="text"
                       value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onChange={(e) => {
+                        console.log('Category name changed:', e.target.value);
+                        setNewCategoryName(e.target.value);
+                      }}
                       placeholder="Ej: Gastos de Marketing Digital"
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                       autoFocus
@@ -414,8 +492,13 @@ export function ManualCategorySelector({
                   <div className="flex space-x-2 pt-2">
                     <button
                       onClick={handleCreateCategory}
-                      disabled={!newCategoryName.trim() || saving || !companyId}
-                      className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      disabled={!newCategoryName.trim() || saving}
+                      className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                        !newCategoryName.trim() || saving 
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }`}
+                      title={`Name: "${newCategoryName}" | Saving: ${saving} | CompanyId: ${companyId || 'missing'}`}
                     >
                       {saving ? 'Guardando...' : 'Crear y Asignar'}
                     </button>

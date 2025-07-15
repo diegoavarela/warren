@@ -3,7 +3,7 @@ import { put } from "@vercel/blob";
 import * as XLSX from "xlsx";
 import { nanoid } from "nanoid";
 import { ExcelFileMetadata, ExcelSheet } from "@/types";
-import { addUpload } from "@/lib/db/mock-db";
+import { addUpload } from "@/lib/services/upload-storage";
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

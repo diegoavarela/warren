@@ -1,0 +1,91 @@
+# Ignore files for Vercel deployment
+
+# Documentation
+README.md
+CLAUDE.md
+User_Journey_Maps.md
+/docs
+/reference
+
+# Development files
+.env.local
+.env.development
+.env.test
+*.log
+*.sql
+*.dump
+
+# Test files
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+/test-data
+/cypress
+/e2e
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package manager files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+/tmp
+/temp
+
+# Build tools
+.eslintrc*
+.prettierrc*
+jest.config.*
+tsconfig.tsbuildinfo
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker files (if not used in production)
+Dockerfile.dev
+docker-compose.dev.yml
+
+# Scripts that shouldn't be deployed
+/scripts/dev-*
+/scripts/test-*
+
+# Database files
+/drizzle
+*.sqlite
+*.db
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Python files
+__pycache__/
+*.py[cod]
+.Python
+venv/
+.venv/

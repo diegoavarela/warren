@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { nanoid } from "nanoid";
 import { ExcelFileMetadata, ExcelSheet } from "@/types";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_TYPES = [
@@ -93,14 +95,33 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Create metadata response - include the base64 encoded file
-    const metadata: ExcelFileMetadata & { fileData: string } = {
+    // Store file temporarily on server instead of in sessionStorage
+    const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
+    const filePath = path.join(uploadDir, `${uploadSession}.xlsx`);
+    
+    try {
+      // Ensure upload directory exists
+      await mkdir(uploadDir, { recursive: true });
+      
+      // Write file to temporary location
+      await writeFile(filePath, buffer);
+      
+      console.log(`File stored temporarily at: ${filePath}`);
+    } catch (error) {
+      console.error('Error storing file:', error);
+      return NextResponse.json(
+        { error: "Error storing file temporarily" },
+        { status: 500 }
+      );
+    }
+
+    // Create metadata response - no file data included
+    const metadata: ExcelFileMetadata = {
       fileName: file.name,
       fileSize: file.size,
       sheets,
       detectedLocale: locale,
-      uploadSession,
-      fileData: Buffer.from(arrayBuffer).toString('base64') // Include file data
+      uploadSession
     };
 
     return NextResponse.json(metadata);

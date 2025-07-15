@@ -35,7 +35,8 @@ const TOTAL_KEYWORDS = {
     'ingresos totales', 'gastos totales', 'costos totales',
     // Specific Spanish P&L totals from our test file
     'total ingresos', 'total costo de ventas', 'total gastos operativos',
-    'utilidad operativa', 'utilidad antes de impuestos', 'total impuestos'
+    'utilidad operativa', 'utilidad antes de impuestos', 'total impuestos',
+    'ebitda', 'ebit', 'resultado operativo'
   ],
   english: [
     'total', 'subtotal', 'grand total', 'sub-total',
@@ -44,7 +45,8 @@ const TOTAL_KEYWORDS = {
     'total revenue', 'total expenses', 'total costs',
     // Specific English P&L totals
     'total revenue', 'total cost of sales', 'total operating expenses',
-    'operating income', 'income before taxes', 'total taxes'
+    'operating income', 'income before taxes', 'total taxes',
+    'ebitda', 'ebit', 'operating profit'
   ]
 };
 
@@ -73,7 +75,17 @@ const NOT_TOTAL_PATTERNS = [
   'other expenses', 'otros gastos',
   'miscellaneous', 'varios', 'other',
   'consulting', 'consultoría',
-  'management fees', 'honorarios de gestión'
+  'management fees', 'honorarios de gestión',
+  'salaries', 'wages', 'sueldos', 'salarios',
+  'rent', 'lease', 'renta', 'arrendamiento',
+  'utilities', 'servicios públicos', 'servicios',
+  'marketing', 'advertising', 'publicidad',
+  'insurance', 'seguros',
+  'supplies', 'suministros',
+  'travel', 'viajes',
+  'taxes paid', 'impuestos pagados',
+  'depreciation', 'depreciación',
+  'amortization', 'amortización'
 ];
 
 // Section-specific keywords
@@ -121,7 +133,7 @@ export function detectTotalRows(
     if (!accountName || accountName === '-') continue;
 
     const detection = analyzeRowForTotal(rawData, rowIndex, opts, accountName);
-    if (detection.confidence > 0.6) { // Higher threshold to reduce false positives
+    if (detection.confidence > 0.75) { // Increased threshold from 0.6 to 0.75 to reduce false positives
       results.push(detection);
       console.log(`🔍 Total detected: "${accountName}" (confidence: ${detection.confidence.toFixed(2)})`, detection.detectionReasons);
     }
@@ -161,7 +173,31 @@ function analyzeRowForTotal(
     };
   }
   
-  // PRIORITY 2: Check if this is a section header (only if not a total)
+  // PRIORITY 2: Check for key financial totals that should always be detected
+  const keyFinancialTotals = [
+    'gross profit', 'net income', 'operating income', 'ebitda', 'ebit',
+    'gross margin', 'net margin', 'operating margin',
+    'utilidad bruta', 'utilidad neta', 'utilidad operativa',
+    'margen bruto', 'margen neto', 'resultado neto'
+  ];
+  
+  const isKeyTotal = keyFinancialTotals.some(total => 
+    lowerName === total || 
+    (total.includes(' ') && lowerName.startsWith(total)) ||
+    (lowerName.includes(total) && lowerName.includes('%'))
+  );
+  
+  if (isKeyTotal) {
+    return {
+      rowIndex,
+      accountName: finalAccountName,
+      totalType: 'calculated_total',
+      confidence: 0.85, // High confidence for key financial metrics
+      detectionReasons: ['Key financial total metric']
+    };
+  }
+  
+  // PRIORITY 3: Check if this is a section header (only if not a total)
   if (isSectionHeader(row, finalAccountName)) {
     return {
       rowIndex,
@@ -266,21 +302,42 @@ function detectByKeywords(accountName: string, reasons: string[]): number {
       reasons.push(`Exact match: "${keyword}"`);
       break;
     }
-    // Partial match for "total + word" patterns
-    else if (lowerKeyword.startsWith('total') && lowerName.includes(lowerKeyword)) {
+    // Partial match for "total + word" patterns - must start with "total"
+    else if (lowerKeyword.startsWith('total') && lowerName.startsWith('total')) {
       score = Math.max(score, 0.9);
       reasons.push(`Total pattern match: "${keyword}"`);
       break;
     }
-    // Match for utilidad patterns
-    else if (lowerKeyword.startsWith('utilidad') && lowerName.includes(lowerKeyword)) {
+    // Match for utilidad patterns - must be exact or at start
+    else if (lowerKeyword.includes('utilidad') && (lowerName === lowerKeyword || lowerName.startsWith('utilidad'))) {
       score = Math.max(score, 0.95);
       reasons.push(`Utilidad pattern match: "${keyword}"`);
       break;
     }
-    // Contains the keyword
-    else if (lowerName.includes(lowerKeyword)) {
-      score = Math.max(score, 0.8);
+    // Match for profit/income patterns
+    else if ((lowerKeyword.includes('profit') || lowerKeyword.includes('income')) && 
+             (lowerName === lowerKeyword || lowerName.endsWith('profit') || lowerName.endsWith('income'))) {
+      score = Math.max(score, 0.95);
+      reasons.push(`Profit/Income pattern match: "${keyword}"`);
+      break;
+    }
+    // Match for margen patterns - must be exact or at start
+    else if ((lowerKeyword.includes('margen') || lowerKeyword.includes('margin')) && 
+             (lowerName === lowerKeyword || lowerName.startsWith('margen') || lowerName.endsWith('margin'))) {
+      score = Math.max(score, 0.9);
+      reasons.push(`Margin pattern match: "${keyword}"`);
+      break;
+    }
+    // Match for EBITDA/EBIT patterns
+    else if ((lowerName === 'ebitda' || lowerName === 'ebit') && 
+             (lowerKeyword === 'ebitda' || lowerKeyword === 'ebit')) {
+      score = Math.max(score, 0.95);
+      reasons.push(`EBITDA/EBIT match: "${keyword}"`);
+      break;
+    }
+    // Contains the keyword - reduced score for partial matches
+    else if (lowerName.includes(lowerKeyword) && lowerKeyword.length > 5) { // Only for longer keywords
+      score = Math.max(score, 0.7);
       reasons.push(`Contains keyword: "${keyword}"`);
       break;
     }
@@ -300,6 +357,12 @@ function detectByKeywords(accountName: string, reasons: string[]): number {
   if (lowerName.match(/(\+|\-|=)/)) {
     score = Math.max(score, 0.6);
     reasons.push('Contains calculation symbols');
+  }
+
+  // Check for percentage indicator (usually a calculated field)
+  if (lowerName.includes('%') || lowerName.includes('percent')) {
+    score = Math.max(score, 0.8);
+    reasons.push('Contains percentage indicator');
   }
 
   return score;

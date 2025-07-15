@@ -102,10 +102,7 @@ function UserInvitePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...form,
-          type: 'invitation'
-        }),
+        body: JSON.stringify(form),
       });
 
       if (response.ok) {

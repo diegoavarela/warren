@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useTranslation } from '@/lib/translations';
+import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
+import { getHelpTopic } from '@/lib/help-content';
 
 export interface HelpTopic {
   id: string;
@@ -12,6 +14,7 @@ export interface HelpTopic {
   contentKey: string;
   category?: string;
   relatedTopics?: string[];
+  context?: Record<string, any>;
 }
 
 interface HelpModalProps {
@@ -35,6 +38,91 @@ export function HelpModal({ isOpen, onClose, topic, defaultCategory = 'general' 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
+
+  // Format currency values
+  const formatCurrency = (value: number, currency = 'USD', displayUnits = 'normal') => {
+    let convertedValue = value;
+    let suffix = '';
+    
+    if (displayUnits === 'K') {
+      convertedValue = value / 1000;
+      suffix = 'K';
+    } else if (displayUnits === 'M') {
+      convertedValue = value / 1000000;
+      suffix = 'M';
+    }
+    
+    const formatted = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+    }).format(convertedValue);
+    
+    return formatted + suffix;
+  };
+
+  // Replace template variables with actual values
+  const processedContent = useMemo(() => {
+    if (!topic) return t('help.general.content');
+    
+    let content = t(topic.contentKey);
+    const context = topic.context || {};
+    
+    // Replace all template variables
+    Object.entries(context).forEach(([key, value]) => {
+      const regex = new RegExp(`\{${key}\}`, 'g');
+      
+      if (key === 'currentValue' || key === 'previousValue' || key === 'ytdValue') {
+        // Format currency values
+        const format = context.format || 'currency';
+        const currency = context.currency || 'USD';
+        const displayUnits = context.displayUnits || 'normal';
+        
+        if (format === 'currency' && typeof value === 'number') {
+          content = content.replace(regex, formatCurrency(value, currency, displayUnits));
+        } else if (format === 'percentage' && typeof value === 'number') {
+          content = content.replace(regex, `${value.toFixed(1)}%`);
+        } else {
+          content = content.replace(regex, String(value));
+        }
+      } else if (key === 'changePercent' && typeof value === 'number') {
+        // Format percentage changes
+        const sign = value > 0 ? '+' : '';
+        content = content.replace(regex, `${sign}${value.toFixed(1)}%`);
+      } else if (key === 'benchmarks' && typeof value === 'object') {
+        // Process benchmark values
+        Object.entries(value).forEach(([benchmarkKey, benchmarkValue]) => {
+          const benchmarkRegex = new RegExp(`\{benchmarks\.${benchmarkKey}\}`, 'g');
+          if (typeof benchmarkValue === 'number') {
+            const format = context.format || 'currency';
+            const currency = context.currency || 'USD';
+            const displayUnits = context.displayUnits || 'normal';
+            
+            if (format === 'currency') {
+              content = content.replace(benchmarkRegex, formatCurrency(benchmarkValue, currency, displayUnits));
+            } else {
+              content = content.replace(benchmarkRegex, String(benchmarkValue));
+            }
+          } else if (typeof benchmarkValue === 'object' && benchmarkValue !== null) {
+            // Handle nested benchmarks
+            Object.entries(benchmarkValue).forEach(([nestedKey, nestedValue]) => {
+              const nestedRegex = new RegExp(`\{benchmarks\.${benchmarkKey}\.${nestedKey}\}`, 'g');
+              content = content.replace(nestedRegex, String(nestedValue));
+            });
+          }
+        });
+      } else if (key === 'margin' && typeof value === 'number') {
+        // Format margin percentages
+        content = content.replace(regex, `${value.toFixed(1)}`);
+      } else {
+        // Default replacement
+        content = content.replace(regex, String(value));
+      }
+    });
+    
+    return content;
+  }, [topic, t]);
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
@@ -66,10 +154,11 @@ export function HelpModal({ isOpen, onClose, topic, defaultCategory = 'general' 
           )}
 
           {/* Content */}
-          <div className="prose prose-sm max-w-none mb-6">
+          <div className="mb-6">
             <div 
+              className="prose prose-sm max-w-none [&_h4]:text-base [&_h4]:font-semibold [&_h4]:text-gray-900 [&_h4]:mt-4 [&_h4]:mb-2 [&_ul]:space-y-1 [&_li]:text-gray-700 [&_strong]:font-semibold [&_strong]:text-gray-900 [&_p]:text-gray-700 [&_p]:leading-relaxed"
               dangerouslySetInnerHTML={{ 
-                __html: topic ? t(topic.contentKey) : t('help.general.content') 
+                __html: processedContent
               }} 
             />
           </div>
@@ -81,18 +170,23 @@ export function HelpModal({ isOpen, onClose, topic, defaultCategory = 'general' 
                 {t('help.relatedTopics')}
               </h4>
               <div className="space-y-2">
-                {topic.relatedTopics.map((relatedId) => (
-                  <button
-                    key={relatedId}
-                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline block text-left"
-                    onClick={() => {
-                      // TODO: Load related topic
-                      console.log('Load topic:', relatedId);
-                    }}
-                  >
-                    {t(`help.${relatedId}.title`)}
-                  </button>
-                ))}
+                {topic.relatedTopics.map((relatedId) => {
+                  const relatedTopic = getHelpTopic(relatedId);
+                  const titleKey = relatedTopic?.titleKey || `help.${relatedId}.title`;
+                  
+                  return (
+                    <button
+                      key={relatedId}
+                      className="text-sm text-blue-600 hover:text-blue-700 hover:underline block text-left"
+                      onClick={() => {
+                        // TODO: Load related topic
+                        console.log('Load topic:', relatedId);
+                      }}
+                    >
+                      {t(titleKey)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

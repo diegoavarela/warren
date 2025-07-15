@@ -146,9 +146,8 @@ IMPORTANT: Always respond with valid JSON only, no additional text.`
         initialClassifications,
         {
           documentType: structure.statementType === 'profit_loss' ? 'pnl' : 
-                        structure.statementType === 'cash_flow' ? 'cashflow' : 'other',
-          language: this.detectLanguage(initialClassifications.map(c => ({ name: c.accountName }))),
-          rawData: sampleData
+                        structure.statementType === 'cash_flow' ? 'cashflow' : undefined,
+          language: this.detectLanguage(initialClassifications.map(c => ({ name: c.accountName })))
         }
       );
       
@@ -166,7 +165,7 @@ IMPORTANT: Always respond with valid JSON only, no additional text.`
           ...cls,
           validationApplied: true,
           validationCorrections: validation.corrections.filter(c => 
-            c.accountName === cls.accountName
+            c.rowIndex === cls.rowIndex
           ).length
         })),
         validationIssues: validation.warnings.map(w => ({
@@ -292,9 +291,8 @@ IMPORTANT: Always respond with valid JSON only, no additional text.`
         initialClassifications,
         {
           documentType: documentContext.statementType === 'profit_loss' ? 'pnl' : 
-                        documentContext.statementType === 'cash_flow' ? 'cashflow' : 'other',
-          language: this.detectLanguage(accounts),
-          rawData: documentContext.sampleData
+                        documentContext.statementType === 'cash_flow' ? 'cashflow' : undefined,
+          language: this.detectLanguage(accounts)
         }
       );
       
@@ -310,10 +308,10 @@ IMPORTANT: Always respond with valid JSON only, no additional text.`
         ...cls,
         validationApplied: true,
         validationCorrections: validation.corrections.filter(c => 
-          c.accountName === cls.accountName
+          c.rowIndex === cls.rowIndex
         ).length,
         requiresReview: validation.requiresManualReview && 
-          validation.warnings.some(w => w.accountName === cls.accountName)
+          validation.warnings.some(w => w.rowIndex === cls.rowIndex)
       }));
 
     } catch (error) {
@@ -606,8 +604,15 @@ STRUCTURE ANALYSIS FOCUS:
 1. Identify document type (P&L, Balance Sheet, Cash Flow)
 2. Locate headers, data ranges, totals, and subtotals
 3. Identify account code and name columns
-4. Detect period/date columns
+4. Detect ALL period/date columns - find consecutive month columns (Jan, Feb, Mar, etc.)
 5. Determine currency and fiscal year
+
+CRITICAL PERIOD DETECTION RULES:
+- Find ALL consecutive month columns, not just the first one
+- Look for patterns like "Jan-25", "Feb-25", "Mar-25", "Apr-25", "May-25"
+- Include ALL periods that contain financial data
+- Common patterns: "Ene", "Feb", "Mar", "Abr", "May" (Spanish) or "Jan", "Feb", "Mar", "Apr", "May" (English)
+- Each period column should be identified separately in the periodColumns array
 
 CLASSIFICATION ANALYSIS FOCUS:
 1. Extract ALL account names from the data rows
@@ -712,7 +717,11 @@ Focus on identifying:
    - IMPORTANT: Look for columns with headers like "Cuenta", "Account", "Concepto" - these are nameColumn
    - Columns with "Descripción", "Description", "Detalle" are usually supplementary, not the main account column
    - Columns with numeric codes (like "4000", "5000") indicate account codes (codeColumn)
-4. Which columns contain period/date information
+4. Which columns contain period/date information - FIND ALL CONSECUTIVE PERIOD COLUMNS
+   - Look for patterns like "Jan-25", "Feb-25", "Mar-25", "Apr-25", "May-25"
+   - Include ALL periods that contain financial data
+   - Common patterns: "Ene", "Feb", "Mar", "Abr", "May" (Spanish) or "Jan", "Feb", "Mar", "Apr", "May" (English)
+   - Each period column should be identified separately in the periodColumns array
 5. Currency and fiscal year if detectable
    - Look for currency symbols ($, €, R$, etc.) and names (pesos, dollars, euros)
    - For Argentine Pesos, return "ARS" not "Arg Pesos"
@@ -734,11 +743,11 @@ ${accounts.map((acc, idx) => {
     : '';
   
   let contextInfo = '';
-  if (acc.previousRows && acc.previousRows.length > 0) {
-    contextInfo += `\n   Previous accounts: ${acc.previousRows.filter(r => r).join(', ')}`;
+  if ((acc as any).previousRows && (acc as any).previousRows.length > 0) {
+    contextInfo += `\n   Previous accounts: ${(acc as any).previousRows.filter((r: any) => r).join(', ')}`;
   }
-  if (acc.nextRows && acc.nextRows.length > 0) {
-    contextInfo += `\n   Following accounts: ${acc.nextRows.filter(r => r).join(', ')}`;
+  if ((acc as any).nextRows && (acc as any).nextRows.length > 0) {
+    contextInfo += `\n   Following accounts: ${(acc as any).nextRows.filter((r: any) => r).join(', ')}`;
   }
   
   return `${idx + 1}. "${acc.name}"${valueInfo}${contextInfo}`;

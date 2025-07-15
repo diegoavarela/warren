@@ -8,7 +8,6 @@ import { useTranslation } from '@/lib/translations';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { PnLDashboard } from '@/components/dashboard/PnLDashboard';
-import { CompanySelector } from '@/components/dashboard/CompanySelector';
 import { CompanyContextBar } from '@/components/dashboard/CompanyContextBar';
 import { ROLES } from '@/lib/auth/rbac';
 
@@ -18,6 +17,8 @@ export default function PnLDashboardPage() {
   const { locale } = useLocale();
   const { t } = useTranslation(locale);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [currentPeriod, setCurrentPeriod] = useState<string>('');
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Get company ID from session storage if available
   useEffect(() => {
@@ -36,14 +37,14 @@ export default function PnLDashboardPage() {
           {/* Company Context Bar */}
           <CompanyContextBar 
             companyId={selectedCompanyId}
-            currentPeriod="Diciembre 2024"
-            lastUpdate={new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)} // 5 days ago for demo
+            currentPeriod={currentPeriod}
+            lastUpdate={lastUpdate}
           />
           
           <div className="container mx-auto px-4 py-8">
             {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent">
                     {t('dashboard.pnl.title')}
@@ -61,19 +62,18 @@ export default function PnLDashboardPage() {
                   </button>
                 </div>
               </div>
-              
-              {/* Company Selector */}
-              <div className="flex justify-end">
-                <CompanySelector
-                  selectedCompanyId={selectedCompanyId}
-                  onCompanyChange={setSelectedCompanyId}
-                  className="w-full max-w-xs"
-                />
-              </div>
             </div>
 
             {/* P&L Dashboard Component */}
-            <PnLDashboard companyId={selectedCompanyId} currency="$" locale={locale} />
+            <PnLDashboard 
+              companyId={selectedCompanyId} 
+              currency="$" 
+              locale={locale}
+              onPeriodChange={(period, update) => {
+                setCurrentPeriod(period);
+                setLastUpdate(update);
+              }}
+            />
           </div>
         </div>
       </AppLayout>
