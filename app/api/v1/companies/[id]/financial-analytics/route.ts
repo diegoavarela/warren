@@ -434,6 +434,7 @@ export async function GET(
           totalNetIncome: chartData.reduce((sum, d) => sum + d.netIncome, 0),
           avgNetMargin: chartData.length > 0 ? chartData.reduce((sum, d) => sum + d.netMargin, 0) / chartData.length : 0
         },
+        categories: getCategoriesBreakdown(processedItems),
         chartData
       };
 
@@ -977,4 +978,48 @@ function formatMonthFromPeriodId(periodId: string): string {
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const monthIndex = parseInt(month, 10) - 1;
   return `${months[monthIndex]} ${year}`;
+}
+
+// Helper function to get categories breakdown for detailed display
+function getCategoriesBreakdown(items: ProcessedLineItem[]) {
+  const categories: {
+    revenue: Array<{category: string; subcategory: string; amount: number; percentage: number}>;
+    cogs: Array<{category: string; subcategory: string; amount: number; percentage: number}>;
+    operatingExpenses: Array<{category: string; subcategory: string; amount: number; percentage: number}>;
+  } = {
+    revenue: [],
+    cogs: [],
+    operatingExpenses: []
+  };
+
+  // Group items by category
+  const categorizedItems = {
+    revenue: items.filter(item => item.category === 'revenue' && !item.isTotal),
+    cogs: items.filter(item => item.category === 'cogs' && !item.isTotal),
+    operatingExpenses: items.filter(item => item.category === 'operating_expenses' && !item.isTotal)
+  };
+
+  // Calculate totals for percentage calculations
+  const totals = {
+    revenue: categorizedItems.revenue.reduce((sum, item) => sum + item.amount, 0),
+    cogs: categorizedItems.cogs.reduce((sum, item) => sum + item.amount, 0),
+    operatingExpenses: categorizedItems.operatingExpenses.reduce((sum, item) => sum + item.amount, 0)
+  };
+
+  // Build breakdown for each category
+  Object.keys(categorizedItems).forEach(categoryKey => {
+    const categoryItems = categorizedItems[categoryKey as keyof typeof categorizedItems];
+    const categoryTotal = totals[categoryKey as keyof typeof totals];
+    
+    if (categoryItems.length > 0 && categoryTotal > 0) {
+      categories[categoryKey as keyof typeof categories] = categoryItems.map(item => ({
+        category: item.accountName,
+        subcategory: item.subcategory || 'other',
+        amount: item.amount,
+        percentage: (item.amount / categoryTotal) * 100
+      }));
+    }
+  });
+
+  return categories;
 }

@@ -327,10 +327,6 @@ export const translations = {
     'help.ytd.ebitda.title': 'EBITDA YTD',
     'help.ytd.ebitda.content': '<p>El <strong>EBITDA YTD</strong> muestra la rentabilidad operativa acumulada sin efectos de depreciación, amortización, intereses e impuestos.</p><h4>EBITDA YTD: <strong>{currentValue}</strong></h4><h4>Margen EBITDA YTD: <strong>{margin}%</strong></h4><h4>Interpretación del EBITDA:</h4><ul><li>Positivo alto: Negocio muy rentable</li><li>Positivo moderado: Operaciones saludables</li><li>Cercano a cero: Revisar eficiencia</li><li>Negativo: Problema operacional serio</li></ul><h4>EBITDA se usa para:</h4><ul><li>Evaluar salud operacional</li><li>Comparar con competidores</li><li>Calcular múltiplos de valoración</li><li>Analizar tendencias de rentabilidad</li></ul>',
     
-    // Missing translation
-    'metrics.ofRevenue': 'de ingresos',
-    'metrics.previous': 'Anterior',
-    
     // Filter Help Topics
     'help.filters.period.title': 'Selección de Período',
     'help.filters.period.content': '<p>El <strong>selector de período</strong> te permite elegir qué mes o período analizar en el dashboard.</p><h4>Opciones disponibles:</h4><ul><li><strong>Mes actual</strong>: Muestra los datos del mes en curso</li><li><strong>YTD (Año a la fecha)</strong>: Muestra datos acumulados desde enero hasta el mes actual</li><li><strong>Meses anteriores</strong>: Puedes seleccionar cualquier mes histórico disponible</li></ul><h4>¿Cuándo usar cada opción?</h4><ul><li><strong>Mes actual</strong>: Para monitorear el desempeño en tiempo real y tomar decisiones operativas inmediatas</li><li><strong>YTD</strong>: Para evaluar el progreso anual, comparar con objetivos anuales y proyectar el cierre del año</li><li><strong>Meses específicos</strong>: Para analizar tendencias, identificar patrones estacionales o investigar eventos específicos</li></ul><h4>Impacto en los datos mostrados:</h4><p>Al cambiar el período:</p><ul><li>Todos los gráficos y métricas se actualizan automáticamente</li><li>Las comparaciones se ajustan al período seleccionado</li><li>Los cálculos de márgenes y ratios reflejan el período elegido</li></ul><h4>Tips profesionales:</h4><ul><li>Compara el mismo mes de diferentes años para eliminar efectos estacionales</li><li>Usa YTD para presentaciones ejecutivas y evaluaciones de desempeño anual</li><li>Revisa varios meses consecutivos para identificar tendencias</li></ul>',
@@ -696,9 +692,6 @@ export const translations = {
     'help.ytd.ebitda.title': 'YTD EBITDA',
     'help.ytd.ebitda.content': '<p><strong>YTD EBITDA</strong> shows accumulated operating profitability without effects of depreciation, amortization, interest, and taxes.</p><h4>YTD EBITDA: <strong>{currentValue}</strong></h4><h4>YTD EBITDA Margin: <strong>{margin}%</strong></h4><h4>EBITDA interpretation:</h4><ul><li>High positive: Very profitable business</li><li>Moderate positive: Healthy operations</li><li>Near zero: Review efficiency</li><li>Negative: Serious operational issue</li></ul><h4>EBITDA is used to:</h4><ul><li>Evaluate operational health</li><li>Compare with competitors</li><li>Calculate valuation multiples</li><li>Analyze profitability trends</li></ul>',
     
-    // Missing translations
-    'metrics.ofRevenue': 'of revenue',
-    'metrics.previous': 'Previous',
     
     // Filter Help Topics
     'help.filters.period.title': 'Period Selection',
