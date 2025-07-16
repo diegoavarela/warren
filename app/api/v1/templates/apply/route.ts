@@ -78,6 +78,16 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(mappingTemplates.id, templateId));
 
+      // Debug what we're returning
+      console.log('🔍 Template columnMappings structure:', {
+        hasAccounts: !!(columnMappings?.accounts),
+        accountsCount: columnMappings?.accounts?.length || 0,
+        firstAccount: columnMappings?.accounts?.[0],
+        accountsWithoutSubcategory: columnMappings?.accounts?.filter((a: any) => 
+          !a.subcategory && !a.isTotal && !a.isCalculated
+        ).length || 0
+      });
+
       // Return the template configuration
       return NextResponse.json({
         success: true,
@@ -86,6 +96,7 @@ export async function POST(request: NextRequest) {
           templateName: template.templateName,
           statementType: template.statementType,
           locale: template.locale,
+          currency: template.currency,
           columnMappings,
           validationRules: template.validationRules,
           filePattern: template.filePattern,

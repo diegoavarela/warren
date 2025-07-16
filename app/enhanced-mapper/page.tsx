@@ -75,6 +75,7 @@ function EnhancedMapperContent() {
   
   // Click-to-edit states
   const [editingAccountType, setEditingAccountType] = useState(false);
+  const [isSettingSubcategory, setIsSettingSubcategory] = useState(false);
   
   // Help modal state
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -96,11 +97,11 @@ function EnhancedMapperContent() {
   const [columnWidths, setColumnWidths] = useState({
     row: 4, // Row numbers
     type: 6, // Super compact type selector
-    account: 18, // Account name
-    mainCategory: 24, // Main category
-    subcategory: 24, // Subcategory  
-    amount: 14 // Amount column
-    // Total: 90% - leaves 10% for padding/gaps
+    account: 20, // Account name
+    mainCategory: 25, // Main category
+    subcategory: 25, // Subcategory  
+    amount: 20 // Amount column
+    // Total: 100% - uses full width
   });
   // Main categories structure
   const [mainCategories] = useState([
@@ -181,6 +182,16 @@ function EnhancedMapperContent() {
   // Custom subcategories (user-added)
   const [customSubcategories, setCustomSubcategories] = useState({});
   
+  // Template subcategories (loaded from active template)
+  const [templateSubcategories, setTemplateSubcategories] = useState<{
+    income: { value: string; label: string }[];
+    outcome: { value: string; label: string }[];
+  }>({
+    income: [],
+    outcome: []
+  });
+  const [activeTemplate, setActiveTemplate] = useState<any>(null);
+  
   // Company context
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
@@ -192,30 +203,102 @@ function EnhancedMapperContent() {
     
     let availableSubcategories: { value: string; label: string }[] = [];
     
-    // If category supports inflow and this is an inflow account, show income subcategories
+    // First try to get subcategories from the active template, then fall back to defaults
     if (selectedCategory.isInflow && isInflow) {
-      availableSubcategories = [...availableSubcategories, ...subcategoriesData.income];
+      // Always include default subcategories
+      availableSubcategories = [...subcategoriesData.income];
+      // Add template subcategories if available (they might have custom ones)
+      if (templateSubcategories.income.length > 0) {
+        // Merge template subcategories with defaults, avoiding duplicates
+        const existingValues = new Set(availableSubcategories.map(s => s.value));
+        templateSubcategories.income.forEach(sub => {
+          if (!existingValues.has(sub.value)) {
+            availableSubcategories.push(sub);
+          }
+        });
+      }
     }
     
-    // If category supports outflow and this is an outflow account, show outcome subcategories  
     if (selectedCategory.isOutflow && !isInflow) {
-      availableSubcategories = [...availableSubcategories, ...subcategoriesData.outcome];
+      // Always include default subcategories
+      availableSubcategories = [...subcategoriesData.outcome];
+      // Add template subcategories if available (they might have custom ones)
+      if (templateSubcategories.outcome.length > 0) {
+        // Merge template subcategories with defaults, avoiding duplicates
+        const existingValues = new Set(availableSubcategories.map(s => s.value));
+        templateSubcategories.outcome.forEach(sub => {
+          if (!existingValues.has(sub.value)) {
+            availableSubcategories.push(sub);
+          }
+        });
+      }
     }
     
     // Add custom subcategories for this category
     const customKey = `${mainCategory}_${isInflow ? 'income' : 'outcome'}`;
     const custom = (customSubcategories as any)[customKey] || [];
     
-    return [...availableSubcategories, ...custom];
+    // Combine all subcategories
+    const allSubcategories = [...availableSubcategories, ...custom];
+    
+    // Remove duplicates based on value
+    const uniqueMap = new Map<string, { value: string; label: string }>();
+    allSubcategories.forEach(sub => {
+      if (!uniqueMap.has(sub.value)) {
+        uniqueMap.set(sub.value, sub);
+      }
+    });
+    
+    return Array.from(uniqueMap.values());
   };
 
   // Helper function to add custom subcategory
-  const addCustomSubcategory = (mainCategory: string, isInflow: boolean, subcategory: { value: string; label: string }) => {
+  const addCustomSubcategory = async (mainCategory: string, isInflow: boolean, subcategory: { value: string; label: string }) => {
     const customKey = `${mainCategory}_${isInflow ? 'income' : 'outcome'}`;
+    
+    // Add to local state immediately
     setCustomSubcategories(prev => ({
       ...prev,
       [customKey]: [...((prev as any)[customKey] || []), subcategory]
     }));
+    
+    // Save to active template if we have one
+    if (activeTemplate && selectedCompanyId) {
+      try {
+        const endpoint = activeTemplate.source === 'organization' 
+          ? `/api/organizations/${selectedCompany?.organizationId}/subcategories`
+          : `/api/companies/${selectedCompanyId}/subcategories`;
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            value: subcategory.value,
+            label: subcategory.label,
+            mainCategories: [mainCategory],
+            templateId: activeTemplate.source === 'organization' ? activeTemplate.id : undefined,
+            companyTemplateId: activeTemplate.source === 'company' ? activeTemplate.id : undefined
+          })
+        });
+        
+        if (response.ok) {
+          // Update template subcategories state
+          const targetArray = isInflow ? 'income' : 'outcome';
+          setTemplateSubcategories(prev => ({
+            ...prev,
+            [targetArray]: [...prev[targetArray], subcategory]
+          }));
+          
+          console.log('Subcategory saved to template successfully');
+        } else {
+          console.warn('Failed to save subcategory to template');
+        }
+      } catch (error) {
+        console.warn('Error saving subcategory to template:', error);
+      }
+    }
   };
 
   // Helper function to get account type
@@ -544,12 +627,29 @@ function EnhancedMapperContent() {
 
   // Helper function to update account category and subcategory
   const updateAccountCategoryAndSubcategory = (accountId: string, mainCategory: string, subcategory: string) => {
+    console.log(`📝 Updating account category and subcategory:`, { accountId, mainCategory, subcategory });
+    
     const updateNode = (nodes: AccountNode[]): AccountNode[] => {
       return nodes.map(node => {
         if (node.id === accountId) {
           // Update isInflow based on main category
           const categoryInfo = mainCategories.find(cat => cat.value === mainCategory);
           const isInflow = categoryInfo?.isInflow || false;
+          
+          console.log(`📝 Account "${node.accountName}" updated:`, {
+            oldCategory: node.category,
+            newCategory: mainCategory,
+            oldSubcategory: node.subcategory,
+            newSubcategory: subcategory,
+            oldIsInflow: node.isInflow,
+            newIsInflow: isInflow
+          });
+          
+          // Check if this is causing a type change that might trigger another update
+          if (node.isInflow !== isInflow) {
+            console.log(`⚠️ Category change is causing income/outcome type change from ${node.isInflow ? 'Income' : 'Outcome'} to ${isInflow ? 'Income' : 'Outcome'}`);
+            console.log(`🔧 Preserving subcategory "${subcategory}" despite type change`);
+          }
           
           return { 
             ...node, 
@@ -579,6 +679,87 @@ function EnhancedMapperContent() {
         isInflow: isInflow
       });
     }
+    
+    // Debug: Check if subcategory is preserved after a delay
+    setTimeout(() => {
+      const currentNode = accountTree.find(node => node.id === accountId);
+      if (currentNode && currentNode.subcategory !== subcategory) {
+        console.log(`🚨 Subcategory was cleared after update! Expected: "${subcategory}", Current: "${currentNode.subcategory}"`);
+      }
+    }, 100);
+  };
+
+  // Load active template and its subcategories
+  const loadActiveTemplate = async (companyId: string) => {
+    try {
+      // Get active template
+      const templateResponse = await fetch(`/api/companies/${companyId}/active-template`);
+      if (templateResponse.ok) {
+        const templateData = await templateResponse.json();
+        if (templateData.success && templateData.data) {
+          setActiveTemplate(templateData.data);
+          
+          // Load subcategories from this template
+          console.log(`📋 Loading subcategories for template ${templateData.data.id}`);
+          const subcategoriesResponse = await fetch(`/api/companies/${companyId}/subcategories/by-template/${templateData.data.id}`);
+          if (subcategoriesResponse.ok) {
+            const subcategoriesData = await subcategoriesResponse.json();
+            console.log(`📊 Subcategories API response:`, {
+              success: subcategoriesData.success,
+              dataCount: subcategoriesData.data?.length,
+              sampleData: subcategoriesData.data?.slice(0, 3)
+            });
+            if (subcategoriesData.success) {
+              const organizedSubcategories: {
+                income: { value: string; label: string }[];
+                outcome: { value: string; label: string }[];
+              } = { income: [], outcome: [] };
+              
+              // Use Set to track unique subcategories
+              const incomeSet = new Set<string>();
+              const outcomeSet = new Set<string>();
+              
+              subcategoriesData.data.forEach((sub: any) => {
+                if (sub.mainCategories && Array.isArray(sub.mainCategories)) {
+                  sub.mainCategories.forEach((category: string) => {
+                    const mainCategory = mainCategories.find(cat => cat.value === category);
+                    if (mainCategory) {
+                      if (mainCategory.isInflow && !incomeSet.has(sub.value)) {
+                        incomeSet.add(sub.value);
+                        organizedSubcategories.income.push({
+                          value: sub.value,
+                          label: sub.label
+                        });
+                      }
+                      if (mainCategory.isOutflow && !outcomeSet.has(sub.value)) {
+                        outcomeSet.add(sub.value);
+                        organizedSubcategories.outcome.push({
+                          value: sub.value,
+                          label: sub.label
+                        });
+                      }
+                    }
+                  });
+                }
+              });
+              
+              console.log(`✅ Organized subcategories:`, {
+                incomeCount: organizedSubcategories.income.length,
+                outcomeCount: organizedSubcategories.outcome.length,
+                income: organizedSubcategories.income.slice(0, 5),
+                outcome: organizedSubcategories.outcome.slice(0, 5),
+                allIncome: organizedSubcategories.income.map(s => s.value),
+                allOutcome: organizedSubcategories.outcome.map(s => s.value)
+              });
+              
+              setTemplateSubcategories(organizedSubcategories);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load active template:', error);
+    }
   };
 
   useEffect(() => {
@@ -601,6 +782,8 @@ function EnhancedMapperContent() {
           if (response.ok) {
             const data = await response.json();
             setSelectedCompany(data.data);
+            // Load active template and subcategories
+            await loadActiveTemplate(preSelectedCompanyId);
           }
         } catch (err) {
           console.warn('Failed to fetch company details:', err);
@@ -613,6 +796,23 @@ function EnhancedMapperContent() {
 
       const uploadedFile = JSON.parse(uploadedFileStr);
       setFileName(uploadedFile.fileName);
+      
+      // Set currency if available from uploaded file
+      if (uploadedFile.currency) {
+        setCurrency(uploadedFile.currency);
+      }
+      
+      // Check if auto-template mode is enabled
+      const autoTemplate = searchParams.get('autoTemplate') === 'true';
+      let templateToApply = null;
+      
+      if (autoTemplate && uploadedFile.selectedTemplate) {
+        templateToApply = uploadedFile.selectedTemplate;
+        console.log('Auto-template mode: applying template', templateToApply);
+        console.log('Company ID for template:', preSelectedCompanyId);
+        console.log('Selected Company:', selectedCompany);
+        setLoadingStep("Aplicando plantilla seleccionada...");
+      }
 
       setLoadingStep("Recuperando datos del archivo...");
       // Get file from server
@@ -652,8 +852,13 @@ function EnhancedMapperContent() {
       const manualPeriods = detectPeriodColumns(data.rawData);
       console.log("Manual period detection result:", manualPeriods);
       
-      // Start AI analysis
-      await runAIAnalysis(data.rawData);
+      // Apply template or run AI analysis
+      if (templateToApply) {
+        await applyTemplate(templateToApply, data.rawData);
+      } else {
+        // Start AI analysis
+        await runAIAnalysis(data.rawData);
+      }
       
     } catch (err) {
       console.error('Error loading Excel data:', err);
@@ -661,6 +866,281 @@ function EnhancedMapperContent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyTemplate = async (template: any, rawData: any[][]) => {
+    try {
+      setLoadingStep("🎯 Aplicando plantilla: " + template.templateName);
+      
+      // Apply the template using the templates API
+      const response = await fetch('/api/v1/templates/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: template.id,
+          rawData: rawData,
+          fileName: fileName
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to apply template');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setLoadingStep("✅ Plantilla aplicada exitosamente");
+        
+        // Set currency from template
+        if (result.data.currency) {
+          setCurrency(result.data.currency);
+        }
+        
+        // Debug: Check what we received
+        console.log('📋 Template API response:', {
+          templateName: result.data.templateName,
+          hasColumnMappings: !!result.data.columnMappings,
+          columnMappingsType: typeof result.data.columnMappings,
+          hasAccounts: !!(result.data.columnMappings?.accounts),
+          accountsCount: result.data.columnMappings?.accounts?.length || 0,
+          sampleAccount: result.data.columnMappings?.accounts?.[0]
+        });
+        
+        // Apply the column mappings from template
+        if (result.data.columnMappings) {
+          setLoadingStep("📋 Aplicando mapeo de columnas...");
+          
+          // First, load the active template and its subcategories
+          const companyId = selectedCompanyId || sessionStorage.getItem('selectedCompanyId') || sessionStorage.getItem('uploadCompanyId');
+          if (companyId) {
+            console.log('🔄 Loading subcategories for company before template application:', companyId);
+            setLoadingStep("🔄 Cargando subcategorías...");
+            await loadActiveTemplate(companyId);
+          } else {
+            console.log('⚠️ No company ID found for loading subcategories');
+          }
+          
+          setLoadingStep("📋 Aplicando mapeo de columnas...");
+          await applyTemplateMappings(result.data.columnMappings, rawData);
+        }
+        
+        console.log('✅ Template applied successfully:', template.templateName);
+      } else {
+        throw new Error(result.error?.message || 'Template application failed');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error applying template:', error);
+      // Fall back to AI analysis if template fails
+      setLoadingStep("🤖 Plantilla falló, usando análisis AI...");
+      await runAIAnalysis(rawData);
+    }
+  };
+
+  const applyTemplateMappings = async (columnMappings: any, rawData: any[][]) => {
+    setLoadingStep("🏗️ Construyendo estructura de cuentas...");
+    
+    // Debug what we received
+    console.log('🔍 applyTemplateMappings received:', {
+      hasAccounts: !!columnMappings.accounts,
+      accountsLength: columnMappings.accounts?.length,
+      hasPeriodColumns: !!columnMappings.periodColumns,
+      periodColumnsLength: columnMappings.periodColumns?.length,
+      sampleMapping: columnMappings.accounts?.[0],
+      currentSelectedCompanyId: selectedCompanyId
+    });
+    
+    // Check if columnMappings contains the full account mapping data
+    const hasFullMapping = columnMappings.accounts && Array.isArray(columnMappings.accounts);
+    
+    if (hasFullMapping) {
+      // We have the full account mappings saved in the template
+      console.log('📋 Applying saved account mappings from template');
+      console.log(`📊 Found ${columnMappings.accounts.length} accounts in template`);
+      
+      // Extract period columns from the saved mapping
+      if (columnMappings.periodColumns) {
+        setPeriodColumns(columnMappings.periodColumns);
+        
+        // Set actual data range
+        if (columnMappings.periodColumns.length > 0) {
+          setActualDataRange({
+            first: columnMappings.periodColumns[0].label,
+            last: columnMappings.periodColumns[columnMappings.periodColumns.length - 1].label
+          });
+        }
+      }
+      
+      // Create account nodes from saved mappings
+      // We need to update the periods data from the current Excel file
+      const nodes: AccountNode[] = columnMappings.accounts.map((savedAccount: any, index: number) => {
+        // Get the current row data from rawData
+        const currentRowData = rawData[savedAccount.rowIndex];
+        const updatedPeriods: Record<string, number> = {};
+        
+        // Debug subcategory application
+        if (index < 5 || !savedAccount.subcategory) {
+          const availableSubcategories = getSubcategoriesForMainCategory(savedAccount.category, savedAccount.isInflow);
+          console.log(`🔍 Processing template account ${index}:`, {
+            accountName: savedAccount.accountName,
+            savedSubcategory: savedAccount.subcategory,
+            savedCategory: savedAccount.category,
+            isInflow: savedAccount.isInflow,
+            isTotal: savedAccount.isTotal,
+            isCalculated: savedAccount.isCalculated,
+            hasSubcategory: !!savedAccount.subcategory,
+            availableSubcategoriesCount: availableSubcategories?.length || 0,
+            availableSubcategoryValues: availableSubcategories?.map(s => s.value).slice(0, 5) || [],
+            subcategoryInAvailable: savedAccount.subcategory ? 
+              availableSubcategories?.some(s => s.value === savedAccount.subcategory) : false
+          });
+        }
+        
+        // Update period values from current Excel data
+        if (currentRowData && columnMappings.periodColumns) {
+          columnMappings.periodColumns.forEach((periodCol: any) => {
+            const value = currentRowData[periodCol.columnIndex];
+            if (value !== null && value !== undefined && value !== '') {
+              const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+              if (!isNaN(numericValue)) {
+                updatedPeriods[periodCol.label] = numericValue;
+              }
+            }
+          });
+        }
+        
+        const node: AccountNode = {
+          id: savedAccount.id || `account_${savedAccount.rowIndex}`,
+          rowIndex: savedAccount.rowIndex || index,
+          accountName: savedAccount.accountName || savedAccount.name,
+          accountCode: savedAccount.accountCode,
+          category: savedAccount.category || 'other',
+          subcategory: savedAccount.subcategory || null,
+          isInflow: savedAccount.isInflow || false,
+          isTotal: savedAccount.isTotal || false,
+          isSubtotal: savedAccount.isSubtotal || false,
+          isExpanded: true,
+          children: [],
+          parentId: savedAccount.parentId || null,
+          confidence: savedAccount.confidence || 1.0,
+          periods: updatedPeriods, // Use updated periods from current Excel
+          hasFinancialData: Object.keys(updatedPeriods).length > 0,
+          isCalculated: savedAccount.isCalculated || false,
+          isSectionHeader: savedAccount.isSectionHeader || false,
+          isActive: savedAccount.isActive !== false // Default to true if not specified
+        };
+        
+        // Debug first few mappings and any without subcategory
+        if (index < 5 || (!node.subcategory && !node.isTotal && !node.isCalculated)) {
+          console.log(`📝 Applied mapping for row ${savedAccount.rowIndex}:`, {
+            accountName: node.accountName,
+            category: node.category,
+            subcategory: node.subcategory,
+            savedSubcategory: savedAccount.subcategory,
+            isTotal: node.isTotal,
+            isCalculated: node.isCalculated,
+            accountType: 'detail',
+            periods: Object.keys(node.periods).length
+          });
+        }
+        
+        return node;
+      });
+      
+      // Build the tree structure if needed
+      const tree = buildExcelOrderTree(nodes);
+      setAccountTree(tree);
+      
+      // Set AI analysis as complete since we're using a template
+      setAiAnalysisComplete(true);
+      
+      console.log(`✅ Applied ${nodes.length} account mappings from template`);
+      
+      // Report missing subcategories for detail accounts
+      const missingSubcategories = nodes.filter(node => 
+        !node.isTotal && !node.isCalculated && !node.isSectionHeader && !node.subcategory
+      );
+      
+      if (missingSubcategories.length > 0) {
+        console.log(`🔍 Found ${missingSubcategories.length} detail accounts missing subcategories:`, 
+          missingSubcategories.map(node => ({
+            accountName: node.accountName,
+            category: node.category,
+            isInflow: node.isInflow,
+            rowIndex: node.rowIndex + 1
+          }))
+        );
+      }
+    } else {
+      // Fallback: Create nodes from raw data with basic template info
+      console.log('⚠️ Template has basic column mappings only, creating nodes from raw data');
+      
+      const nodes: AccountNode[] = [];
+      const startRow = columnMappings.headerRow ? columnMappings.headerRow + 1 : 1;
+      
+      // Process ALL rows, not just first 200
+      for (let i = startRow; i < rawData.length; i++) {
+        const row = rawData[i];
+        
+        // Skip empty rows
+        if (!row || row.every(cell => !cell || cell.toString().trim() === '')) {
+          continue;
+        }
+        
+        // Extract account name from the designated column
+        const accountNameCol = columnMappings.accountNameColumn || 0;
+        const accountName = row[accountNameCol]?.toString()?.trim();
+        
+        if (!accountName) continue;
+        
+        // Try to detect category from account name
+        const localClass = LocalAccountClassifier.classifyAccount(
+          accountName,
+          row[1], // First value column
+          { statementType: columnMappings.statementType || 'profit_loss' }
+        );
+        
+        const mappedCategory = mapOldCategoryToNew(localClass.suggestedCategory);
+        
+        const node: AccountNode = {
+          id: `account_${i}`,
+          rowIndex: i,
+          accountName: accountName,
+          category: mappedCategory.main,
+          subcategory: mappedCategory.sub,
+          isInflow: localClass.isInflow,
+          isTotal: isCalculatedFieldName(accountName),
+          isSubtotal: false,
+          isExpanded: true,
+          children: [],
+          parentId: null,
+          confidence: localClass.confidence,
+          periods: {},
+          hasFinancialData: false,
+          isActive: true
+        };
+        
+        // Extract period data from amount columns
+        if (columnMappings.amountColumns) {
+          for (const [periodName, colIndex] of Object.entries(columnMappings.amountColumns)) {
+            const value = row[colIndex as number];
+            if (value && !isNaN(Number(value))) {
+              node.periods[periodName as string] = Number(value);
+              node.hasFinancialData = true;
+            }
+          }
+        }
+        
+        nodes.push(node);
+      }
+      
+      setAccountTree(nodes);
+      console.log(`📊 Created ${nodes.length} account nodes from basic template`);
+    }
+    
+    setAiAnalysisComplete(true);
+    setLoadingStep("✅ Plantilla aplicada exitosamente");
   };
 
   const runAIAnalysis = async (rawData: any[][]) => {
@@ -1125,9 +1605,22 @@ function EnhancedMapperContent() {
   };
 
   const updateAccountType = (accountId: string, isInflow: boolean) => {
+    // Don't update type if we're in the middle of setting a subcategory
+    if (isSettingSubcategory) {
+      console.log(`🛑 Ignoring type change while setting subcategory`);
+      return;
+    }
+    
     const updateNode = (nodes: AccountNode[]): AccountNode[] => {
       return nodes.map(node => {
         if (node.id === accountId) {
+          // Only update if the type is actually changing
+          if (node.isInflow === isInflow) {
+            return node; // No change needed
+          }
+          
+          console.log(`🔄 Changing account type for "${node.accountName}" from ${node.isInflow ? 'Income' : 'Outcome'} to ${isInflow ? 'Income' : 'Outcome'}`);
+          
           // Also update category if it doesn't match the type
           let category = node.category;
           if (isInflow && !['revenue', 'other_income'].includes(category)) {
@@ -1319,30 +1812,46 @@ function EnhancedMapperContent() {
   };
 
   const renderAccountTree = (nodes: AccountNode[], level: number = 0): JSX.Element[] => {
+    console.log('🔍 renderAccountTree called with', nodes.length, 'nodes');
+    if (nodes.length === 0) {
+      console.log('❌ No nodes to render');
+      return [];
+    }
     return nodes.map(node => (
-      <div key={node.id}>
-        <div
-          className={`
-            border-b border-gray-200 hover:bg-blue-50 hover:border-l-4 hover:border-blue-300 transition-all duration-200
-            ${!node.isActive ? 'opacity-50' : ''}
-            ${selectedAccount?.id === node.id 
-              ? 'bg-blue-100 border-l-4 border-blue-600 shadow-sm' 
-              : node.isSectionHeader 
-                ? 'bg-purple-50 border-l-4 border-purple-400' 
-                : node.isTotal 
-                  ? 'bg-slate-100 border-l-4 border-slate-500 font-semibold' 
-                  : node.isCalculated
-                    ? 'bg-amber-50 border-l-4 border-amber-400'
-                    : node.category && node.category !== 'uncategorized' 
-                      ? 'bg-green-50 border-l-4 border-green-300' 
-                      : 'border-l-4 border-red-200 bg-red-50'}
-          `}
-        >
-          <div className="flex gap-2 px-4 py-3 items-center min-h-[60px]">
-            {/* Row Number */}
-            <div style={{ width: `${columnWidths.row}%` }} className="flex-shrink-0">
-              <button
-                onClick={() => toggleRowActive(node.id)}
+      <tr
+        key={node.id}
+        className={`
+          border-b border-gray-200 hover:bg-blue-50 transition-all duration-200
+          ${!node.isActive ? 'opacity-50' : ''}
+          ${selectedAccount?.id === node.id 
+            ? 'bg-blue-100 shadow-sm' 
+            : node.isSectionHeader 
+              ? 'bg-purple-50' 
+              : node.isTotal 
+                ? 'bg-slate-100 font-semibold' 
+                : node.isCalculated
+                  ? 'bg-amber-50'
+                  : node.category && node.category !== 'uncategorized' 
+                    ? 'bg-green-50' 
+                    : 'bg-red-50'}
+        `}
+      >
+        {/* Row Number */}
+        <td className={`px-4 py-3 ${
+          selectedAccount?.id === node.id 
+            ? 'border-l-4 border-blue-600' 
+            : node.isSectionHeader 
+              ? 'border-l-4 border-purple-400' 
+              : node.isTotal 
+                ? 'border-l-4 border-slate-500' 
+                : node.isCalculated
+                  ? 'border-l-4 border-amber-400'
+                  : node.category && node.category !== 'uncategorized' 
+                    ? 'border-l-4 border-green-300' 
+                    : 'border-l-4 border-red-200'
+        }`}>
+          <button
+            onClick={() => toggleRowActive(node.id)}
                 className={`
                   flex items-center justify-center w-8 h-8 rounded text-xs font-mono border transition-all
                   ${node.isActive 
@@ -1352,13 +1861,13 @@ function EnhancedMapperContent() {
                   hover:shadow-sm cursor-pointer
                 `}
                 title={node.isActive ? 'Click to exclude row' : 'Click to include row'}
-              >
-                {node.rowIndex + 1}
-              </button>
-            </div>
-            
-            {/* Type Selector */}
-            <div style={{ width: `${columnWidths.type}%` }} className="flex-shrink-0">
+            >
+              {node.rowIndex + 1}
+            </button>
+          </td>
+          
+          {/* Type Selector */}
+          <td className="px-2 py-3">
               {editingAccountType && selectedAccount?.id === node.id ? (
                 <select
                   value={getAccountType(node)}
@@ -1396,12 +1905,12 @@ function EnhancedMapperContent() {
                     {node.isSectionHeader ? 'Hdr' : node.isCalculated ? 'Cal' : node.isTotal ? 'Tot' : 'Det'}
                   </span>
                   {!node.isCalculated && !node.isSectionHeader && (
-                    <button
+                    <span
                       onClick={(e) => {
                         e.stopPropagation();
                         updateAccountType(node.id, !node.isInflow);
                       }}
-                      className={`text-xs leading-none ml-1 px-1 py-0.5 rounded transition-colors ${
+                      className={`text-xs leading-none ml-1 px-1 py-0.5 rounded transition-colors cursor-pointer ${
                         node.isInflow 
                           ? 'text-green-600 bg-green-50 hover:bg-green-100' 
                           : 'text-red-600 bg-red-50 hover:bg-red-100'
@@ -1409,17 +1918,17 @@ function EnhancedMapperContent() {
                       title={`Click to toggle: Currently ${node.isInflow ? 'Income' : 'Outcome'}`}
                     >
                       {node.isInflow ? '↓' : '↑'}
-                    </button>
+                    </span>
                   )}
                   {node.isCalculated && (
                     <span className="text-xs leading-none text-amber-600 ml-1">=</span>
                   )}
                 </button>
               )}
-            </div>
+            </td>
             
             {/* Account Name */}
-            <div style={{ width: `${columnWidths.account}%` }} className="flex-shrink-0 pr-2">
+            <td className="px-4 py-3">
               <div className="flex flex-col justify-center">
                 <span className={`text-sm break-words leading-tight ${
                   node.isSectionHeader ? 'text-purple-900 font-bold uppercase text-xs' :
@@ -1437,10 +1946,10 @@ function EnhancedMapperContent() {
                    node.isTotal ? 'Total/Subtotal' : 'Detail Account'}
                 </span>
               </div>
-            </div>
+            </td>
             
             {/* Main Category */}
-            <div style={{ width: `${columnWidths.mainCategory}%` }} className="flex-shrink-0">
+            <td className="px-4 py-3">
               <div className="flex gap-1">
                 <MainCategoryDropdown
                   value={node.category}
@@ -1465,33 +1974,67 @@ function EnhancedMapperContent() {
                   </button>
                 )}
               </div>
-            </div>
+            </td>
             
             {/* Subcategory */}
-            <div style={{ width: `${columnWidths.subcategory}%` }} className="flex-shrink-0">
+            <td className="px-4 py-3">
               {getAccountType(node) === 'detail' ? (
-                <SubcategoryDropdown
-                  value={node.subcategory || ''}
-                  onChange={(subcategory) => {
-                    updateAccountCategoryAndSubcategory(node.id, node.category, subcategory);
-                  }}
-                  subcategories={getSubcategoriesForMainCategory(node.category, node.isInflow)}
-                  onAddSubcategory={(newSubcategory) => {
-                    addCustomSubcategory(node.category, node.isInflow, newSubcategory);
-                  }}
-                  placeholder="Select subcategory..."
-                  className="w-full"
-                  disabled={!node.category || node.category === 'uncategorized'}
-                />
+                <div className="relative">
+                  <SubcategoryDropdown
+                    value={node.subcategory || ''}
+                    onChange={(subcategory) => {
+                      setIsSettingSubcategory(true);
+                      console.log(`🎯 Setting subcategory "${subcategory}" for account "${node.accountName}"`);
+                      
+                      // Determine the correct category for this subcategory
+                      const subcategoryInfo = getSubcategoriesForMainCategory(node.category, node.isInflow)
+                        .find(sub => sub.value === subcategory);
+                      
+                      if (subcategoryInfo) {
+                        updateAccountCategoryAndSubcategory(node.id, node.category, subcategory);
+                      } else {
+                        // If subcategory not found in current category, find the right category
+                        const allSubcategories = [...subcategoriesData.income, ...subcategoriesData.outcome];
+                        const foundSubcategory = allSubcategories.find(sub => sub.value === subcategory);
+                        
+                        if (foundSubcategory) {
+                          // Determine if this is an income or outcome subcategory
+                          const isIncomeSubcategory = subcategoriesData.income.some(sub => sub.value === subcategory);
+                          const newCategory = isIncomeSubcategory ? 'revenue' : 'operating_expenses';
+                          updateAccountCategoryAndSubcategory(node.id, newCategory, subcategory);
+                        } else {
+                          updateAccountCategoryAndSubcategory(node.id, node.category, subcategory);
+                        }
+                      }
+                      
+                      // Reset the flag after a short delay
+                      setTimeout(() => {
+                        setIsSettingSubcategory(false);
+                      }, 200);
+                    }}
+                    subcategories={getSubcategoriesForMainCategory(node.category, node.isInflow)}
+                    onAddSubcategory={async (newSubcategory) => {
+                      await addCustomSubcategory(node.category, node.isInflow, newSubcategory);
+                    }}
+                    placeholder="Select subcategory..."
+                    className="w-full"
+                    disabled={!node.category || node.category === 'uncategorized'}
+                  />
+                  {!node.subcategory && node.category && node.category !== 'uncategorized' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">!</span>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="w-full p-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm">
                   {node.isTotal ? '—' : node.isCalculated ? '—' : node.isSectionHeader ? '—' : 'N/A'}
                 </div>
               )}
-            </div>
+            </td>
             
             {/* Amount */}
-            <div style={{ width: `${columnWidths.amount}%` }} className="flex-shrink-0 px-2">
+            <td className="px-4 py-3 text-right">
               <div className="flex items-center justify-end gap-2 min-h-[40px]">
                 {/* Validation indicator on the left */}
                 {!node.isSectionHeader && (
@@ -1526,10 +2069,8 @@ function EnhancedMapperContent() {
                   <div className="text-sm text-gray-400 font-medium">-</div>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </td>
+      </tr>
     ));
   };
 
@@ -1543,25 +2084,28 @@ function EnhancedMapperContent() {
         if (!node.isActive) return;
         
         result.push({
+          id: node.id, // Preserve the node ID
           rowIndex: node.rowIndex,
           accountCode: node.accountCode || `ROW_${node.rowIndex}`,
           accountName: node.accountName,
           originalAccountName: node.accountName, // Add this for compatibility
-          category: node.category,
-          subcategory: getAccountType(node) === 'detail' ? (node.subcategory || null) : null, // Only include subcategory for detail accounts
+          category: node.category || 'uncategorized', // Ensure category is always set
+          subcategory: node.subcategory || null, // Include subcategory for ALL accounts
           isInflow: node.isInflow,
           isTotal: node.isTotal,
           isSubtotal: node.isSubtotal,
           isCalculated: node.isCalculated || false, // Add this field
           isSectionHeader: node.isSectionHeader || false, // Add this field
           parentTotalId: parentId,
+          parentId: node.parentId, // Preserve parent relationship
           periods: node.periods,
           amount: Object.values(node.periods)[0] || 0, // Add primary amount
           isValid: true,
           hasFinancialData: node.hasFinancialData,
           confidence: node.confidence,
           detectedAsTotal: node.isTotal,
-          totalConfidence: node.confidence
+          totalConfidence: node.confidence,
+          isActive: node.isActive // Preserve active state
         });
         
         if (node.children.length > 0) {
@@ -1680,37 +2224,36 @@ function EnhancedMapperContent() {
   return (
     <ProtectedRoute>
       <AppLayout showFooter={false}>
-        <div className="flex flex-col h-screen bg-gray-50">
-          {/* Header - Fixed height */}
-          <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-3">
-            {/* Breadcrumbs */}
-            <div className="mb-3">
+        <div className="flex flex-col h-full bg-gray-50">
+          <div className="flex-shrink-0 bg-white border-b border-gray-200">
+            <div className="px-6 pt-3 pb-2">
               <WorkflowBreadcrumbs 
                 currentStep="map-accounts" 
                 fileName={fileName}
               />
             </div>
             
-            {/* Success/Error Messages */}
-            {bulkAssignSuccess && (
-              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-5 w-5 text-green-600 mr-2" />
-                  <span className="text-green-800">{bulkAssignSuccess}</span>
+            <div className="px-6 pb-3 space-y-2">
+              {/* Success/Error Messages */}
+              {bulkAssignSuccess && (
+                <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center">
+                    <CheckCircleIcon className="h-4 w-4 text-green-600 mr-2" />
+                    <span className="text-sm text-green-800">{bulkAssignSuccess}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            {bulkAssignError && (
-              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center">
-                  <span className="text-red-800">⚠️ {bulkAssignError}</span>
+              )}
+              
+              {bulkAssignError && (
+                <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center">
+                    <span className="text-sm text-red-800">⚠️ {bulkAssignError}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
+              )}
+              
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 flex-1">
                 <h1 className="text-xl font-bold text-gray-900 truncate">Enhanced Financial Mapper</h1>
                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
                   <span className="flex items-center gap-1">
@@ -1816,18 +2359,21 @@ function EnhancedMapperContent() {
                   <CheckCircleIcon className="w-4 h-4" />
                   Save
                 </button>
+                </div>
               </div>
             </div>
           </div>
           
-          {/* Main Content - Full width account list */}
-          <div className="flex-1 flex min-h-0">
-            {/* Full Width Account Panel */}
-            <div className="w-full bg-white flex flex-col">
-              <div className="flex-shrink-0 p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Account Structure</h2>
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>Categorize each account by selecting its main category and subcategory</span>
+          {/* Main Content Area - Simplified */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full bg-white flex flex-col">
+              {/* Account Structure Header */}
+              <div className="flex-shrink-0 px-6 py-3 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Account Structure</h2>
+                    <p className="text-sm text-gray-600 mt-1">Categorize each account by selecting its main category and subcategory</p>
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowHelpModal(true)}
@@ -1847,27 +2393,65 @@ function EnhancedMapperContent() {
                 </div>
               </div>
               
-              {/* Column Headers */}
-              <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-4 py-3">
-                <div className="flex gap-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  <div style={{ width: `${columnWidths.row}%` }} className="flex-shrink-0">Row</div>
-                  <div style={{ width: `${columnWidths.type}%` }} className="flex-shrink-0">Type</div>
-                  <div style={{ width: `${columnWidths.account}%` }} className="flex-shrink-0">Account Name</div>
-                  <div style={{ width: `${columnWidths.mainCategory}%` }} className="flex-shrink-0">Main Category</div>
-                  <div style={{ width: `${columnWidths.subcategory}%` }} className="flex-shrink-0">Subcategory</div>
-                  <div style={{ width: `${columnWidths.amount}%` }} className="flex-shrink-0 text-right px-2">Amount</div>
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto">
-                {accountTree.length > 0 ? (
-                  renderAccountTree(accountTree)
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <SparklesIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-lg">Analizando estructura...</p>
-                  </div>
-                )}
+              {/* Table Container */}
+              <div className="flex-1 overflow-auto">
+                <table className="w-full min-w-full table-fixed">
+                  {/* Column Headers */}
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.row}%` }}>Row</th>
+                      <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.type}%` }}>Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.account}%` }}>Account Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.mainCategory}%` }}>Main Category</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.subcategory}%` }}>Subcategory</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.amount}%` }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      console.log('🔍 accountTree state:', { length: accountTree.length, hasData: accountTree.length > 0 });
+                      
+                      // Add a test row first to verify table structure works
+                      if (accountTree.length === 0) {
+                        // Add a simple test row to verify the table works
+                        return (
+                          <>
+                            <tr>
+                              <td colSpan={6} className="text-center py-12 text-gray-500">
+                                <SparklesIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                                <p className="text-lg">Analizando estructura...</p>
+                              </td>
+                            </tr>
+                            <tr className="bg-blue-50">
+                              <td className="px-4 py-3 border-l-4 border-blue-300">1</td>
+                              <td className="px-2 py-3">Det</td>
+                              <td className="px-4 py-3">Test Account</td>
+                              <td className="px-4 py-3">Revenue</td>
+                              <td className="px-4 py-3">Sales</td>
+                              <td className="px-4 py-3 text-right">$100</td>
+                            </tr>
+                          </>
+                        );
+                      }
+                      
+                      // Try to render actual data
+                      try {
+                        const result = renderAccountTree(accountTree);
+                        console.log('✅ renderAccountTree returned:', result?.length, 'elements');
+                        return result;
+                      } catch (error) {
+                        console.error('❌ renderAccountTree error:', error);
+                        return (
+                          <tr>
+                            <td colSpan={6} className="text-center py-12 text-red-500">
+                              <p className="text-lg">Error rendering table: {(error as Error).message}</p>
+                            </td>
+                          </tr>
+                        );
+                      }
+                    })()}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
