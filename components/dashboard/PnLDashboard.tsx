@@ -929,22 +929,42 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             icon={<DocumentTextIcon className="h-5 w-5" />}
             showBreakdown={true}
             expandedContent={
-              <div className="space-y-3">
+              <div className="space-y-3 mt-4 pt-4 border-t border-gray-200">
                 <h4 className="font-medium text-gray-900">{t('metrics.opexBreakdown')}</h4>
-                {data.categories.operatingExpenses.map((expense, idx) => (
-                  <div key={idx} className="text-sm">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-600">{expense.category}</span>
-                      <span className="font-medium">{formatValue(expense.amount)}</span>
+                {data.categories.operatingExpenses.length > 0 ? (
+                  data.categories.operatingExpenses.map((expense, idx) => (
+                    <div key={idx} className="text-sm">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-gray-600">{expense.category}</span>
+                        <span className="font-medium">{formatValue(expense.amount)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-rose-400 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${expense.percentage}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-xs text-gray-500">{expense.percentage.toFixed(1)}% {t('metrics.ofOpEx')}</span>
+                        <span className="text-xs text-gray-500">{((expense.amount / current.revenue) * 100).toFixed(1)}% {t('metrics.ofRevenue')}</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-rose-400 h-2 rounded-full"
-                        style={{ width: `${expense.percentage}%` }}
-                      />
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">{t('metrics.noBreakdownAvailable')}</p>
+                )}
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>{t('metrics.industry')}:</span>
+                      <span className="font-medium">{formatValue(current.revenue * 0.20)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('metrics.efficient')}:</span>
+                      <span className="font-medium">{formatValue(current.revenue * 0.15)}</span>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
             }
             colorScheme="cost"

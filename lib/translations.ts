@@ -185,6 +185,14 @@ export const translations = {
     'metrics.ytdNetIncome': 'Utilidad Neta YTD',
     'metrics.ytdEbitda': 'EBITDA YTD',
     'metrics.months': 'meses',
+    'metrics.cogsBreakdown': 'Desglose de COGS',
+    'metrics.noBreakdownAvailable': 'Sin desglose disponible',
+    'metrics.industry': 'Industria',
+    'metrics.efficient': 'Eficiente',
+    'metrics.ofCOGS': 'de COGS',
+    'metrics.ofRevenue': 'de Ingresos',
+    'metrics.ofOpEx': 'de OpEx',
+    'metrics.previous': 'Anterior',
     
     // Executive KPIs
     'kpi.cashPosition': 'Posición de Efectivo',
@@ -546,6 +554,14 @@ export const translations = {
     'metrics.ytdNetIncome': 'YTD Net Income',
     'metrics.ytdEbitda': 'YTD EBITDA',
     'metrics.months': 'months',
+    'metrics.cogsBreakdown': 'COGS Breakdown',
+    'metrics.noBreakdownAvailable': 'No breakdown available',
+    'metrics.industry': 'Industry',
+    'metrics.efficient': 'Efficient',
+    'metrics.ofCOGS': 'of COGS',
+    'metrics.ofRevenue': 'of Revenue',
+    'metrics.ofOpEx': 'of OpEx',
+    'metrics.previous': 'Previous',
     
     // Executive KPIs
     'kpi.cashPosition': 'Cash Position',
