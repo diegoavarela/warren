@@ -42,6 +42,8 @@ function CompanyAdminDashboard() {
   const { locale } = useLocale();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [financialStatements, setFinancialStatements] = useState<any[]>([]);
+  const [loadingStatements, setLoadingStatements] = useState(false);
 
   useEffect(() => {
     fetchCompanies();
@@ -59,6 +61,12 @@ function CompanyAdminDashboard() {
       }
     }
   }, [user]);
+
+  useEffect(() => {
+    if (selectedCompanyId) {
+      fetchFinancialStatements(selectedCompanyId);
+    }
+  }, [selectedCompanyId]);
 
   const fetchCompanies = async () => {
     try {
@@ -83,6 +91,23 @@ function CompanyAdminDashboard() {
 
   const getSelectedCompany = () => {
     return companies.find(company => company.id === selectedCompanyId);
+  };
+
+  const fetchFinancialStatements = async (companyId: string) => {
+    setLoadingStatements(true);
+    try {
+      const response = await fetch(`/api/v1/companies/${companyId}/statements`);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.data)) {
+          setFinancialStatements(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching financial statements:', error);
+    } finally {
+      setLoadingStatements(false);
+    }
   };
 
   return (
@@ -237,27 +262,91 @@ function CompanyAdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardBody>
-                  <div className="text-center py-8">
-                    <ChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {locale?.startsWith('es') ? 'Sin datos financieros' : 'No financial data'}
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      {locale?.startsWith('es') 
-                        ? 'Sube tu primer documento financiero para comenzar'
-                        : 'Upload your first financial document to get started'}
-                    </p>
-                    <Button
-                      variant="primary"
-                      onClick={() => {
-                        sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                        router.push('/upload');
-                      }}
-                      leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
-                    >
-                      {locale?.startsWith('es') ? 'Subir Primer Documento' : 'Upload First Document'}
-                    </Button>
-                  </div>
+                  {loadingStatements ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : financialStatements.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="bg-blue-50 rounded-lg p-4">
+                          <div className="text-2xl font-bold text-blue-700">{financialStatements.length}</div>
+                          <div className="text-sm text-blue-600">
+                            {locale?.startsWith('es') ? 'Períodos cargados' : 'Periods uploaded'}
+                          </div>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-4">
+                          <div className="text-2xl font-bold text-green-700">
+                            {financialStatements[0]?.month} {financialStatements[0]?.year}
+                          </div>
+                          <div className="text-sm text-green-600">
+                            {locale?.startsWith('es') ? 'Último período' : 'Latest period'}
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-4">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                              router.push('/dashboard/company-admin/pnl');
+                            }}
+                            leftIcon={<ChartBarIcon className="w-4 h-4" />}
+                          >
+                            {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t pt-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">
+                          {locale?.startsWith('es') ? 'Períodos disponibles' : 'Available periods'}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {financialStatements.map((stmt, idx) => (
+                            <div key={idx} className="bg-gray-50 rounded px-3 py-2 text-sm text-gray-700">
+                              {stmt.month} {stmt.year}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-center pt-4">
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                            router.push('/upload');
+                          }}
+                          leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
+                        >
+                          {locale?.startsWith('es') ? 'Cargar más períodos' : 'Upload more periods'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <ChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {locale?.startsWith('es') ? 'Sin datos financieros' : 'No financial data'}
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        {locale?.startsWith('es') 
+                          ? 'Sube tu primer documento financiero para comenzar'
+                          : 'Upload your first financial document to get started'}
+                      </p>
+                      <Button
+                        variant="primary"
+                        onClick={() => {
+                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                          router.push('/upload');
+                        }}
+                        leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
+                      >
+                        {locale?.startsWith('es') ? 'Subir Primer Documento' : 'Upload First Document'}
+                      </Button>
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             </div>
