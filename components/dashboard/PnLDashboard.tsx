@@ -122,6 +122,7 @@ interface PnLDashboardProps {
 export function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, onPeriodChange }: PnLDashboardProps) {
   const { t } = useTranslation(locale);
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
+  const [activeBreakdown, setActiveBreakdown] = useState<'cogs' | 'opex' | null>(null);
   
   // Fetch real data using the hook
   const { data: apiData, loading: apiLoading, error, refetch } = useFinancialData({
@@ -856,131 +857,55 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard
-            title={t('metrics.costOfGoodsSold')}
-            currentValue={current.cogs}
-            previousValue={previous?.cogs}
-            ytdValue={ytd.cogs}
-            format="currency"
-            {...currencyProps}
-            icon={<CalculatorIcon className="h-5 w-5" />}
-            showBreakdown={true}
-            expandedContent={
-              <div className="space-y-3 mt-4 pt-4 border-t border-gray-200">
-                <h4 className="font-medium text-gray-900">{t('metrics.cogsBreakdown')}</h4>
-                {data.categories.cogs.length > 0 ? (
-                  data.categories.cogs.map((cat, idx) => (
-                    <div key={idx} className="text-sm">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-gray-600">{cat.category}</span>
-                        <span className="font-medium">{formatValue(cat.amount)}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-rose-400 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${cat.percentage}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-xs text-gray-500">{cat.percentage.toFixed(1)}% {t('metrics.ofCOGS')}</span>
-                        <span className="text-xs text-gray-500">{((cat.amount / current.revenue) * 100).toFixed(1)}% {t('metrics.ofRevenue')}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">{t('metrics.noBreakdownAvailable')}</p>
-                )}
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>{t('metrics.industry')}:</span>
-                      <span className="font-medium">{formatValue(current.revenue * 0.35)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{t('metrics.efficient')}:</span>
-                      <span className="font-medium">{formatValue(current.revenue * 0.30)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-            colorScheme="cost"
-            helpTopic={helpTopics['metrics.cogs']}
-            helpContext={{
-              currentValue: current.cogs,
-              previousValue: previous?.cogs,
-              ytdValue: ytd.cogs,
-              changePercent: calculateVariation(current.cogs, previous?.cogs || 0),
-              benchmarks: {
-                industry: current.revenue * 0.35,
-                efficient: current.revenue * 0.30,
-                target: current.revenue * 0.40
-              }
-            }}
-          />
+          <div onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'cogs' ? null : 'cogs')}>
+            <MetricCard
+              title={t('metrics.costOfGoodsSold')}
+              currentValue={current.cogs}
+              previousValue={previous?.cogs}
+              ytdValue={ytd.cogs}
+              format="currency"
+              {...currencyProps}
+              icon={<CalculatorIcon className="h-5 w-5" />}
+              colorScheme="cost"
+              helpTopic={helpTopics['metrics.cogs']}
+              helpContext={{
+                currentValue: current.cogs,
+                previousValue: previous?.cogs,
+                ytdValue: ytd.cogs,
+                changePercent: calculateVariation(current.cogs, previous?.cogs || 0),
+                benchmarks: {
+                  industry: current.revenue * 0.35,
+                  efficient: current.revenue * 0.30,
+                  target: current.revenue * 0.40
+                }
+              }}
+            />
+          </div>
 
-          <MetricCard
-            title={t('metrics.operatingExpenses')}
-            currentValue={current.operatingExpenses}
-            previousValue={previous?.operatingExpenses}
-            ytdValue={ytd.operatingExpenses}
-            format="currency"
-            {...currencyProps}
-            icon={<DocumentTextIcon className="h-5 w-5" />}
-            showBreakdown={true}
-            expandedContent={
-              <div className="space-y-3 mt-4 pt-4 border-t border-gray-200">
-                <h4 className="font-medium text-gray-900">{t('metrics.opexBreakdown')}</h4>
-                {data.categories.operatingExpenses.length > 0 ? (
-                  data.categories.operatingExpenses.map((expense, idx) => (
-                    <div key={idx} className="text-sm">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-gray-600">{expense.category}</span>
-                        <span className="font-medium">{formatValue(expense.amount)}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-rose-400 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${expense.percentage}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-xs text-gray-500">{expense.percentage.toFixed(1)}% {t('metrics.ofOpEx')}</span>
-                        <span className="text-xs text-gray-500">{((expense.amount / current.revenue) * 100).toFixed(1)}% {t('metrics.ofRevenue')}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">{t('metrics.noBreakdownAvailable')}</p>
-                )}
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>{t('metrics.industry')}:</span>
-                      <span className="font-medium">{formatValue(current.revenue * 0.20)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{t('metrics.efficient')}:</span>
-                      <span className="font-medium">{formatValue(current.revenue * 0.15)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-            colorScheme="cost"
-            helpTopic={helpTopics['metrics.operatingExpenses']}
-            helpContext={{
-              currentValue: current.operatingExpenses,
-              previousValue: previous?.operatingExpenses,
-              ytdValue: ytd.operatingExpenses,
-              changePercent: calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0),
-              benchmarks: {
-                industry: current.revenue * 0.20,
-                efficient: current.revenue * 0.15,
-                target: current.revenue * 0.25
-              }
-            }}
-          />
+          <div onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'opex' ? null : 'opex')}>
+            <MetricCard
+              title={t('metrics.operatingExpenses')}
+              currentValue={current.operatingExpenses}
+              previousValue={previous?.operatingExpenses}
+              ytdValue={ytd.operatingExpenses}
+              format="currency"
+              {...currencyProps}
+              icon={<DocumentTextIcon className="h-5 w-5" />}
+              colorScheme="cost"
+              helpTopic={helpTopics['metrics.operatingExpenses']}
+              helpContext={{
+                currentValue: current.operatingExpenses,
+                previousValue: previous?.operatingExpenses,
+                ytdValue: ytd.operatingExpenses,
+                changePercent: calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0),
+                benchmarks: {
+                  industry: current.revenue * 0.20,
+                  efficient: current.revenue * 0.15,
+                  target: current.revenue * 0.25
+                }
+              }}
+            />
+          </div>
 
           <MetricCard
             title={t('metrics.cogsPercentage')}
@@ -1075,6 +1000,95 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           />
         </div>
       </div>
+      )}
+
+      {/* Category Breakdown Section */}
+      {activeBreakdown && (
+        <div className="mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                <div className={`p-2 rounded-lg ${
+                  activeBreakdown === 'cogs' ? 'bg-rose-100' : 'bg-blue-100'
+                }`}>
+                  {activeBreakdown === 'cogs' ? 
+                    <CalculatorIcon className="h-5 w-5 text-rose-600" /> : 
+                    <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                  }
+                </div>
+                <span>
+                  {activeBreakdown === 'cogs' ? t('metrics.cogsBreakdown') : t('metrics.opexBreakdown')}
+                </span>
+              </h3>
+              <button
+                onClick={() => setActiveBreakdown(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {(activeBreakdown === 'cogs' ? data.categories.cogs : data.categories.operatingExpenses).map((item, idx) => (
+                <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-medium text-gray-900 text-sm leading-tight">{item.category}</h4>
+                    <span className="text-lg font-bold text-gray-900">{formatValue(item.amount)}</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          activeBreakdown === 'cogs' ? 'bg-rose-500' : 'bg-blue-500'
+                        }`}
+                        style={{ width: `${item.percentage}%` }}
+                      />
+                    </div>
+                    
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>{item.percentage.toFixed(1)}% {activeBreakdown === 'cogs' ? t('metrics.ofCOGS') : t('metrics.ofOpEx')}</span>
+                      <span>{((item.amount / current.revenue) * 100).toFixed(1)}% {t('metrics.ofRevenue')}</span>
+                    </div>
+                    
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Summary Stats */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {formatValue(activeBreakdown === 'cogs' ? current.cogs : current.operatingExpenses)}
+                  </div>
+                  <div className="text-gray-600">{t('metrics.total')}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {(activeBreakdown === 'cogs' ? data.categories.cogs : data.categories.operatingExpenses).length}
+                  </div>
+                  <div className="text-gray-600">{t('metrics.categories')}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {formatValue(current.revenue * (activeBreakdown === 'cogs' ? 0.35 : 0.20))}
+                  </div>
+                  <div className="text-gray-600">{t('metrics.industry')}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {formatValue(current.revenue * (activeBreakdown === 'cogs' ? 0.30 : 0.15))}
+                  </div>
+                  <div className="text-gray-600">{t('metrics.efficient')}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Operating Expenses Analysis */}

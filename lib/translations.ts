@@ -193,6 +193,8 @@ export const translations = {
     'metrics.ofRevenue': 'de Ingresos',
     'metrics.ofOpEx': 'de OpEx',
     'metrics.previous': 'Anterior',
+    'metrics.total': 'Total',
+    'metrics.categories': 'Categorías',
     
     // Executive KPIs
     'kpi.cashPosition': 'Posición de Efectivo',
@@ -558,6 +560,8 @@ export const translations = {
     'metrics.ofRevenue': 'of Revenue',
     'metrics.ofOpEx': 'of OpEx',
     'metrics.previous': 'Previous',
+    'metrics.total': 'Total',
+    'metrics.categories': 'Categories',
     
     // Executive KPIs
     'kpi.cashPosition': 'Cash Position',
