@@ -16,6 +16,7 @@ interface Template {
   templateName: string;
   statementType: string;
   locale?: string;
+  currency?: string;
   isDefault: boolean;
   usageCount: number;
   lastUsedAt?: string;
@@ -159,6 +160,11 @@ export function TemplateSelector({
                     {template.statementType === 'balance_sheet' && 'Balance General'}
                     {template.statementType === 'cash_flow' && 'Flujo de Efectivo'}
                   </span>
+                  {template.currency && (
+                    <span className="flex items-center gap-1 text-blue-600 font-medium">
+                      💰 {template.currency}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <SparklesIcon className="w-4 h-4" />
                     Usado {template.usageCount} {template.usageCount === 1 ? 'vez' : 'veces'}

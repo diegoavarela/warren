@@ -330,6 +330,7 @@ export async function POST(request: NextRequest) {
             statementType: accountMapping.statementType || 'profit_loss',
             columnMappings: shouldEncrypt ? encryptObject(accountMapping) : accountMapping,
             locale: locale || 'es-MX',
+            currency: accountMapping.currency || 'USD',
             isDefault: false
           };
 

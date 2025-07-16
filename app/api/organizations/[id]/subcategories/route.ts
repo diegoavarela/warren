@@ -8,9 +8,11 @@ export async function GET(
 ) {
   return withRBAC(request, async (req, user) => {
     const organizationId = params.id;
+    const url = new URL(req.url);
+    const templateId = url.searchParams.get('templateId');
 
     // Check if user has permission to view organization subcategories
-    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION, organizationId)) {
+    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION)) {
       return NextResponse.json(
         { error: "Insufficient permissions to view organization subcategories" },
         { status: 403 }
@@ -18,15 +20,19 @@ export async function GET(
     }
 
     try {
+      const whereConditions = [
+        eq(organizationSubcategories.organizationId, organizationId),
+        eq(organizationSubcategories.isActive, true)
+      ];
+
+      if (templateId) {
+        whereConditions.push(eq(organizationSubcategories.templateId, templateId));
+      }
+
       const subcategories = await db
         .select()
         .from(organizationSubcategories)
-        .where(
-          and(
-            eq(organizationSubcategories.organizationId, organizationId),
-            eq(organizationSubcategories.isActive, true)
-          )
-        )
+        .where(and(...whereConditions))
         .orderBy(organizationSubcategories.label);
 
       return NextResponse.json({
@@ -51,7 +57,7 @@ export async function POST(
     const organizationId = params.id;
 
     // Check if user has permission to manage organization subcategories
-    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION, organizationId)) {
+    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION)) {
       return NextResponse.json(
         { error: "Insufficient permissions to create organization subcategories" },
         { status: 403 }
@@ -60,7 +66,7 @@ export async function POST(
 
     try {
       const body = await req.json();
-      const { value, label, mainCategories } = body;
+      const { value, label, mainCategories, templateId } = body;
 
       if (!value || !label) {
         return NextResponse.json(
@@ -92,6 +98,7 @@ export async function POST(
         .insert(organizationSubcategories)
         .values({
           organizationId,
+          templateId: templateId || null,
           value,
           label,
           mainCategories: mainCategories || null,

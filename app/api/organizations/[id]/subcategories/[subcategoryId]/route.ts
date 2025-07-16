@@ -11,7 +11,7 @@ export async function GET(
     const subcategoryId = params.subcategoryId;
 
     // Check if user has permission to view organization subcategories
-    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION, organizationId)) {
+    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION)) {
       return NextResponse.json(
         { error: "Insufficient permissions to view organization subcategories" },
         { status: 403 }
@@ -60,7 +60,7 @@ export async function PUT(
     const subcategoryId = params.subcategoryId;
 
     // Check if user has permission to manage organization subcategories
-    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION, organizationId)) {
+    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION)) {
       return NextResponse.json(
         { error: "Insufficient permissions to update organization subcategories" },
         { status: 403 }
@@ -155,7 +155,7 @@ export async function DELETE(
     const subcategoryId = params.subcategoryId;
 
     // Check if user has permission to manage organization subcategories
-    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION, organizationId)) {
+    if (!hasPermission(user, PERMISSIONS.MANAGE_ORGANIZATION)) {
       return NextResponse.json(
         { error: "Insufficient permissions to delete organization subcategories" },
         { status: 403 }

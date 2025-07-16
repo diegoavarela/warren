@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const buttonVariants = cva(
-  'relative inline-flex items-center justify-center font-medium transition-all duration-300 ease-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] select-none overflow-hidden group',
+  'relative inline-flex items-center justify-center font-medium transition-all duration-300 ease-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] select-none overflow-hidden group whitespace-nowrap',
   {
     variants: {
       variant: {
@@ -84,7 +84,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         {...props}
       >
-        <span className="relative flex items-center justify-center z-10">
+        <span className="relative flex items-center justify-center z-10 whitespace-nowrap flex-shrink-0">
           {loading ? (
             <>
               <svg 

@@ -308,8 +308,8 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
         </div>
       </header>
 
-      {/* Breadcrumbs Bar */}
-      {isAuthenticated && breadcrumbs.length > 0 && (
+      {/* Breadcrumbs Bar - Hidden for workflow pages that have their own breadcrumbs */}
+      {isAuthenticated && breadcrumbs.length > 0 && !pathname.includes('/enhanced-mapper') && !pathname.includes('/upload') && (
         <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10">
             <nav className="flex items-center space-x-2 text-sm">

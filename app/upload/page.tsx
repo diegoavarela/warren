@@ -12,7 +12,7 @@ import { CompanyContextBar } from "@/components/dashboard/CompanyContextBar";
 import { TemplateSelector } from "@/components/TemplateSelector";
 import { CompanySelector } from "@/components/CompanySelector";
 import { useTranslation } from "@/lib/translations";
-import { BuildingOfficeIcon, DocumentTextIcon, CurrencyDollarIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { BuildingOfficeIcon, DocumentTextIcon, CurrencyDollarIcon, PencilIcon, CheckBadgeIcon } from "@heroicons/react/24/outline";
 
 function UploadPage() {
   const router = useRouter();
@@ -175,8 +175,44 @@ function UploadPage() {
                   </div>
                 )}
 
-                {/* Units Selection */}
-                {selectedCompany && (
+                {/* Template Configuration Summary - Show when template is selected */}
+                {selectedCompany && selectedTemplate && (
+                  <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <CheckBadgeIcon className="h-6 w-6 text-green-600" />
+                      <h3 className="text-lg font-semibold text-green-900">
+                        {locale?.startsWith('es') ? 'Plantilla Seleccionada' : 'Template Selected'}
+                      </h3>
+                    </div>
+                    <p className="text-green-700 mb-4">
+                      {locale?.startsWith('es') 
+                        ? 'Se aplicará automáticamente el mapeo y configuración guardados en esta plantilla.'
+                        : 'The mapping and configuration saved in this template will be applied automatically.'}
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-600 font-medium">{locale?.startsWith('es') ? 'Plantilla:' : 'Template:'}</span>
+                        <span className="text-green-900">{selectedTemplate.templateName}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-600 font-medium">{locale?.startsWith('es') ? 'Tipo:' : 'Type:'}</span>
+                        <span className="text-green-900">
+                          {selectedTemplate.statementType === 'profit_loss' && (locale?.startsWith('es') ? 'Estado de Resultados' : 'P&L Statement')}
+                          {selectedTemplate.statementType === 'cash_flow' && (locale?.startsWith('es') ? 'Flujo de Efectivo' : 'Cash Flow')}
+                        </span>
+                      </div>
+                      {selectedTemplate.currency && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600 font-medium">{locale?.startsWith('es') ? 'Moneda:' : 'Currency:'}</span>
+                          <span className="text-green-900">{selectedTemplate.currency}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Units Selection - Only show when no template is selected */}
+                {selectedCompany && !selectedTemplate && (
                   <div className="bg-white rounded-2xl shadow-lg p-6">
                     <div className="flex items-center space-x-3 mb-4">
                       <CurrencyDollarIcon className="h-6 w-6 text-purple-600" />
@@ -258,14 +294,22 @@ function UploadPage() {
                       <span className="font-medium text-gray-900">{selectedTemplate?.templateName || (locale?.startsWith('es') ? 'Mapeo manual' : 'Manual mapping')}</span>
                     </div>
                     <span className="hidden sm:inline text-gray-300">•</span>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-gray-600">{locale?.startsWith('es') ? 'Unidades:' : 'Units:'}</span>
-                      <span className="font-medium text-gray-900">
-                        {selectedUnits === 'normal' ? (locale?.startsWith('es') ? 'Valores normales' : 'Normal values') :
-                         selectedUnits === 'thousands' ? (locale?.startsWith('es') ? 'Miles' : 'Thousands') :
-                         (locale?.startsWith('es') ? 'Millones' : 'Millions')}
-                      </span>
-                    </div>
+                    {selectedTemplate && selectedTemplate.currency && (
+                      <div className="flex items-center space-x-1">
+                        <span className="text-gray-600">{locale?.startsWith('es') ? 'Moneda:' : 'Currency:'}</span>
+                        <span className="font-medium text-gray-900">{selectedTemplate.currency}</span>
+                      </div>
+                    )}
+                    {!selectedTemplate && (
+                      <div className="flex items-center space-x-1">
+                        <span className="text-gray-600">{locale?.startsWith('es') ? 'Unidades:' : 'Units:'}</span>
+                        <span className="font-medium text-gray-900">
+                          {selectedUnits === 'normal' ? (locale?.startsWith('es') ? 'Valores normales' : 'Normal values') :
+                           selectedUnits === 'thousands' ? (locale?.startsWith('es') ? 'Miles' : 'Thousands') :
+                           (locale?.startsWith('es') ? 'Millones' : 'Millions')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => setStep('config')}
@@ -291,7 +335,8 @@ function UploadPage() {
                         detectedLocale: metadata.detectedLocale,
                         uploadSession: metadata.uploadSession,
                         selectedTemplate: selectedTemplate,
-                        selectedUnits: selectedUnits,
+                        selectedUnits: selectedTemplate ? 'normal' : selectedUnits, // Default to normal for templates
+                        currency: selectedTemplate?.currency || selectedCompany?.baseCurrency || 'USD',
                         statementType: statementType
                       }));
                       

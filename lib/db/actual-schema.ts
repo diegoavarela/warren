@@ -129,6 +129,7 @@ export const mappingTemplates = pgTable("mapping_templates", {
   columnMappings: jsonb("column_mappings").notNull(),
   validationRules: jsonb("validation_rules"),
   locale: varchar("locale", { length: 5 }),
+  currency: varchar("currency", { length: 3 }).notNull(),
   isDefault: boolean("is_default").default(false),
   usageCount: integer("usage_count").default(0),
   lastUsedAt: timestamp("last_used_at"),
@@ -202,6 +203,7 @@ export const systemSettings = pgTable("system_settings", {
 export const organizationSubcategories = pgTable("organization_subcategories", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
+  templateId: uuid("template_id").references(() => subcategoryTemplates.id),
   value: varchar("value", { length: 100 }).notNull(),
   label: varchar("label", { length: 255 }).notNull(),
   mainCategories: jsonb("main_categories"), // Array of main categories this subcategory applies to
@@ -217,6 +219,7 @@ export const organizationSubcategories = pgTable("organization_subcategories", {
 export const companySubcategories = pgTable("company_subcategories", {
   id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id).notNull(),
+  companyTemplateId: uuid("company_template_id").references(() => companySubcategoryTemplates.id),
   organizationSubcategoryId: uuid("organization_subcategory_id").references(() => organizationSubcategories.id),
   value: varchar("value", { length: 100 }).notNull(),
   label: varchar("label", { length: 255 }).notNull(),
@@ -228,6 +231,37 @@ export const companySubcategories = pgTable("company_subcategories", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
   uniqueCompanyValue: unique().on(table.companyId, table.value),
+}));
+
+// Subcategory Templates table (for organization-level templates)
+export const subcategoryTemplates = pgTable("subcategory_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueOrgTemplate: unique().on(table.organizationId, table.name),
+}));
+
+// Company Subcategory Templates table (for company-level template selections)
+export const companySubcategoryTemplates = pgTable("company_subcategory_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  templateId: uuid("template_id").references(() => subcategoryTemplates.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  isDefault: boolean("is_default").default(false),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyTemplate: unique().on(table.companyId, table.name),
 }));
 
 // Export types
@@ -243,3 +277,5 @@ export type ApiKey = typeof apiKeys.$inferSelect;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type OrganizationSubcategory = typeof organizationSubcategories.$inferSelect;
 export type CompanySubcategory = typeof companySubcategories.$inferSelect;
+export type SubcategoryTemplate = typeof subcategoryTemplates.$inferSelect;
+export type CompanySubcategoryTemplate = typeof companySubcategoryTemplates.$inferSelect;

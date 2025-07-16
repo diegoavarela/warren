@@ -46,6 +46,8 @@ let processingJobs: any;
 let systemSettings: any;
 let organizationSubcategories: any;
 let companySubcategories: any;
+let subcategoryTemplates: any;
+let companySubcategoryTemplates: any;
 let eq: any;
 let desc: any;
 let count: any;
@@ -110,6 +112,8 @@ if (!isServer) {
   systemSettings = schema.systemSettings;
   organizationSubcategories = schema.organizationSubcategories;
   companySubcategories = schema.companySubcategories;
+  subcategoryTemplates = schema.subcategoryTemplates;
+  companySubcategoryTemplates = schema.companySubcategoryTemplates;
   eq = realEq;
   desc = realDesc;
   count = realCount;
@@ -134,6 +138,8 @@ export {
   systemSettings,
   organizationSubcategories,
   companySubcategories,
+  subcategoryTemplates,
+  companySubcategoryTemplates,
   eq,
   desc,
   count,

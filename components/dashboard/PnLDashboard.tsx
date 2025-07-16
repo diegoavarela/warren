@@ -864,13 +864,46 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             {...currencyProps}
             icon={<CalculatorIcon className="h-5 w-5" />}
-            showBreakdown={data.categories.cogs.length > 0}
-            breakdownData={data.categories.cogs.map(cat => ({
-              label: cat.category,
-              value: cat.amount,
-              percentage: cat.percentage,
-              color: 'bg-rose-600'
-            }))}
+            showBreakdown={true}
+            expandedContent={
+              <div className="space-y-3 mt-4 pt-4 border-t border-gray-200">
+                <h4 className="font-medium text-gray-900">{t('metrics.cogsBreakdown')}</h4>
+                {data.categories.cogs.length > 0 ? (
+                  data.categories.cogs.map((cat, idx) => (
+                    <div key={idx} className="text-sm">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-gray-600">{cat.category}</span>
+                        <span className="font-medium">{formatValue(cat.amount)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-rose-400 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${cat.percentage}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-xs text-gray-500">{cat.percentage.toFixed(1)}% {t('metrics.ofCOGS')}</span>
+                        <span className="text-xs text-gray-500">{((cat.amount / current.revenue) * 100).toFixed(1)}% {t('metrics.ofRevenue')}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">{t('metrics.noBreakdownAvailable')}</p>
+                )}
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>{t('metrics.industry')}:</span>
+                      <span className="font-medium">{formatValue(current.revenue * 0.35)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('metrics.efficient')}:</span>
+                      <span className="font-medium">{formatValue(current.revenue * 0.30)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
             colorScheme="cost"
             helpTopic={helpTopics['metrics.cogs']}
             helpContext={{
@@ -1117,44 +1150,102 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       )}
 
       {/* Personnel Costs Widget */}
-      <PersonnelCostsWidget 
-        data={{
-          currentMonth: {
-            salaries: ((current as any).personnelSalariesCoR || 0) + ((current as any).personnelSalariesOp || 0),
-            benefits: ((current as any).personnelBenefits || 0) + ((current as any).healthCoverage || 0),
-            bonuses: 0, // Not available in current data structure
-            total: (current as any).totalPersonnelCost || 0
-          },
-          previousMonth: {
-            total: previous ? ((previous as any).totalPersonnelCost || 0) : 0
-          },
-          ytd: {
-            salaries: data.periods.reduce((sum, p) => sum + (((p as any).personnelSalariesCoR || 0) + ((p as any).personnelSalariesOp || 0)), 0),
-            benefits: data.periods.reduce((sum, p) => sum + (((p as any).personnelBenefits || 0) + ((p as any).healthCoverage || 0)), 0),
-            bonuses: 0, // Not available in current data structure
-            total: data.periods.reduce((sum, p) => sum + ((p as any).totalPersonnelCost || 0), 0)
-          },
-          headcount: {
-            current: 0, // Not available in current data structure
-            previous: 0 // Not available in current data structure
-          }
-        }}
-        currency={selectedCurrency}
-        displayUnits={displayUnits}
-        locale={locale}
-      />
+      {(() => {
+        // Calculate personnel costs from actual expense categories
+        const getPersonnelCosts = (period: any) => {
+          if (!data.categories.operatingExpenses) return { salaries: 0, benefits: 0, total: 0 };
+          
+          // Find personnel-related categories
+          const personnelCategories = data.categories.operatingExpenses.filter(exp => {
+            const lowerName = exp.category.toLowerCase();
+            return lowerName.includes('personnel') || 
+                   lowerName.includes('personal') || 
+                   lowerName.includes('salary') || 
+                   lowerName.includes('salario') ||
+                   lowerName.includes('sueldo') ||
+                   lowerName.includes('nomina') ||
+                   lowerName.includes('employee') ||
+                   lowerName.includes('empleado') ||
+                   lowerName.includes('payroll');
+          });
+          
+          const benefitCategories = data.categories.operatingExpenses.filter(exp => {
+            const lowerName = exp.category.toLowerCase();
+            return lowerName.includes('benefit') || 
+                   lowerName.includes('prestacion') || 
+                   lowerName.includes('health') || 
+                   lowerName.includes('salud') ||
+                   lowerName.includes('insurance') ||
+                   lowerName.includes('seguro');
+          });
+          
+          const salaries = personnelCategories.reduce((sum, cat) => sum + cat.amount, 0);
+          const benefits = benefitCategories.reduce((sum, cat) => sum + cat.amount, 0);
+          const total = (period as any).totalPersonnelCost || salaries + benefits;
+          
+          return { salaries, benefits, total };
+        };
+        
+        const currentCosts = getPersonnelCosts(current);
+        const previousCosts = previous ? getPersonnelCosts(previous) : { total: 0 };
+        
+        // Calculate YTD personnel costs
+        const ytdSalaries = data.periods.reduce((sum, p) => {
+          const costs = getPersonnelCosts(p);
+          return sum + costs.salaries;
+        }, 0);
+        
+        const ytdBenefits = data.periods.reduce((sum, p) => {
+          const costs = getPersonnelCosts(p);
+          return sum + costs.benefits;
+        }, 0);
+        
+        const ytdTotal = data.periods.reduce((sum, p) => {
+          const costs = getPersonnelCosts(p);
+          return sum + costs.total;
+        }, 0);
+        
+        return (
+          <PersonnelCostsWidget 
+            data={{
+              currentMonth: {
+                salaries: currentCosts.salaries,
+                benefits: currentCosts.benefits,
+                bonuses: 0,
+                total: currentCosts.total
+              },
+              previousMonth: {
+                total: previousCosts.total
+              },
+              ytd: {
+                salaries: ytdSalaries,
+                benefits: ytdBenefits,
+                bonuses: 0,
+                total: ytdTotal
+              },
+              headcount: {
+                current: 0,
+                previous: 0
+              }
+            }}
+            currency={selectedCurrency}
+            displayUnits={displayUnits}
+            locale={locale}
+          />
+        );
+      })()}
 
       {/* Revenue Growth Analysis */}
       <div className="mb-8">
         <RevenueGrowthAnalysis 
-          chartData={data.periods}
+          chartData={data.periods.filter(p => p.revenue > 0)} // Only show periods with actual data
           currentMonth={current}
           previousMonth={previous}
           currency={selectedCurrency}
           displayUnits={displayUnits}
           formatValue={formatValue}
           formatPercentage={formatPercentage}
-          locale="es-MX"
+          locale={locale}
         />
       </div>
 
@@ -1167,7 +1258,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <div className="p-3 bg-amber-100 rounded-xl">
                 <CalculatorIcon className="h-6 w-6 text-amber-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Resumen de Impuestos</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('tax.summary')}</h3>
               <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
             </div>
             
@@ -1175,7 +1266,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               {/* Impuestos del período */}
               <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">Impuestos del período</span>
+                  <span className="text-sm font-medium text-gray-600">{t('tax.periodTaxes')}</span>
                   <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
                 </div>
                 <div className="w-full bg-amber-200 rounded-full h-2">
@@ -1186,7 +1277,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               {/* Tasa efectiva */}
               <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600">Tasa efectiva</span>
+                  <span className="text-sm font-medium text-gray-600">{t('tax.effectiveRate')}</span>
                   <div className="flex items-center space-x-2">
                     <div className="w-12 h-12 relative">
                       <svg className="w-12 h-12 transform -rotate-90">
@@ -1197,12 +1288,12 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                           strokeWidth="4" 
                           fill="none" 
                           strokeDasharray={`${2 * Math.PI * 18}`}
-                          strokeDashoffset={`${2 * Math.PI * 18 * (1 - (current.taxes / current.operatingIncome))}`}
+                          strokeDashoffset={`${2 * Math.PI * 18 * (1 - (current.operatingIncome > 0 ? Math.min(current.taxes / current.operatingIncome, 1) : 0))}`}
                           className="transition-all duration-1000"
                         />
                       </svg>
                       <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-amber-700">
-                        {formatPercentage((current.taxes / current.operatingIncome) * 100)}
+                        {current.operatingIncome > 0 ? formatPercentage((current.taxes / current.operatingIncome) * 100) : '0%'}
                       </span>
                     </div>
                   </div>
@@ -1212,7 +1303,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               {/* Impuestos YTD */}
               <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600">Impuestos YTD</span>
+                  <span className="text-sm font-medium text-gray-600">{t('tax.ytdTaxes')}</span>
                   <span className="font-bold text-lg text-amber-700">{formatValue(ytd.taxes)}</span>
                 </div>
               </div>
@@ -1227,7 +1318,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <div className="p-3 bg-emerald-100 rounded-xl">
                 <ChartBarIcon className="h-6 w-6 text-emerald-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Eficiencia de Costos</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('efficiency.title')}</h3>
               <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
             </div>
             
@@ -1235,20 +1326,20 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               {/* Costo por peso */}
               <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">Costo por peso de ingreso</span>
+                  <span className="text-sm font-medium text-gray-600">{t('efficiency.costPerRevenue')}</span>
                   <span className="font-bold text-lg text-emerald-700">
                     {selectedCurrency} {((current.cogs + current.operatingExpenses) / current.revenue).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2 text-xs text-gray-500">
-                  <span>Óptimo: &lt; {selectedCurrency} 0.70</span>
+                  <span>{t('efficiency.optimal')}: &lt; {selectedCurrency} 0.70</span>
                 </div>
               </div>
               
               {/* ROI Operacional */}
               <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600">ROI Operacional</span>
+                  <span className="text-sm font-medium text-gray-600">{t('efficiency.operationalRoi')}</span>
                   <div className="flex items-center space-x-2">
                     <span className="font-bold text-xl text-emerald-700">
                       {formatPercentage((current.operatingIncome / (current.cogs + current.operatingExpenses)) * 100)}
@@ -1275,23 +1366,57 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         {/* Revenue Forecast */}
         {data.forecasts && (
           <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h4 className="font-semibold text-gray-900 mb-2">{t('charts.revenueForecast')}</h4>
-            <p className="text-sm text-gray-600 mb-4">{t('charts.nextSixMonths')}</p>
+            <div className="mb-4">
+              <h4 className="font-semibold text-gray-900 mb-2">{t('charts.revenueForecast')}</h4>
+              <p className="text-sm text-gray-600">{t('charts.nextSixMonths')}</p>
+              <div className="mt-3 bg-blue-50 rounded-lg p-3">
+                <p className="text-xs text-blue-800">
+                  <span className="font-semibold">{t('forecast.methodology')}:</span> {t('forecast.revenueExplanation')}
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-green-400 rounded"></div>
+                    <span className="text-gray-700">{t('forecast.optimistic')}: +20%</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span className="text-gray-700">{t('forecast.trend')}: +5%/mes</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-red-300 rounded"></div>
+                    <span className="text-gray-700">{t('forecast.pessimistic')}: -20%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <WarrenChart
-              data={data.forecasts.revenue.months.map((month, i) => ({
-                month,
-                tendencia: data.forecasts!.revenue.trend[i],
-                optimista: data.forecasts!.revenue.optimistic[i],
-                pesimista: data.forecasts!.revenue.pessimistic[i]
-              }))}
+              data={[
+                // Historical data (last 3 months)
+                ...data.periods.filter(p => p.revenue > 0).slice(-3).map(p => ({
+                  month: p.month,
+                  actual: p.revenue,
+                  tendencia: null,
+                  optimista: null,
+                  pesimista: null
+                })),
+                // Forecast data
+                ...data.forecasts.revenue.months.map((month, i) => ({
+                  month,
+                  actual: null,
+                  tendencia: data.forecasts!.revenue.trend[i],
+                  optimista: data.forecasts!.revenue.optimistic[i],
+                  pesimista: data.forecasts!.revenue.pessimistic[i]
+                }))
+              ]}
               config={{
                 xKey: 'month',
-                yKeys: ['pesimista', 'optimista', 'tendencia'],
+                yKeys: ['actual', 'pesimista', 'optimista', 'tendencia'],
                 type: 'area',
-                colors: ['#FEE2E2', '#D1FAE5', '#3B82F6'],
+                colors: ['#1F2937', '#FEE2E2', '#D1FAE5', '#3B82F6'],
                 height: 300,
                 stacked: false,
-                gradient: true
+                gradient: true,
+                showLegend: true
               }}
               formatValue={(value) => formatValue(value)}
             />
@@ -1301,23 +1426,50 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         {/* Net Income Forecast */}
         {data.forecasts && (
           <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h4 className="font-semibold text-gray-900 mb-2">{t('charts.netIncomeForecast')}</h4>
-            <p className="text-sm text-gray-600 mb-4">{t('charts.nextSixMonths')}</p>
+            <div className="mb-4">
+              <h4 className="font-semibold text-gray-900 mb-2">{t('charts.netIncomeForecast')}</h4>
+              <p className="text-sm text-gray-600">{t('charts.nextSixMonths')}</p>
+              <div className="mt-3 bg-emerald-50 rounded-lg p-3">
+                <p className="text-xs text-emerald-800">
+                  <span className="font-semibold">{t('forecast.methodology')}:</span> {t('forecast.netIncomeExplanation')}
+                </p>
+                <div className="mt-2 text-xs text-gray-700">
+                  <p>{t('forecast.assumptions')}:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>{t('forecast.maintainMargins')}</li>
+                    <li>{t('forecast.scaleEconomies')}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <WarrenChart
-              data={data.forecasts.netIncome.months.map((month, i) => ({
-                month,
-                tendencia: data.forecasts!.netIncome.trend[i],
-                optimista: data.forecasts!.netIncome.optimistic[i],
-                pesimista: data.forecasts!.netIncome.pessimistic[i]
-              }))}
+              data={[
+                // Historical data (last 3 months)
+                ...data.periods.filter(p => p.revenue > 0).slice(-3).map(p => ({
+                  month: p.month,
+                  actual: p.netIncome,
+                  tendencia: null,
+                  optimista: null,
+                  pesimista: null
+                })),
+                // Forecast data
+                ...data.forecasts.netIncome.months.map((month, i) => ({
+                  month,
+                  actual: null,
+                  tendencia: data.forecasts!.netIncome.trend[i],
+                  optimista: data.forecasts!.netIncome.optimistic[i],
+                  pesimista: data.forecasts!.netIncome.pessimistic[i]
+                }))
+              ]}
               config={{
                 xKey: 'month',
-                yKeys: ['pesimista', 'optimista', 'tendencia'],
+                yKeys: ['actual', 'pesimista', 'optimista', 'tendencia'],
                 type: 'area',
-                colors: ['#FEE2E2', '#D1FAE5', '#3B82F6'],
+                colors: ['#1F2937', '#FEE2E2', '#D1FAE5', '#3B82F6'],
                 height: 300,
                 stacked: false,
-                gradient: true
+                gradient: true,
+                showLegend: true
               }}
               formatValue={(value) => formatValue(value)}
             />
@@ -1335,39 +1487,39 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         {/* Main Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <WarrenChart
-            data={data.periods.map(p => ({
+            data={data.periods.filter(p => p.revenue > 0).map(p => ({
               month: p.month,
-              'Margen Bruto': p.grossMargin,
-              'Margen Operacional': p.operatingMargin,
-              'Margen Neto': p.netMargin
+              [t('charts.grossMargin')]: p.grossMargin,
+              [t('charts.operatingMargin')]: p.operatingMargin,
+              [t('charts.netMargin')]: p.netMargin
             }))}
             config={{
               xKey: 'month',
-              yKeys: ['Margen Bruto', 'Margen Operacional', 'Margen Neto'],
+              yKeys: [t('charts.grossMargin'), t('charts.operatingMargin'), t('charts.netMargin')],
               type: 'line',
               height: 250
             }}
             title={t('charts.marginTrend')}
-            subtitle={t('charts.lastTwelveMonths')}
+            subtitle={`${data.periods.filter(p => p.revenue > 0).length} ${t('charts.monthsOfData')}`}
             formatValue={(value) => formatPercentage(value)}
           />
 
           <WarrenChart
-            data={data.periods.slice(-6).map(p => ({
+            data={data.periods.filter(p => p.revenue > 0).slice(-6).map(p => ({
               month: p.month,
-              Ingresos: p.revenue,
-              Gastos: p.cogs + p.operatingExpenses,
-              'Utilidad Neta': p.netIncome
+              [t('charts.revenue')]: p.revenue,
+              [t('charts.expenses')]: p.cogs + p.operatingExpenses,
+              [t('charts.netIncome')]: p.netIncome
             }))}
             config={{
               xKey: 'month',
-              yKeys: ['Ingresos', 'Gastos', 'Utilidad Neta'],
+              yKeys: [t('charts.revenue'), t('charts.expenses'), t('charts.netIncome')],
               type: 'bar',
               height: 250,
               colors: ['#8B5CF6', '#EF4444', '#10B981']
             }}
             title={t('charts.financialSummary')}
-            subtitle={t('charts.lastSixMonths')}
+            subtitle={`${t('charts.last')} ${Math.min(6, data.periods.filter(p => p.revenue > 0).length)} ${t('charts.months')}`}
             formatValue={(value) => formatValue(value)}
           />
         </div>
@@ -1375,10 +1527,10 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         {/* Heatmaps in compact layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <HeatmapChart
-            data={data.periods.map(p => ({
+            data={data.periods.filter(p => p.revenue > 0).map(p => ({
               month: p.month,
               value: p.revenue,
-              label: formatPercentage(calculateVariation(p.revenue, 2000000))
+              label: `${formatValue(p.revenue)}`
             }))}
             title={t('heatmap.revenue')}
             subtitle={t('heatmap.monthlyPerformance')}
@@ -1390,7 +1542,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           />
 
           <HeatmapChart
-            data={data.periods.map(p => ({
+            data={data.periods.filter(p => p.revenue > 0).map(p => ({
               month: p.month,
               value: p.netMargin,
               label: `${formatValue(p.netIncome)}`
@@ -1411,68 +1563,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
 
       {/* Additional Sections */}
       
-      {/* Bank Overview & Investment Portfolio */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <BuildingLibraryIcon className="h-5 w-5 mr-2 text-purple-600" />
-              {t('dashboard.pnl.bankSummary')}
-            </h3>
-            <HelpIcon topic={helpTopics['dashboard.profitability']} size="sm" />
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-600">{t('bank.mainAccount')}</span>
-              <span className="font-semibold">{formatValue(1200000)}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-600">{t('bank.savingsAccount')}</span>
-              <span className="font-semibold">{formatValue(800000)}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-600">{t('bank.investments')}</span>
-              <span className="font-semibold">{formatValue(400000)}</span>
-            </div>
-            <div className="border-t pt-4">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-900">{t('bank.totalAvailable')}</span>
-                <span className="font-bold text-lg">{formatValue(2400000)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.investmentPortfolio')}</h3>
-            <HelpIcon topic={helpTopics['dashboard.profitability']} size="sm" />
-          </div>
-          <div className="space-y-4">
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-emerald-900">{t('investments.governmentBonds')}</span>
-                <span className="text-emerald-700 font-semibold">+4.2%</span>
-              </div>
-              <div className="text-xl font-bold text-emerald-900">{formatValue(180000)}</div>
-            </div>
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-blue-900">{t('investments.mutualFunds')}</span>
-                <span className="text-blue-700 font-semibold">+8.5%</span>
-              </div>
-              <div className="text-xl font-bold text-blue-900">{formatValue(150000)}</div>
-            </div>
-            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-purple-900">{t('investments.stocks')}</span>
-                <span className="text-purple-700 font-semibold">+12.3%</span>
-              </div>
-              <div className="text-xl font-bold text-purple-900">{formatValue(70000)}</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
 
       {/* Cost Efficiency Analysis */}
@@ -1481,30 +1571,93 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.costEfficiencyAnalysis')}</h3>
           <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="text-xl font-bold text-purple-600 mb-2">
-              {formatValue(current.revenue / (current.cogs + current.operatingExpenses))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl">
+            <div className="text-2xl font-bold text-purple-700 mb-1">
+              {current.revenue > 0 && (current.cogs + current.operatingExpenses) > 0 
+                ? `${selectedCurrency} ${((current.revenue / (current.cogs + current.operatingExpenses))).toFixed(2)}`
+                : 'N/A'
+              }
             </div>
-            <div className="text-sm text-gray-600">{t('efficiency.revenuePerDollarCost')}</div>
+            <div className="text-sm text-purple-600 font-medium">{t('efficiency.revenuePerDollarCost')}</div>
+            <div className="text-xs text-purple-500 mt-1">
+              {current.revenue > 0 && (current.cogs + current.operatingExpenses) > 0 
+                ? `${t('efficiency.forEvery')} ${selectedCurrency}1 ${t('efficiency.spent')}, ${selectedCurrency}${((current.revenue / (current.cogs + current.operatingExpenses))).toFixed(2)} ${t('efficiency.generated')}`
+                : ''
+              }
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-emerald-600 mb-2">
-              {formatPercentage((current.revenue - current.cogs - current.operatingExpenses) / current.revenue * 100)}
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-xl">
+            <div className="text-2xl font-bold text-emerald-700 mb-1">
+              {current.revenue > 0 
+                ? formatPercentage((current.revenue - current.cogs - current.operatingExpenses) / current.revenue * 100)
+                : 'N/A'
+              }
             </div>
-            <div className="text-sm text-gray-600">{t('efficiency.efficiencyMargin')}</div>
+            <div className="text-sm text-emerald-600 font-medium">{t('efficiency.efficiencyMargin')}</div>
+            <div className="text-xs text-emerald-500 mt-1">
+              {current.revenue > 0 
+                ? `${formatValue(current.revenue - current.cogs - current.operatingExpenses)} ${t('efficiency.retained')}`
+                : ''
+              }
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-blue-600 mb-2">
-              {formatValue(current.revenue / 150)} {/* Assuming 150 employees */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl">
+            <div className="text-2xl font-bold text-blue-700 mb-1">
+              {(current.cogs / current.revenue * 100).toFixed(1)}%
             </div>
-            <div className="text-sm text-gray-600">{t('efficiency.revenuePerEmployee')}</div>
+            <div className="text-sm text-blue-600 font-medium">{t('efficiency.cogsToRevenue')}</div>
+            <div className="flex items-center mt-2">
+              <div className="flex-1 bg-blue-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
+                  style={{ width: `${Math.min(100, (current.cogs / current.revenue * 100))}%` }}
+                />
+              </div>
+              <span className="text-xs text-blue-600 ml-2">{t('efficiency.target')}: 30%</span>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-rose-600 mb-2">
-              {formatPercentage(calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0))}
+          <div className="bg-gradient-to-br from-rose-50 to-rose-100 p-4 rounded-xl">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-2xl font-bold text-rose-700">
+                {formatPercentage(calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0))}
+              </div>
+              {calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0) < 0 ? (
+                <ArrowTrendingDownIcon className="w-5 h-5 text-green-600" />
+              ) : (
+                <ArrowTrendingUpIcon className="w-5 h-5 text-rose-600" />
+              )}
             </div>
-            <div className="text-sm text-gray-600">{t('efficiency.opexVariation')}</div>
+            <div className="text-sm text-rose-600 font-medium">{t('efficiency.opexVariation')}</div>
+            <div className="text-xs text-rose-500 mt-1">
+              {previous ? `${t('efficiency.vs')} ${formatValue(previous.operatingExpenses)}` : t('efficiency.noPreviousPeriod')}
+            </div>
+          </div>
+        </div>
+        
+        {/* Cost Breakdown Chart */}
+        <div className="border-t pt-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">{t('efficiency.costBreakdown')}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {data.categories.operatingExpenses.slice(0, 6).map((expense, idx) => {
+              const percentage = (expense.amount / current.operatingExpenses) * 100;
+              return (
+                <div key={idx} className="flex items-center space-x-3">
+                  <div className="flex-1">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-600 truncate">{expense.category}</span>
+                      <span className="font-medium">{percentage.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

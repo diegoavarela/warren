@@ -290,16 +290,22 @@ export function Header() {
                       <UserCircleIcon className="w-4 h-4" />
                       <span>{locale?.startsWith('es') ? 'Mi Perfil' : 'My Profile'}</span>
                     </button>
-                    <button
-                      onClick={() => {
-                        router.push('/dashboard/platform-admin/settings');
-                        setShowUserMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2 transition-all duration-200 hover:translate-x-1"
-                    >
-                      <CogIcon className="w-4 h-4" />
-                      <span>{locale?.startsWith('es') ? 'Configuración' : 'Settings'}</span>
-                    </button>
+                    {(user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ORG_ADMIN || user.role === 'admin') && (
+                      <button
+                        onClick={() => {
+                          if (user.role === ROLES.SUPER_ADMIN) {
+                            router.push('/dashboard/platform-admin/settings');
+                          } else {
+                            router.push('/dashboard/org-admin/settings');
+                          }
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2 transition-all duration-200 hover:translate-x-1"
+                      >
+                        <CogIcon className="w-4 h-4" />
+                        <span>{locale?.startsWith('es') ? 'Configuración' : 'Settings'}</span>
+                      </button>
+                    )}
                     <div className="border-t border-gray-100 mt-1"></div>
                     <button
                       onClick={handleLogout}

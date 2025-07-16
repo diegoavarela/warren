@@ -111,7 +111,7 @@ export async function POST(
 
     try {
       const body = await req.json();
-      const { value, label, mainCategories, organizationSubcategoryId, isOverride } = body;
+      const { value, label, mainCategories, organizationSubcategoryId, isOverride, companyTemplateId } = body;
 
       if (!value || !label) {
         return NextResponse.json(
@@ -143,6 +143,7 @@ export async function POST(
         .insert(companySubcategories)
         .values({
           companyId,
+          companyTemplateId: companyTemplateId || null,
           organizationSubcategoryId: organizationSubcategoryId || null,
           value,
           label,
