@@ -95,12 +95,12 @@ function EnhancedMapperContent() {
   
   // Column width states for resizable columns
   const [columnWidths, setColumnWidths] = useState({
-    row: 4, // Row numbers
-    type: 6, // Super compact type selector
-    account: 20, // Account name
-    mainCategory: 25, // Main category
-    subcategory: 25, // Subcategory  
-    amount: 20 // Amount column
+    row: 6, // Row numbers - bigger for better visibility
+    type: 10, // Type selector - more space for readability
+    account: 28, // Account name - more space for longer names
+    mainCategory: 22, // Main category
+    subcategory: 22, // Subcategory  
+    amount: 12 // Amount column - less space, right-aligned
     // Total: 100% - uses full width
   });
   // Main categories structure
@@ -1766,12 +1766,43 @@ function EnhancedMapperContent() {
     }).length;
     const uncategorized = nonHeaderAccounts.length - categorized;
     
+    // Check for missing subcategories from template
+    const missingSubcategories = getMissingSubcategoriesFromTemplate();
+    
     return {
       total: nonHeaderAccounts.length,
       categorized,
       uncategorized,
+      missingSubcategories,
       completionPercentage: nonHeaderAccounts.length > 0 ? (categorized / nonHeaderAccounts.length) * 100 : 0
     };
+  };
+
+  const getMissingSubcategoriesFromTemplate = () => {
+    // Only check if we have a template loaded
+    if (!activeTemplate || !activeTemplate.columnMappings) {
+      return 0;
+    }
+
+    const activeAccounts = accountTree.filter(node => node.isActive);
+    const detailAccounts = activeAccounts.filter(node => 
+      !node.isSectionHeader && getAccountType(node) === 'detail'
+    );
+
+    let missingCount = 0;
+    
+    detailAccounts.forEach(node => {
+      // Check if this account has a mapping in the template
+      const mapping = activeTemplate.columnMappings[node.accountName];
+      if (mapping && mapping.subcategory) {
+        // Template specifies a subcategory, but account doesn't have it
+        if (!node.subcategory || node.subcategory.trim() === '') {
+          missingCount++;
+        }
+      }
+    });
+
+    return missingCount;
   };
 
   const validateMapping = () => {
@@ -1790,16 +1821,49 @@ function EnhancedMapperContent() {
       // For non-detail types, we're good if we have main category
       return false;
     });
+
+    // Get accounts with missing subcategories from template
+    const missingSubcategoryAccounts: AccountNode[] = [];
+    if (activeTemplate && activeTemplate.columnMappings) {
+      const activeAccounts = accountTree.filter(node => node.isActive);
+      const detailAccounts = activeAccounts.filter(node => 
+        !node.isSectionHeader && getAccountType(node) === 'detail'
+      );
+      
+      detailAccounts.forEach(node => {
+        const mapping = activeTemplate.columnMappings[node.accountName];
+        if (mapping && mapping.subcategory) {
+          // Template specifies a subcategory, but account doesn't have it
+          if (!node.subcategory || node.subcategory.trim() === '') {
+            missingSubcategoryAccounts.push(node);
+          }
+        }
+      });
+    }
     
-    if (stats.uncategorized > 0) {
-      // Focus on first uncategorized account
+    if (stats.uncategorized > 0 || stats.missingSubcategories > 0) {
+      // Focus on first problem account
       if (uncategorizedAccounts.length > 0) {
         setSelectedAccount(uncategorizedAccounts[0]);
+      } else if (missingSubcategoryAccounts.length > 0) {
+        setSelectedAccount(missingSubcategoryAccounts[0]);
       }
       
-      alert(`Faltan ${stats.uncategorized} cuentas por categorizar:\n\n${
-        uncategorizedAccounts.slice(0, 5).map(acc => `• ${acc.accountName}`).join('\n')
-      }${uncategorizedAccounts.length > 5 ? '\n• ...' : ''}\n\nPor favor categoriza todas las cuentas antes de guardar.`);
+      let message = '';
+      if (stats.uncategorized > 0) {
+        message += `Faltan ${stats.uncategorized} cuentas por categorizar:\n\n${
+          uncategorizedAccounts.slice(0, 5).map(acc => `• ${acc.accountName}`).join('\n')
+        }${uncategorizedAccounts.length > 5 ? '\n• ...' : ''}\n\n`;
+      }
+      
+      if (stats.missingSubcategories > 0) {
+        message += `⚠️ ${stats.missingSubcategories} subcategorías faltantes de la plantilla:\n\n${
+          missingSubcategoryAccounts.slice(0, 5).map(acc => `• ${acc.accountName}`).join('\n')
+        }${missingSubcategoryAccounts.length > 5 ? '\n• ...' : ''}\n\n`;
+      }
+      
+      message += 'Por favor completa toda la información antes de guardar.';
+      alert(message);
     } else {
       alert(`✅ Mapeo completo!\n\n${stats.total} cuentas categorizadas correctamente.\nPuedes proceder a guardar.`);
     }
@@ -1835,9 +1899,10 @@ function EnhancedMapperContent() {
                     ? 'bg-green-50' 
                     : 'bg-red-50'}
         `}
+        style={{ minHeight: '32px' }}
       >
         {/* Row Number */}
-        <td className={`px-4 py-3 ${
+        <td className={`px-3 py-1 ${
           selectedAccount?.id === node.id 
             ? 'border-l-4 border-blue-600' 
             : node.isSectionHeader 
@@ -1867,7 +1932,7 @@ function EnhancedMapperContent() {
           </td>
           
           {/* Type Selector */}
-          <td className="px-2 py-3">
+          <td className="px-2 py-1">
               {editingAccountType && selectedAccount?.id === node.id ? (
                 <select
                   value={getAccountType(node)}
@@ -1876,7 +1941,7 @@ function EnhancedMapperContent() {
                     setEditingAccountType(false);
                     setSelectedAccount(null);
                   }}
-                  className="w-full text-xs border border-gray-300 rounded px-1 py-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full text-sm border border-gray-300 rounded px-2 py-2 focus:ring-blue-500 focus:border-blue-500"
                   autoFocus
                 >
                   <option value="detail">Detail</option>
@@ -1890,7 +1955,7 @@ function EnhancedMapperContent() {
                     setSelectedAccount(node);
                     setEditingAccountType(true);
                   }}
-                  className="w-full flex items-center justify-center gap-1 py-2 px-1 rounded border border-gray-200 hover:border-blue-300 hover:bg-white transition-colors text-xs min-h-[40px]"
+                  className="w-full flex items-center justify-center gap-1 py-0.5 px-1 rounded border border-gray-200 hover:border-blue-300 hover:bg-white transition-colors text-xs min-h-[24px]"
                 >
                   {node.isSectionHeader ? (
                     <FolderIcon className="w-3 h-3 text-purple-500 flex-shrink-0" />
@@ -1928,17 +1993,17 @@ function EnhancedMapperContent() {
             </td>
             
             {/* Account Name */}
-            <td className="px-4 py-3">
+            <td className="px-3 py-1">
               <div className="flex flex-col justify-center">
-                <span className={`text-sm break-words leading-tight ${
-                  node.isSectionHeader ? 'text-purple-900 font-bold uppercase text-xs' :
+                <span className={`text-base break-words leading-relaxed ${
+                  node.isSectionHeader ? 'text-purple-900 font-bold uppercase text-sm' :
                   node.isCalculated ? 'text-amber-900 font-semibold' :
-                  node.isTotal ? 'text-slate-900 font-bold' : 'text-gray-800 font-medium'
+                  node.isTotal ? 'text-slate-900 font-bold' : 'text-gray-900 font-medium'
                 }`}>
                   {node.accountName}
                 </span>
                 {/* Add a subtle description based on type */}
-                <span className={`text-xs mt-0.5 ${
+                <span className={`text-sm mt-1 ${
                   node.isTotal ? 'text-slate-600 font-medium' : 'text-gray-500'
                 }`}>
                   {node.isSectionHeader ? 'Section Header' :
@@ -1949,7 +2014,7 @@ function EnhancedMapperContent() {
             </td>
             
             {/* Main Category */}
-            <td className="px-4 py-3">
+            <td className="px-3 py-1">
               <div className="flex gap-1">
                 <MainCategoryDropdown
                   value={node.category}
@@ -1977,7 +2042,7 @@ function EnhancedMapperContent() {
             </td>
             
             {/* Subcategory */}
-            <td className="px-4 py-3">
+            <td className="px-3 py-1">
               {getAccountType(node) === 'detail' ? (
                 <div className="relative">
                   <SubcategoryDropdown
@@ -2027,15 +2092,15 @@ function EnhancedMapperContent() {
                   )}
                 </div>
               ) : (
-                <div className="w-full p-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm">
+                <div className="w-full p-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm font-medium">
                   {node.isTotal ? '—' : node.isCalculated ? '—' : node.isSectionHeader ? '—' : 'N/A'}
                 </div>
               )}
             </td>
             
             {/* Amount */}
-            <td className="px-4 py-3 text-right">
-              <div className="flex items-center justify-end gap-2 min-h-[40px]">
+            <td className="px-4 py-4 text-right">
+              <div className="flex items-center justify-end gap-2 min-h-[48px]">
                 {/* Validation indicator on the left */}
                 {!node.isSectionHeader && (
                   <span className={`text-sm ${
@@ -2053,7 +2118,7 @@ function EnhancedMapperContent() {
                 {/* Amount on the right */}
                 {node.hasFinancialData && Object.values(node.periods).length > 0 ? (
                   <div className="text-right">
-                    <div className={`text-sm font-medium ${
+                    <div className={`text-base font-semibold ${
                       Object.values(node.periods)[0] >= 0 
                         ? 'text-green-700' 
                         : 'text-red-700'
@@ -2061,12 +2126,12 @@ function EnhancedMapperContent() {
                       {Object.values(node.periods)[0] >= 0 ? '+' : ''}
                       {Object.values(node.periods)[0]?.toLocaleString() || '0'}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-gray-500 mt-1">
                       {Object.keys(node.periods)[0]}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-400 font-medium">-</div>
+                  <div className="text-base text-gray-400 font-medium">-</div>
                 )}
               </div>
             </td>
@@ -2227,10 +2292,48 @@ function EnhancedMapperContent() {
         <div className="flex flex-col h-full bg-gray-50">
           <div className="flex-shrink-0 bg-white border-b border-gray-200">
             <div className="px-6 pt-3 pb-2">
-              <WorkflowBreadcrumbs 
-                currentStep="map-accounts" 
-                fileName={fileName}
-              />
+              <div className="flex items-center justify-between">
+                <WorkflowBreadcrumbs 
+                  currentStep="map-accounts" 
+                  fileName={fileName}
+                />
+                <div className="flex items-center gap-3">
+                  {aiAnalysisComplete && (
+                    <span className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+                      <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                      <span className="text-xs font-semibold text-green-700">AI Complete</span>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50 font-medium transition-colors"
+                  >
+                    {showPreview ? 'Ocultar' : 'Preview'}
+                  </button>
+                  <button
+                    onClick={validateMapping}
+                    className={`px-3 py-1 text-xs border rounded-md flex items-center gap-1 font-medium transition-colors ${
+                      getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0
+                        ? 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100' 
+                        : 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
+                    }`}
+                  >
+                    {getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0 ? '⚠️' : '✓'} Validate
+                  </button>
+                  <button
+                    onClick={handleComplete}
+                    disabled={getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0}
+                    className={`px-4 py-1 rounded-md flex items-center gap-1 text-xs font-semibold transition-colors ${
+                      getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                    }`}
+                  >
+                    <CheckCircleIcon className="w-4 h-4" />
+                    Save
+                  </button>
+                </div>
+              </div>
             </div>
             
             <div className="px-6 pb-3 space-y-2">
@@ -2252,54 +2355,78 @@ function EnhancedMapperContent() {
                 </div>
               )}
               
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                <h1 className="text-xl font-bold text-gray-900 truncate">Enhanced Financial Mapper</h1>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <DocumentTextIcon className="w-3 h-3" />
-                    <span className="truncate max-w-32">{fileName}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <h1 className="text-2xl font-bold text-gray-900 truncate">Enhanced Financial Mapper</h1>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <span className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-lg">
+                    <DocumentTextIcon className="w-4 h-4 text-blue-600" />
+                    <span className="truncate max-w-40 font-medium text-gray-900">{fileName}</span>
                   </span>
-                  <span>•</span>
-                  <span className="truncate max-w-24">{sheetName}</span>
-                  <span>•</span>
-                  <span className="whitespace-nowrap font-semibold text-blue-600">
-                    {accountTree.filter(n => n.isActive).length}/{accountTree.length} cuentas activas
+                  <span className="text-gray-400">•</span>
+                  <span className="truncate max-w-32 font-medium text-gray-700">{sheetName}</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-lg">
+                    <span className="text-lg font-bold text-blue-700">
+                      {accountTree.filter(n => n.isActive).length}/{accountTree.length}
+                    </span>
+                    <span className="text-sm font-medium text-blue-600">cuentas activas</span>
                   </span>
-                  <span>•</span>
-                  <span className={`whitespace-nowrap font-medium ${
-                    getValidationStats().uncategorized > 0 ? 'text-red-600' : 'text-green-600'
+                  <span className="text-gray-400">•</span>
+                  <span className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
+                    getValidationStats().uncategorized > 0 ? 'bg-red-50' : 'bg-green-50'
                   }`}>
-                    {getValidationStats().categorized}/{getValidationStats().total} mapeadas
+                    <span className={`text-lg font-bold ${
+                      getValidationStats().uncategorized > 0 ? 'text-red-700' : 'text-green-700'
+                    }`}>
+                      {getValidationStats().categorized}/{getValidationStats().total}
+                    </span>
+                    <span className={`text-sm font-medium ${
+                      getValidationStats().uncategorized > 0 ? 'text-red-600' : 'text-green-600'
+                    }`}>mapeadas</span>
                   </span>
-                  <span>•</span>
-                  <div className="flex items-center gap-1">
-                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <span className="text-gray-400">•</span>
+                  {getValidationStats().missingSubcategories > 0 && (
+                    <>
+                      <span className="flex items-center gap-2 px-3 py-1 rounded-lg bg-yellow-50">
+                        <span className="text-lg font-bold text-yellow-700">
+                          {getValidationStats().missingSubcategories}
+                        </span>
+                        <span className="text-sm font-medium text-yellow-600">subcategorías faltantes</span>
+                      </span>
+                      <span className="text-gray-400">•</span>
+                    </>
+                  )}
+                  <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-lg">
+                    <div className="w-20 h-3 bg-gray-200 rounded-full overflow-hidden">
                       <div 
                         className={`h-full transition-all duration-300 ${
-                          getValidationStats().uncategorized > 0 ? 'bg-red-500' : 'bg-green-500'
+                          getValidationStats().uncategorized > 0 ? 'bg-red-500' : 'bg-emerald-500'
                         }`}
                         style={{ width: `${getValidationStats().completionPercentage}%` }}
                       />
                     </div>
-                    <span className={`text-xs font-medium ${
-                      getValidationStats().uncategorized > 0 ? 'text-red-600' : 'text-green-600'
+                    <span className={`text-xl font-bold ${
+                      getValidationStats().uncategorized > 0 ? 'text-red-700' : 'text-emerald-700'
                     }`}>
                       {Math.round(getValidationStats().completionPercentage)}%
                     </span>
                   </div>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <CalendarIcon className="w-3 h-3" />
-                    <span className="whitespace-nowrap font-medium text-purple-600">
-                      {periodColumns.length} periodos con datos
-                    </span>
+                  <span className="text-gray-400">•</span>
+                  <span className="flex items-center gap-2 bg-purple-50 px-3 py-1 rounded-lg">
+                    <CalendarIcon className="w-4 h-4 text-purple-600" />
+                    <span className="text-lg font-bold text-purple-700">{periodColumns.length}</span>
+                    <span className="text-sm font-medium text-purple-600">períodos con datos</span>
                   </span>
                   {actualDataRange && (
                     <>
-                      <span>•</span>
-                      <span className="text-xs text-green-600 font-medium max-w-40 truncate">
-                        {actualDataRange.first} → {actualDataRange.last}
+                      <span className="text-gray-400">•</span>
+                      <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg">
+                        <span className="text-sm font-medium text-gray-700 max-w-40 truncate">
+                          {actualDataRange.first} → {actualDataRange.last}
+                        </span>
                       </span>
                     </>
                   )}
@@ -2323,43 +2450,6 @@ function EnhancedMapperContent() {
                   )}
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {aiAnalysisComplete && (
-                  <span className="flex items-center gap-1 text-xs text-green-600">
-                    <CheckCircleIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">AI Complete</span>
-                  </span>
-                )}
-                <button
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  {showPreview ? 'Ocultar' : 'Preview'}
-                </button>
-                <button
-                  onClick={validateMapping}
-                  className={`px-3 py-1.5 text-xs border rounded-lg flex items-center gap-1 ${
-                    getValidationStats().uncategorized > 0 
-                      ? 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100' 
-                      : 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
-                  }`}
-                >
-                  {getValidationStats().uncategorized > 0 ? '⚠️' : '✓'} Validate
-                </button>
-                <button
-                  onClick={handleComplete}
-                  disabled={getValidationStats().uncategorized > 0}
-                  className={`px-4 py-1.5 rounded-lg flex items-center gap-1 text-xs ${
-                    getValidationStats().uncategorized > 0
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  <CheckCircleIcon className="w-4 h-4" />
-                  Save
-                </button>
-                </div>
               </div>
             </div>
           </div>
@@ -2394,17 +2484,17 @@ function EnhancedMapperContent() {
               </div>
               
               {/* Table Container */}
-              <div className="flex-1 overflow-auto">
-                <table className="w-full min-w-full table-fixed">
+              <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
+                <table className="w-full min-w-full table-fixed bg-white">
                   {/* Column Headers */}
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.row}%` }}>Row</th>
-                      <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.type}%` }}>Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.account}%` }}>Account Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.mainCategory}%` }}>Main Category</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.subcategory}%` }}>Subcategory</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide" style={{ width: `${columnWidths.amount}%` }}>Amount</th>
+                    <tr className="bg-gray-100 border-b-2 border-gray-300">
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.row}%` }}>Row</th>
+                      <th className="px-2 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.type}%` }}>Type</th>
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.account}%` }}>Account Name</th>
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.mainCategory}%` }}>Main Category</th>
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.subcategory}%` }}>Subcategory</th>
+                      <th className="px-3 py-1 text-right text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.amount}%` }}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2425,9 +2515,9 @@ function EnhancedMapperContent() {
                             <tr className="bg-blue-50">
                               <td className="px-4 py-3 border-l-4 border-blue-300">1</td>
                               <td className="px-2 py-3">Det</td>
-                              <td className="px-4 py-3">Test Account</td>
-                              <td className="px-4 py-3">Revenue</td>
-                              <td className="px-4 py-3">Sales</td>
+                              <td className="px-3 py-1">Test Account</td>
+                              <td className="px-3 py-1">Revenue</td>
+                              <td className="px-3 py-1">Sales</td>
                               <td className="px-4 py-3 text-right">$100</td>
                             </tr>
                           </>
