@@ -94,14 +94,34 @@ function CompanyAdminDashboard() {
   };
 
   const fetchFinancialStatements = async (companyId: string) => {
+    console.log('Fetching financial statements for company:', companyId);
     setLoadingStatements(true);
     try {
       const response = await fetch(`/api/v1/companies/${companyId}/statements`);
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        if (Array.isArray(data.data)) {
+        console.log('Financial statements data:', data);
+        
+        if (data.success && data.data?.statements && Array.isArray(data.data.statements)) {
+          // Sort statements by periodEnd in descending order (newest first)
+          const sortedStatements = data.data.statements.sort((a: any, b: any) => {
+            return new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime();
+          });
+          setFinancialStatements(sortedStatements);
+          console.log('Set financial statements:', sortedStatements.length, 'records');
+        } else if (Array.isArray(data.data)) {
+          // Fallback for flat array response
           setFinancialStatements(data.data);
+        } else {
+          console.warn('Unexpected data structure:', data);
+          // Log the actual structure to help debug
+          console.log('data.data structure:', data.data);
         }
+      } else {
+        const errorData = await response.json();
+        console.error('API error:', errorData);
       }
     } catch (error) {
       console.error('Error fetching financial statements:', error);
@@ -277,7 +297,12 @@ function CompanyAdminDashboard() {
                         </div>
                         <div className="bg-green-50 rounded-lg p-4">
                           <div className="text-2xl font-bold text-green-700">
-                            {financialStatements[0]?.month} {financialStatements[0]?.year}
+                            {financialStatements[0]?.periodEnd ? 
+                              new Date(financialStatements[0].periodEnd).toLocaleDateString(locale || 'es-MX', { 
+                                month: 'short', 
+                                year: 'numeric' 
+                              }) : 'N/A'
+                            }
                           </div>
                           <div className="text-sm text-green-600">
                             {locale?.startsWith('es') ? 'Último período' : 'Latest period'}
@@ -305,7 +330,13 @@ function CompanyAdminDashboard() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                           {financialStatements.map((stmt, idx) => (
                             <div key={idx} className="bg-gray-50 rounded px-3 py-2 text-sm text-gray-700">
-                              {stmt.month} {stmt.year}
+                              {stmt.periodEnd ? 
+                                new Date(stmt.periodEnd).toLocaleDateString(locale || 'es-MX', { 
+                                  month: 'short', 
+                                  year: 'numeric' 
+                                }) : 
+                                `Period ${idx + 1}`
+                              }
                             </div>
                           ))}
                         </div>
