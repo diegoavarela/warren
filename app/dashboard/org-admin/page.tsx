@@ -46,6 +46,10 @@ function OrgAdminDashboard() {
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
+    // Clear any selected company context when navigating to org admin
+    sessionStorage.removeItem('selectedCompanyId');
+    sessionStorage.removeItem('selectedCompanyName');
+    
     fetchCompanies();
     if (organization?.id) {
       fetchTemplates();
@@ -163,6 +167,10 @@ function OrgAdminDashboard() {
   const handleSelectCompany = (companyId: string) => {
     // Store the selected company in session storage for company admin context
     sessionStorage.setItem('selectedCompanyId', companyId);
+    const company = companies.find(c => c.id === companyId);
+    if (company) {
+      sessionStorage.setItem('selectedCompanyName', company.name);
+    }
     router.push('/dashboard/company-admin');
   };
 

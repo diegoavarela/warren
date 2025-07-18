@@ -20,9 +20,12 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   UsersIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
+import { validatePeriods, getPeriodValidationStatus } from '@/lib/utils/period-validation';
+import { DetectedPeriod } from '@/lib/utils/period-detection';
 
 interface Company {
   id: string;
@@ -36,14 +39,92 @@ interface Company {
   createdAt: Date;
 }
 
+// Helper functions for dashboard data
+function formatPeriodRange(statements: any[], locale?: string): string {
+  if (!statements || statements.length === 0) return '';
+  
+  const sortedStatements = [...statements].sort((a, b) => 
+    new Date(a.periodStart || a.periodEnd).getTime() - new Date(b.periodStart || b.periodEnd).getTime()
+  );
+  
+  const firstPeriod = sortedStatements[0];
+  const lastPeriod = sortedStatements[sortedStatements.length - 1];
+  
+  const startDate = new Date(firstPeriod.periodStart || firstPeriod.periodEnd);
+  const endDate = new Date(lastPeriod.periodEnd);
+  
+  const formatOptions: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric' };
+  
+  return `${startDate.toLocaleDateString(locale || 'es-MX', formatOptions)} - ${endDate.toLocaleDateString(locale || 'es-MX', formatOptions)}`;
+}
+
+function formatLastUpload(statements: any[], locale?: string): string {
+  if (!statements || statements.length === 0) return '';
+  
+  const latestStatement = statements.reduce((latest, current) => {
+    const latestDate = new Date(latest.updatedAt || latest.createdAt);
+    const currentDate = new Date(current.updatedAt || current.createdAt);
+    return currentDate > latestDate ? current : latest;
+  });
+  
+  const uploadDate = new Date(latestStatement.updatedAt || latestStatement.createdAt);
+  return uploadDate.toLocaleDateString(locale || 'es-MX', { 
+    day: '2-digit', 
+    month: 'short', 
+    year: 'numeric' 
+  });
+}
+
+async function getTemplateName(statements: any[], companyId: string): Promise<string> {
+  if (!statements || statements.length === 0) return 'Standard Template v1.0';
+  
+  try {
+    // Get the most recent statement to check for template information
+    const latestStatement = statements.reduce((latest, current) => {
+      const latestDate = new Date(latest.updatedAt || latest.createdAt);
+      const currentDate = new Date(current.updatedAt || current.createdAt);
+      return currentDate > latestDate ? current : latest;
+    });
+
+    // Try to get template information from mapping templates
+    const response = await fetch(`/api/v1/templates?companyId=${companyId}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data?.length > 0) {
+        // Find the most recently used template or default template
+        const templates = data.data;
+        const defaultTemplate = templates.find((t: any) => t.isDefault);
+        const mostRecentTemplate = templates.reduce((latest: any, current: any) => {
+          if (!latest) return current;
+          const latestDate = new Date(latest.lastUsedAt || latest.createdAt);
+          const currentDate = new Date(current.lastUsedAt || current.createdAt);
+          return currentDate > latestDate ? current : latest;
+        });
+        
+        const template = mostRecentTemplate || defaultTemplate || templates[0];
+        return template.templateName || 'Standard Template v1.0';
+      }
+    }
+  } catch (error) {
+    console.warn('Could not fetch template information:', error);
+  }
+  
+  return 'Standard Template v1.0';
+}
+
 function CompanyAdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
   const { locale } = useLocale();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [financialStatements, setFinancialStatements] = useState<any[]>([]);
+  const [pnlStatements, setPnlStatements] = useState<any[]>([]);
+  const [cashFlowStatements, setCashFlowStatements] = useState<any[]>([]);
   const [loadingStatements, setLoadingStatements] = useState(false);
+  const [pnlTemplateName, setPnlTemplateName] = useState('Standard Template v1.0');
+  const [cashFlowTemplateName, setCashFlowTemplateName] = useState('Standard Template v1.0');
+  const [pnlTemplates, setPnlTemplates] = useState<any[]>([]);
+  const [cashFlowTemplates, setCashFlowTemplates] = useState<any[]>([]);
 
   useEffect(() => {
     fetchCompanies();
@@ -65,8 +146,15 @@ function CompanyAdminDashboard() {
   useEffect(() => {
     if (selectedCompanyId) {
       fetchFinancialStatements(selectedCompanyId);
+      fetchTemplates(selectedCompanyId);
+      
+      // If company is selected and we have the companies list, store the company name
+      const company = companies.find(c => c.id === selectedCompanyId);
+      if (company) {
+        sessionStorage.setItem('selectedCompanyName', company.name);
+      }
     }
-  }, [selectedCompanyId]);
+  }, [selectedCompanyId, companies]);
 
   const fetchCompanies = async () => {
     try {
@@ -93,6 +181,37 @@ function CompanyAdminDashboard() {
     return companies.find(company => company.id === selectedCompanyId);
   };
 
+  const fetchTemplates = async (companyId: string) => {
+    try {
+      console.log('Fetching templates for company:', companyId);
+      const response = await fetch(`/api/v1/templates?companyId=${companyId}`);
+      console.log('Templates response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Templates data:', data);
+        
+        if (data.success && Array.isArray(data.data)) {
+          // Separate templates by type
+          const pnl = data.data.filter((t: any) => 
+            t.statementType === 'profit_loss' || t.statementType === 'pnl' || t.statementType === 'income_statement'
+          );
+          const cashFlow = data.data.filter((t: any) => 
+            t.statementType === 'cash_flow' || t.statementType === 'cashflow'
+          );
+          console.log('P&L templates:', pnl.length);
+          console.log('Cash Flow templates:', cashFlow.length);
+          setPnlTemplates(pnl);
+          setCashFlowTemplates(cashFlow);
+        }
+      } else {
+        console.error('Failed to fetch templates:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    }
+  };
+
   const fetchFinancialStatements = async (companyId: string) => {
     console.log('Fetching financial statements for company:', companyId);
     setLoadingStatements(true);
@@ -109,15 +228,39 @@ function CompanyAdminDashboard() {
           const sortedStatements = data.data.statements.sort((a: any, b: any) => {
             return new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime();
           });
-          setFinancialStatements(sortedStatements);
-          console.log('Set financial statements:', sortedStatements.length, 'records');
+          
+          // Separate P&L and Cash Flow statements
+          const pnlData = sortedStatements.filter((stmt: any) => 
+            stmt.statementType === 'profit_loss' || stmt.statementType === 'pnl' || !stmt.statementType
+          );
+          const cashFlowData = sortedStatements.filter((stmt: any) => 
+            stmt.statementType === 'cash_flow' || stmt.statementType === 'cashflow'
+          );
+          
+          setPnlStatements(pnlData);
+          setCashFlowStatements(cashFlowData);
+          console.log('Set P&L statements:', pnlData.length, 'records');
+          console.log('Set Cash Flow statements:', cashFlowData.length, 'records');
+          
+          // Load template names for each statement type
+          if (pnlData.length > 0) {
+            getTemplateName(pnlData, companyId).then(setPnlTemplateName);
+          }
+          if (cashFlowData.length > 0) {
+            getTemplateName(cashFlowData, companyId).then(setCashFlowTemplateName);
+          }
         } else if (Array.isArray(data.data)) {
-          // Fallback for flat array response
-          setFinancialStatements(data.data);
+          // Fallback for flat array response - assume P&L for backward compatibility
+          const sortedStatements = data.data.sort((a: any, b: any) => {
+            return new Date(b.periodEnd || b.createdAt).getTime() - new Date(a.periodEnd || a.createdAt).getTime();
+          });
+          setPnlStatements(sortedStatements);
+          setCashFlowStatements([]);
         } else {
           console.warn('Unexpected data structure:', data);
-          // Log the actual structure to help debug
           console.log('data.data structure:', data.data);
+          setPnlStatements([]);
+          setCashFlowStatements([]);
         }
       } else {
         const errorData = await response.json();
@@ -127,6 +270,41 @@ function CompanyAdminDashboard() {
       console.error('Error fetching financial statements:', error);
     } finally {
       setLoadingStatements(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm(locale?.startsWith('es') ? '¿Estás seguro de eliminar esta plantilla?' : 'Are you sure you want to delete this template?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/templates/${templateId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Refresh templates list
+        fetchTemplates(selectedCompanyId);
+      } else {
+        alert(locale?.startsWith('es') ? 'Error al eliminar plantilla' : 'Failed to delete template');
+      }
+    } catch (error) {
+      alert(locale?.startsWith('es') ? 'Error de red' : 'Network error');
+    }
+  };
+
+  const formatPeriodRange = (template: any) => {
+    if (!template.periodStart || !template.periodEnd) return '';
+    
+    try {
+      const start = new Date(template.periodStart);
+      const end = new Date(template.periodEnd);
+      const options: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric' };
+      
+      return `${start.toLocaleDateString(locale || 'es-MX', options)} - ${end.toLocaleDateString(locale || 'es-MX', options)}`;
+    } catch (e) {
+      return '';
     }
   };
 
@@ -196,7 +374,10 @@ function CompanyAdminDashboard() {
                         <tr 
                           key={company.id} 
                           className="hover:bg-gray-50 cursor-pointer transition-colors"
-                          onClick={() => setSelectedCompanyId(company.id)}
+                          onClick={() => {
+                            setSelectedCompanyId(company.id);
+                            sessionStorage.setItem('selectedCompanyName', company.name);
+                          }}
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
@@ -260,6 +441,7 @@ function CompanyAdminDashboard() {
                 onClick={() => {
                   setSelectedCompanyId('');
                   sessionStorage.removeItem('selectedCompanyId');
+                  sessionStorage.removeItem('selectedCompanyName');
                 }}
                 className="mb-2"
               >
@@ -269,117 +451,242 @@ function CompanyAdminDashboard() {
           ) : null}
 
           {selectedCompanyId ? (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {locale?.startsWith('es') ? 'Datos Financieros' : 'Financial Data'}
-                  </CardTitle>
-                  <CardDescription>
-                    {locale?.startsWith('es') 
-                      ? 'Resumen de datos financieros disponibles'
-                      : 'Overview of available financial data'}
-                  </CardDescription>
-                </CardHeader>
-                <CardBody>
-                  {loadingStatements ? (
-                    <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-                  ) : financialStatements.length > 0 ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-blue-50 rounded-lg p-4">
-                          <div className="text-2xl font-bold text-blue-700">{financialStatements.length}</div>
-                          <div className="text-sm text-blue-600">
-                            {locale?.startsWith('es') ? 'Períodos cargados' : 'Periods uploaded'}
+            <div className="space-y-6">
+              {loadingStatements ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* P&L Column */}
+                  <div className="space-y-4">
+                    {/* P&L Dashboard Card */}
+                    <Card className="border-2 border-blue-100">
+                    <CardBody className="p-6">
+                      <div className="flex items-center mb-4">
+                        <ChartBarIcon className="w-8 h-8 text-blue-600 mr-3" />
+                        <h3 className="text-xl font-semibold text-gray-900">
+                          {locale?.startsWith('es') ? 'Dashboard P&L' : 'P&L Dashboard'}
+                        </h3>
+                      </div>
+                      
+                      {pnlStatements.length > 0 ? (
+                        <div className="space-y-4">
+                          <div className="border-l-4 border-blue-500 pl-4 space-y-2">
+                            <div className="text-sm text-gray-600">
+                              <strong>{locale?.startsWith('es') ? 'Última subida:' : 'Last upload:'}</strong> {formatLastUpload(pnlStatements, locale)}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <strong>{locale?.startsWith('es') ? 'Período:' : 'Period:'}</strong> {formatPeriodRange(pnlStatements)}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <strong>{locale?.startsWith('es') ? 'Plantilla:' : 'Template:'}</strong> {pnlTemplateName}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                              variant="primary"
+                              onClick={() => {
+                                sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                                router.push('/dashboard/company-admin/pnl');
+                              }}
+                              leftIcon={<ChartBarIcon className="w-4 h-4" />}
+                              className="flex-1"
+                            >
+                              {locale?.startsWith('es') ? 'Ver Dashboard' : 'See Dashboard'}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={() => {
+                                sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                                router.push('/upload');
+                              }}
+                              leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
+                              className="flex-1"
+                            >
+                              {locale?.startsWith('es') ? 'Subir Nuevos Datos' : 'Upload New Data'}
+                            </Button>
                           </div>
                         </div>
-                        <div className="bg-green-50 rounded-lg p-4">
-                          <div className="text-2xl font-bold text-green-700">
-                            {financialStatements[0]?.periodEnd ? 
-                              new Date(financialStatements[0].periodEnd).toLocaleDateString(locale || 'es-MX', { 
-                                month: 'short', 
-                                year: 'numeric' 
-                              }) : 'N/A'
-                            }
+                      ) : (
+                        <div className="text-center py-6">
+                          <div className="text-gray-500 mb-4">
+                            {locale?.startsWith('es') ? 'No hay datos subidos aún' : 'No data uploaded yet'}
                           </div>
-                          <div className="text-sm text-green-600">
-                            {locale?.startsWith('es') ? 'Último período' : 'Latest period'}
-                          </div>
-                        </div>
-                        <div className="bg-purple-50 rounded-lg p-4">
                           <Button
                             variant="primary"
-                            size="sm"
                             onClick={() => {
                               sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                              router.push('/dashboard/company-admin/pnl');
+                              router.push('/upload');
                             }}
-                            leftIcon={<ChartBarIcon className="w-4 h-4" />}
+                            leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
                           >
-                            {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
+                            {locale?.startsWith('es') ? 'Subir Datos' : 'Upload Data'}
                           </Button>
                         </div>
-                      </div>
-                      
-                      <div className="border-t pt-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">
-                          {locale?.startsWith('es') ? 'Períodos disponibles' : 'Available periods'}
-                        </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          {financialStatements.map((stmt, idx) => (
-                            <div key={idx} className="bg-gray-50 rounded px-3 py-2 text-sm text-gray-700">
-                              {stmt.periodEnd ? 
-                                new Date(stmt.periodEnd).toLocaleDateString(locale || 'es-MX', { 
-                                  month: 'short', 
-                                  year: 'numeric' 
-                                }) : 
-                                `Period ${idx + 1}`
-                              }
+                      )}
+                    </CardBody>
+                  </Card>
+
+                  {/* P&L Templates List */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                      {locale?.startsWith('es') ? 'Plantillas P&L:' : 'P&L Templates:'}
+                    </h4>
+                    {pnlTemplates.length > 0 ? (
+                      pnlTemplates.map((template) => (
+                        <Card key={template.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                          <CardBody className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{template.templateName}</p>
+                                <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
+                                  <span>{locale?.startsWith('es') ? 'Creada:' : 'Created:'} {new Date(template.createdAt).toLocaleDateString(locale || 'es-MX', { month: 'short', day: 'numeric' })}</span>
+                                  {template.periodStart && template.periodEnd && (
+                                    <span>{locale?.startsWith('es') ? 'Período:' : 'Period:'} {formatPeriodRange(template)}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </Button>
                             </div>
-                          ))}
-                        </div>
+                          </CardBody>
+                        </Card>
+                      ))
+                    ) : (
+                      <Card className="border border-gray-200">
+                        <CardBody className="p-3 text-center">
+                          <p className="text-sm text-gray-500">
+                            {locale?.startsWith('es') ? 'No hay plantillas P&L guardadas' : 'No P&L templates saved'}
+                          </p>
+                        </CardBody>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cash Flow Column */}
+                <div className="space-y-4">
+                  {/* Cash Flow Dashboard Card */}
+                  <Card className="border-2 border-green-100">
+                    <CardBody className="p-6">
+                      <div className="flex items-center mb-4">
+                        <BanknotesIcon className="w-8 h-8 text-green-600 mr-3" />
+                        <h3 className="text-xl font-semibold text-gray-900">
+                          {locale?.startsWith('es') ? 'Dashboard Cash Flow' : 'Cash Flow Dashboard'}
+                        </h3>
                       </div>
                       
-                      <div className="flex justify-center pt-4">
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                            router.push('/upload');
-                          }}
-                          leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
-                        >
-                          {locale?.startsWith('es') ? 'Cargar más períodos' : 'Upload more periods'}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <ChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        {locale?.startsWith('es') ? 'Sin datos financieros' : 'No financial data'}
-                      </h3>
-                      <p className="text-gray-600 mb-6">
-                        {locale?.startsWith('es') 
-                          ? 'Sube tu primer documento financiero para comenzar'
-                          : 'Upload your first financial document to get started'}
-                      </p>
-                      <Button
-                        variant="primary"
-                        onClick={() => {
-                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                          router.push('/upload');
-                        }}
-                        leftIcon={<CloudArrowUpIcon className="w-5 h-5" />}
-                      >
-                        {locale?.startsWith('es') ? 'Subir Primer Documento' : 'Upload First Document'}
-                      </Button>
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
+                      {cashFlowStatements.length > 0 ? (
+                        <div className="space-y-4">
+                          <div className="border-l-4 border-green-500 pl-4 space-y-2">
+                            <div className="text-sm text-gray-600">
+                              <strong>{locale?.startsWith('es') ? 'Última subida:' : 'Last upload:'}</strong> {formatLastUpload(cashFlowStatements, locale)}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <strong>{locale?.startsWith('es') ? 'Período:' : 'Period:'}</strong> {formatPeriodRange(cashFlowStatements)}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <strong>{locale?.startsWith('es') ? 'Plantilla:' : 'Template:'}</strong> {cashFlowTemplateName}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                              variant="primary"
+                              onClick={() => {
+                                sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                                router.push('/dashboard/company-admin/cashflow');
+                              }}
+                              leftIcon={<BanknotesIcon className="w-4 h-4" />}
+                              className="flex-1"
+                            >
+                              {locale?.startsWith('es') ? 'Ver Dashboard' : 'See Dashboard'}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={() => {
+                                sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                                router.push('/upload');
+                              }}
+                              leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
+                              className="flex-1"
+                            >
+                              {locale?.startsWith('es') ? 'Subir Nuevos Datos' : 'Upload New Data'}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6">
+                          <div className="text-gray-500 mb-4">
+                            {locale?.startsWith('es') ? 'No hay datos subidos aún' : 'No data uploaded yet'}
+                          </div>
+                          <Button
+                            variant="primary"
+                            onClick={() => {
+                              sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                              router.push('/upload');
+                            }}
+                            leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
+                          >
+                            {locale?.startsWith('es') ? 'Subir Datos' : 'Upload Data'}
+                          </Button>
+                        </div>
+                      )}
+                    </CardBody>
+                  </Card>
+
+                  {/* Cash Flow Templates List */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                      {locale?.startsWith('es') ? 'Plantillas Cash Flow:' : 'Cash Flow Templates:'}
+                    </h4>
+                    {cashFlowTemplates.length > 0 ? (
+                      cashFlowTemplates.map((template) => (
+                        <Card key={template.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                          <CardBody className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{template.templateName}</p>
+                                <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
+                                  <span>{locale?.startsWith('es') ? 'Creada:' : 'Created:'} {new Date(template.createdAt).toLocaleDateString(locale || 'es-MX', { month: 'short', day: 'numeric' })}</span>
+                                  {template.periodStart && template.periodEnd && (
+                                    <span>{locale?.startsWith('es') ? 'Período:' : 'Period:'} {formatPeriodRange(template)}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))
+                    ) : (
+                      <Card className="border border-gray-200">
+                        <CardBody className="p-3 text-center">
+                          <p className="text-sm text-gray-500">
+                            {locale?.startsWith('es') ? 'No hay plantillas Cash Flow guardadas' : 'No Cash Flow templates saved'}
+                          </p>
+                        </CardBody>
+                      </Card>
+                    )}
+                  </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
         </div>

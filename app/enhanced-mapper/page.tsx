@@ -20,14 +20,14 @@ import {
   CalendarIcon,
   BuildingOfficeIcon,
   ArrowPathIcon,
-  QuestionMarkCircleIcon
+  QuestionMarkCircleIcon,
+  ChartBarIcon
 } from "@heroicons/react/24/outline";
 import { detectTotalRows, TotalDetectionResult } from "@/lib/total-detection";
 import { LocalAccountClassifier } from "@/lib/local-classifier";
 import { useTranslation } from "@/lib/translations";
 import { MainCategoryDropdown } from "@/components/MainCategoryDropdown";
 import { SubcategoryDropdown } from "@/components/SubcategoryDropdown";
-import { WorkflowBreadcrumbs } from "@/components/Breadcrumbs";
 
 interface AccountNode {
   id: string;
@@ -70,6 +70,7 @@ function EnhancedMapperContent() {
   const [detectedStructure, setDetectedStructure] = useState<any>(null);
   const [periodColumns, setPeriodColumns] = useState<any[]>([]);
   const [currency, setCurrency] = useState<string>("USD");
+  const [units, setUnits] = useState<string>("normal");
   const [showPreview, setShowPreview] = useState(true);
   const [showCategoryManagement, setShowCategoryManagement] = useState(false);
   
@@ -95,28 +96,32 @@ function EnhancedMapperContent() {
   
   // Column width states for resizable columns
   const [columnWidths, setColumnWidths] = useState({
-    row: 6, // Row numbers - bigger for better visibility
-    type: 10, // Type selector - more space for readability
-    account: 28, // Account name - more space for longer names
-    mainCategory: 22, // Main category
-    subcategory: 22, // Subcategory  
-    amount: 12 // Amount column - less space, right-aligned
+    row: 5, // Row numbers
+    type: 8, // Type selector
+    account: 22, // Account name - reduced for better layout
+    mainCategory: 28, // Main category - increased for better visibility
+    subcategory: 25, // Subcategory  
+    amount: 12 // Amount column - right-aligned
     // Total: 100% - uses full width
   });
-  // Main categories structure
-  const [mainCategories] = useState([
-    { value: 'revenue', label: 'Revenue', isInflow: true, isOutflow: false },
-    { value: 'cogs', label: 'Cost of Sales', isInflow: false, isOutflow: true },
-    { value: 'operating_expenses', label: 'Operating Expenses', isInflow: false, isOutflow: true },
-    { value: 'financial_expenses', label: 'Financial Expenses', isInflow: false, isOutflow: true },
-    { value: 'other_income_expense', label: 'Other Income Expense', isInflow: true, isOutflow: true },
-    { value: 'earnings_before_tax', label: 'Earnings Before Tax', isInflow: true, isOutflow: true },
-    { value: 'taxes', label: 'Taxes', isInflow: false, isOutflow: true },
-    { value: 'profitability_metrics', label: 'Profitability Metrics', isInflow: false, isOutflow: true },
-    { value: 'margin_ratios', label: 'Margin & Ratios', isInflow: false, isOutflow: true },
-    { value: 'financial_calculations', label: 'Financial Calculations', isInflow: false, isOutflow: true },
-    { value: 'other', label: 'Other', isInflow: false, isOutflow: true }
-  ]);
+  // Main categories structure with locale-based labels
+  const mainCategories = [
+    // Regular account categories
+    { value: 'revenue', label: locale?.startsWith('es') ? 'Ingresos' : 'Revenue', isInflow: true, isOutflow: false },
+    { value: 'cogs', label: locale?.startsWith('es') ? 'Costo de Ventas' : 'Cost of Sales', isInflow: false, isOutflow: true },
+    { value: 'operating_expenses', label: locale?.startsWith('es') ? 'Gastos Operativos' : 'Operating Expenses', isInflow: false, isOutflow: true },
+    { value: 'other_income', label: locale?.startsWith('es') ? 'Otros Ingresos' : 'Other Income', isInflow: true, isOutflow: false },
+    { value: 'other_expenses', label: locale?.startsWith('es') ? 'Otros Gastos' : 'Other Expenses', isInflow: false, isOutflow: true },
+    { value: 'taxes', label: locale?.startsWith('es') ? 'Impuestos' : 'Taxes', isInflow: false, isOutflow: true },
+    
+    // Special categories for totals and calculations
+    { value: 'total', label: locale?.startsWith('es') ? '📊 Total (ej. Ingresos Totales, Utilidad Bruta)' : '📊 Total (e.g., Total Revenue, Gross Profit)', isInflow: true, isOutflow: false },
+    { value: 'margin', label: locale?.startsWith('es') ? '📈 Margen % (ej. Margen Bruto %, Margen Neto %)' : '📈 Margin % (e.g., Gross Margin %, Net Margin %)', isInflow: false, isOutflow: false },
+    { value: 'calculation', label: locale?.startsWith('es') ? '🧮 Cálculo (ej. EBITDA, Utilidad Operativa)' : '🧮 Calculation (e.g., EBITDA, Operating Income)', isInflow: true, isOutflow: false },
+    
+    // Other
+    { value: 'other', label: locale?.startsWith('es') ? 'Otro' : 'Other', isInflow: false, isOutflow: true }
+  ];
 
   // Subcategories organized by income/outcome type
   const [subcategoriesData] = useState({
@@ -800,6 +805,11 @@ function EnhancedMapperContent() {
       // Set currency if available from uploaded file
       if (uploadedFile.currency) {
         setCurrency(uploadedFile.currency);
+      }
+      
+      // Set units if available from uploaded file
+      if (uploadedFile.selectedUnits) {
+        setUnits(uploadedFile.selectedUnits);
       }
       
       // Check if auto-template mode is enabled
@@ -1995,15 +2005,17 @@ function EnhancedMapperContent() {
             {/* Account Name */}
             <td className="px-3 py-1">
               <div className="flex flex-col justify-center">
-                <span className={`text-base break-words leading-relaxed ${
-                  node.isSectionHeader ? 'text-purple-900 font-bold uppercase text-sm' :
+                <span className={`text-sm line-clamp-2 ${
+                  node.isSectionHeader ? 'text-purple-900 font-bold uppercase' :
                   node.isCalculated ? 'text-amber-900 font-semibold' :
                   node.isTotal ? 'text-slate-900 font-bold' : 'text-gray-900 font-medium'
-                }`}>
+                }`}
+                title={node.accountName}
+                >
                   {node.accountName}
                 </span>
                 {/* Add a subtle description based on type */}
-                <span className={`text-sm mt-1 ${
+                <span className={`text-xs mt-1 ${
                   node.isTotal ? 'text-slate-600 font-medium' : 'text-gray-500'
                 }`}>
                   {node.isSectionHeader ? 'Section Header' :
@@ -2016,15 +2028,17 @@ function EnhancedMapperContent() {
             {/* Main Category */}
             <td className="px-3 py-1">
               <div className="flex gap-1">
-                <MainCategoryDropdown
-                  value={node.category}
-                  onChange={(mainCategory) => {
-                    updateAccountCategoryAndSubcategory(node.id, mainCategory, '');
-                  }}
-                  categories={mainCategories}
-                  placeholder="Select main category..."
-                  className="flex-1"
-                />
+                <div className="flex-1 min-w-0">
+                  <MainCategoryDropdown
+                    value={node.category}
+                    onChange={(mainCategory) => {
+                      updateAccountCategoryAndSubcategory(node.id, mainCategory, '');
+                    }}
+                    categories={mainCategories}
+                    placeholder="Select main category..."
+                    className="w-full"
+                  />
+                </div>
                 
                 {/* Apply to Children Button */}
                 {node.isSectionHeader && 
@@ -2044,7 +2058,7 @@ function EnhancedMapperContent() {
             {/* Subcategory */}
             <td className="px-3 py-1">
               {getAccountType(node) === 'detail' ? (
-                <div className="relative">
+                <div className="relative min-w-0">
                   <SubcategoryDropdown
                     value={node.subcategory || ''}
                     onChange={(subcategory) => {
@@ -2135,7 +2149,7 @@ function EnhancedMapperContent() {
                 )}
               </div>
             </td>
-      </tr>
+          </tr>
     ));
   };
 
@@ -2234,6 +2248,7 @@ function EnhancedMapperContent() {
     const accountMapping = {
       statementType: detectedStructure?.statementType || 'profit_loss',
       currency: currency,
+      units: units,
       periodColumns: getValidPeriodColumns(),
       accounts: allAccounts,
       hierarchyDetected: true,
@@ -2258,7 +2273,8 @@ function EnhancedMapperContent() {
       accountsCount: allAccounts.length,
       companyId: selectedCompanyId,
       statementType: accountMapping.statementType,
-      currency: accountMapping.currency
+      currency: accountMapping.currency,
+      units: accountMapping.units
     });
     
     // Store for persistence
@@ -2291,50 +2307,6 @@ function EnhancedMapperContent() {
       <AppLayout showFooter={false}>
         <div className="flex flex-col h-full bg-gray-50">
           <div className="flex-shrink-0 bg-white border-b border-gray-200">
-            <div className="px-6 pt-3 pb-2">
-              <div className="flex items-center justify-between">
-                <WorkflowBreadcrumbs 
-                  currentStep="map-accounts" 
-                  fileName={fileName}
-                />
-                <div className="flex items-center gap-3">
-                  {aiAnalysisComplete && (
-                    <span className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
-                      <CheckCircleIcon className="w-4 h-4 text-green-600" />
-                      <span className="text-xs font-semibold text-green-700">AI Complete</span>
-                    </span>
-                  )}
-                  <button
-                    onClick={() => setShowPreview(!showPreview)}
-                    className="px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50 font-medium transition-colors"
-                  >
-                    {showPreview ? 'Ocultar' : 'Preview'}
-                  </button>
-                  <button
-                    onClick={validateMapping}
-                    className={`px-3 py-1 text-xs border rounded-md flex items-center gap-1 font-medium transition-colors ${
-                      getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0
-                        ? 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100' 
-                        : 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
-                    }`}
-                  >
-                    {getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0 ? '⚠️' : '✓'} Validate
-                  </button>
-                  <button
-                    onClick={handleComplete}
-                    disabled={getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0}
-                    className={`px-4 py-1 rounded-md flex items-center gap-1 text-xs font-semibold transition-colors ${
-                      getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-                    }`}
-                  >
-                    <CheckCircleIcon className="w-4 h-4" />
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
             
             <div className="px-6 pb-3 space-y-2">
               {/* Success/Error Messages */}
@@ -2355,101 +2327,137 @@ function EnhancedMapperContent() {
                 </div>
               )}
               
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between mb-3">
-                  <h1 className="text-2xl font-bold text-gray-900 truncate">Enhanced Financial Mapper</h1>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-lg">
-                    <DocumentTextIcon className="w-4 h-4 text-blue-600" />
-                    <span className="truncate max-w-40 font-medium text-gray-900">{fileName}</span>
-                  </span>
-                  <span className="text-gray-400">•</span>
-                  <span className="truncate max-w-32 font-medium text-gray-700">{sheetName}</span>
-                  <span className="text-gray-400">•</span>
-                  <span className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-lg">
-                    <span className="text-lg font-bold text-blue-700">
-                      {accountTree.filter(n => n.isActive).length}/{accountTree.length}
-                    </span>
-                    <span className="text-sm font-medium text-blue-600">cuentas activas</span>
-                  </span>
-                  <span className="text-gray-400">•</span>
-                  <span className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
-                    getValidationStats().uncategorized > 0 ? 'bg-red-50' : 'bg-green-50'
-                  }`}>
-                    <span className={`text-lg font-bold ${
-                      getValidationStats().uncategorized > 0 ? 'text-red-700' : 'text-green-700'
-                    }`}>
-                      {getValidationStats().categorized}/{getValidationStats().total}
-                    </span>
-                    <span className={`text-sm font-medium ${
-                      getValidationStats().uncategorized > 0 ? 'text-red-600' : 'text-green-600'
-                    }`}>mapeadas</span>
-                  </span>
-                  <span className="text-gray-400">•</span>
-                  {getValidationStats().missingSubcategories > 0 && (
-                    <>
-                      <span className="flex items-center gap-2 px-3 py-1 rounded-lg bg-yellow-50">
-                        <span className="text-lg font-bold text-yellow-700">
-                          {getValidationStats().missingSubcategories}
-                        </span>
-                        <span className="text-sm font-medium text-yellow-600">subcategorías faltantes</span>
-                      </span>
-                      <span className="text-gray-400">•</span>
-                    </>
-                  )}
-                  <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-lg">
-                    <div className="w-20 h-3 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-300 ${
-                          getValidationStats().uncategorized > 0 ? 'bg-red-500' : 'bg-emerald-500'
-                        }`}
-                        style={{ width: `${getValidationStats().completionPercentage}%` }}
-                      />
-                    </div>
-                    <span className={`text-xl font-bold ${
-                      getValidationStats().uncategorized > 0 ? 'text-red-700' : 'text-emerald-700'
-                    }`}>
-                      {Math.round(getValidationStats().completionPercentage)}%
-                    </span>
-                  </div>
-                  <span className="text-gray-400">•</span>
-                  <span className="flex items-center gap-2 bg-purple-50 px-3 py-1 rounded-lg">
-                    <CalendarIcon className="w-4 h-4 text-purple-600" />
-                    <span className="text-lg font-bold text-purple-700">{periodColumns.length}</span>
-                    <span className="text-sm font-medium text-purple-600">períodos con datos</span>
-                  </span>
-                  {actualDataRange && (
-                    <>
-                      <span className="text-gray-400">•</span>
-                      <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg">
-                        <span className="text-sm font-medium text-gray-700 max-w-40 truncate">
-                          {actualDataRange.first} → {actualDataRange.last}
-                        </span>
-                      </span>
-                    </>
-                  )}
-                  {periodColumns.length > 0 && !actualDataRange && (
-                    <>
-                      <span>•</span>
-                      <span className="text-xs text-gray-500 max-w-40 truncate">
-                        {periodColumns.slice(0, 3).map(p => p.label).join(', ')}
-                        {periodColumns.length > 3 && '...'}
-                      </span>
-                    </>
-                  )}
-                  {selectedCompany && (
-                    <>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <BuildingOfficeIcon className="w-3 h-3" />
-                        <span className="truncate max-w-32">{selectedCompany.name}</span>
-                      </span>
-                    </>
-                  )}
-                </div>
+              {/* Title moved up */}
+              <div className="mb-4">
+                <h1 className="text-2xl font-bold text-gray-900">Enhanced Financial Mapper</h1>
               </div>
+              
+              {/* Two-line structure as requested */}
+              <div className="space-y-3">
+                {/* Line 1: Colored status indicators */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {aiAnalysisComplete && (
+                      <span className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-full h-9">
+                        <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                        <span className="text-xs font-semibold text-green-700">AI Complete</span>
+                      </span>
+                    )}
+                    <span className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg h-9">
+                      <span className="text-lg font-bold text-blue-700">
+                        {accountTree.filter(n => n.isActive).length}/{accountTree.length}
+                      </span>
+                      <span className="text-sm font-medium text-blue-600">cuentas activas</span>
+                    </span>
+                    <span className={`flex items-center gap-2 px-3 py-2 rounded-lg h-9 ${
+                      getValidationStats().uncategorized > 0 ? 'bg-red-50' : 'bg-green-50'
+                    }`}>
+                      <span className={`text-lg font-bold ${
+                        getValidationStats().uncategorized > 0 ? 'text-red-700' : 'text-green-700'
+                      }`}>
+                        {getValidationStats().categorized}/{getValidationStats().total}
+                      </span>
+                      <span className={`text-sm font-medium ${
+                        getValidationStats().uncategorized > 0 ? 'text-red-600' : 'text-green-600'
+                      }`}>categorizadas</span>
+                    </span>
+                    <div className="flex items-center gap-2 bg-emerald-50 px-3 py-2 rounded-lg h-9">
+                      <div className="w-20 h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${
+                            getValidationStats().uncategorized > 0 ? 'bg-red-500' : 'bg-emerald-500'
+                          }`}
+                          style={{ width: `${getValidationStats().completionPercentage}%` }}
+                        />
+                      </div>
+                      <span className={`text-xl font-bold ${
+                        getValidationStats().uncategorized > 0 ? 'text-red-700' : 'text-emerald-700'
+                      }`}>
+                        {Math.round(getValidationStats().completionPercentage)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={validateMapping}
+                      className={`px-3 py-2 h-9 text-xs border rounded-md font-medium transition-colors ${
+                        getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0
+                          ? 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100' 
+                          : 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
+                      }`}
+                    >
+                      {getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0 ? '⚠️' : '✓'} {locale?.startsWith('es') ? 'Validar' : 'Validate'}
+                    </button>
+                    <button
+                      onClick={handleComplete}
+                      disabled={getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0}
+                      className={`px-4 py-2 h-9 rounded-md flex items-center gap-1 text-xs font-semibold transition-colors ${
+                        getValidationStats().uncategorized > 0 || getValidationStats().missingSubcategories > 0
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {locale?.startsWith('es') ? 'Guardar' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Line 2: File info, currency selector, units, and period */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg h-9">
+                      <DocumentTextIcon className="w-4 h-4 text-blue-600" />
+                      <span className="truncate max-w-40 font-medium text-gray-900">{fileName}</span>
+                    </span>
+                    <span className="text-gray-400 self-center">•</span>
+                    <span className="flex items-center truncate max-w-32 font-medium text-gray-700 bg-gray-100 px-3 py-2 rounded-lg h-9">{sheetName}</span>
+                    <span className="text-gray-400 self-center">•</span>
+                    <div className="flex items-center gap-2 bg-green-100 px-3 py-2 rounded-lg h-9">
+                      <CurrencyDollarIcon className="w-4 h-4 text-green-600" />
+                      <select
+                        value={currency}
+                        onChange={(e) => setCurrency(e.target.value)}
+                        className="text-sm font-bold border-0 bg-transparent focus:outline-none focus:ring-0 text-green-800"
+                      >
+                        <option value="USD">USD</option>
+                        <option value="MXN">MXN</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="CAD">CAD</option>
+                        <option value="BRL">BRL</option>
+                        <option value="ARS">ARS</option>
+                        <option value="CLP">CLP</option>
+                        <option value="COP">COP</option>
+                        <option value="PEN">PEN</option>
+                      </select>
+                    </div>
+                    <span className="text-gray-400 self-center">•</span>
+                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg h-9">
+                      <ChartBarIcon className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-700">
+                        {units === 'normal' ? (locale?.startsWith('es') ? 'Normal' : 'Normal') :
+                         units === 'thousands' ? (locale?.startsWith('es') ? 'Miles' : 'Thousands') :
+                         (locale?.startsWith('es') ? 'Millones' : 'Millions')}
+                      </span>
+                    </div>
+                    <span className="text-gray-400 self-center">•</span>
+                    <span className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg h-9">
+                      <CalendarIcon className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-700">{periodColumns.length} períodos</span>
+                    </span>
+                    {actualDataRange && (
+                      <>
+                        <span className="text-gray-400 self-center">•</span>
+                        <span className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg h-9">
+                          <CalendarIcon className="w-4 h-4 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700 max-w-40 truncate">
+                            {actualDataRange.first} → {actualDataRange.last}
+                          </span>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2461,8 +2469,8 @@ function EnhancedMapperContent() {
               <div className="flex-shrink-0 px-6 py-3 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Account Structure</h2>
-                    <p className="text-sm text-gray-600 mt-1">Categorize each account by selecting its main category and subcategory</p>
+                    <h2 className="text-lg font-semibold text-gray-900">{locale?.startsWith('es') ? 'Estructura de Cuentas' : 'Account Structure'}</h2>
+                    <p className="text-sm text-gray-600 mt-1">{locale?.startsWith('es') ? 'Categoriza cada cuenta seleccionando su categoría principal y subcategoría' : 'Categorize each account by selecting its main category and subcategory'}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2477,7 +2485,7 @@ function EnhancedMapperContent() {
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
                     >
                       <ArrowPathIcon className="w-4 h-4" />
-                      Re-analyze
+                      {locale?.startsWith('es') ? 'Re-analizar' : 'Re-analyze'}
                     </button>
                   </div>
                 </div>
@@ -2486,15 +2494,23 @@ function EnhancedMapperContent() {
               {/* Table Container */}
               <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
                 <table className="w-full min-w-full table-fixed bg-white">
+                  <colgroup>
+                    <col style={{ width: `${columnWidths.row}%` }} />
+                    <col style={{ width: `${columnWidths.type}%` }} />
+                    <col style={{ width: `${columnWidths.account}%` }} />
+                    <col style={{ width: `${columnWidths.mainCategory}%` }} />
+                    <col style={{ width: `${columnWidths.subcategory}%` }} />
+                    <col style={{ width: `${columnWidths.amount}%` }} />
+                  </colgroup>
                   {/* Column Headers */}
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-gray-100 border-b-2 border-gray-300">
-                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.row}%` }}>Row</th>
-                      <th className="px-2 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.type}%` }}>Type</th>
-                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.account}%` }}>Account Name</th>
-                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.mainCategory}%` }}>Main Category</th>
-                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.subcategory}%` }}>Subcategory</th>
-                      <th className="px-3 py-1 text-right text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.amount}%` }}>Amount</th>
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.row}%` }}>{locale?.startsWith('es') ? 'Fila' : 'Row'}</th>
+                      <th className="px-2 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.type}%` }}>{locale?.startsWith('es') ? 'Tipo' : 'Type'}</th>
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.account}%` }}>{locale?.startsWith('es') ? 'Nombre de Cuenta' : 'Account Name'}</th>
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.mainCategory}%` }}>{locale?.startsWith('es') ? 'Categoría Principal' : 'Main Category'}</th>
+                      <th className="px-3 py-1 text-left text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.subcategory}%` }}>{locale?.startsWith('es') ? 'Subcategoría' : 'Subcategory'}</th>
+                      <th className="px-3 py-1 text-right text-xs font-bold text-gray-800 uppercase tracking-wide" style={{ width: `${columnWidths.amount}%` }}>{locale?.startsWith('es') ? 'Monto' : 'Amount'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2940,7 +2956,7 @@ function EnhancedMapperContent() {
         {/* Bulk Assignment Modal */}
         {showBulkAssignModal && bulkAssignHeaderId && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Apply Category to Accounts
@@ -2954,7 +2970,7 @@ function EnhancedMapperContent() {
                 </button>
               </div>
               
-              <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto space-y-4">
                 {/* Header Info */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-medium text-blue-900 mb-2">Header Account:</h4>
@@ -3005,7 +3021,12 @@ function EnhancedMapperContent() {
                         <button
                           onClick={() => {
                             const eligibleAccounts = getAllAvailableAccounts(bulkAssignHeaderId)
-                              .filter(account => account.eligibility.eligible);
+                              .filter(account => {
+                                const eligibility = getAssignmentEligibility(account);
+                                const isAlreadyCorrect = account.category === bulkAssignCategory && 
+                                                       (!bulkAssignSubcategory || account.subcategory === bulkAssignSubcategory);
+                                return eligibility.eligible && !isAlreadyCorrect;
+                              });
                             setSelectedChildrenIds(eligibleAccounts.map(account => account.id));
                           }}
                           className="text-sm text-blue-600 hover:text-blue-800"
@@ -3023,77 +3044,86 @@ function EnhancedMapperContent() {
                       </div>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
-                      {getAllAvailableAccounts(bulkAssignHeaderId).map((account) => (
-                        <div
-                          key={account.id}
-                          className={`border-b last:border-b-0 px-4 py-3 flex items-center justify-between ${
-                            !account.eligibility.eligible ? 'bg-gray-50 opacity-75' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedChildrenIds.includes(account.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedChildrenIds([...selectedChildrenIds, account.id]);
-                                } else {
-                                  setSelectedChildrenIds(selectedChildrenIds.filter(id => id !== account.id));
-                                }
-                              }}
-                              disabled={!account.eligibility.eligible || bulkAssignProgress}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {account.accountName}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                Current: {account.category || 'Uncategorized'}
-                                {account.subcategory && ` → ${account.subcategory}`}
+                      {getAllAvailableAccounts(bulkAssignHeaderId).map((account) => {
+                        const eligibility = getAssignmentEligibility(account);
+                        const isAlreadyCorrect = account.category === bulkAssignCategory && 
+                                               (!bulkAssignSubcategory || account.subcategory === bulkAssignSubcategory);
+                        const isEligible = eligibility.eligible && !isAlreadyCorrect;
+                        
+                        return (
+                          <div
+                            key={account.id}
+                            className={`border-b last:border-b-0 px-4 py-3 flex items-center justify-between ${
+                              !isEligible ? 'bg-gray-50 opacity-75' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedChildrenIds.includes(account.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedChildrenIds([...selectedChildrenIds, account.id]);
+                                  } else {
+                                    setSelectedChildrenIds(selectedChildrenIds.filter(id => id !== account.id));
+                                  }
+                                }}
+                                disabled={!isEligible || bulkAssignProgress}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <div>
+                                <div className="font-medium text-gray-900">
+                                  {account.accountName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  Current: {account.category || 'Uncategorized'}
+                                  {account.subcategory && ` → ${account.subcategory}`}
+                                </div>
                               </div>
                             </div>
+                            <div className="text-sm">
+                              {isAlreadyCorrect ? (
+                                <span className="text-gray-500">Already assigned</span>
+                              ) : eligibility.eligible ? (
+                                <span className="text-green-600">✓ Eligible</span>
+                              ) : (
+                                <span className="text-red-500">
+                                  ✗ {eligibility.reason}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-sm">
-                            {account.eligibility.eligible ? (
-                              <span className="text-green-600">✓ Eligible</span>
-                            ) : (
-                              <span className="text-red-500">
-                                ✗ {account.eligibility.reason}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                   )}
                 </div>
+              </div>
 
-                {/* Actions */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <button
-                    onClick={() => setShowBulkAssignModal(false)}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                    disabled={bulkAssignProgress}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={executeBulkAssignment}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    disabled={selectedChildrenIds.length === 0 || bulkAssignProgress}
-                  >
-                    {bulkAssignProgress ? (
-                      <>
-                        <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                        Applying...
-                      </>
-                    ) : (
-                      `Apply to ${selectedChildrenIds.length} Account${selectedChildrenIds.length !== 1 ? 's' : ''}`
-                    )}
-                  </button>
-                </div>
+              {/* Actions - Outside scrollable area */}
+              <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+                <button
+                  onClick={() => setShowBulkAssignModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                  disabled={bulkAssignProgress}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeBulkAssignment}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  disabled={selectedChildrenIds.length === 0 || bulkAssignProgress}
+                >
+                  {bulkAssignProgress ? (
+                    <>
+                      <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                      Applying...
+                    </>
+                  ) : (
+                    `Apply to ${selectedChildrenIds.length} Account${selectedChildrenIds.length !== 1 ? 's' : ''}`
+                  )}
+                </button>
               </div>
             </div>
           </div>

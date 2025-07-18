@@ -31,7 +31,10 @@ export function SubcategoryDropdown({
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubcategoryName, setNewSubcategoryName] = useState('');
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Filter subcategories based on search term
   const filteredSubcategories = subcategories.filter(subcat =>
@@ -44,7 +47,8 @@ export function SubcategoryDropdown({
   // Handle clicks outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node) &&
+          dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setShowAddForm(false);
       }
@@ -53,6 +57,55 @@ export function SubcategoryDropdown({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Calculate dropdown position
+  useEffect(() => {
+    if (!isOpen || !buttonRef.current) return;
+
+    const updatePosition = () => {
+      const button = buttonRef.current;
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const dropdownHeight = 320; // max height
+      
+      let top = rect.bottom;
+      let maxHeight = dropdownHeight;
+      
+      // If not enough space below and more space above, show above
+      if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+        top = rect.top - Math.min(dropdownHeight, spaceAbove - 10);
+        maxHeight = Math.min(dropdownHeight, spaceAbove - 10);
+      } else {
+        maxHeight = Math.min(dropdownHeight, spaceBelow - 10);
+      }
+      
+      setDropdownStyle({
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        maxHeight: `${maxHeight}px`,
+        zIndex: 9999,
+      });
+    };
+
+    updatePosition();
+    
+    // Update on scroll/resize
+    const handleUpdate = () => updatePosition();
+    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
+    
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
+    };
+  }, [isOpen]);
+
 
   const handleAddSubcategory = () => {
     if (newSubcategoryName.trim() && onAddSubcategory) {
@@ -69,8 +122,9 @@ export function SubcategoryDropdown({
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className}`} ref={containerRef}>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         className={`relative w-full cursor-pointer rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm ${
@@ -78,7 +132,7 @@ export function SubcategoryDropdown({
         }`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
-        <span className="block truncate">
+        <span className="block truncate pr-2">
           {currentSubcategory?.label || placeholder}
         </span>
         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -87,7 +141,11 @@ export function SubcategoryDropdown({
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+        <div 
+          ref={dropdownRef}
+          className="rounded-md bg-white text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm overflow-hidden"
+          style={dropdownStyle}
+        >
           {/* Search input */}
           <div className="sticky top-0 z-10 bg-white px-2 py-1 border-b border-gray-200">
             <div className="relative">
@@ -145,7 +203,7 @@ export function SubcategoryDropdown({
           )}
 
           {/* Subcategory options */}
-          <div className="max-h-32 overflow-y-auto">
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(100% - 100px)' }}>
             {filteredSubcategories.map((subcategory) => (
               <button
                 key={subcategory.value}
@@ -158,7 +216,7 @@ export function SubcategoryDropdown({
                   value === subcategory.value ? 'bg-blue-50 text-blue-600' : 'text-gray-900'
                 }`}
               >
-                {subcategory.label}
+                <span className="block truncate">{subcategory.label}</span>
               </button>
             ))}
             

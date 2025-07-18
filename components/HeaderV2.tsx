@@ -96,12 +96,81 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
     };
   }, []);
 
+  // Check if we're in a workflow
+  const isInWorkflow = pathname && (
+    pathname.includes('/upload') ||
+    pathname.includes('/select-sheet') ||
+    pathname.includes('/period-identification') ||
+    pathname.includes('/persist')
+  ) && !pathname.includes('/enhanced-mapper');
+
+  // Get workflow step info
+  const getWorkflowStep = () => {
+    if (!pathname) return null;
+    if (pathname.includes('/upload')) return { step: 1, name: 'upload' };
+    if (pathname.includes('/select-sheet')) return { step: 2, name: 'select-sheet' };
+    if (pathname.includes('/period-identification')) return { step: 3, name: 'identify-periods' };
+    if (pathname.includes('/persist')) return { step: 4, name: 'save' };
+    return null;
+  };
+
   const getBreadcrumbs = () => {
     if (!pathname) return [];
-    const paths = pathname.split('/').filter(Boolean);
+    
     const breadcrumbs = [];
     
-    for (let i = 0; i < paths.length; i++) {
+    // Always add Dashboard as the root
+    breadcrumbs.push({ 
+      path: '/dashboard', 
+      label: locale?.startsWith('es') ? 'Panel' : 'Dashboard' 
+    });
+    
+    // Special handling for workflow pages
+    if (isInWorkflow) {
+      const workflowStep = getWorkflowStep();
+      
+      // Add workflow steps
+      const workflowSteps = [
+        { name: 'upload', label: locale?.startsWith('es') ? 'Subir' : 'Upload', path: '/upload' },
+        { name: 'select-sheet', label: locale?.startsWith('es') ? 'Seleccionar Hoja' : 'Select Sheet', path: '/select-sheet' },
+        { name: 'identify-periods', label: locale?.startsWith('es') ? 'Identificar Periodos' : 'Identify Periods', path: '/period-identification' },
+        { name: 'save', label: locale?.startsWith('es') ? 'Guardar' : 'Save', path: '/persist' }
+      ];
+      
+      for (let i = 0; i < workflowSteps.length; i++) {
+        const step = workflowSteps[i];
+        const isCurrentStep = workflowStep?.name === step.name;
+        const isPastStep = workflowStep && i < (workflowStep.step - 1);
+        
+        breadcrumbs.push({
+          path: isPastStep || isCurrentStep ? step.path : undefined,
+          label: step.label,
+          isCurrent: isCurrentStep,
+          isDisabled: !isPastStep && !isCurrentStep
+        });
+      }
+      
+      return breadcrumbs;
+    }
+    
+    // Regular breadcrumbs for non-workflow pages
+    const paths = pathname.split('/').filter(Boolean);
+    
+    // Skip 'dashboard' since we already added it
+    const startIndex = paths[0] === 'dashboard' ? 1 : 0;
+    
+    // Check if we have company context for enhanced-mapper
+    if (pathname === '/enhanced-mapper' && typeof window !== 'undefined') {
+      const companyName = sessionStorage.getItem('selectedCompanyName');
+      if (companyName) {
+        breadcrumbs.push({
+          path: '/dashboard/company-admin',
+          label: locale?.startsWith('es') ? 'Admin Empresa' : 'Company Admin'
+        });
+      }
+    }
+    
+    for (let i = startIndex; i < paths.length; i++) {
       const path = '/' + paths.slice(0, i + 1).join('/');
       let label = paths[i];
       
@@ -120,8 +189,17 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
           'organizations': { es: 'Organizaciones', en: 'Organizations' },
           'settings': { es: 'Configuración', en: 'Settings' },
           'profile': { es: 'Perfil', en: 'Profile' },
+          'pnl': { es: 'Estado de Resultados', en: 'Profit & Loss' },
+          'cashflow': { es: 'Flujo de Caja', en: 'Cash Flow' },
+          'uploads': { es: 'Historial de Cargas', en: 'Upload History' },
+          'subcategory-templates': { es: 'Plantillas de Subcategorías', en: 'Subcategory Templates' },
           'new': { es: 'Nuevo', en: 'New' },
-          'edit': { es: 'Editar', en: 'Edit' }
+          'edit': { es: 'Editar', en: 'Edit' },
+          'enhanced-mapper': { es: 'Mapear Cuentas', en: 'Map Accounts' },
+          'upload': { es: 'Subir', en: 'Upload' },
+          'select-sheet': { es: 'Seleccionar Hoja', en: 'Select Sheet' },
+          'period-identification': { es: 'Identificar Periodos', en: 'Identify Periods' },
+          'persist': { es: 'Guardar', en: 'Save' }
         };
         
         if (translations[label]) {
@@ -132,7 +210,7 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
         }
       }
       
-      breadcrumbs.push({ path, label });
+      breadcrumbs.push({ path, label, isCurrent: i === paths.length - 1 });
     }
     
     return breadcrumbs;
@@ -160,11 +238,19 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
                 </div>
               </button>
 
-              {/* Organization Context for Org Admins only */}
-              {isAuthenticated && organization && user?.role === 'admin' && (
-                <div className="hidden lg:flex items-center space-x-2 px-3 py-1.5 bg-gray-50 rounded-lg">
-                  <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">{organization.name}</span>
+              {/* Organization and Company Context */}
+              {isAuthenticated && organization && (
+                <div className="hidden lg:flex items-center space-x-4">
+                  <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 rounded-lg">
+                    <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">{organization.name}</span>
+                  </div>
+                  {typeof window !== 'undefined' && sessionStorage.getItem('selectedCompanyName') && (
+                    <div className="flex items-center space-x-2 px-3 py-1.5 bg-blue-50 rounded-lg">
+                      <BuildingOfficeIcon className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-700">{sessionStorage.getItem('selectedCompanyName')}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -308,8 +394,8 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
         </div>
       </header>
 
-      {/* Breadcrumbs Bar - Hidden for workflow pages that have their own breadcrumbs */}
-      {isAuthenticated && breadcrumbs.length > 0 && !pathname.includes('/enhanced-mapper') && !pathname.includes('/upload') && (
+      {/* Breadcrumbs Bar */}
+      {isAuthenticated && breadcrumbs.length > 0 && pathname !== '/' && (
         <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10">
             <nav className="flex items-center space-x-2 text-sm">
@@ -320,20 +406,33 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
                 <HomeIcon className="w-4 h-4" />
               </button>
               {breadcrumbs.map((crumb, index) => (
-                <div key={crumb.path} className="flex items-center">
+                <div key={`${crumb.path || crumb.label}-${index}`} className="flex items-center">
                   <ChevronRightIcon className="w-4 h-4 text-gray-400" />
                   <button
-                    onClick={() => router.push(crumb.path)}
-                    className={`ml-2 hover:text-blue-600 transition-colors ${
-                      index === breadcrumbs.length - 1 
-                        ? 'text-gray-900 font-medium' 
-                        : 'text-gray-600'
+                    onClick={() => crumb.path && router.push(crumb.path)}
+                    disabled={('isDisabled' in crumb ? crumb.isDisabled : false) || !crumb.path}
+                    className={`ml-2 transition-colors ${
+                      crumb.isCurrent 
+                        ? 'text-blue-600 font-medium cursor-default' 
+                        : ('isDisabled' in crumb ? crumb.isDisabled : false) || !crumb.path
+                          ? 'text-gray-400 cursor-default'
+                          : 'text-gray-600 hover:text-blue-600 cursor-pointer'
                     }`}
                   >
                     {crumb.label}
                   </button>
                 </div>
               ))}
+              
+              {/* Show workflow step info */}
+              {isInWorkflow && (
+                <div className="flex items-center ml-4 text-xs text-gray-500">
+                  <span className="mx-2">•</span>
+                  <span>
+                    {locale?.startsWith('es') ? 'Paso' : 'Step'} {getWorkflowStep()?.step} {locale?.startsWith('es') ? 'de' : 'of'} 5
+                  </span>
+                </div>
+              )}
             </nav>
             
             {/* Language selector in breadcrumb bar */}

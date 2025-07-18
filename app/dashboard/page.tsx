@@ -17,10 +17,16 @@ function DashboardRouter({ user }: { user: any }) {
       switch (user.role) {
         case ROLES.ORG_ADMIN:
         case 'admin':
+          // Clear company context for org admins
+          sessionStorage.removeItem('selectedCompanyId');
+          sessionStorage.removeItem('selectedCompanyName');
           router.replace('/dashboard/org-admin');
           return;
         case ROLES.SUPER_ADMIN:
         case 'super_admin':
+          // Clear company context for platform admins
+          sessionStorage.removeItem('selectedCompanyId');
+          sessionStorage.removeItem('selectedCompanyName');
           // This case is handled in MainDashboard, but include for completeness
           return;
       }
@@ -84,6 +90,9 @@ function MainDashboard({ user }: { user: any }) {
   useEffect(() => {
     // Platform admin should be redirected to their dedicated dashboard
     if (user?.role === ROLES.SUPER_ADMIN || user?.role === 'super_admin') {
+      // Clear company context for platform admins
+      sessionStorage.removeItem('selectedCompanyId');
+      sessionStorage.removeItem('selectedCompanyName');
       router.replace('/dashboard/platform-admin');
     }
   }, [user, router]);
