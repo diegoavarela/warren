@@ -1622,7 +1622,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               netIncome: previous.netIncome
             } : undefined
           }}
-          locale={locale}
         />
       </div>
       
