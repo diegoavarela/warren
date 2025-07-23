@@ -5,12 +5,19 @@ import { KPICard } from './KPICard';
 import { WarrenChart, CHART_CONFIGS } from '../charts/WarrenChart';
 import { MetricCard } from './MetricCard';
 import { HeatmapChart } from './HeatmapChart';
+import { ExpenseHeatmapChart } from './ExpenseHeatmapChart';
+import { ExpenseDetailModal } from './ExpenseDetailModal';
 import { KeyInsights } from './KeyInsights';
 import { PersonnelCostsWidget } from './PersonnelCostsWidget';
 import { RevenueGrowthAnalysis } from './RevenueGrowthAnalysis';
+import { ProfitMarginTrendsChartJS } from './ProfitMarginTrendsChartJS';
+import { RevenueForecastTrendsChartJS } from './RevenueForecastTrendsChartJS';
+import { NetIncomeForecastTrendsChartJS } from './NetIncomeForecastTrendsChartJS';
+import { ComparisonPeriodSelector } from './ComparisonPeriodSelector';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
 import { useFinancialData } from '@/lib/hooks/useFinancialData';
 import { transformToPnLData } from '@/lib/utils/financial-transformers';
+import { filterValidPeriods, sortPeriods } from '@/lib/utils/period-utils';
 import { PnLData as PnLDataType } from '@/types/financial';
 import { HelpIcon } from '../HelpIcon';
 import { helpTopics } from '@/lib/help-content';
@@ -116,28 +123,37 @@ interface PnLDashboardProps {
   currency?: string; // Deprecated - will use from API
   locale?: string;
   useMockData?: boolean;
+  hybridParserData?: any; // Data from hybrid parser testing
   onPeriodChange?: (period: string, lastUpdate: Date | null) => void;
 }
 
-export function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, onPeriodChange }: PnLDashboardProps) {
+export function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, hybridParserData, onPeriodChange }: PnLDashboardProps) {
   const { t } = useTranslation(locale);
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
+  const [comparisonPeriod, setComparisonPeriod] = useState<'lastMonth' | 'lastQuarter' | 'lastYear'>('lastMonth');
   const [activeBreakdown, setActiveBreakdown] = useState<'cogs' | 'opex' | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isOpexSectionCollapsed, setIsOpexSectionCollapsed] = useState(false);
+  const [isCogsSectionCollapsed, setIsCogsSectionCollapsed] = useState(false);
   
   // Fetch real data using the hook
   const { data: apiData, loading: apiLoading, error, refetch } = useFinancialData({
     companyId: useMockData ? undefined : companyId,
     statementId,
     autoRefresh: false, // Disable auto-refresh to prevent constant page updates
-    selectedPeriod: selectedPeriod || undefined
+    selectedPeriod: selectedPeriod || undefined,
+    comparisonPeriod: comparisonPeriod
   });
   
-  // Refetch data when selected period changes
+  // Refetch data when selected period or comparison period changes
   useEffect(() => {
-    if (selectedPeriod && selectedPeriod !== 'current' && companyId) {
-      refetch();
+    if ((selectedPeriod && selectedPeriod !== 'current') || comparisonPeriod) {
+      if (companyId) {
+        refetch();
+      }
     }
-  }, [selectedPeriod]);
+  }, [selectedPeriod, comparisonPeriod, companyId, refetch]);
   
   // Update currency and units from API response
   useEffect(() => {
@@ -167,7 +183,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   const [mockData, setMockData] = useState<PnLData | null>(null);
   const data = useMockData || !companyId ? mockData : transformToPnLData(apiData);
   const loading = useMockData || !companyId ? !mockData : apiLoading;
-  const [comparisonPeriod, setComparisonPeriod] = useState<string>('previous');
   const [expandedExpenseCategory, setExpandedExpenseCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'ytd'>('current');
   const [showAllPeriods, setShowAllPeriods] = useState(false);
@@ -326,8 +341,15 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             ]
           },
           { category: 'Tecnología', amount: 120000, percentage: 15 },
-          { category: 'Oficina', amount: 80000, percentage: 10 },
-          { category: 'Otros', amount: 40000, percentage: 5 }
+          { 
+            category: 'Otros', 
+            amount: 120000, 
+            percentage: 15,
+            subcategories: [
+              { name: 'Oficina', amount: 80000 },
+              { name: 'Gastos Generales', amount: 40000 }
+            ]
+          }
         ]
       },
       forecasts: {
@@ -520,11 +542,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   const ytd = data.yearToDate;
   
   // Handle period selection
-  if (selectedPeriod === 'ytd') {
-    // When YTD is selected, use YTD data as current
-    current = ytd as unknown as Period;
-    previous = undefined; // No comparison for YTD
-  } else if (selectedPeriod && selectedPeriod !== 'ytd') {
+  if (selectedPeriod && selectedPeriod !== 'current') {
     // When a specific month is selected, use that period's data
     const selectedPeriodData = data.periods.find(p => p.id === selectedPeriod);
     if (selectedPeriodData) {
@@ -543,182 +561,163 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     <div className="space-y-8">
 
       {/* Global Controls */}
-      <div className="bg-gradient-to-r from-gray-50 to-purple-50 rounded-2xl shadow-lg p-6 border border-purple-100 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-          {/* Period Selector */}
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-              <CalendarIcon className="h-4 w-4 text-purple-600" />
-              <span>{t('dashboard.pnl.period')}</span>
-              <HelpIcon topic={helpTopics['filters.period']} size="sm" />
-            </label>
-            <select
-              value={selectedPeriod || ''}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
-            >
-              {/* Generate period options based on the data's period range */}
-              {data.periods.length > 0 && (() => {
-                // Get unique periods and sort them by year and month
-                const monthOrderEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                const monthOrderEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                
-                const uniquePeriods = [...data.periods]
-                  .filter(p => p.revenue > 0) // Only show periods with data
-                  .sort((a, b) => {
-                    if (a.year !== b.year) return b.year - a.year;
-                    let monthA = monthOrderEs.indexOf(a.month);
-                    let monthB = monthOrderEs.indexOf(b.month);
-                    if (monthA === -1) monthA = monthOrderEn.indexOf(a.month);
-                    if (monthB === -1) monthB = monthOrderEn.indexOf(b.month);
-                    return monthB - monthA;
-                  });
-                
-                return (
-                  <>
-                    {uniquePeriods.map((period) => (
-                      <option key={period.id} value={period.id}>
-                        {period.month} {period.year}
-                      </option>
-                    ))}
-                    <option value="ytd">Año a la fecha (YTD)</option>
-                  </>
-                );
-              })()}
-            </select>
-          </div>
-
-          {/* Comparison Period */}
-          {previous && (
-            <div className="space-y-2">
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                <ChartBarIcon className="h-4 w-4 text-purple-600" />
-                <span>{t('dashboard.pnl.compareWith')}</span>
-                <HelpIcon topic={helpTopics['filters.comparison']} size="sm" />
-              </label>
+      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+          {/* Left side - Period and Comparison */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-gray-500" />
               <select
-                value={comparisonPeriod}
-                onChange={(e) => setComparisonPeriod(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                value={selectedPeriod || ''}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[120px]"
               >
-                <option value="previous">{t('dashboard.pnl.previousPeriod')}</option>
-                <option value="year-ago">{t('dashboard.pnl.yearAgo')}</option>
-                <option value="none">{t('dashboard.pnl.noComparison')}</option>
+                {data.periods.length > 0 && (() => {
+                  const validPeriods = filterValidPeriods(data.periods);
+                  const sortedPeriods = sortPeriods(validPeriods);
+                  
+                  return sortedPeriods.map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.month} {period.year}
+                    </option>
+                  ));
+                })()}
               </select>
             </div>
-          )}
 
-          {/* Currency Selector */}
-          <div className="space-y-2 relative">
-            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-              <CurrencyDollarIcon className="h-4 w-4 text-purple-600" />
-              <span>{t('dashboard.pnl.currency')}</span>
-              <HelpIcon topic={helpTopics['filters.currency']} size="sm" />
-            </label>
-            <div className="flex items-center space-x-2">
+            <div className="text-gray-400 hidden lg:block">|</div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-sm text-gray-600 whitespace-nowrap">{t('comparison.title')}:</span>
+              <select
+                value={comparisonPeriod}
+                onChange={(e) => setComparisonPeriod(e.target.value as 'lastMonth' | 'lastQuarter' | 'lastYear')}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[130px]"
+              >
+                <option value="lastMonth">{t('comparison.lastMonth')}</option>
+                <option value="lastQuarter">{t('comparison.lastQuarter')}</option>
+                <option value="lastYear">{t('comparison.lastYear')}</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Right side - Currency and Units */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 relative">
+              <CurrencyDollarIcon className="h-4 w-4 text-gray-500" />
               <select
                 value={selectedCurrency}
                 onChange={(e) => setSelectedCurrency(e.target.value)}
-                className="flex-1 px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                className="pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[100px]"
               >
                 {SUPPORTED_CURRENCIES.map(curr => (
                   <option key={curr.code} value={curr.code}>
-                    {curr.flag} {curr.code} ({curr.symbol})
+                    {curr.flag} {curr.code}
                   </option>
                 ))}
               </select>
               <button
                 onClick={() => setShowRateEditor(!showRateEditor)}
-                className="p-2.5 bg-white border border-gray-300 rounded-lg text-gray-500 hover:text-purple-600 hover:border-purple-300 transition-all flex items-center justify-center flex-shrink-0 w-10 h-10"
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                 title={t('dashboard.pnl.exchangeRatesEditor')}
               >
-                <PencilIcon className="h-4 w-4" />
+                <PencilIcon className="h-3 w-3" />
               </button>
+
+              {/* Exchange Rate Editor Dropdown */}
+              {showRateEditor && (
+                <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-50">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium text-gray-900">{t('dashboard.pnl.exchangeRatesTitle')}</h4>
+                    <button
+                      onClick={() => setShowRateEditor(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {SUPPORTED_CURRENCIES.filter(curr => curr.code !== 'USD').map(curr => (
+                      <div key={curr.code} className="flex items-center space-x-2">
+                        <span className="text-sm font-medium w-12">{curr.code}</span>
+                        <input
+                          type="number"
+                          value={editingRates[curr.code] || ''}
+                          onChange={(e) => handleRateChange(curr.code, e.target.value)}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          step="0.01"
+                        />
+                        <button
+                          onClick={() => saveCustomRate(curr.code)}
+                          className="p-1 text-green-600 hover:text-green-700"
+                          title={t('dashboard.pnl.save')}
+                        >
+                          <CheckIcon className="h-4 w-4" />
+                        </button>
+                        {currencyService.hasCustomRate(curr.code) && (
+                          <button
+                            onClick={() => resetToMarketRate(curr.code)}
+                            className="p-1 text-blue-600 hover:text-blue-700"
+                            title={t('dashboard.pnl.resetToMarket')}
+                          >
+                            <ArrowTrendingUpIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t">
+                    <button
+                      onClick={() => {
+                        currencyService.clearAllCustomRates();
+                        fetchExchangeRates();
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      {t('dashboard.pnl.resetAllRates')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Exchange Rate Editor Dropdown */}
-            {showRateEditor && (
-              <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-50">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium text-gray-900">{t('dashboard.pnl.exchangeRatesTitle')}</h4>
-                  <button
-                    onClick={() => setShowRateEditor(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <XMarkIcon className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {SUPPORTED_CURRENCIES.filter(curr => curr.code !== 'USD').map(curr => (
-                    <div key={curr.code} className="flex items-center space-x-2">
-                      <span className="text-sm font-medium w-12">{curr.code}</span>
-                      <input
-                        type="number"
-                        value={editingRates[curr.code] || ''}
-                        onChange={(e) => handleRateChange(curr.code, e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
-                        step="0.01"
-                      />
-                      <button
-                        onClick={() => saveCustomRate(curr.code)}
-                        className="p-1 text-green-600 hover:text-green-700"
-                        title={t('dashboard.pnl.save')}
-                      >
-                        <CheckIcon className="h-4 w-4" />
-                      </button>
-                      {currencyService.hasCustomRate(curr.code) && (
-                        <button
-                          onClick={() => resetToMarketRate(curr.code)}
-                          className="p-1 text-blue-600 hover:text-blue-700"
-                          title={t('dashboard.pnl.resetToMarket')}
-                        >
-                          <ArrowTrendingUpIcon className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 pt-3 border-t">
-                  <button
-                    onClick={() => {
-                      currencyService.clearAllCustomRates();
-                      fetchExchangeRates();
-                    }}
-                    className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-                  >
-                    {t('dashboard.pnl.resetAllRates')}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+            <div className="text-gray-400 hidden lg:block">|</div>
 
-          {/* Units Selector */}
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-              <ChartBarIcon className="h-4 w-4 text-purple-600" />
-              <span>{t('dashboard.pnl.units')}</span>
-              <HelpIcon topic={helpTopics['filters.units']} size="sm" />
-            </label>
-            <select
-              value={displayUnits}
-              onChange={(e) => setDisplayUnits(e.target.value as 'normal' | 'K' | 'M')}
-              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
-            >
-              <option value="normal">{t('dashboard.pnl.normal')}</option>
-              <option value="K">{t('dashboard.pnl.thousands')}</option>
-              <option value="M">{t('dashboard.pnl.millions')}</option>
-            </select>
+            <div className="flex items-center gap-2">
+              <ChartBarIcon className="h-4 w-4 text-gray-500" />
+              <select
+                value={displayUnits}
+                onChange={(e) => setDisplayUnits(e.target.value as 'normal' | 'K' | 'M')}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[90px]"
+              >
+                <option value="normal">{t('dashboard.pnl.normal')}</option>
+                <option value="K">{t('dashboard.pnl.thousands')}</option>
+                <option value="M">{t('dashboard.pnl.millions')}</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Revenue and Profitability Section */}
       <div className="mb-8">
-        <div className="flex items-center space-x-2 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.revenueSection')} - {getCurrentPeriodDisplay()}</h3>
-          <HelpIcon topic={helpTopics['dashboard.revenue']} size="sm" />
-        </div>
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Colored Header */}
+          <div className="bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <ChartBarIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">
+                  {t('dashboard.pnl.revenueSection')} - {getCurrentPeriodDisplay()}
+                </h3>
+              </div>
+              <HelpIcon topic={helpTopics['dashboard.revenue']} size="sm" />
+            </div>
+          </div>
+          {/* Content */}
+          <div className="p-6">
         <div className="flex flex-col lg:flex-row gap-6 w-full metric-cards-container">
           <MetricCard
             title={t('metrics.totalRevenue')}
@@ -847,15 +846,29 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             }}
           />
         </div>
+          </div>
+        </div>
       </div>
-
 
       {/* Cost Structure Section */}
       <div className="mb-8">
-        <div className="flex items-center space-x-2 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.costsSection')} - {getCurrentPeriodDisplay()}</h3>
-          <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
-        </div>
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Colored Header */}
+          <div className="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <CalculatorIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">
+                  {t('dashboard.pnl.costsSection')} - {getCurrentPeriodDisplay()}
+                </h3>
+              </div>
+              <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
+            </div>
+          </div>
+          {/* Content */}
+          <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'cogs' ? null : 'cogs')}>
             <MetricCard
@@ -949,15 +962,30 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             }}
           />
         </div>
+          </div>
+        </div>
       </div>
 
       {/* YTD Section - Only show when not viewing YTD */}
       {selectedPeriod !== 'ytd' && (
       <div className="mb-8">
-        <div className="flex items-center space-x-2 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.ytdSection')}</h3>
-          <HelpIcon topic={helpTopics['dashboard.ytd']} size="sm" />
-        </div>
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Colored Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <CalendarIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">
+                  {t('dashboard.pnl.ytdSection')}
+                </h3>
+              </div>
+              <HelpIcon topic={helpTopics['dashboard.ytd']} size="sm" />
+            </div>
+          </div>
+          {/* Content */}
+          <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title={t('metrics.ytdRevenue')}
@@ -999,275 +1027,167 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             helpTopic={helpTopics['metrics.ytdEbitda']}
           />
         </div>
+          </div>
+        </div>
       </div>
       )}
 
-      {/* Category Breakdown Section */}
+      {/* Category Breakdown Section with Heatmap */}
       {activeBreakdown && (
         <div className="mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                <div className={`p-2 rounded-lg ${
-                  activeBreakdown === 'cogs' ? 'bg-rose-100' : 'bg-blue-100'
-                }`}>
-                  {activeBreakdown === 'cogs' ? 
-                    <CalculatorIcon className="h-5 w-5 text-rose-600" /> : 
-                    <DocumentTextIcon className="h-5 w-5 text-blue-600" />
-                  }
-                </div>
-                <span>
-                  {activeBreakdown === 'cogs' ? t('metrics.cogsBreakdown') : t('metrics.opexBreakdown')}
-                </span>
-              </h3>
-              <button
-                onClick={() => setActiveBreakdown(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(activeBreakdown === 'cogs' ? data.categories.cogs : data.categories.operatingExpenses).map((item, idx) => (
-                <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-medium text-gray-900 text-sm leading-tight">{item.category}</h4>
-                    <span className="text-lg font-bold text-gray-900">{formatValue(item.amount)}</span>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-500 ${
-                          activeBreakdown === 'cogs' ? 'bg-rose-500' : 'bg-blue-500'
-                        }`}
-                        style={{ width: `${item.percentage}%` }}
-                      />
-                    </div>
-                    
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>{item.percentage.toFixed(1)}% {activeBreakdown === 'cogs' ? t('metrics.ofCOGS') : t('metrics.ofOpEx')}</span>
-                      <span>{((item.amount / current.revenue) * 100).toFixed(1)}% {t('metrics.ofRevenue')}</span>
-                    </div>
-                    
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Summary Stats */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {formatValue(activeBreakdown === 'cogs' ? current.cogs : current.operatingExpenses)}
-                  </div>
-                  <div className="text-gray-600">{t('metrics.total')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {(activeBreakdown === 'cogs' ? data.categories.cogs : data.categories.operatingExpenses).length}
-                  </div>
-                  <div className="text-gray-600">{t('metrics.categories')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {formatValue(current.revenue * (activeBreakdown === 'cogs' ? 0.35 : 0.20))}
-                  </div>
-                  <div className="text-gray-600">{t('metrics.industry')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {formatValue(current.revenue * (activeBreakdown === 'cogs' ? 0.30 : 0.15))}
-                  </div>
-                  <div className="text-gray-600">{t('metrics.efficient')}</div>
-                </div>
-              </div>
-            </div>
+          <ExpenseHeatmapChart
+            data={activeBreakdown === 'cogs' ? data.categories.cogs : data.categories.operatingExpenses}
+            title={activeBreakdown === 'cogs' ? t('metrics.cogsBreakdown') : t('metrics.opexBreakdown')}
+            subtitle={activeBreakdown === 'cogs' ? t('heatmap.cogsSubtitle') : t('heatmap.opexSubtitle')}
+            type={activeBreakdown}
+            currency={currency}
+            displayUnits={displayUnits}
+            locale={locale}
+            onCategoryClick={(expense) => {
+              setSelectedExpense(expense);
+              setIsExpenseModalOpen(true);
+            }}
+          />
+          
+          {/* Close Button */}
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setActiveBreakdown(null)}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors flex items-center space-x-2"
+            >
+              <XMarkIcon className="h-4 w-4" />
+              <span>{t('common.close')}</span>
+            </button>
           </div>
         </div>
       )}
 
-      {/* Operating Expenses Analysis */}
-      {data.categories.operatingExpenses && data.categories.operatingExpenses.length > 0 && (
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg p-6 border border-gray-100 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center space-x-2">
-          <div className="p-2 bg-rose-100 rounded-lg">
-            <DocumentTextIcon className="h-5 w-5 text-rose-600" />
-          </div>
-          <span>{t('dashboard.pnl.operatingExpensesAnalysis')}</span>
-          <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
-        </h3>
-        <div className="space-y-4">
-          {data.categories.operatingExpenses.map((expense, index) => {
-            const percentage = expense.percentage;
-            const isExpanded = expandedExpenseCategory === expense.category;
-            const getIcon = () => {
-              switch(expense.category) {
-                case 'Salarios Admin': return <BanknotesIcon className="h-5 w-5" />;
-                case 'Marketing': return <ChartBarIcon className="h-5 w-5" />;
-                case 'Tecnología': return <CurrencyDollarIcon className="h-5 w-5" />;
-                case 'Oficina': return <BuildingLibraryIcon className="h-5 w-5" />;
-                default: return <DocumentTextIcon className="h-5 w-5" />;
-              }
-            };
-            
-            return (
-              <div key={index} className={`
-                border rounded-xl overflow-hidden transition-all duration-300
-                ${isExpanded ? 'border-rose-300 shadow-md' : 'border-gray-200 hover:border-rose-200 hover:shadow-sm'}
-              `}>
-                <div 
-                  className="p-4 cursor-pointer bg-white hover:bg-gray-50 transition-colors"
-                  onClick={() => setExpandedExpenseCategory(isExpanded ? null : expense.category)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${
-                        percentage >= 30 ? 'bg-rose-100 text-rose-600' :
-                        percentage >= 20 ? 'bg-amber-100 text-amber-600' :
-                        'bg-emerald-100 text-emerald-600'
-                      }`}>
-                        {getIcon()}
-                      </div>
-                      <div>
-                        <span className="font-semibold text-gray-900">{expense.category}</span>
-                        <span className="text-sm text-gray-500 ml-2">({formatPercentage(percentage)} del total)</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <span className="font-bold text-lg text-gray-900">{formatValue(expense.amount)}</span>
-                      {expense.subcategories && (
-                        isExpanded ? 
-                          <ChevronUpIcon className="h-5 w-5 text-gray-400" /> :
-                          <ChevronDownIcon className="h-5 w-5 text-gray-400" />
-                      )}
-                    </div>
+      {/* Cost Analysis - Operating Expenses & COGS Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Operating Expenses Analysis - Collapsible Heatmap */}
+        {data.categories.operatingExpenses && data.categories.operatingExpenses.length > 0 && (
+          <div>
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            {/* Colored Header with collapse/expand controls */}
+            <div className="bg-gradient-to-r from-rose-500 to-pink-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <DocumentTextIcon className="h-6 w-6 text-white" />
                   </div>
-                  
-                  {/* Progress bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        percentage >= 30 ? 'bg-rose-500' :
-                        percentage >= 20 ? 'bg-amber-500' :
-                        'bg-emerald-500'
-                      }`}
-                      style={{ width: `${percentage}%` }}
-                    />
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {t('dashboard.pnl.operatingExpensesAnalysis')}
+                    </h3>
+                    <p className="text-sm text-white/80 mt-1">
+                      {t('heatmap.opexSubtitle')}
+                    </p>
                   </div>
                 </div>
                 
-                {isExpanded && expense.subcategories && (
-                  <div className="bg-gray-50 p-4 border-t border-gray-200">
-                    <div className="space-y-3">
-                      {expense.subcategories.map((sub, subIndex) => (
-                        <div key={subIndex} className="flex justify-between items-center">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                            <span className="text-sm text-gray-700">{sub.name}</span>
-                          </div>
-                          <span className="text-sm font-semibold text-gray-800">{formatValue(sub.amount)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center space-x-2">
+                  {/* Fold/Unfold section */}
+                  <button
+                    onClick={() => setIsOpexSectionCollapsed(!isOpexSectionCollapsed)}
+                    className="p-2 text-white/70 hover:text-white transition-colors"
+                    title={isOpexSectionCollapsed ? t('common.expand') : t('common.collapse')}
+                  >
+                    {isOpexSectionCollapsed ? (
+                      <ChevronDownIcon className="h-4 w-4" />
+                    ) : (
+                      <ChevronUpIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
-            );
-          })}
+            </div>
+            
+            {/* Collapsible content */}
+            {!isOpexSectionCollapsed && (
+              <div className="p-6">
+                <ExpenseHeatmapChart
+                    data={data.categories.operatingExpenses}
+                    title=""
+                    subtitle=""
+                    type="opex"
+                    currency={currency}
+                    displayUnits={displayUnits}
+                    locale={locale}
+                    onCategoryClick={(expense) => {
+                      console.log('PnL Dashboard - OpEx expense clicked:', expense);
+                      setSelectedExpense(expense);
+                      setIsExpenseModalOpen(true);
+                      console.log('PnL Dashboard - modal state set to true');
+                    }}
+                  />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      )}
+        )}
 
-      {/* Personnel Costs Widget */}
-      {(() => {
-        // Calculate personnel costs from actual expense categories
-        const getPersonnelCosts = (period: any) => {
-          if (!data.categories.operatingExpenses) return { salaries: 0, benefits: 0, total: 0 };
-          
-          // Find personnel-related categories
-          const personnelCategories = data.categories.operatingExpenses.filter(exp => {
-            const lowerName = exp.category.toLowerCase();
-            return lowerName.includes('personnel') || 
-                   lowerName.includes('personal') || 
-                   lowerName.includes('salary') || 
-                   lowerName.includes('salario') ||
-                   lowerName.includes('sueldo') ||
-                   lowerName.includes('nomina') ||
-                   lowerName.includes('employee') ||
-                   lowerName.includes('empleado') ||
-                   lowerName.includes('payroll');
-          });
-          
-          const benefitCategories = data.categories.operatingExpenses.filter(exp => {
-            const lowerName = exp.category.toLowerCase();
-            return lowerName.includes('benefit') || 
-                   lowerName.includes('prestacion') || 
-                   lowerName.includes('health') || 
-                   lowerName.includes('salud') ||
-                   lowerName.includes('insurance') ||
-                   lowerName.includes('seguro');
-          });
-          
-          const salaries = personnelCategories.reduce((sum, cat) => sum + cat.amount, 0);
-          const benefits = benefitCategories.reduce((sum, cat) => sum + cat.amount, 0);
-          const total = (period as any).totalPersonnelCost || salaries + benefits;
-          
-          return { salaries, benefits, total };
-        };
-        
-        const currentCosts = getPersonnelCosts(current);
-        const previousCosts = previous ? getPersonnelCosts(previous) : { total: 0 };
-        
-        // Calculate YTD personnel costs
-        const ytdSalaries = data.periods.reduce((sum, p) => {
-          const costs = getPersonnelCosts(p);
-          return sum + costs.salaries;
-        }, 0);
-        
-        const ytdBenefits = data.periods.reduce((sum, p) => {
-          const costs = getPersonnelCosts(p);
-          return sum + costs.benefits;
-        }, 0);
-        
-        const ytdTotal = data.periods.reduce((sum, p) => {
-          const costs = getPersonnelCosts(p);
-          return sum + costs.total;
-        }, 0);
-        
-        return (
-          <PersonnelCostsWidget 
-            data={{
-              currentMonth: {
-                salaries: currentCosts.salaries,
-                benefits: currentCosts.benefits,
-                bonuses: 0,
-                total: currentCosts.total
-              },
-              previousMonth: {
-                total: previousCosts.total
-              },
-              ytd: {
-                salaries: ytdSalaries,
-                benefits: ytdBenefits,
-                bonuses: 0,
-                total: ytdTotal
-              },
-              headcount: {
-                current: 0,
-                previous: 0
-              }
-            }}
-            currency={selectedCurrency}
-            displayUnits={displayUnits}
-            locale={locale}
-          />
-        );
-      })()}
+        {/* COGS Analysis - Collapsible Heatmap */}
+        {data.categories.cogs && data.categories.cogs.length > 0 && (
+          <div>
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            {/* Colored Header with collapse/expand controls */}
+            <div className="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <CalculatorIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {t('dashboard.pnl.cogsAnalysis')}
+                    </h3>
+                    <p className="text-sm text-white/80 mt-1">
+                      {t('heatmap.cogsSubtitle')}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Fold/Unfold section */}
+                  <button
+                    onClick={() => setIsCogsSectionCollapsed(!isCogsSectionCollapsed)}
+                    className="p-2 text-white/70 hover:text-white transition-colors"
+                    title={isCogsSectionCollapsed ? t('common.expand') : t('common.collapse')}
+                  >
+                    {isCogsSectionCollapsed ? (
+                      <ChevronDownIcon className="h-4 w-4" />
+                    ) : (
+                      <ChevronUpIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Collapsible content */}
+            {!isCogsSectionCollapsed && (
+              <div className="p-6">
+                <ExpenseHeatmapChart
+                    data={data.categories.cogs}
+                    title=""
+                    subtitle=""
+                    type="cogs"
+                    currency={currency}
+                    displayUnits={displayUnits}
+                    locale={locale}
+                    onCategoryClick={(expense) => {
+                      console.log('PnL Dashboard - COGS expense clicked:', expense);
+                      setSelectedExpense(expense);
+                      setIsExpenseModalOpen(true);
+                    }}
+                  />
+              </div>
+            )}
+          </div>
+        </div>
+        )}
+      </div>
+
 
       {/* Revenue Growth Analysis */}
       <div className="mb-8">
@@ -1286,15 +1206,24 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       {/* Tax Overview and Efficiency */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Tax Overview Card */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-lg overflow-hidden border border-amber-200">
-          <div className="p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-amber-100 rounded-xl">
-                <CalculatorIcon className="h-6 w-6 text-amber-600" />
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <CalculatorIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">
+                  {t('tax.summary')}
+                </h3>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">{t('tax.summary')}</h3>
-              <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
+              <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" className="text-white hover:text-gray-200" />
             </div>
+          </div>
+          
+          {/* Content */}
+          <div className="p-6">
             
             <div className="space-y-6">
               {/* Impuestos del período */}
@@ -1341,20 +1270,30 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                   <span className="font-bold text-lg text-amber-700">{formatValue(ytd.taxes)}</span>
                 </div>
               </div>
+              
             </div>
           </div>
         </div>
 
         {/* Efficiency Card */}
-        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-lg overflow-hidden border border-emerald-200">
-          <div className="p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-emerald-100 rounded-xl">
-                <ChartBarIcon className="h-6 w-6 text-emerald-600" />
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <ChartBarIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">
+                  {t('efficiency.title')}
+                </h3>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">{t('efficiency.title')}</h3>
-              <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
+              <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" className="text-white hover:text-gray-200" />
             </div>
+          </div>
+          
+          {/* Content */}
+          <div className="p-6">
             
             <div className="space-y-6">
               {/* Costo por peso */}
@@ -1395,322 +1334,312 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Revenue Forecast */}
-        {data.forecasts && (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="mb-4">
-              <h4 className="font-semibold text-gray-900 mb-2">{t('charts.revenueForecast')}</h4>
-              <p className="text-sm text-gray-600">{t('charts.nextSixMonths')}</p>
-              <div className="mt-3 bg-blue-50 rounded-lg p-3">
-                <p className="text-xs text-blue-800">
-                  <span className="font-semibold">{t('forecast.methodology')}:</span> {t('forecast.revenueExplanation')}
-                </p>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-green-400 rounded"></div>
-                    <span className="text-gray-700">{t('forecast.optimistic')}: +20%</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span className="text-gray-700">{t('forecast.trend')}: +5%/mes</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-red-300 rounded"></div>
-                    <span className="text-gray-700">{t('forecast.pessimistic')}: -20%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <WarrenChart
-              data={[
-                // Historical data (last 3 months)
-                ...data.periods.filter(p => p.revenue > 0).slice(-3).map(p => ({
-                  month: p.month,
-                  actual: p.revenue,
-                  tendencia: null,
-                  optimista: null,
-                  pesimista: null
-                })),
-                // Forecast data
-                ...data.forecasts.revenue.months.map((month, i) => ({
-                  month,
-                  actual: null,
-                  tendencia: data.forecasts!.revenue.trend[i],
-                  optimista: data.forecasts!.revenue.optimistic[i],
-                  pesimista: data.forecasts!.revenue.pessimistic[i]
-                }))
-              ]}
-              config={{
-                xKey: 'month',
-                yKeys: ['actual', 'pesimista', 'optimista', 'tendencia'],
-                type: 'area',
-                colors: ['#1F2937', '#FEE2E2', '#D1FAE5', '#3B82F6'],
-                height: 300,
-                stacked: false,
-                gradient: true,
-                showLegend: true
-              }}
-              formatValue={(value) => formatValue(value)}
-            />
-          </div>
-        )}
 
-        {/* Net Income Forecast */}
-        {data.forecasts && (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="mb-4">
-              <h4 className="font-semibold text-gray-900 mb-2">{t('charts.netIncomeForecast')}</h4>
-              <p className="text-sm text-gray-600">{t('charts.nextSixMonths')}</p>
-              <div className="mt-3 bg-emerald-50 rounded-lg p-3">
-                <p className="text-xs text-emerald-800">
-                  <span className="font-semibold">{t('forecast.methodology')}:</span> {t('forecast.netIncomeExplanation')}
-                </p>
-                <div className="mt-2 text-xs text-gray-700">
-                  <p>{t('forecast.assumptions')}:</p>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li>{t('forecast.maintainMargins')}</li>
-                    <li>{t('forecast.scaleEconomies')}</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <WarrenChart
-              data={[
-                // Historical data (last 3 months)
-                ...data.periods.filter(p => p.revenue > 0).slice(-3).map(p => ({
-                  month: p.month,
-                  actual: p.netIncome,
-                  tendencia: null,
-                  optimista: null,
-                  pesimista: null
-                })),
-                // Forecast data
-                ...data.forecasts.netIncome.months.map((month, i) => ({
-                  month,
-                  actual: null,
-                  tendencia: data.forecasts!.netIncome.trend[i],
-                  optimista: data.forecasts!.netIncome.optimistic[i],
-                  pesimista: data.forecasts!.netIncome.pessimistic[i]
-                }))
-              ]}
-              config={{
-                xKey: 'month',
-                yKeys: ['actual', 'pesimista', 'optimista', 'tendencia'],
-                type: 'area',
-                colors: ['#1F2937', '#FEE2E2', '#D1FAE5', '#3B82F6'],
-                height: 300,
-                stacked: false,
-                gradient: true,
-                showLegend: true
-              }}
-              formatValue={(value) => formatValue(value)}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Charts and Heatmaps Section */}
-      <div className="mb-8">
-        <div className="flex items-center space-x-2 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.trendsAnalysis')} - {getCurrentPeriodDisplay()}</h3>
-          <HelpIcon topic={helpTopics['dashboard.heatmap']} size="sm" />
-        </div>
-        
-        {/* Main Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <WarrenChart
-            data={data.periods.filter(p => p.revenue > 0).map(p => ({
-              month: p.month,
-              [t('charts.grossMargin')]: p.grossMargin,
-              [t('charts.operatingMargin')]: p.operatingMargin,
-              [t('charts.netMargin')]: p.netMargin
-            }))}
-            config={{
-              xKey: 'month',
-              yKeys: [t('charts.grossMargin'), t('charts.operatingMargin'), t('charts.netMargin')],
-              type: 'line',
-              height: 250
-            }}
-            title={t('charts.marginTrend')}
-            subtitle={`${data.periods.filter(p => p.revenue > 0).length} ${t('charts.monthsOfData')}`}
-            formatValue={(value) => formatPercentage(value)}
-          />
-
-          <WarrenChart
-            data={data.periods.filter(p => p.revenue > 0).slice(-6).map(p => ({
-              month: p.month,
-              [t('charts.revenue')]: p.revenue,
-              [t('charts.expenses')]: p.cogs + p.operatingExpenses,
-              [t('charts.netIncome')]: p.netIncome
-            }))}
-            config={{
-              xKey: 'month',
-              yKeys: [t('charts.revenue'), t('charts.expenses'), t('charts.netIncome')],
-              type: 'bar',
-              height: 250,
-              colors: ['#8B5CF6', '#EF4444', '#10B981']
-            }}
-            title={t('charts.financialSummary')}
-            subtitle={`${t('charts.last')} ${Math.min(6, data.periods.filter(p => p.revenue > 0).length)} ${t('charts.months')}`}
-            formatValue={(value) => formatValue(value)}
-          />
-        </div>
-
-        {/* Heatmaps in compact layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <HeatmapChart
-            data={data.periods.filter(p => p.revenue > 0).map(p => ({
-              month: p.month,
-              value: p.revenue,
-              label: `${formatValue(p.revenue)}`
-            }))}
-            title={t('heatmap.revenue')}
-            subtitle={t('heatmap.monthlyPerformance')}
-            colorScale="revenue"
-            interactive={true}
-            currency={selectedCurrency}
-            displayUnits={displayUnits}
-            locale={locale}
-          />
-
-          <HeatmapChart
-            data={data.periods.filter(p => p.revenue > 0).map(p => ({
-              month: p.month,
-              value: p.netMargin,
-              label: `${formatValue(p.netIncome)}`
-            }))}
-            title={t('heatmap.netMargin')}
-            subtitle={t('heatmap.clickToExclude')}
-            colorScale="margin"
-            interactive={true}
-            currency={selectedCurrency}
-            displayUnits={displayUnits}
-            locale={locale}
-            onExclude={(excludedMonths) => {
-              console.log('Meses excluidos:', excludedMonths);
-            }}
-          />
-        </div>
-      </div>
 
       {/* Additional Sections */}
       
 
 
-      {/* Cost Efficiency Analysis */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.pnl.costEfficiencyAnalysis')}</h3>
-          <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl">
-            <div className="text-2xl font-bold text-purple-700 mb-1">
-              {current.revenue > 0 && (current.cogs + current.operatingExpenses) > 0 
-                ? `${selectedCurrency} ${((current.revenue / (current.cogs + current.operatingExpenses))).toFixed(2)}`
-                : 'N/A'
-              }
-            </div>
-            <div className="text-sm text-purple-600 font-medium">{t('efficiency.revenuePerDollarCost')}</div>
-            <div className="text-xs text-purple-500 mt-1">
-              {current.revenue > 0 && (current.cogs + current.operatingExpenses) > 0 
-                ? `${t('efficiency.forEvery')} ${selectedCurrency}1 ${t('efficiency.spent')}, ${selectedCurrency}${((current.revenue / (current.cogs + current.operatingExpenses))).toFixed(2)} ${t('efficiency.generated')}`
-                : ''
-              }
-            </div>
-          </div>
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-xl">
-            <div className="text-2xl font-bold text-emerald-700 mb-1">
-              {current.revenue > 0 
-                ? formatPercentage((current.revenue - current.cogs - current.operatingExpenses) / current.revenue * 100)
-                : 'N/A'
-              }
-            </div>
-            <div className="text-sm text-emerald-600 font-medium">{t('efficiency.efficiencyMargin')}</div>
-            <div className="text-xs text-emerald-500 mt-1">
-              {current.revenue > 0 
-                ? `${formatValue(current.revenue - current.cogs - current.operatingExpenses)} ${t('efficiency.retained')}`
-                : ''
-              }
-            </div>
-          </div>
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl">
-            <div className="text-2xl font-bold text-blue-700 mb-1">
-              {(current.cogs / current.revenue * 100).toFixed(1)}%
-            </div>
-            <div className="text-sm text-blue-600 font-medium">{t('efficiency.cogsToRevenue')}</div>
-            <div className="flex items-center mt-2">
-              <div className="flex-1 bg-blue-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
-                  style={{ width: `${Math.min(100, (current.cogs / current.revenue * 100))}%` }}
-                />
-              </div>
-              <span className="text-xs text-blue-600 ml-2">{t('efficiency.target')}: 30%</span>
-            </div>
-          </div>
-          <div className="bg-gradient-to-br from-rose-50 to-rose-100 p-4 rounded-xl">
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-2xl font-bold text-rose-700">
-                {formatPercentage(calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0))}
-              </div>
-              {calculateVariation(current.operatingExpenses, previous?.operatingExpenses || 0) < 0 ? (
-                <ArrowTrendingDownIcon className="w-5 h-5 text-green-600" />
-              ) : (
-                <ArrowTrendingUpIcon className="w-5 h-5 text-rose-600" />
-              )}
-            </div>
-            <div className="text-sm text-rose-600 font-medium">{t('efficiency.opexVariation')}</div>
-            <div className="text-xs text-rose-500 mt-1">
-              {previous ? `${t('efficiency.vs')} ${formatValue(previous.operatingExpenses)}` : t('efficiency.noPreviousPeriod')}
-            </div>
-          </div>
-        </div>
-        
-        {/* Cost Breakdown Chart */}
-        <div className="border-t pt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">{t('efficiency.costBreakdown')}</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {data.categories.operatingExpenses.slice(0, 6).map((expense, idx) => {
-              const percentage = (expense.amount / current.operatingExpenses) * 100;
-              return (
-                <div key={idx} className="flex items-center space-x-3">
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-600 truncate">{expense.category}</span>
-                      <span className="font-medium">{percentage.toFixed(1)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
+
+      {/* Performance Overview */}
+      <div className="mb-8">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Colored Header */}
+          <div className="bg-gradient-to-r from-purple-500 to-violet-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <ChartBarIcon className="h-6 w-6 text-white" />
                 </div>
-              );
-            })}
+                <h3 className="text-lg font-semibold text-white">
+                  {t('dashboard.pnl.performanceOverview')}
+                </h3>
+              </div>
+              <HelpIcon topic={helpTopics['dashboard.performance']} size="sm" />
+            </div>
+          </div>
+          {/* Content */}
+          <div className="p-6">
+        
+        {/* Side-by-side heatmaps */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Card: Monthly Revenue Performance */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="mb-4">
+              <h4 className="font-semibold text-gray-900 mb-2">{t('performance.monthlyRevenueTitle')}</h4>
+              <p className="text-sm text-gray-600">{t('performance.revenueSubtitle')}</p>
+            </div>
+            <HeatmapChart
+              data={data.periods.filter(p => p.revenue > 0).slice(-12).map(p => ({
+                month: p.month,
+                value: p.revenue,
+                label: `${formatValue(p.revenue)}`
+              }))}
+              title=""
+              subtitle=""
+              colorScale="revenue"
+              interactive={true}
+              currency={selectedCurrency}
+              displayUnits={displayUnits}
+              locale={locale}
+            />
+          </div>
+
+          {/* Right Card: Monthly Net Margin Performance */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="mb-4">
+              <h4 className="font-semibold text-gray-900 mb-2">{t('performance.monthlyMarginTitle')}</h4>
+              <p className="text-sm text-gray-600">{t('performance.marginSubtitle')}</p>
+            </div>
+            <HeatmapChart
+              data={data.periods.filter(p => p.revenue > 0).slice(-12).map(p => ({
+                month: p.month,
+                value: p.netMargin,
+                label: `${formatPercentage(p.netMargin)}`
+              }))}
+              title=""
+              subtitle=""
+              colorScale="margin"
+              interactive={true}
+              currency={selectedCurrency}
+              displayUnits={displayUnits}
+              locale={locale}
+            />
+          </div>
+        </div>
           </div>
         </div>
       </div>
 
-      {/* AI-Powered Insights */}
-      <KeyInsights
-        data={{
-          revenue: current.revenue,
-          expenses: current.cogs + current.operatingExpenses,
-          netIncome: current.netIncome,
-          grossMargin: current.grossMargin,
-          operatingMargin: current.operatingMargin,
-          cashFlow: current.revenue - current.operatingExpenses,
-          previousMonth: previous ? {
-            revenue: previous.revenue,
-            expenses: previous.cogs + previous.operatingExpenses,
-            netIncome: previous.netIncome
-          } : undefined
+      {/* Forecast Trends - Revenue & Net Income Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Revenue Trend & 6-Month Forecast */}
+        <div>
+          <RevenueForecastTrendsChartJS
+            historicalData={data.periods}
+            forecastData={data.forecasts?.revenue ? data.forecasts.revenue.months.map((month, idx) => ({
+              month,
+              revenue: data.forecasts?.revenue?.trend?.[idx] || 0,
+              upperBound: data.forecasts?.revenue?.optimistic?.[idx] || 0,
+              lowerBound: data.forecasts?.revenue?.pessimistic?.[idx] || 0
+            })) : []}
+            currentTrendPercentage={previous ? calculateVariation(current.revenue, previous.revenue) : 0}
+            sixMonthForecast={data.forecasts?.revenue?.trend[5] || 0}
+            upperConfidence={data.forecasts?.revenue?.optimistic[5] || 0}
+            lowerConfidence={data.forecasts?.revenue?.pessimistic[5] || 0}
+            formatValue={formatValue}
+            formatPercentage={formatPercentage}
+            locale={locale}
+          />
+        </div>
+
+        {/* Net Income Trend & 6-Month Forecast */}
+        <div>
+          <NetIncomeForecastTrendsChartJS
+            historicalData={data.periods}
+            forecastData={data.forecasts?.netIncome ? data.forecasts.netIncome.months.map((month, idx) => ({
+              month,
+              netIncome: data.forecasts?.netIncome?.trend?.[idx] || 0,
+              upperBound: data.forecasts?.netIncome?.optimistic?.[idx] || 0,
+              lowerBound: data.forecasts?.netIncome?.pessimistic?.[idx] || 0
+            })) : []}
+            currentTrendPercentage={previous ? calculateVariation(current.netIncome, previous.netIncome) : 0}
+            sixMonthForecast={data.forecasts?.netIncome?.trend[5] || 0}
+            upperConfidence={data.forecasts?.netIncome?.optimistic[5] || 0}
+            lowerConfidence={data.forecasts?.netIncome?.pessimistic[5] || 0}
+            formatValue={formatValue}
+            formatPercentage={formatPercentage}
+            locale={locale}
+          />
+        </div>
+      </div>
+
+      {/* Profit Margin Trends & Cost Efficiency Analysis Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Profit Margin Trends */}
+        <div className="h-full">
+          <ProfitMarginTrendsChartJS
+            chartData={data.periods}
+            formatPercentage={formatPercentage}
+            locale={locale}
+          />
+        </div>
+
+        {/* Cost Efficiency Analysis */}
+        <div className="h-full">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-full flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <ChartBarIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    {t('dashboard.pnl.costEfficiencyAnalysis')}
+                  </h3>
+                </div>
+                <HelpIcon topic={helpTopics['dashboard.costEfficiency']} size="sm" className="text-white hover:text-gray-200" />
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Cost Per Revenue */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl">
+                <div className="text-2xl font-bold text-purple-700 mb-2">
+                  {current.revenue > 0 
+                    ? `${selectedCurrency} ${(((current.cogs + current.operatingExpenses) / current.revenue)).toFixed(2)}`
+                    : 'N/A'
+                  }
+                </div>
+                <div className="text-sm text-purple-600 font-medium mb-1">{t('efficiency.costPerRevenue')}</div>
+                <div className="text-xs text-purple-500">
+                  {current.revenue > 0 
+                    ? `${t('efficiency.forEvery')} ${selectedCurrency}1 ${t('efficiency.ofRevenue')}, ${selectedCurrency}${(((current.cogs + current.operatingExpenses) / current.revenue)).toFixed(2)} ${t('efficiency.inCosts')}`
+                    : ''
+                  }
+                </div>
+              </div>
+              
+              {/* % Cost of Revenue */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl">
+                <div className="text-2xl font-bold text-amber-700 mb-2">
+                  {current.revenue > 0 
+                    ? `${(((current.revenue - current.grossProfit) / current.revenue) * 100).toFixed(1)}%`
+                    : 'N/A'
+                  }
+                </div>
+                <div className="text-sm text-amber-600 font-medium mb-1">{t('efficiency.costOfRevenuePercent')}</div>
+                <div className="text-xs text-amber-500">
+                  {current.revenue > 0 
+                    ? `${formatValue(current.revenue - current.grossProfit)} ${t('efficiency.ofTotalRevenue')}`
+                    : ''
+                  }
+                </div>
+                <div className="flex items-center mt-2">
+                  <div className="flex-1 bg-amber-200 rounded-full h-2">
+                    <div 
+                      className="bg-amber-600 h-2 rounded-full transition-all duration-1000"
+                      style={{ width: `${Math.min(100, ((current.revenue - current.grossProfit) / current.revenue) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* % OpEx */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl">
+                <div className="text-2xl font-bold text-blue-700 mb-2">
+                  {current.revenue > 0 
+                    ? `${((current.operatingExpenses / current.revenue) * 100).toFixed(1)}%`
+                    : 'N/A'
+                  }
+                </div>
+                <div className="text-sm text-blue-600 font-medium mb-1">{t('efficiency.opexPercent')}</div>
+                <div className="text-xs text-blue-500">
+                  {current.revenue > 0 
+                    ? `${formatValue(current.operatingExpenses)} ${t('efficiency.ofTotalRevenue')}`
+                    : ''
+                  }
+                </div>
+                <div className="flex items-center mt-2">
+                  <div className="flex-1 bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
+                      style={{ width: `${Math.min(100, (current.operatingExpenses / current.revenue) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-blue-600 ml-2">{t('efficiency.target')}: &lt;25%</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Cost Breakdown Chart - Top 3 + Others */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">{t('efficiency.costBreakdown')}</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(() => {
+                  // Sort categories by amount (biggest first)
+                  const sortedExpenses = [...data.categories.operatingExpenses].sort((a, b) => b.amount - a.amount);
+                  const top3 = sortedExpenses.slice(0, 3);
+                  const others = sortedExpenses.slice(3);
+                  const othersTotal = others.reduce((sum, exp) => sum + exp.amount, 0);
+                  
+                  // Create display items: top 3 + others
+                  const displayItems = [
+                    ...top3,
+                    ...(othersTotal > 0 ? [{
+                      category: t('costs.others'),
+                      amount: othersTotal,
+                      percentage: (othersTotal / current.operatingExpenses) * 100
+                    }] : [])
+                  ];
+                  
+                  return displayItems.map((expense, idx) => {
+                    const percentage = (expense.amount / current.operatingExpenses) * 100;
+                    return (
+                      <div key={idx} className="bg-white p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-900 truncate">{expense.category}</span>
+                          <span className="text-lg font-bold text-gray-800">{percentage.toFixed(1)}%</span>
+                        </div>
+                        <div className="text-xs text-gray-600 mb-3">
+                          {formatValue(expense.amount)}
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-500 ${
+                              idx < 3 ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gray-400'
+                            }`}
+                            style={{ width: `${Math.min(100, percentage)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI-Powered Insights - Key Summary at Bottom */}
+      <div className="mb-8">
+        <KeyInsights
+          data={{
+            revenue: current.revenue,
+            expenses: current.cogs + current.operatingExpenses,
+            netIncome: current.netIncome,
+            grossMargin: current.grossMargin,
+            operatingMargin: current.operatingMargin,
+            cashFlow: current.revenue - current.operatingExpenses,
+            previousMonth: previous ? {
+              revenue: previous.revenue,
+              expenses: previous.cogs + previous.operatingExpenses,
+              netIncome: previous.netIncome
+            } : undefined
+          }}
+          locale={locale}
+        />
+      </div>
+      
+      {/* Expense Detail Modal */}
+      <ExpenseDetailModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => {
+          setIsExpenseModalOpen(false);
+          setSelectedExpense(null);
         }}
+        expense={selectedExpense}
+        type="opex" // Default to opex since this is for the operating expenses heatmap
+        totalRevenue={current.revenue}
+        totalCategoryAmount={current.operatingExpenses}
+        currency={currency}
+        displayUnits={displayUnits}
+        locale={locale}
       />
     </div>
   );
