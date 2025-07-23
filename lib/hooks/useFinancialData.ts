@@ -29,10 +29,11 @@ interface UseFinancialDataOptions {
   autoRefresh?: boolean;
   refreshInterval?: number;
   selectedPeriod?: string;
+  comparisonPeriod?: 'lastMonth' | 'lastQuarter' | 'lastYear';
 }
 
 export function useFinancialData(options: UseFinancialDataOptions) {
-  const { companyId, statementId, autoRefresh = false, refreshInterval = 60000, selectedPeriod } = options;
+  const { companyId, statementId, autoRefresh = false, refreshInterval = 60000, selectedPeriod, comparisonPeriod } = options;
   
   const [data, setData] = useState<FinancialDataResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,7 @@ export function useFinancialData(options: UseFinancialDataOptions) {
       const params = new URLSearchParams();
       if (statementId) params.append('statementId', statementId);
       if (selectedPeriod && selectedPeriod !== 'current') params.append('selectedPeriod', selectedPeriod);
+      if (comparisonPeriod) params.append('comparisonPeriod', comparisonPeriod);
       
       const analyticsUrl = `/api/v1/companies/${companyId}/financial-analytics${
         params.toString() ? `?${params.toString()}` : ''
