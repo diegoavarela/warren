@@ -193,129 +193,160 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // Prepare financial statement data - removing metadata as it doesn't exist in actual schema
-      const statementData = {
-        companyId,
-        organizationId: validOrganizationId,
-        statementType: accountMapping.statementType || 'profit_loss',
-        periodStart: periodStartDate,
-        periodEnd: periodEndDate,
-        currency: accountMapping.currency || 'MXN',
-        sourceFile: `${uploadSession}.xlsx`, // Using correct column name
-        // Note: metadata moved to line items where it exists in the schema
-      };
+      console.log('💾 Creating multiple financial statements for periods:', validPeriods.map((p: any) => p.label));
       
-      console.log('💾 Creating financial statement with data:', {
-        companyId: statementData.companyId,
-        organizationId: statementData.organizationId,
-        statementType: statementData.statementType,
-        periodStart: statementData.periodStart,
-        periodEnd: statementData.periodEnd,
-        currency: statementData.currency,
-        sourceFile: statementData.sourceFile
-      });
+      // Create one financial statement per period
+      const createdStatements: any[] = [];
+      
+      for (const period of validPeriods) {
+        const periodStartDate = parsePeriodDate(period.label, false);
+        const periodEndDate = parsePeriodDate(period.label, true);
+        
+        const statementData = {
+          companyId,
+          organizationId: validOrganizationId,
+          statementType: accountMapping.statementType || 'profit_loss',
+          periodStart: periodStartDate,
+          periodEnd: periodEndDate,
+          currency: accountMapping.currency || 'MXN',
+          sourceFile: `${uploadSession}.xlsx`,
+          // Note: metadata moved to line items where it exists in the schema
+        };
+        
+        console.log(`💾 Creating financial statement for ${period.label}:`, {
+          periodStart: statementData.periodStart,
+          periodEnd: statementData.periodEnd,
+          currency: statementData.currency
+        });
 
-      // Create financial statement record - using actual database schema
-      const [newStatement] = await db.insert(financialStatements).values(statementData).returning();
+        // Create financial statement record for this period
+        const [newStatement] = await db.insert(financialStatements).values(statementData).returning();
+        
+        if (!newStatement || !newStatement.id) {
+          console.error(`❌ Failed to create financial statement for period ${period.label}`);
+          throw new Error(`Failed to create financial statement for period ${period.label}`);
+        }
+        
+        createdStatements.push({ 
+          statement: newStatement, 
+          period: period 
+        });
+        
+        console.log(`✅ Created statement for ${period.label} with ID: ${newStatement.id}`);
+      }
 
-      // Note: File data is no longer passed to avoid size limits
-      // The data is already processed and available in validationResults and accountMapping
-      console.log('📊 Processing hierarchical data:', dataToProcess.length, 'items');
+      // Create line items for each period/statement combination
+      console.log('📊 Processing hierarchical data for multiple periods:', dataToProcess.length, 'items');
       console.log('📊 Data summary:', {
         totalItems: accountMapping.totalItemsCount || dataToProcess.length,
         totalRows: accountMapping.totalRowsCount || 0,
         detailRows: accountMapping.detailRowsCount || 0,
         hierarchyDetected: accountMapping.hierarchyDetected || false,
+        totalPeriods: createdStatements.length,
         sampleAccount: dataToProcess[0]
       });
       
-      const lineItems = dataToProcess.map((row: any, index: number) => {
-        // Extract period values from the row for multiple periods
-        const periodData = row.periods || {};
-        const firstPeriodValue = Object.values(periodData)[0] || row.amount || 0;
-        
-        // Debug logging for first few items
-        if (index < 5) {
-          console.log(`📝 Processing item ${index}:`, {
-            name: row.accountName || row.name,
-            originalName: row.originalAccountName,
-            category: row.category,
-            isTotal: row.isTotal,
-            parentTotalId: row.parentTotalId,
-            hasData: row.hasFinancialData,
-            periods: Object.keys(periodData),
-            firstPeriodValue: firstPeriodValue
-          });
-        }
-        
-        const baseData = {
-          statementId: newStatement.id,
-          accountCode: row.accountCode || `ACC_${index + 1}`,
-          accountName: row.accountName || row.name || `Account ${index + 1}`,
-          lineItemType: row.isCalculated ? 'calculated' : (row.isTotal ? 'total' : 'detail'),
-          category: row.category || 'other',
-          subcategory: row.subcategory || null,
-          amount: parseFloat(firstPeriodValue || '0'),
-          percentageOfRevenue: null, // Explicitly set to null to avoid numeric overflow
-          yearOverYearChange: null, // Explicitly set to null to avoid numeric overflow
-          isCalculated: row.isCalculated || false,
-          isSubtotal: row.isSubtotal || false,
-          isTotal: row.isTotal || false,
-          parentItemId: row.parentTotalId || null,
-          displayOrder: index,
-          originalText: row.originalAccountName || row.accountName || row.name,
-          // Convert confidence from percentage (0-100) to decimal (0-1) if needed
-          confidenceScore: (() => {
-            const conf = parseFloat(row.confidence || row.totalConfidence || '95');
-            // If confidence is > 1, assume it's a percentage and convert to decimal
-            const normalizedConf = conf > 1 ? conf / 100 : conf;
-            // Ensure it fits in the database field (max 0.99 for precision 3, scale 2)
-            return Math.min(0.99, normalizedConf);
-          })(),
-          metadata: {
-            originalRowIndex: row.rowIndex || index,
-            hasFinancialData: row.hasFinancialData,
-            periods: row.periods || {},
-            detectedAsTotal: row.isTotal || false,
-            uploadSession: uploadSession,
-            // Statement-level metadata moved here since it doesn't exist in financialStatements table
-            statementMetadata: {
-              periodColumns: accountMapping.periodColumns || [],
-              totalAccounts: dataToProcess.length,
-              fileName: fileName || 'financial_data.xlsx',
-              hierarchyDetected: accountMapping.hierarchyDetected || false,
-              totalItemsCount: accountMapping.totalItemsCount || dataToProcess.length,
-              totalRowsCount: accountMapping.totalRowsCount || 0,
-              detailRowsCount: accountMapping.detailRowsCount || 0
-            }
-          }
-        };
-
-        // Handle encryption for sensitive data
-        if (shouldEncrypt) {
-          return {
-            ...baseData,
-            accountName: encrypt(baseData.accountName)
-          };
-        }
-
-        return baseData;
-      });
-
-      console.log(`💾 Creating ${lineItems.length} line items...`);
-      console.log('📝 Sample line item structure:', {
-        sampleItem: lineItems[0],
-        fieldsCount: Object.keys(lineItems[0] || {}).length
-      });
-
-      // Insert all line items
-      const insertedLineItems = await db.insert(financialLineItems).values(lineItems).returning();
+      // Process line items for ALL periods
+      const allLineItems: any[] = [];
       
-      console.log(`✅ Successfully created ${insertedLineItems.length} line items`);
+      // For each created statement (one per period)
+      for (const { statement, period } of createdStatements) {
+        console.log(`📝 Creating line items for period ${period.label} (Statement ID: ${statement.id})`);
+        
+        // Process each account row for this specific period
+        const periodLineItems = dataToProcess.map((row: any, index: number) => {
+          // Extract period values from the row
+          const periodData = row.periods || {};
+          const periodValue = periodData[period.label] || 0; // Get value for THIS specific period
+          
+          // Debug logging for first few items of first period
+          if (index < 3 && period === createdStatements[0].period) {
+            console.log(`📝 Processing item ${index} for ${period.label}:`, {
+              name: row.accountName || row.name,
+              category: row.category,
+              isTotal: row.isTotal,
+              periodValue: periodValue,
+              availablePeriods: Object.keys(periodData)
+            });
+          }
+          
+          const baseData = {
+            statementId: statement.id, // Use the correct statement ID for this period
+            accountCode: row.accountCode || `ACC_${index + 1}`,
+            accountName: row.accountName || row.name || `Account ${index + 1}`,
+            lineItemType: row.isCalculated ? 'calculated' : (row.isTotal ? 'total' : 'detail'),
+            category: row.category || 'other',
+            subcategory: row.subcategory || null,
+            amount: parseFloat(periodValue || '0'), // Use the specific period value
+            percentageOfRevenue: null, // Explicitly set to null to avoid numeric overflow
+            yearOverYearChange: null, // Explicitly set to null to avoid numeric overflow
+            isCalculated: row.isCalculated || false,
+            isSubtotal: row.isSubtotal || false,
+            isTotal: row.isTotal || false,
+            parentItemId: row.parentTotalId || null,
+            displayOrder: index,
+            originalText: row.originalAccountName || row.accountName || row.name,
+            // Convert confidence from percentage (0-100) to decimal (0-1) if needed
+            confidenceScore: (() => {
+              const conf = parseFloat(row.confidence || row.totalConfidence || '95');
+              // If confidence is > 1, assume it's a percentage and convert to decimal
+              const normalizedConf = conf > 1 ? conf / 100 : conf;
+              // Ensure it fits in the database field (max 0.99 for precision 3, scale 2)
+              return Math.min(0.99, normalizedConf);
+            })(),
+            metadata: {
+              originalRowIndex: row.rowIndex || index,
+              hasFinancialData: row.hasFinancialData,
+              periods: row.periods || {},
+              detectedAsTotal: row.isTotal || false,
+              uploadSession: uploadSession,
+              // Statement-level metadata moved here since it doesn't exist in financialStatements table
+              statementMetadata: {
+                periodColumns: accountMapping.periodColumns || [],
+                totalAccounts: dataToProcess.length,
+                fileName: fileName || 'financial_data.xlsx',
+                hierarchyDetected: accountMapping.hierarchyDetected || false,
+                totalItemsCount: accountMapping.totalItemsCount || dataToProcess.length,
+                totalRowsCount: accountMapping.totalRowsCount || 0,
+                detailRowsCount: accountMapping.detailRowsCount || 0,
+                currentPeriod: period.label
+              }
+            }
+          };
+
+          // Handle encryption for sensitive data
+          if (shouldEncrypt) {
+            return {
+              ...baseData,
+              accountName: encrypt(baseData.accountName)
+            };
+          }
+
+          return baseData;
+        });
+        
+        // Add line items for this period to the overall collection
+        allLineItems.push(...periodLineItems);
+        
+        console.log(`📝 Created ${periodLineItems.length} line items for period ${period.label}`);
+      }
+      
+      console.log(`💾 Creating ${allLineItems.length} line items across ${createdStatements.length} periods...`);
+      console.log('📝 Sample line item structure:', {
+        sampleItem: allLineItems[0],
+        fieldsCount: Object.keys(allLineItems[0] || {}).length,
+        periodsRepresented: createdStatements.length
+      });
+
+      // Insert all line items for all periods
+      const insertedLineItems = await db.insert(financialLineItems).values(allLineItems).returning();
+      
+      console.log(`✅ Successfully created ${insertedLineItems.length} line items across ${createdStatements.length} statements`);
 
       const result = {
-        statement: newStatement,
-        lineItems: insertedLineItems
+        statements: createdStatements.map(s => s.statement),
+        lineItems: insertedLineItems,
+        totalPeriods: createdStatements.length
       };
 
       // Save mapping template if requested
@@ -323,6 +354,15 @@ export async function POST(request: NextRequest) {
       if (saveAsTemplate && templateName) {
         // Check if user has permission to manage company templates
         if (hasPermission(user, PERMISSIONS.MANAGE_COMPANY, companyId)) {
+          // Determine period type based on period labels
+          const determinePeriodType = (periods: any[]) => {
+            if (!periods || periods.length === 0) return 'monthly';
+            const firstLabel = (periods[0]?.label || '').toLowerCase();
+            if (firstLabel.includes('q') || firstLabel.includes('quarter')) return 'quarterly';
+            if (firstLabel.match(/^\d{4}$/)) return 'yearly';
+            return 'monthly';
+          };
+
           const templateData = {
             organizationId: validOrganizationId, // Required by actual database schema
             companyId,
@@ -331,6 +371,14 @@ export async function POST(request: NextRequest) {
             columnMappings: shouldEncrypt ? encryptObject(accountMapping) : accountMapping,
             locale: locale || 'es-MX',
             currency: accountMapping.currency || 'USD',
+            units: accountMapping.units || 'normal',
+            periodStart: parsePeriodDate(validPeriods[0].label, false),
+            periodEnd: parsePeriodDate(validPeriods[validPeriods.length - 1].label, true),
+            periodType: determinePeriodType(validPeriods),
+            detectedPeriods: validPeriods.map((p: any) => ({
+              label: p.label,
+              columnIndex: p.columnIndex
+            })),
             isDefault: false
           };
 
@@ -338,13 +386,15 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      console.log('✅ Successfully persisted hierarchical financial data:', {
-        statementId: result.statement.id,
+      console.log('✅ Successfully persisted multi-period financial data:', {
+        statementIds: result.statements.map(s => s.id),
+        totalStatements: result.statements.length,
         companyId,
         userId: user.id,
         organizationId: user.organizationId,
         isEncrypted: shouldEncrypt,
         lineItemsCount: result.lineItems.length,
+        periodsProcessed: result.totalPeriods,
         hierarchyInfo: {
           totalItems: accountMapping.totalItemsCount || result.lineItems.length,
           totalRows: accountMapping.totalRowsCount || 0,
@@ -356,11 +406,13 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        statementId: result.statement.id,
+        statementIds: result.statements.map(s => s.id),
+        totalStatements: result.statements.length,
         templateId: savedTemplate?.id || null,
         recordsCreated: result.lineItems.length,
+        periodsProcessed: result.totalPeriods,
         encrypted: shouldEncrypt,
-        message: 'Datos financieros guardados exitosamente'
+        message: `Datos financieros guardados exitosamente para ${result.totalPeriods} períodos`
       });
 
     } catch (error) {

@@ -143,7 +143,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     statementId,
     autoRefresh: false, // Disable auto-refresh to prevent constant page updates
     selectedPeriod: selectedPeriod || undefined,
-    comparisonPeriod: comparisonPeriod
+    comparisonPeriod
   });
   
   // Refetch data when selected period or comparison period changes
