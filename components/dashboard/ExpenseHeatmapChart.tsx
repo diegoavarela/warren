@@ -118,10 +118,16 @@ export function ExpenseHeatmapChart({
   // Sort data by amount descending for better visual hierarchy
   const sortedData = [...data].sort((a, b) => b.amount - a.amount);
 
-  // Use consistent grid layout for uniform card sizes
+  // Responsive grid layout based on item count (as per HOW_TO_MAP.md)
   const getGridCols = () => {
-    // Always use 2 columns for consistent card sizing across sections
-    return 'grid-cols-2';
+    const itemCount = data.length;
+    
+    if (itemCount <= 2) return 'grid-cols-1 md:grid-cols-2';
+    if (itemCount <= 4) return 'grid-cols-2 md:grid-cols-2';
+    if (itemCount <= 6) return 'grid-cols-2 md:grid-cols-3';
+    
+    // For >6 items, make heatmap smaller as requested
+    return 'grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
   };
 
   return (
