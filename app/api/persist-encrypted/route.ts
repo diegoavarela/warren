@@ -137,12 +137,40 @@ export async function POST(request: NextRequest) {
               year = 2025;
             }
             
+            // Validate month range
+            if (month < 1 || month > 12) {
+              console.warn(`Invalid month ${month} for period ${periodLabel}, defaulting to 1`);
+              month = 1;
+            }
+            
+            // Validate year range (reasonable bounds)
+            if (year < 1900 || year > 2100) {
+              console.warn(`Invalid year ${year} for period ${periodLabel}, defaulting to current year`);
+              year = new Date().getFullYear();
+            }
+            
             // For end date, use last day of month
             if (isEnd) {
               const lastDay = new Date(year, month, 0).getDate();
-              return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+              const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+              
+              // Validate the constructed date
+              const testDate = new Date(endDate);
+              if (isNaN(testDate.getTime())) {
+                console.warn(`Invalid end date constructed: ${endDate} for period ${periodLabel}`);
+                return `${new Date().getFullYear()}-12-31`;
+              }
+              return endDate;
             } else {
-              return `${year}-${String(month).padStart(2, '0')}-01`;
+              const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+              
+              // Validate the constructed date
+              const testDate = new Date(startDate);
+              if (isNaN(testDate.getTime())) {
+                console.warn(`Invalid start date constructed: ${startDate} for period ${periodLabel}`);
+                return `${new Date().getFullYear()}-01-01`;
+              }
+              return startDate;
             }
           }
         } catch (e) {
@@ -159,11 +187,18 @@ export async function POST(request: NextRequest) {
       };
 
       // Handle special case where TOTAL is included in periods
-      const validPeriods = periodColumns.filter((p: any) => 
+      let validPeriods = periodColumns.filter((p: any) => 
         p.label && 
         p.label.toLowerCase() !== 'total' && 
         p.label.toLowerCase() !== 'ytd'
       );
+      
+      // Ensure we have at least one valid period
+      if (validPeriods.length === 0) {
+        console.warn('No valid periods found after filtering, using original period columns');
+        // Use original periods if filtering removed all periods
+        validPeriods = periodColumns.filter((p: any) => p.label);
+      }
       
       const actualFirstPeriod = validPeriods.length > 0 ? validPeriods[0].label : firstPeriod;
       const actualLastPeriod = validPeriods.length > 0 ? validPeriods[validPeriods.length - 1].label : lastPeriod;
@@ -219,12 +254,18 @@ export async function POST(request: NextRequest) {
           currency: statementData.currency
         });
 
-        // Create financial statement record for this period
-        const [newStatement] = await db.insert(financialStatements).values(statementData).returning();
-        
-        if (!newStatement || !newStatement.id) {
-          console.error(`❌ Failed to create financial statement for period ${period.label}`);
-          throw new Error(`Failed to create financial statement for period ${period.label}`);
+        // Create financial statement record for this period  
+        let newStatement;
+        try {
+          [newStatement] = await db.insert(financialStatements).values(statementData).returning();
+          
+          if (!newStatement || !newStatement.id) {
+            console.error(`❌ Failed to create financial statement for period ${period.label}`);
+            throw new Error(`Failed to create financial statement for period ${period.label}`);
+          }
+        } catch (dbError) {
+          console.error(`❌ Database error creating financial statement for period ${period.label}:`, dbError);
+          throw new Error(`Database error creating financial statement for period ${period.label}: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
         }
         
         createdStatements.push({ 
@@ -270,29 +311,55 @@ export async function POST(request: NextRequest) {
             });
           }
           
+          // Validate and sanitize required fields
+          const sanitizedAccountName = (row.accountName || row.name || `Account ${index + 1}`).toString().trim();
+          const sanitizedAmount = (() => {
+            try {
+              const amount = parseFloat(periodValue || '0');
+              return isNaN(amount) ? 0 : amount;
+            } catch {
+              return 0;
+            }
+          })();
+          
           const baseData = {
             statementId: statement.id, // Use the correct statement ID for this period
-            accountCode: row.accountCode || `ACC_${index + 1}`,
-            accountName: row.accountName || row.name || `Account ${index + 1}`,
+            accountCode: (row.accountCode || `ACC_${index + 1}`).toString().substring(0, 100), // Ensure max length
+            accountName: sanitizedAccountName.substring(0, 255), // Ensure max length
             lineItemType: row.isCalculated ? 'calculated' : (row.isTotal ? 'total' : 'detail'),
-            category: row.category || 'other',
-            subcategory: row.subcategory || null,
-            amount: parseFloat(periodValue || '0'), // Use the specific period value
+            category: (row.category || 'other').toString().substring(0, 100), // Ensure max length
+            subcategory: row.subcategory ? row.subcategory.toString().substring(0, 100) : null, // Ensure max length
+            amount: sanitizedAmount, // Use the specific period value
             percentageOfRevenue: null, // Explicitly set to null to avoid numeric overflow
             yearOverYearChange: null, // Explicitly set to null to avoid numeric overflow
-            isCalculated: row.isCalculated || false,
-            isSubtotal: row.isSubtotal || false,
-            isTotal: row.isTotal || false,
+            isCalculated: Boolean(row.isCalculated),
+            isSubtotal: Boolean(row.isSubtotal),
+            isTotal: Boolean(row.isTotal),
             parentItemId: row.parentTotalId || null,
             displayOrder: index,
-            originalText: row.originalAccountName || row.accountName || row.name,
+            originalText: (row.originalAccountName || row.accountName || row.name || '').toString().substring(0, 255),
             // Convert confidence from percentage (0-100) to decimal (0-1) if needed
             confidenceScore: (() => {
-              const conf = parseFloat(row.confidence || row.totalConfidence || '95');
-              // If confidence is > 1, assume it's a percentage and convert to decimal
-              const normalizedConf = conf > 1 ? conf / 100 : conf;
-              // Ensure it fits in the database field (max 0.99 for precision 3, scale 2)
-              return Math.min(0.99, normalizedConf);
+              try {
+                const conf = parseFloat(row.confidence || row.totalConfidence || '95');
+                if (isNaN(conf)) {
+                  console.warn(`Invalid confidence value: ${row.confidence || row.totalConfidence}, defaulting to 0.95`);
+                  return 0.95;
+                }
+                
+                // If confidence is > 1, assume it's a percentage and convert to decimal
+                let normalizedConf = conf > 1 ? conf / 100 : conf;
+                
+                // Ensure it's within valid range [0, 1]
+                normalizedConf = Math.max(0, Math.min(1, normalizedConf));
+                
+                // Round to 2 decimal places to match database precision (5,2)
+                // This prevents precision errors that could cause DB constraint violations
+                return Math.round(normalizedConf * 100) / 100;
+              } catch (e) {
+                console.warn(`Error processing confidence score: ${e}, defaulting to 0.95`);
+                return 0.95;
+              }
             })(),
             metadata: {
               originalRowIndex: row.rowIndex || index,
@@ -338,10 +405,42 @@ export async function POST(request: NextRequest) {
         periodsRepresented: createdStatements.length
       });
 
-      // Insert all line items for all periods
-      const insertedLineItems = await db.insert(financialLineItems).values(allLineItems).returning();
-      
-      console.log(`✅ Successfully created ${insertedLineItems.length} line items across ${createdStatements.length} statements`);
+      // Insert all line items for all periods with better error handling
+      let insertedLineItems;
+      try {
+        // Validate that we have line items to insert
+        if (allLineItems.length === 0) {
+          throw new Error('No line items to insert - this indicates a data processing issue');
+        }
+        
+        console.log(`💾 Attempting to insert ${allLineItems.length} line items...`);
+        console.log('📊 Sample line item for validation:', JSON.stringify(allLineItems[0], null, 2));
+        
+        insertedLineItems = await db.insert(financialLineItems).values(allLineItems).returning();
+        
+        if (!insertedLineItems || insertedLineItems.length === 0) {
+          throw new Error('Database insertion returned no results');
+        }
+        
+        console.log(`✅ Successfully created ${insertedLineItems.length} line items across ${createdStatements.length} statements`);
+      } catch (dbError) {
+        console.error('❌ Database error inserting line items:', dbError);
+        console.error('❌ Failed line items data sample:', JSON.stringify(allLineItems.slice(0, 3), null, 2));
+        
+        // Provide more specific error information
+        if (dbError instanceof Error) {
+          const errorMsg = dbError.message.toLowerCase();
+          if (errorMsg.includes('constraint') || errorMsg.includes('foreign key')) {
+            throw new Error(`Database constraint violation: ${dbError.message}. Check that all referenced data exists.`);
+          } else if (errorMsg.includes('null') || errorMsg.includes('not-null')) {
+            throw new Error(`Missing required field: ${dbError.message}`);
+          } else if (errorMsg.includes('type') || errorMsg.includes('invalid')) {
+            throw new Error(`Data type error: ${dbError.message}`);
+          }
+        }
+        
+        throw new Error(`Failed to save line items: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+      }
 
       const result = {
         statements: createdStatements.map(s => s.statement),
