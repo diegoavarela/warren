@@ -166,15 +166,26 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       
       // Set display units from API
       if ((apiData as any).displayUnits) {
+        console.log('🔧 API Units Response:', {
+          apiDisplayUnits: (apiData as any).displayUnits,
+          currentOriginalUnits: originalUnits,
+          currentDisplayUnits: displayUnits
+        });
+        
         setOriginalUnits((apiData as any).displayUnits);
         // Convert displayUnits to the format used in the UI
         if ((apiData as any).displayUnits === 'thousands') {
           setDisplayUnits('K');
+          console.log('✅ Set display units to K (thousands)');
         } else if ((apiData as any).displayUnits === 'millions') {
           setDisplayUnits('M');
+          console.log('✅ Set display units to M (millions)');
         } else {
           setDisplayUnits('normal');
+          console.log('✅ Set display units to normal');
         }
+      } else {
+        console.log('❌ No displayUnits found in API response');
       }
     }
   }, [apiData]);
@@ -183,6 +194,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   const [mockData, setMockData] = useState<PnLData | null>(null);
   const data = useMockData || !companyId ? mockData : transformToPnLData(apiData);
   const loading = useMockData || !companyId ? !mockData : apiLoading;
+  
   const [expandedExpenseCategory, setExpandedExpenseCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'ytd'>('current');
   const [showAllPeriods, setShowAllPeriods] = useState(false);
@@ -465,25 +477,43 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   };
 
   const formatValue = (value: number): string => {
-    // First, convert the value based on original units to actual value
+    // FIXED: When data is in thousands, numbers are already in display format
+    // No need to multiply by 1000 then divide by 1000 - just add the suffix
     let actualValue = value;
-    if (originalUnits === 'thousands') {
-      actualValue = value * 1000;
-    } else if (originalUnits === 'millions') {
-      actualValue = value * 1000000;
-    }
-    
-    // Apply currency conversion from original currency to selected currency
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
     
-    // Apply display units
+    // Debug logging for first few calls to verify fix
+    if (Math.random() < 0.05 || value > 50000) { // Log more frequently for large values
+      console.log('💰 Format Value Debug:', {
+        inputValue: value,
+        originalUnits,
+        displayUnits,
+        convertedValue,
+        originalCurrency,
+        selectedCurrency,
+        willUseSuffix: originalUnits === 'thousands' && displayUnits === 'K' ? 'K' : 'none'
+      });
+    }
+    
+    // Apply display units and suffix based on original units
     let suffix = '';
-    if (displayUnits === 'K') {
-      convertedValue = convertedValue / 1000;
+    if (originalUnits === 'thousands' && displayUnits === 'K') {
+      // Data is already in thousands format (46,287 = 46.3M actual)
+      // Just add K suffix, no mathematical conversion needed
       suffix = 'K';
-    } else if (displayUnits === 'M') {
-      convertedValue = convertedValue / 1000000;
+    } else if (originalUnits === 'millions' && displayUnits === 'M') {
+      // Data is already in millions format 
+      // Just add M suffix, no mathematical conversion needed
       suffix = 'M';
+    } else if (originalUnits === 'normal') {
+      // Data is in actual values, apply display unit conversion
+      if (displayUnits === 'K') {
+        convertedValue = convertedValue / 1000;
+        suffix = 'K';
+      } else if (displayUnits === 'M') {
+        convertedValue = convertedValue / 1000000;
+        suffix = 'M';
+      }
     }
     
     const formatted = new Intl.NumberFormat(locale, {
@@ -541,18 +571,58 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   let previous = data.previousPeriod;
   const ytd = data.yearToDate;
   
+  console.log('🔍 Period Comparison Debug:', {
+    selectedPeriod,
+    comparisonPeriod,
+    dataCurrentPeriod: data.currentPeriod?.month,
+    dataPreviousPeriod: data.previousPeriod?.month,
+    periodsAvailable: data.periods?.map((p: any) => ({ id: p.id, month: p.month, revenue: p.revenue })),
+    periodsLength: data.periods?.length
+  });
+  
   // Handle period selection
   if (selectedPeriod && selectedPeriod !== 'current') {
     // When a specific month is selected, use that period's data
     const selectedPeriodData = data.periods.find(p => p.id === selectedPeriod);
+    console.log('📊 Period Selection Debug:', {
+      selectedPeriod,
+      foundSelectedPeriod: selectedPeriodData?.month
+    });
+    
     if (selectedPeriodData) {
       current = selectedPeriodData;
-      // Find the previous period
-      const currentIndex = data.periods.findIndex(p => p.id === selectedPeriod);
-      if (currentIndex > 0 && currentIndex < data.periods.length - 1) {
-        previous = data.periods[currentIndex + 1]; // periods are sorted newest to oldest
+      
+      // Work with sorted and deduplicated periods to find previous
+      const validPeriods = filterValidPeriods(data.periods);
+      const sortedPeriods = sortPeriods(validPeriods);
+      
+      // Find the current period in the sorted array
+      const currentIndex = sortedPeriods.findIndex(p => 
+        p.month === selectedPeriodData.month && p.year === selectedPeriodData.year
+      );
+      
+      console.log('🔢 Index Debug (Fixed):', {
+        currentIndex,
+        totalSortedPeriods: sortedPeriods.length,
+        sortedPeriodsOrder: sortedPeriods.map((p, idx) => ({ idx, month: p.month, year: p.year, id: p.id })),
+        selectedPeriodData: { month: selectedPeriodData.month, year: selectedPeriodData.year }
+      });
+      
+      if (currentIndex >= 0 && currentIndex < sortedPeriods.length - 1) {
+        previous = sortedPeriods[currentIndex + 1] as any; // periods are sorted newest to oldest, so previous (older) is at currentIndex + 1
+        console.log('✅ Found previous period:', {
+          currentPeriod: current.month,
+          previousPeriod: previous?.month,
+          currentRevenue: current.revenue,
+          previousRevenue: previous?.revenue
+        });
       } else {
         previous = undefined;
+        console.log('❌ No previous period available:', {
+          reason: currentIndex === -1 ? 'Period not found in sorted array' : 'This is the oldest period in sorted array',
+          currentIndex,
+          sortedPeriodsLength: sortedPeriods.length
+        });
       }
     }
   }
@@ -608,7 +678,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <select
                 value={selectedCurrency}
                 onChange={(e) => setSelectedCurrency(e.target.value)}
-                className="pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[100px]"
+                className="pl-3 pr-10 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[110px]"
               >
                 {SUPPORTED_CURRENCIES.map(curr => (
                   <option key={curr.code} value={curr.code}>
@@ -688,7 +758,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <select
                 value={displayUnits}
                 onChange={(e) => setDisplayUnits(e.target.value as 'normal' | 'K' | 'M')}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[90px]"
+                className="pl-3 pr-12 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[140px]"
               >
                 <option value="normal">{t('dashboard.pnl.normal')}</option>
                 <option value="K">{t('dashboard.pnl.thousands')}</option>
@@ -1040,7 +1110,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             title={activeBreakdown === 'cogs' ? t('metrics.cogsBreakdown') : t('metrics.opexBreakdown')}
             subtitle={activeBreakdown === 'cogs' ? t('heatmap.cogsSubtitle') : t('heatmap.opexSubtitle')}
             type={activeBreakdown}
-            currency={currency}
+            currency={selectedCurrency}
             displayUnits={displayUnits}
             locale={locale}
             onCategoryClick={(expense) => {
@@ -1110,7 +1180,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     title=""
                     subtitle=""
                     type="opex"
-                    currency={currency}
+                    currency={selectedCurrency}
                     displayUnits={displayUnits}
                     locale={locale}
                     onCategoryClick={(expense) => {
@@ -1172,7 +1242,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     title=""
                     subtitle=""
                     type="cogs"
-                    currency={currency}
+                    currency={selectedCurrency}
                     displayUnits={displayUnits}
                     locale={locale}
                     onCategoryClick={(expense) => {
@@ -1192,7 +1262,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       {/* Revenue Growth Analysis */}
       <div className="mb-8">
         <RevenueGrowthAnalysis 
-          chartData={data.periods.filter(p => p.revenue > 0)} // Only show periods with actual data
+          chartData={data.periods.filter(p => 
+            p.revenue > 0 && 
+            p.month && 
+            p.month !== 'undefined' && 
+            p.month !== 'Unknown' &&
+            p.year &&
+            !isNaN(p.year)
+          )} // Only show periods with actual data and valid month/year
           currentMonth={current}
           previousMonth={previous}
           currency={selectedCurrency}
@@ -1370,7 +1447,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <p className="text-sm text-gray-600">{t('performance.revenueSubtitle')}</p>
             </div>
             <HeatmapChart
-              data={data.periods.filter(p => p.revenue > 0).slice(-12).map(p => ({
+              data={data.periods.filter(p => 
+                p.revenue > 0 && 
+                p.month && 
+                p.month !== 'undefined' && 
+                p.month !== 'Unknown' &&
+                p.year &&
+                !isNaN(p.year)
+              ).slice(-12).map(p => ({
                 month: p.month,
                 value: p.revenue,
                 label: `${formatValue(p.revenue)}`
@@ -1392,7 +1476,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <p className="text-sm text-gray-600">{t('performance.marginSubtitle')}</p>
             </div>
             <HeatmapChart
-              data={data.periods.filter(p => p.revenue > 0).slice(-12).map(p => ({
+              data={data.periods.filter(p => 
+                p.revenue > 0 && 
+                p.month && 
+                p.month !== 'undefined' && 
+                p.month !== 'Unknown' &&
+                p.year &&
+                !isNaN(p.year)
+              ).slice(-12).map(p => ({
                 month: p.month,
                 value: p.netMargin,
                 label: `${formatPercentage(p.netMargin)}`
@@ -1636,7 +1727,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         type="opex" // Default to opex since this is for the operating expenses heatmap
         totalRevenue={current.revenue}
         totalCategoryAmount={current.operatingExpenses}
-        currency={currency}
+        currency={selectedCurrency}
         displayUnits={displayUnits}
         locale={locale}
       />
