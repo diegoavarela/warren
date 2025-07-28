@@ -258,21 +258,56 @@ export async function GET(
         metadata: item.metadata
       })));
 
-      // Get mapped totals directly from line items
-      const revenue = calculateRevenue(processedItems);
-      const cogs = calculateCOGS(processedItems);
+      // 🔥 CRITICAL FIX: Filter out totals, calculated items, and margins from current month calculations
+      // These items should NOT be included in calculations as they cause double/triple counting
+      const filteredCurrentItems = processedItems.filter(item => {
+        // Exclude totals (which are sums of other items)
+        if (item.isTotal || item.isSubtotal) {
+          console.log(`❌ Excluding CURRENT TOTAL item: ${item.accountName} (${item.category}) - ${item.amount}`);
+          return false;
+        }
+        
+        // Exclude calculated items and margins (which are derived from other data)
+        const excludeCategories = [
+          'total', 'calculation', 'margin', 'margin_ratios', 
+          'profitability_metrics', 'calculated'
+        ];
+        if (excludeCategories.includes(item.category)) {
+          console.log(`❌ Excluding CURRENT ${item.category.toUpperCase()} item: ${item.accountName} - ${item.amount}`);
+          return false;
+        }
+        
+        // Include only base financial data
+        console.log(`✅ Including CURRENT base item: ${item.accountName} (${item.category}) - ${item.amount}`);
+        return true;
+      });
+      
+      console.log(`📊 Current month: ${processedItems.length} total items → ${filteredCurrentItems.length} base items for calculations`);
+
+      // Get mapped totals directly from line items (use filtered items for base calculations)
+      const revenue = calculateRevenue(filteredCurrentItems);
+      const cogs = calculateCOGS(filteredCurrentItems);
       
       // Get Gross Profit from mapped total first, calculate as fallback
       const grossProfit = getMappedTotal(processedItems, 'gross_profit') || (revenue - cogs);
       
       // Check if gross margin % is already mapped
       const grossMarginItem = processedItems.find(item => 
-        item.isTotal && item.category === 'gross_margin'
+        (item.isTotal && item.category === 'gross_margin') ||
+        (item.category === 'margin' && item.accountName && 
+         item.accountName.toLowerCase().includes('gross'))
       );
       const grossMargin = grossMarginItem ? Math.abs(grossMarginItem.amount) : 
                          (revenue > 0 ? (grossProfit / revenue) * 100 : 0);
       
-      const operatingExpenses = calculateOperatingExpenses(processedItems);
+      console.log('📊 Gross Margin Decision:', {
+        mappedValue: grossMarginItem?.amount,
+        calculatedValue: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
+        finalValue: grossMargin,
+        usedMapped: !!grossMarginItem
+      });
+      
+      const operatingExpenses = calculateOperatingExpenses(filteredCurrentItems);
       
       // Get Operating Income from mapped total first, calculate as fallback
       const operatingIncome = getMappedTotal(processedItems, 'operating_income') || 
@@ -280,18 +315,33 @@ export async function GET(
       
       // Check if operating margin % is already mapped
       const operatingMarginItem = processedItems.find(item => 
-        item.isTotal && item.category === 'operating_margin'
+        (item.isTotal && item.category === 'operating_margin') ||
+        (item.category === 'margin' && item.accountName && 
+         item.accountName.toLowerCase().includes('operating'))
       );
       const operatingMargin = operatingMarginItem ? Math.abs(operatingMarginItem.amount) :
                              (revenue > 0 ? (operatingIncome / revenue) * 100 : 0);
       
-      // Other income/expenses
-      const otherIncome = calculateOtherIncome(processedItems);
-      const otherExpenses = calculateOtherExpenses(processedItems);
+      console.log('📊 Operating Margin Decision:', {
+        mappedValue: operatingMarginItem?.amount,
+        calculatedValue: revenue > 0 ? (operatingIncome / revenue) * 100 : 0,
+        finalValue: operatingMargin,
+        usedMapped: !!operatingMarginItem
+      });
       
-      // Taxes
-      const taxes = calculateTaxes(processedItems);
-      const taxesBreakdown = getTaxesBreakdown(processedItems);
+      // Other income/expenses (use filtered items for base calculations)
+      const otherIncome = calculateOtherIncome(filteredCurrentItems);
+      const otherExpenses = calculateOtherExpenses(filteredCurrentItems);
+      
+      // Taxes (use filtered items for base calculations)
+      const taxes = calculateTaxes(filteredCurrentItems);
+      const taxesBreakdown = getTaxesBreakdown(filteredCurrentItems);
+      
+      // Calculate Earnings Before Tax: Operating Income + Other Income - Other Expenses
+      const earningsBeforeTax = getMappedTotal(processedItems, 'earnings_before_tax') || 
+                               (operatingIncome + otherIncome - otherExpenses);
+      
+      const earningsBeforeTaxMargin = revenue > 0 ? (earningsBeforeTax / revenue) * 100 : 0;
       
       // Get Net Income from mapped total first
       const netIncome = getMappedTotal(processedItems, 'net_income') || 
@@ -299,22 +349,54 @@ export async function GET(
       
       // Check if net margin % is already mapped
       const netMarginItem = processedItems.find(item => 
-        item.isTotal && item.category === 'net_margin'
+        (item.isTotal && item.category === 'net_margin') ||
+        (item.category === 'margin' && item.accountName && 
+         item.accountName.toLowerCase().includes('net'))
       );
       const netMargin = netMarginItem ? Math.abs(netMarginItem.amount) :
                        (revenue > 0 ? (netIncome / revenue) * 100 : 0);
       
+      console.log('📊 Net Margin Decision:', {
+        mappedValue: netMarginItem?.amount,
+        calculatedValue: revenue > 0 ? (netIncome / revenue) * 100 : 0,
+        finalValue: netMargin,
+        usedMapped: !!netMarginItem
+      });
+      
       // Get EBITDA from mapped total first, calculate as fallback
       // EBITDA = Operating Income + Depreciation + Amortization (if available)
-      const depreciation = calculateDepreciation(processedItems);
-      const amortization = calculateAmortization(processedItems);
-      const ebitda = getMappedTotal(processedItems, 'ebitda') || 
-                    (operatingIncome + depreciation + amortization);
+      const depreciation = calculateDepreciation(filteredCurrentItems);
+      const amortization = calculateAmortization(filteredCurrentItems);
+      const mappedEbitda = getMappedTotal(processedItems, 'ebitda');
+      const calculatedEbitda = operatingIncome + depreciation + amortization;
+      const ebitda = mappedEbitda || calculatedEbitda;
+      
+      console.log('💰 EBITDA Decision:', {
+        mappedValue: mappedEbitda,
+        calculatedValue: calculatedEbitda,
+        finalValue: ebitda,
+        usedMapped: !!mappedEbitda,
+        components: { operatingIncome, depreciation, amortization }
+      });
       
       // Check if EBITDA margin % is already mapped
+      // Look for mapped EBITDA margin in multiple possible ways
       const ebitdaMarginItem = processedItems.find(item => 
-        item.isTotal && item.category === 'ebitda_margin'
+        (item.isTotal && item.category === 'ebitda_margin') ||
+        (item.category === 'margin' && item.accountName && 
+         item.accountName.toLowerCase().includes('ebitda'))
       );
+      
+      console.log('🔍 EBITDA Margin Search Results:', {
+        found: !!ebitdaMarginItem,
+        item: ebitdaMarginItem ? {
+          accountName: ebitdaMarginItem.accountName,
+          category: ebitdaMarginItem.category,
+          amount: ebitdaMarginItem.amount,
+          isTotal: ebitdaMarginItem.isTotal
+        } : null
+      });
+      
       const ebitdaMargin = ebitdaMarginItem ? Math.abs(ebitdaMarginItem.amount) :
                           (revenue > 0 ? (ebitda / revenue) * 100 : 0);
       
@@ -422,8 +504,63 @@ export async function GET(
         };
       }
 
+      // DEBUG: Check what financial statements exist for this company
+      const allStatements = await db
+        .select()
+        .from(financialStatements)
+        .where(and(
+          eq(financialStatements.companyId, companyId),
+          eq(financialStatements.statementType, 'profit_loss')
+        ))
+        .orderBy(desc(financialStatements.periodEnd));
+      
+      console.log('\n=== DATABASE STATEMENTS DEBUG ===');
+      console.log(`Found ${allStatements.length} total P&L statements for company ${companyId}`);
+      allStatements.forEach((stmt: any, index: number) => {
+        console.log(`  ${index + 1}. ID: ${stmt.id}, Period: ${stmt.periodStart} to ${stmt.periodEnd}, File: ${stmt.sourceFile}`);
+      });
+      
+      // DEBUG: Check metadata of current statement
+      const currentLineItems = await db
+        .select()
+        .from(financialLineItems)
+        .where(eq(financialLineItems.statementId, statement.id))
+        .limit(3);
+        
+      console.log('\nSample metadata from current statement:');
+      currentLineItems.forEach((item: any, index: number) => {
+        let metadata = item.metadata as any;
+        try {
+          if (typeof metadata === 'string' && metadata.includes(':')) {
+            metadata = decryptObject(metadata);
+          }
+        } catch (e) {
+          // Silent fail
+        }
+        
+        console.log(`  Item ${index + 1} (${item.accountName}):`, {
+          hasMetadata: !!metadata,
+          hasPeriodValues: !!(metadata?.periodValues),
+          hasPeriodData: !!(metadata?.periodData),
+          hasOriginalRowPeriods: !!(metadata?.originalRow?.periods),
+          metadataKeys: metadata ? Object.keys(metadata) : []
+        });
+        
+        if (metadata?.periodValues) {
+          console.log(`    periodValues keys:`, Object.keys(metadata.periodValues));
+        }
+        if (metadata?.originalRow?.periods) {
+          console.log(`    originalRow.periods keys:`, Object.keys(metadata.originalRow.periods));
+        }
+      });
+      console.log('=== END DATABASE DEBUG ===\n');
+
       // Get historical data for charts (last 12 months)
       const chartData = await getHistoricalData(companyId, statement);
+      
+      console.log('\n=== CHART DATA SUMMARY ===');
+      console.log(`Generated ${chartData.length} periods for charts`);
+      console.log('=== END CHART DATA SUMMARY ===\n');
 
       // Get company details for currency and units
       const [company] = await db
@@ -432,22 +569,46 @@ export async function GET(
         .where(eq(companies.id, companyId))
         .limit(1);
 
-      // Extract units from the first line item's metadata
-      let displayUnits = 'units';
+      // Extract units from various sources since the database doesn't have a units column yet
+      let displayUnits = 'normal'; // default fallback
+      
+      // Method 1: Try to get from line item metadata
       if (lineItems.length > 0) {
         const firstItem = lineItems[0];
         let metadata = firstItem.metadata as any;
+        
         try {
+          // Check if it's encrypted
           if (typeof metadata === 'string' && metadata.includes(':')) {
             metadata = decryptObject(metadata);
           }
+          
+          // Look for units in various places in metadata
           if (metadata && metadata.units) {
             displayUnits = metadata.units;
+          } else if (metadata && metadata.originalRow && metadata.originalRow.units) {
+            displayUnits = metadata.originalRow.units;
+          } else if (metadata && metadata.statementMetadata && metadata.statementMetadata.units) {
+            displayUnits = metadata.statementMetadata.units;
           }
         } catch (e) {
           console.warn('Failed to extract units from metadata:', e);
         }
       }
+      
+      // Method 2: Based on the CSV data analysis, default to 'thousands' for recent uploads
+      // This is a temporary fix until the database schema includes units column
+      if (displayUnits === 'normal' && statement.currency === 'ARS') {
+        displayUnits = 'thousands'; // Based on CSV analysis showing all ARS entries use thousands
+      }
+      
+      console.log('🎯 Units Debug:', {
+        defaultUnits: displayUnits,
+        statementCurrency: statement.currency,
+        statementId: statement.id,
+        lineItemsCount: lineItems.length,
+        method: displayUnits === 'thousands' ? 'Currency-based fallback' : 'Metadata extraction'
+      });
 
       // Build response matching the reference dashboard structure
       const dashboardData = {
@@ -468,6 +629,8 @@ export async function GET(
           operatingExpenses,
           operatingIncome,
           operatingMargin,
+          earningsBeforeTax,
+          earningsBeforeTaxMargin,
           netIncome,
           netMargin,
           ebitda,
@@ -501,42 +664,93 @@ export async function GET(
         comparisonPeriod: comparisonPeriod,
         comparisonData: comparisonData,
         previousMonth,
-        yearToDate: {
-          revenue: chartData.reduce((sum, d) => sum + d.revenue, 0),
-          cogs: chartData.reduce((sum, d) => sum + d.cogs, 0),
-          grossProfit: chartData.reduce((sum, d) => sum + d.grossProfit, 0),
-          grossMargin: chartData.length > 0 && chartData.reduce((sum, d) => sum + d.revenue, 0) > 0 
-            ? (chartData.reduce((sum, d) => sum + d.grossProfit, 0) / chartData.reduce((sum, d) => sum + d.revenue, 0)) * 100 
-            : 0,
-          operatingExpenses: chartData.reduce((sum, d) => sum + d.operatingExpenses, 0),
-          operatingIncome: chartData.reduce((sum, d) => sum + d.operatingIncome, 0),
-          operatingMargin: chartData.length > 0 && chartData.reduce((sum, d) => sum + d.revenue, 0) > 0
-            ? (chartData.reduce((sum, d) => sum + d.operatingIncome, 0) / chartData.reduce((sum, d) => sum + d.revenue, 0)) * 100
-            : 0,
-          taxes: chartData.reduce((sum, d) => sum + (d.taxes || 0), 0),
-          otherExpenses: chartData.reduce((sum, d) => sum + (d.otherExpenses || 0), 0),
-          expenses: chartData.reduce((sum, d) => sum + d.cogs + d.operatingExpenses + (d.otherExpenses || 0) + (d.taxes || 0), 0),
-          netIncome: chartData.reduce((sum, d) => sum + d.netIncome, 0),
-          netMargin: chartData.length > 0 && chartData.reduce((sum, d) => sum + d.revenue, 0) > 0
-            ? (chartData.reduce((sum, d) => sum + d.netIncome, 0) / chartData.reduce((sum, d) => sum + d.revenue, 0)) * 100
-            : 0,
-          ebitda: chartData.reduce((sum, d) => sum + (d.ebitda || 0), 0),
-          ebitdaMargin: chartData.length > 0 && chartData.reduce((sum, d) => sum + d.revenue, 0) > 0
-            ? (chartData.reduce((sum, d) => sum + (d.ebitda || 0), 0) / chartData.reduce((sum, d) => sum + d.revenue, 0)) * 100
-            : 0,
-          monthsIncluded: chartData.filter(d => d.revenue > 0).length
-        },
-        summary: {
-          totalRevenue: chartData.reduce((sum, d) => sum + d.revenue, 0),
-          totalCOGS: chartData.reduce((sum, d) => sum + d.cogs, 0),
-          totalGrossProfit: chartData.reduce((sum, d) => sum + d.grossProfit, 0),
-          avgGrossMargin: chartData.length > 0 ? chartData.reduce((sum, d) => sum + d.grossMargin, 0) / chartData.length : 0,
-          totalOperatingExpenses: chartData.reduce((sum, d) => sum + d.operatingExpenses, 0),
-          totalOperatingIncome: chartData.reduce((sum, d) => sum + d.operatingIncome, 0),
-          avgOperatingMargin: chartData.length > 0 ? chartData.reduce((sum, d) => sum + d.operatingMargin, 0) / chartData.length : 0,
-          totalNetIncome: chartData.reduce((sum, d) => sum + d.netIncome, 0),
-          avgNetMargin: chartData.length > 0 ? chartData.reduce((sum, d) => sum + d.netMargin, 0) / chartData.length : 0
-        },
+        yearToDate: (() => {
+          // If chartData is empty, use current month data as fallback for YTD
+          if (chartData.length === 0) {
+            console.log('📊 YTD FALLBACK: chartData is empty, using current month data for YTD calculations');
+            console.log('Current month values:', { revenue, cogs, operatingExpenses, netIncome, ebitda });
+            return {
+              revenue: revenue,
+              cogs: cogs,
+              grossProfit: grossProfit,
+              grossMargin: grossMargin,
+              operatingExpenses: operatingExpenses,
+              operatingIncome: operatingIncome,
+              operatingMargin: operatingMargin,
+              earningsBeforeTax: earningsBeforeTax,
+              earningsBeforeTaxMargin: earningsBeforeTaxMargin,
+              taxes: taxes,
+              otherExpenses: otherIncome - otherExpenses, // Net other expenses
+              expenses: cogs + operatingExpenses + (otherIncome - otherExpenses) + taxes,
+              netIncome: netIncome,
+              netMargin: netMargin,
+              ebitda: ebitda,
+              ebitdaMargin: ebitdaMargin,
+              monthsIncluded: 1 // Current month only
+            };
+          }
+          
+          // Normal calculation from chartData
+          const ytdRevenue = chartData.reduce((sum, d) => sum + d.revenue, 0);
+          const ytdCogs = chartData.reduce((sum, d) => sum + d.cogs, 0);
+          const ytdGrossProfit = chartData.reduce((sum, d) => sum + d.grossProfit, 0);
+          const ytdOperatingExpenses = chartData.reduce((sum, d) => sum + d.operatingExpenses, 0);
+          const ytdOperatingIncome = chartData.reduce((sum, d) => sum + d.operatingIncome, 0);
+          const ytdEarningsBeforeTax = chartData.reduce((sum, d) => sum + (d.earningsBeforeTax || 0), 0);
+          const ytdTaxes = chartData.reduce((sum, d) => sum + (d.taxes || 0), 0);
+          const ytdOtherExpenses = chartData.reduce((sum, d) => sum + (d.otherExpenses || 0), 0);
+          const ytdNetIncome = chartData.reduce((sum, d) => sum + d.netIncome, 0);
+          const ytdEbitda = chartData.reduce((sum, d) => sum + (d.ebitda || 0), 0);
+          
+          return {
+            revenue: ytdRevenue,
+            cogs: ytdCogs,
+            grossProfit: ytdGrossProfit,
+            grossMargin: ytdRevenue > 0 ? (ytdGrossProfit / ytdRevenue) * 100 : 0,
+            operatingExpenses: ytdOperatingExpenses,
+            operatingIncome: ytdOperatingIncome,
+            operatingMargin: ytdRevenue > 0 ? (ytdOperatingIncome / ytdRevenue) * 100 : 0,
+            earningsBeforeTax: ytdEarningsBeforeTax,
+            earningsBeforeTaxMargin: ytdRevenue > 0 ? (ytdEarningsBeforeTax / ytdRevenue) * 100 : 0,
+            taxes: ytdTaxes,
+            otherExpenses: ytdOtherExpenses,
+            expenses: ytdCogs + ytdOperatingExpenses + ytdOtherExpenses + ytdTaxes,
+            netIncome: ytdNetIncome,
+            netMargin: ytdRevenue > 0 ? (ytdNetIncome / ytdRevenue) * 100 : 0,
+            ebitda: ytdEbitda,
+            ebitdaMargin: ytdRevenue > 0 ? (ytdEbitda / ytdRevenue) * 100 : 0,
+            monthsIncluded: chartData.filter(d => d.revenue > 0).length
+          };
+        })(),
+        summary: (() => {
+          // If chartData is empty, use current month data
+          if (chartData.length === 0) {
+            return {
+              totalRevenue: revenue,
+              totalCOGS: cogs,
+              totalGrossProfit: grossProfit,
+              avgGrossMargin: grossMargin,
+              totalOperatingExpenses: operatingExpenses,
+              totalOperatingIncome: operatingIncome,
+              avgOperatingMargin: operatingMargin,
+              totalNetIncome: netIncome,
+              avgNetMargin: netMargin
+            };
+          }
+          
+          // Normal calculation from chartData
+          return {
+            totalRevenue: chartData.reduce((sum, d) => sum + d.revenue, 0),
+            totalCOGS: chartData.reduce((sum, d) => sum + d.cogs, 0),
+            totalGrossProfit: chartData.reduce((sum, d) => sum + d.grossProfit, 0),
+            avgGrossMargin: chartData.reduce((sum, d) => sum + d.grossMargin, 0) / chartData.length,
+            totalOperatingExpenses: chartData.reduce((sum, d) => sum + d.operatingExpenses, 0),
+            totalOperatingIncome: chartData.reduce((sum, d) => sum + d.operatingIncome, 0),
+            avgOperatingMargin: chartData.reduce((sum, d) => sum + d.operatingMargin, 0) / chartData.length,
+            totalNetIncome: chartData.reduce((sum, d) => sum + d.netIncome, 0),
+            avgNetMargin: chartData.reduce((sum, d) => sum + d.netMargin, 0) / chartData.length
+          };
+        })(),
         categories: await getCategoriesBreakdown(processedItems, companyId),
         taxesBreakdown: taxesBreakdown,
         chartData
@@ -590,8 +804,17 @@ function calculateByCategory(items: ProcessedLineItem[], targetCategory: string)
   const categoryTotals = items.filter(item => {
     if (!item.isTotal) return false;
     
-    // Only check the category - it was already classified during import
-    return item.category === targetCategory;
+    // First try exact match
+    if (item.category === targetCategory) return true;
+    
+    // Try alternative category matching for broader coverage
+    if (targetCategory === 'cogs') {
+      return item.category === 'expenses' || item.category === 'costs';
+    } else if (targetCategory === 'operating_expenses') {
+      return item.category === 'expenses' || item.category === 'opex';
+    }
+    
+    return false;
   });
   
   console.log(`Found ${categoryTotals.length} ${targetCategory} totals`);
@@ -633,7 +856,31 @@ function calculateByCategory(items: ProcessedLineItem[], targetCategory: string)
     total = categoryTotals.reduce((sum, item) => sum + Math.abs(item.amount), 0);
     console.log(`Total ${targetCategory}: ${total} from ${categoryTotals.length} totals (no details found)\n`);
   } else {
-    console.log(`No ${targetCategory} items found\n`);
+    // Final fallback: Look for any detail items that match the category (not just children of totals)
+    const directCategoryItems = items.filter(item => {
+      if (item.isTotal) return false; // Skip totals, we already checked those
+      
+      // Direct category match
+      if (item.category === targetCategory) return true;
+      
+      // Alternative category matching
+      if (targetCategory === 'cogs') {
+        return item.category === 'expenses' || item.category === 'costs';
+      } else if (targetCategory === 'operating_expenses') {
+        return item.category === 'expenses' || item.category === 'opex';
+      } else if (targetCategory === 'taxes') {
+        return item.category === 'tax' || item.category === 'impuestos';
+      }
+      
+      return false;
+    });
+    
+    if (directCategoryItems.length > 0) {
+      total = directCategoryItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+      console.log(`Total ${targetCategory}: ${total} from ${directCategoryItems.length} direct category items\n`);
+    } else {
+      console.log(`No ${targetCategory} items found\n`);
+    }
   }
   
   return total;
@@ -641,14 +888,60 @@ function calculateByCategory(items: ProcessedLineItem[], targetCategory: string)
 
 // Get mapped totals directly from line items
 function getMappedTotal(items: ProcessedLineItem[], category: string): number {
-  // Look for a total line item that matches this category
-  const totalItem = items.find(item => {
+  // First, look for a total line item that matches this category
+  let totalItem = items.find(item => {
     return item.isTotal && item.category === category;
   });
+  
+  // Special handling for calculated items like EBITDA
+  if (!totalItem && (category === 'ebitda' || category === 'net_income' || category === 'gross_profit' || category === 'operating_income')) {
+    // Look for items with "calculation" category that match the expected name
+    const calculationPatterns: Record<string, string[]> = {
+      'ebitda': ['ebitda'],
+      'net_income': ['net income', 'net loss', 'utilidad neta'],
+      'gross_profit': ['gross profit', 'utilidad bruta'],
+      'operating_income': ['operating income', 'utilidad operacional']
+    };
+    
+    const patterns = calculationPatterns[category] || [];
+    totalItem = items.find(item => 
+      item.category === 'calculation' && 
+      item.accountName && 
+      patterns.some(pattern => 
+        item.accountName.toLowerCase().includes(pattern.toLowerCase())
+      )
+    );
+    
+    if (totalItem) {
+      console.log(`🔥 Found mapped CALCULATION for ${category}: ${totalItem.accountName} = ${totalItem.amount}`);
+    }
+  }
   
   if (totalItem) {
     console.log(`Found mapped total for ${category}: ${totalItem.accountName} = ${totalItem.amount}`);
     return Math.abs(totalItem.amount);
+  }
+  
+  // Enhanced fallback: try alternative category names
+  let alternativeCategories: string[] = [];
+  if (category === 'cogs') {
+    alternativeCategories = ['expenses', 'costs'];
+  } else if (category === 'operating_expenses') {
+    alternativeCategories = ['expenses', 'opex'];
+  } else if (category === 'taxes') {
+    alternativeCategories = ['tax', 'impuestos'];
+  }
+  
+  // Try alternative categories
+  for (const altCategory of alternativeCategories) {
+    const altTotalItem = items.find(item => {
+      return item.isTotal && item.category === altCategory;
+    });
+    
+    if (altTotalItem) {
+      console.log(`Found mapped total for ${category} using alternative category ${altCategory}: ${altTotalItem.accountName} = ${altTotalItem.amount}`);
+      return Math.abs(altTotalItem.amount);
+    }
   }
   
   // Fallback: calculate from detail items if no total is mapped
@@ -660,15 +953,30 @@ function getMappedTotal(items: ProcessedLineItem[], category: string): number {
 
 // Specific calculation functions using mapped totals
 function calculateRevenue(items: ProcessedLineItem[]): number {
-  return getMappedTotal(items, 'revenue');
+  // First try to get mapped total, then fall back to category calculation
+  const mappedTotal = getMappedTotal(items, 'revenue');
+  if (mappedTotal !== 0) { // Allow negative values, only fall back if exactly 0
+    return mappedTotal;
+  }
+  return calculateByCategory(items, 'revenue');
 }
 
 function calculateCOGS(items: ProcessedLineItem[]): number {
-  return getMappedTotal(items, 'cogs');
+  // First try to get mapped total, then fall back to category calculation
+  const mappedTotal = getMappedTotal(items, 'cogs');
+  if (mappedTotal !== 0) { // Allow negative values, only fall back if exactly 0
+    return mappedTotal;
+  }
+  return calculateByCategory(items, 'cogs');
 }
 
 function calculateOperatingExpenses(items: ProcessedLineItem[]): number {
-  return getMappedTotal(items, 'operating_expenses');
+  // First try to get mapped total, then fall back to category calculation
+  const mappedTotal = getMappedTotal(items, 'operating_expenses');
+  if (mappedTotal !== 0) { // Allow negative values, only fall back if exactly 0
+    return mappedTotal;
+  }
+  return calculateByCategory(items, 'operating_expenses');
 }
 
 function calculateOtherIncome(items: ProcessedLineItem[]): number {
@@ -1021,11 +1329,16 @@ async function getProcessedLineItems(statementId: string): Promise<ProcessedLine
 }
 
 async function getHistoricalData(companyId: string, currentStatement: any) {
+  console.log('\n=== getHistoricalData DEBUG START ===');
+  console.log('Input parameters:', { companyId, statementId: currentStatement.id });
+  
   // First, try to get the current statement's line items with period data
   const lineItems = await db
     .select()
     .from(financialLineItems)
     .where(eq(financialLineItems.statementId, currentStatement.id));
+    
+  console.log(`Found ${lineItems.length} line items for statement ${currentStatement.id}`);
     
   // Check if we have period data in the metadata
   let hasPeriodData = false;
@@ -1045,9 +1358,12 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
         console.warn('Failed to decrypt metadata:', e);
       }
       
-      if (metadata.periodValues) {
+      // Check for period data in multiple possible fields
+      const periodsToCheck = metadata.periodValues || metadata.periods || {};
+      
+      if (periodsToCheck && Object.keys(periodsToCheck).length > 0) {
         hasPeriodData = true;
-        Object.keys(metadata.periodValues).forEach(period => {
+        Object.keys(periodsToCheck).forEach(period => {
           if (!periodData[period]) {
             periodData[period] = {
               revenue: [],
@@ -1064,6 +1380,35 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
   });
   
   const chartData = [];
+  
+  console.log('Period data analysis:', { hasPeriodData, periodsFound: Object.keys(periodData).length });
+  if (Object.keys(periodData).length > 0) {
+    console.log('Available periods:', Object.keys(periodData));
+  } else {
+    console.log('❌ NO PERIOD DATA FOUND - will fall back to individual statements');
+    console.log('Sample metadata inspection (first 3 items):');
+    lineItems.slice(0, 3).forEach((item: any, index: number) => {
+      if (item.metadata) {
+        let metadata = item.metadata;
+        try {
+          if (typeof metadata === 'string' && metadata.includes(':')) {
+            metadata = decryptObject(metadata);
+          }
+        } catch (e) {
+          // ignore
+        }
+        console.log(`  Item ${index + 1}: ${item.accountName}`);
+        console.log(`    Raw metadata type: ${typeof item.metadata}`);
+        console.log(`    Metadata keys: ${Object.keys(metadata || {}).join(', ')}`);
+        if (metadata?.periods) {
+          console.log(`    ✅ Has periods: ${Object.keys(metadata.periods).join(', ')}`);
+        }
+        if (metadata?.periodValues) {
+          console.log(`    ✅ Has periodValues: ${Object.keys(metadata.periodValues).join(', ')}`);
+        }
+      }
+    });
+  }
   
   if (hasPeriodData && Object.keys(periodData).length > 0) {
     // Process each period from the metadata
@@ -1094,12 +1439,48 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
     });
     
     // Calculate metrics for each period
-    const sortedPeriods = Object.keys(periodData).sort();
+    const allPeriods = Object.keys(periodData);
+    console.log('Found periods for processing:', allPeriods);
+    
+    // Sort periods chronologically (handle both formats)
+    const sortedPeriods = allPeriods.sort((a, b) => {
+      // Convert both periods to comparable format
+      const getDateFromPeriod = (period: string) => {
+        if (period.includes('-') && period.split('-')[0].length === 4) {
+          // Format: "2025-01"
+          const [year, month] = period.split('-');
+          return new Date(parseInt(year), parseInt(month) - 1);
+        } else {
+          // Format: "Jan-25"
+          const [monthAbbr, yearAbbr] = period.split('-');
+          const monthMapping: Record<string, number> = {
+            'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+            'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+          };
+          const monthIndex = monthMapping[monthAbbr];
+          const year = parseInt('20' + yearAbbr);
+          return new Date(year, monthIndex);
+        }
+      };
+      
+      return getDateFromPeriod(a).getTime() - getDateFromPeriod(b).getTime();
+    });
+    
+    console.log('Sorted periods:', sortedPeriods);
     
     for (const period of sortedPeriods) {
+      console.log(`\n=== Processing period: ${period} ===`);
+      
       // Create period-specific items with amounts for this period
       const periodItems = processedItems.map((item: any) => {
-        const periodValue = item.metadata?.periodValues?.[period] || 0;
+        const periodValue = item.metadata?.periodValues?.[period] || 
+                           item.metadata?.periods?.[period] || 0;
+        
+        // Debug period extraction
+        if (periodValue !== 0) {
+          console.log(`  Found period data - ${item.accountName}: ${periodValue} (category: ${item.category})`);
+        }
+        
         return {
           id: item.id,
           accountCode: item.accountCode || '',
@@ -1108,41 +1489,107 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
           amount: typeof periodValue === 'string' ? 
             parseFloat(periodValue.replace(/[$,\s()]/g, '')) || 0 : 
             periodValue,
-          subcategory: item.subcategory
+          subcategory: item.subcategory,
+          isTotal: item.isTotal || false,
+          isSubtotal: item.isSubtotal || false,
+          parentId: item.parentId || null
         };
       });
       
-      // Use the same logic as currentMonth to get mapped totals
-      const revenue = getMappedTotal(periodItems, 'revenue');
-      const cogs = getMappedTotal(periodItems, 'cogs');
+      // 🔥 CRITICAL FIX: Filter out totals, calculated items, and margins from YTD calculations
+      // These items should NOT be included in YTD aggregation as they cause double/triple counting
+      const filteredPeriodItems = periodItems.filter((item: any) => {
+        // Exclude totals (which are sums of other items)
+        if (item.isTotal || item.isSubtotal) {
+          console.log(`  ❌ Excluding TOTAL item: ${item.accountName} (${item.category}) - ${item.amount}`);
+          return false;
+        }
+        
+        // Exclude calculated items and margins (which are derived from other data)
+        const excludeCategories = [
+          'total', 'calculation', 'margin', 'margin_ratios', 
+          'profitability_metrics', 'calculated'
+        ];
+        if (excludeCategories.includes(item.category)) {
+          console.log(`  ❌ Excluding ${item.category.toUpperCase()} item: ${item.accountName} - ${item.amount}`);
+          return false;
+        }
+        
+        // Include only base financial data
+        console.log(`  ✅ Including base item: ${item.accountName} (${item.category}) - ${item.amount}`);
+        return true;
+      });
+      
+      console.log(`  📊 Period ${period}: ${periodItems.length} total items → ${filteredPeriodItems.length} base items for YTD`);
+      
+      // Use the same enhanced calculation logic as currentMonth, but with filtered items
+      // 🔥 CRITICAL: All base calculations use filteredPeriodItems to avoid double-counting
+      const revenue = calculateRevenue(filteredPeriodItems);
+      const cogs = calculateCOGS(filteredPeriodItems);
       
       // Get Gross Profit from mapped total first, calculate as fallback
       const grossProfit = getMappedTotal(periodItems, 'gross_profit') || (revenue - cogs);
       
-      const operatingExpenses = getMappedTotal(periodItems, 'operating_expenses');
+      const operatingExpenses = calculateOperatingExpenses(filteredPeriodItems);
       
       // Get Operating Income from mapped total first, calculate as fallback
       const operatingIncome = getMappedTotal(periodItems, 'operating_income') || 
                              (grossProfit - operatingExpenses);
       
-      const otherIncome = calculateOtherIncome(periodItems);
-      const otherExpenses = calculateOtherExpenses(periodItems);
-      const taxes = calculateTaxes(periodItems);
+      const otherIncome = calculateOtherIncome(filteredPeriodItems);
+      const otherExpenses = calculateOtherExpenses(filteredPeriodItems);
+      const taxes = calculateTaxes(filteredPeriodItems);
+      
+      // Calculate Earnings Before Tax: Operating Income + Other Income - Other Expenses
+      const earningsBeforeTax = getMappedTotal(periodItems, 'earnings_before_tax') || 
+                               (operatingIncome + otherIncome - otherExpenses);
       
       // Get Net Income from mapped total first
       const netIncome = getMappedTotal(periodItems, 'net_income') || 
                        (operatingIncome + otherIncome - otherExpenses - taxes);
       
       // Get EBITDA from mapped total first
-      const depreciation = calculateDepreciation(periodItems);
-      const amortization = calculateAmortization(periodItems);
-      const ebitda = getMappedTotal(periodItems, 'ebitda') || 
-                    (operatingIncome + depreciation + amortization);
+      const depreciation = calculateDepreciation(filteredPeriodItems);
+      const amortization = calculateAmortization(filteredPeriodItems);
+      const mappedEbitdaYtd = getMappedTotal(periodItems, 'ebitda');
+      const calculatedEbitdaYtd = operatingIncome + depreciation + amortization;
+      const ebitda = mappedEbitdaYtd || calculatedEbitdaYtd;
+      
+      if (mappedEbitdaYtd) {
+        console.log(`  💰 YTD ${period}: Using MAPPED EBITDA = ${mappedEbitdaYtd}`);
+      } else {
+        console.log(`  💰 YTD ${period}: Using CALCULATED EBITDA = ${calculatedEbitdaYtd} (${operatingIncome} + ${depreciation} + ${amortization})`);
+      }
       
       // Convert period format for display
-      const [year, month] = period.split('-');
-      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-      const monthIndex = parseInt(month) - 1;
+      // Handle both formats: "2025-01" and "Jan-25"
+      let monthName, periodYear, monthIndex;
+      
+      if (period.includes('-') && period.split('-')[0].length === 4) {
+        // Format: "2025-01"
+        const [year, month] = period.split('-');
+        const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        monthIndex = parseInt(month) - 1;
+        monthName = monthNames[monthIndex];
+        periodYear = parseInt(year);
+      } else {
+        // Format: "Jan-25", "Feb-25", etc.
+        const [monthAbbr, yearAbbr] = period.split('-');
+        const monthMapping: Record<string, number> = {
+          'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+          'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+        };
+        const monthNamesEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        
+        monthIndex = monthMapping[monthAbbr];
+        if (monthIndex === undefined) {
+          console.warn(`Invalid month abbreviation ${monthAbbr} for period ${period}`);
+          continue;
+        }
+        
+        monthName = monthNamesEs[monthIndex];
+        periodYear = parseInt('20' + yearAbbr); // Convert "25" to 2025
+      }
       
       // Validate month index
       if (monthIndex < 0 || monthIndex > 11) {
@@ -1150,12 +1597,9 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
         continue;
       }
       
-      const monthName = monthNames[monthIndex];
-      const periodYear = parseInt(year);
-      
       // Skip invalid years
       if (isNaN(periodYear) || periodYear < 2000 || periodYear > 2100) {
-        console.warn(`Invalid year ${year} for period ${period}`);
+        console.warn(`Invalid year ${periodYear} for period ${period}`);
         continue;
       }
       
@@ -1174,8 +1618,8 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
       }
       
       // Log what data we found for this period
-      console.log(`Including period ${period} with data:`, {
-        revenue, cogs, operatingExpenses, taxes, otherIncome
+      console.log(`Including period ${period} (${monthName} ${periodYear}) with data:`, {
+        revenue, cogs, operatingExpenses, taxes, otherIncome, netIncome, ebitda
       });
       
       chartData.push({
@@ -1191,6 +1635,8 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
         operatingMargin: revenue > 0 ? (operatingIncome / revenue) * 100 : 0,
         otherIncome,
         otherExpenses,
+        earningsBeforeTax,
+        earningsBeforeTaxMargin: revenue > 0 ? (earningsBeforeTax / revenue) * 100 : 0,
         ebitda,
         ebitdaMargin: revenue > 0 ? (ebitda / revenue) * 100 : 0,
         taxes,
@@ -1200,6 +1646,7 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
     }
   } else {
     // Fallback to old behavior if no period data
+    console.log('No period data found in metadata, falling back to separate statements');
     const statements = await db
       .select()
       .from(financialStatements)
@@ -1209,34 +1656,61 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
       ))
       .orderBy(desc(financialStatements.periodEnd))
       .limit(12);
+      
+    console.log(`Found ${statements.length} historical statements for company ${companyId}`);
 
     for (const stmt of statements.reverse()) {
       const items = await getProcessedLineItems(stmt.id);
       
-      // Use the same logic as currentMonth to get mapped totals
-      const revenue = getMappedTotal(items, 'revenue');
-      const cogs = getMappedTotal(items, 'cogs');
+      // 🔥 CRITICAL FIX: Filter out totals, calculated items, and margins from historical calculations
+      const filteredHistoricalItems = items.filter(item => {
+        // Exclude totals (which are sums of other items)
+        if (item.isTotal || item.isSubtotal) {
+          return false;
+        }
+        
+        // Exclude calculated items and margins (which are derived from other data)
+        const excludeCategories = [
+          'total', 'calculation', 'margin', 'margin_ratios', 
+          'profitability_metrics', 'calculated'
+        ];
+        if (excludeCategories.includes(item.category)) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      console.log(`📊 Historical ${stmt.id}: ${items.length} total items → ${filteredHistoricalItems.length} base items`);
+      
+      // Use the same enhanced calculation logic as currentMonth with filtered items
+      const revenue = calculateRevenue(filteredHistoricalItems);
+      const cogs = calculateCOGS(filteredHistoricalItems);
       
       // Get Gross Profit from mapped total first, calculate as fallback
       const grossProfit = getMappedTotal(items, 'gross_profit') || (revenue - cogs);
       
-      const operatingExpenses = getMappedTotal(items, 'operating_expenses');
+      const operatingExpenses = calculateOperatingExpenses(filteredHistoricalItems);
       
       // Get Operating Income from mapped total first, calculate as fallback
       const operatingIncome = getMappedTotal(items, 'operating_income') || 
                              (grossProfit - operatingExpenses);
       
-      const otherIncome = calculateOtherIncome(items);
-      const otherExpenses = calculateOtherExpenses(items);
-      const taxes = calculateTaxes(items);
+      const otherIncome = calculateOtherIncome(filteredHistoricalItems);
+      const otherExpenses = calculateOtherExpenses(filteredHistoricalItems);
+      const taxes = calculateTaxes(filteredHistoricalItems);
+      
+      // Calculate Earnings Before Tax: Operating Income + Other Income - Other Expenses
+      const earningsBeforeTax = getMappedTotal(items, 'earnings_before_tax') || 
+                               (operatingIncome + otherIncome - otherExpenses);
       
       // Get Net Income from mapped total first
       const netIncome = getMappedTotal(items, 'net_income') || 
                        (operatingIncome + otherIncome - otherExpenses - taxes);
       
       // Get EBITDA from mapped total first
-      const depreciation = calculateDepreciation(items);
-      const amortization = calculateAmortization(items);
+      const depreciation = calculateDepreciation(filteredHistoricalItems);
+      const amortization = calculateAmortization(filteredHistoricalItems);
       const ebitda = getMappedTotal(items, 'ebitda') || 
                     (operatingIncome + depreciation + amortization);
       
@@ -1254,14 +1728,25 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
         continue;
       }
       
-      // Log what data we found for this statement
-      console.log(`Including statement ${stmt.id} (${formatMonth(stmt.periodEnd)}) with data:`, {
-        revenue, cogs, operatingExpenses, taxes, otherIncome
-      });
+      // Process period from database date
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const monthIndex = periodDate.getMonth();
+      const monthName = months[monthIndex];
+      const year = periodDate.getFullYear();
       
-      const monthYear = formatMonth(stmt.periodEnd);
-      const [monthName, yearStr] = monthYear.split(' ');
-      const year = parseInt(yearStr) || new Date(stmt.periodEnd).getFullYear();
+      // Debug invalid dates
+      if (monthIndex < 0 || monthIndex > 11 || !monthName) {
+        console.error(`❌ Invalid date processing for statement ${stmt.id}:`, {
+          rawPeriodEnd: stmt.periodEnd,
+          periodDate: periodDate,
+          monthIndex: monthIndex,
+          monthName: monthName,
+          year: year
+        });
+        continue; // Skip this invalid period
+      }
+      
+      console.log(`📊 Including ${monthName} ${year} - Revenue: ${revenue}`);
       
       chartData.push({
         id: stmt.id,
@@ -1276,6 +1761,8 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
         operatingMargin: revenue > 0 ? (operatingIncome / revenue) * 100 : 0,
         otherIncome,
         otherExpenses,
+        earningsBeforeTax,
+        earningsBeforeTaxMargin: revenue > 0 ? (earningsBeforeTax / revenue) * 100 : 0,
         ebitda,
         ebitdaMargin: revenue > 0 ? (ebitda / revenue) * 100 : 0,
         taxes,
@@ -1285,31 +1772,80 @@ async function getHistoricalData(companyId: string, currentStatement: any) {
     }
   }
   
-  // Remove duplicates based on period ID
+  // Remove duplicates based on period ID using year-month numeric key
   const uniquePeriods = new Map<string, any>();
+  
+  console.log(`🔍 Deduplicating ${chartData.length} periods`);
+  
   chartData.forEach(period => {
-    const periodKey = `${period.year}-${period.month}`;
+    // Create consistent numeric key for deduplication
+    const monthOrderEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const monthIndex = monthOrderEs.indexOf(period.month);
+    
+    if (monthIndex === -1) {
+      console.warn(`❌ Unknown month name: ${period.month}. Skipping period.`);
+      return; // Skip invalid month names
+    }
+    
+    const monthNumber = (monthIndex + 1).toString().padStart(2, '0');
+    const periodKey = `${period.year}-${monthNumber}`;
+    
     if (!uniquePeriods.has(periodKey) || period.revenue > (uniquePeriods.get(periodKey)?.revenue || 0)) {
       uniquePeriods.set(periodKey, period);
     }
   });
   
-  // Convert back to array and sort by date (newest first)
+  // Convert back to array and sort by date (OLDEST first for chronological display)
   const sortedChartData = Array.from(uniquePeriods.values()).sort((a, b) => {
-    if (a.year !== b.year) return b.year - a.year;
+    if (a.year !== b.year) return a.year - b.year; // Oldest year first
     const monthOrderEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const monthA = monthOrderEs.indexOf(a.month);
     const monthB = monthOrderEs.indexOf(b.month);
-    return monthB - monthA;
+    return monthA - monthB; // January first, then February, etc.
   });
+  
+  console.log(`📋 Final sorted chart data (${sortedChartData.length} periods):`);
+  sortedChartData.forEach((period, index) => {
+    console.log(`  [${index}] ${period.month} ${period.year} - Revenue: ${period.revenue}`);
+  });
+  
+  console.log('🎯 Final chartData after deduplication and sorting:');
+  sortedChartData.forEach((period, index) => {
+    console.log(`  ${index + 1}. ${period.month} ${period.year}: Revenue=${period.revenue}, ID=${period.id}`);
+  });
+  
+  console.log('Final chartData summary:', {
+    totalPeriods: sortedChartData.length,
+    periodsWithRevenue: sortedChartData.filter(d => d.revenue > 0).length,
+    firstPeriod: sortedChartData[0]?.month + ' ' + sortedChartData[0]?.year,
+    lastPeriod: sortedChartData[sortedChartData.length - 1]?.month + ' ' + sortedChartData[sortedChartData.length - 1]?.year,
+    totalRevenue: sortedChartData.reduce((sum, d) => sum + d.revenue, 0),
+    samplePeriods: sortedChartData.slice(0, 3).map(d => ({
+      period: `${d.month} ${d.year}`,
+      revenue: d.revenue,
+      cogs: d.cogs,
+      operatingExpenses: d.operatingExpenses
+    }))
+  });
+  console.log('=== getHistoricalData DEBUG END ===\n');
   
   return sortedChartData;
 }
 
 function formatMonth(date: string): string {
   const d = new Date(date);
+  // Validate the date
+  if (isNaN(d.getTime())) {
+    console.warn('Invalid date provided to formatMonth:', date);
+    return 'Unknown';
+  }
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+  const monthIndex = d.getMonth();
+  if (monthIndex < 0 || monthIndex > 11) {
+    console.warn('Invalid month index:', monthIndex, 'for date:', date);
+    return 'Unknown';
+  }
+  return `${months[monthIndex]} ${d.getFullYear()}`;
 }
 
 function formatMonthFromPeriodId(periodId: string): string {

@@ -3,9 +3,12 @@ import { encrypt, encryptObject } from "@/lib/encryption";
 import { nanoid } from "nanoid";
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 import { db, financialStatements, financialLineItems, mappingTemplates, organizations, eq } from "@/lib/db";
+import { writeFileSync } from "fs";
+import { join } from "path";
 
 export async function POST(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
+    console.log('🚀 persist-encrypted API called at:', new Date().toISOString());
     try {
       const body = await req.json();
       const {
@@ -52,8 +55,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('User organization:', user.organizationId);
-      console.log('Company ID:', companyId);
+      console.log('🔍 Request debug info:', {
+        userOrganization: user.organizationId,
+        companyId,
+        hasValidationResults: !!validationResults,
+        hasAccountMapping: !!accountMapping,
+        accountMappingKeys: accountMapping ? Object.keys(accountMapping) : [],
+        validationResultsKeys: validationResults ? Object.keys(validationResults) : [],
+        periodsReceived: accountMapping?.periodColumns?.length || 0
+      });
       console.log('Using actual database schema for persistence');
 
       // In development, ensure we have a valid organizationId
@@ -237,14 +247,32 @@ export async function POST(request: NextRequest) {
         const periodStartDate = parsePeriodDate(period.label, false);
         const periodEndDate = parsePeriodDate(period.label, true);
         
+        // Validate dates before creating statement
+        const validateDate = (dateStr: string, fallback: string): string => {
+          try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) {
+              console.warn(`Invalid date ${dateStr}, using fallback ${fallback}`);
+              return fallback;
+            }
+            return dateStr;
+          } catch (e) {
+            console.warn(`Error validating date ${dateStr}: ${e}, using fallback ${fallback}`);
+            return fallback;
+          }
+        };
+
+        const validPeriodStart = validateDate(periodStartDate, '2025-01-01');
+        const validPeriodEnd = validateDate(periodEndDate, '2025-01-31');
+
         const statementData = {
           companyId,
           organizationId: validOrganizationId,
-          statementType: accountMapping.statementType || 'profit_loss',
-          periodStart: periodStartDate,
-          periodEnd: periodEndDate,
-          currency: accountMapping.currency || 'MXN',
-          sourceFile: `${uploadSession}.xlsx`,
+          statementType: (accountMapping.statementType || 'profit_loss').substring(0, 50), // Ensure max length
+          periodStart: validPeriodStart,
+          periodEnd: validPeriodEnd,
+          currency: (accountMapping.currency || 'MXN').substring(0, 3), // Ensure max length
+          sourceFile: `${uploadSession || 'unknown'}.xlsx`.substring(0, 255), // Ensure max length
           // Note: metadata moved to line items where it exists in the schema
         };
         
@@ -312,12 +340,30 @@ export async function POST(request: NextRequest) {
           }
           
           // Validate and sanitize required fields
-          const sanitizedAccountName = (row.accountName || row.name || `Account ${index + 1}`).toString().trim();
+          const sanitizedAccountName = (() => {
+            const name = (row.accountName || row.name || `Account ${index + 1}`).toString().trim();
+            // Ensure it's not empty and fits within database constraints
+            if (!name || name.length === 0) {
+              return `Account ${index + 1}`;
+            }
+            return name.substring(0, 255); // Ensure max length constraint
+          })();
+          
           const sanitizedAmount = (() => {
             try {
               const amount = parseFloat(periodValue || '0');
-              return isNaN(amount) ? 0 : amount;
-            } catch {
+              if (isNaN(amount)) {
+                console.warn(`Invalid amount for ${sanitizedAccountName}: ${periodValue}, defaulting to 0`);
+                return 0;
+              }
+              // Check for extreme values that might cause database issues
+              if (Math.abs(amount) > 999999999999.99) {
+                console.warn(`Amount too large for ${sanitizedAccountName}: ${amount}, capping to safe value`);
+                return amount > 0 ? 999999999999.99 : -999999999999.99;
+              }
+              return amount;
+            } catch (e) {
+              console.warn(`Error parsing amount for ${sanitizedAccountName}: ${e}, defaulting to 0`);
               return 0;
             }
           })();
@@ -335,7 +381,7 @@ export async function POST(request: NextRequest) {
             isCalculated: Boolean(row.isCalculated),
             isSubtotal: Boolean(row.isSubtotal),
             isTotal: Boolean(row.isTotal),
-            parentItemId: row.parentTotalId || null,
+            parentItemId: null, // Will be set in a second pass after all items are created
             displayOrder: index,
             originalText: (row.originalAccountName || row.accountName || row.name || '').toString().substring(0, 255),
             // Convert confidence from percentage (0-100) to decimal (0-1) if needed
@@ -354,39 +400,79 @@ export async function POST(request: NextRequest) {
                 normalizedConf = Math.max(0, Math.min(1, normalizedConf));
                 
                 // Round to 2 decimal places to match database precision (5,2)
-                // This prevents precision errors that could cause DB constraint violations
-                return Math.round(normalizedConf * 100) / 100;
+                // Ensure the result fits within decimal(5,2) constraints: -999.99 to 999.99
+                const result = Math.round(normalizedConf * 100) / 100;
+                
+                // Final validation to ensure it fits database constraints
+                if (result < 0 || result > 99.99) {
+                  console.warn(`Confidence score ${result} exceeds database constraints, defaulting to 0.95`);
+                  return 0.95;
+                }
+                
+                return result;
               } catch (e) {
                 console.warn(`Error processing confidence score: ${e}, defaulting to 0.95`);
                 return 0.95;
               }
             })(),
-            metadata: {
-              originalRowIndex: row.rowIndex || index,
-              hasFinancialData: row.hasFinancialData,
-              periods: row.periods || {},
-              detectedAsTotal: row.isTotal || false,
-              uploadSession: uploadSession,
-              // Statement-level metadata moved here since it doesn't exist in financialStatements table
-              statementMetadata: {
-                periodColumns: accountMapping.periodColumns || [],
-                totalAccounts: dataToProcess.length,
-                fileName: fileName || 'financial_data.xlsx',
-                hierarchyDetected: accountMapping.hierarchyDetected || false,
-                totalItemsCount: accountMapping.totalItemsCount || dataToProcess.length,
-                totalRowsCount: accountMapping.totalRowsCount || 0,
-                detailRowsCount: accountMapping.detailRowsCount || 0,
-                currentPeriod: period.label
+            metadata: (() => {
+              try {
+                const metadata = {
+                  originalRowIndex: row.rowIndex || index,
+                  hasFinancialData: Boolean(row.hasFinancialData),
+                  periods: row.periods || {},
+                  detectedAsTotal: Boolean(row.isTotal),
+                  uploadSession: uploadSession || 'unknown',
+                  // Statement-level metadata moved here since it doesn't exist in financialStatements table
+                  statementMetadata: {
+                    periodColumns: accountMapping.periodColumns || [],
+                    totalAccounts: dataToProcess.length,
+                    fileName: fileName || 'financial_data.xlsx',
+                    hierarchyDetected: Boolean(accountMapping.hierarchyDetected),
+                    totalItemsCount: accountMapping.totalItemsCount || dataToProcess.length,
+                    totalRowsCount: accountMapping.totalRowsCount || 0,
+                    detailRowsCount: accountMapping.detailRowsCount || 0,
+                    currentPeriod: period.label
+                  }
+                };
+                
+                // Validate metadata can be serialized to JSON
+                JSON.stringify(metadata);
+                return metadata;
+              } catch (e) {
+                console.warn(`Error creating metadata for item ${index}: ${e}, using minimal metadata`);
+                return {
+                  originalRowIndex: index,
+                  hasFinancialData: false,
+                  periods: {},
+                  detectedAsTotal: false,
+                  uploadSession: uploadSession || 'unknown',
+                  statementMetadata: {
+                    periodColumns: [],
+                    totalAccounts: dataToProcess.length,
+                    fileName: fileName || 'financial_data.xlsx',
+                    hierarchyDetected: false,
+                    totalItemsCount: dataToProcess.length,
+                    totalRowsCount: 0,
+                    detailRowsCount: 0,
+                    currentPeriod: period.label
+                  }
+                };
               }
-            }
+            })()
           };
 
           // Handle encryption for sensitive data
           if (shouldEncrypt) {
-            return {
-              ...baseData,
-              accountName: encrypt(baseData.accountName)
-            };
+            try {
+              return {
+                ...baseData,
+                accountName: encrypt(baseData.accountName)
+              };
+            } catch (encryptError) {
+              console.warn(`Encryption failed for account ${baseData.accountName}: ${encryptError}, storing unencrypted`);
+              return baseData;
+            }
           }
 
           return baseData;
@@ -405,6 +491,72 @@ export async function POST(request: NextRequest) {
         periodsRepresented: createdStatements.length
       });
 
+      // 🔥 PERSIST JSON TO FILE FOR INSPECTION
+      try {
+        const jsonData = {
+          timestamp: new Date().toISOString(),
+          uploadSession: uploadSession,
+          companyId: companyId,
+          userId: user.id,
+          fileName: fileName,
+          
+          // INPUT DATA (what was received from the frontend)
+          input: {
+            validationResults: validationResults,
+            accountMapping: accountMapping,
+            templateName: templateName,
+            saveAsTemplate: saveAsTemplate
+          },
+          
+          // PROCESSED DATA (what gets saved to database)
+          processed: {
+            createdStatements: createdStatements.map(cs => ({
+              period: cs.period.label,
+              statementId: cs.statement.id,
+              periodStart: cs.statement.periodStart,
+              periodEnd: cs.statement.periodEnd,
+              currency: cs.statement.currency
+            })),
+            
+            // ALL LINE ITEMS (complete structure that goes to database)
+            allLineItems: allLineItems,
+            
+            // SUMMARY STATISTICS
+            summary: {
+              totalPeriods: createdStatements.length,
+              totalLineItems: allLineItems.length,
+              periodsFound: validPeriods.map((p: any) => p.label),
+              accountsCount: dataToProcess.length,
+              hierarchyDetected: accountMapping.hierarchyDetected,
+              isEncrypted: shouldEncrypt
+            },
+            
+            // SAMPLE DATA FOR QUICK INSPECTION
+            samples: {
+              firstLineItem: allLineItems[0],
+              lastLineItem: allLineItems[allLineItems.length - 1],
+              samplePeriodData: allLineItems[0]?.metadata?.periods,
+              statementMetadata: allLineItems[0]?.metadata?.statementMetadata
+            }
+          }
+        };
+        
+        // Create filename with timestamp and upload session
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const jsonFileName = `excel_mapping_${uploadSession}_${timestamp}.json`;
+        
+        // Write to project root directory
+        const filePath = join(process.cwd(), jsonFileName);
+        writeFileSync(filePath, JSON.stringify(jsonData, null, 2), 'utf8');
+        
+        console.log(`📄 JSON DATA PERSISTED TO FILE: ${jsonFileName}`);
+        console.log(`📄 File location: ${filePath}`);
+        console.log(`📄 You can now inspect the exact JSON structure that gets saved to the database!`);
+        
+      } catch (fileError) {
+        console.error('❌ Failed to save JSON to file (but continuing with database save):', fileError);
+      }
+
       // Insert all line items for all periods with better error handling
       let insertedLineItems;
       try {
@@ -414,7 +566,43 @@ export async function POST(request: NextRequest) {
         }
         
         console.log(`💾 Attempting to insert ${allLineItems.length} line items...`);
-        console.log('📊 Sample line item for validation:', JSON.stringify(allLineItems[0], null, 2));
+        
+        // Validate line items before insertion
+        const validationErrors = [];
+        for (let i = 0; i < Math.min(5, allLineItems.length); i++) {
+          const item = allLineItems[i];
+          
+          // Check required fields
+          if (!item.statementId) validationErrors.push(`Item ${i}: missing statementId`);
+          if (!item.accountName || item.accountName.length === 0) validationErrors.push(`Item ${i}: missing accountName`);
+          if (item.amount === undefined || item.amount === null) validationErrors.push(`Item ${i}: missing amount`);
+          
+          // Check field lengths
+          if (item.accountCode && item.accountCode.length > 100) validationErrors.push(`Item ${i}: accountCode too long`);
+          if (item.accountName && item.accountName.length > 255) validationErrors.push(`Item ${i}: accountName too long`);
+          if (item.category && item.category.length > 100) validationErrors.push(`Item ${i}: category too long`);
+          if (item.subcategory && item.subcategory.length > 100) validationErrors.push(`Item ${i}: subcategory too long`);
+          
+          // Check numeric constraints
+          if (item.confidenceScore !== null && (item.confidenceScore < 0 || item.confidenceScore > 99.99)) {
+            validationErrors.push(`Item ${i}: confidenceScore ${item.confidenceScore} exceeds constraints`);
+          }
+          if (typeof item.amount !== 'number' || isNaN(item.amount)) {
+            validationErrors.push(`Item ${i}: invalid amount value ${item.amount}`);
+          }
+        }
+        
+        if (validationErrors.length > 0) {
+          console.error('❌ Validation errors found:', validationErrors);
+          throw new Error(`Data validation failed: ${validationErrors.join(', ')}`);
+        }
+        
+        console.log('📊 Sample line item structure:', {
+          fields: Object.keys(allLineItems[0] || {}),
+          confidenceScore: allLineItems[0]?.confidenceScore,
+          amount: allLineItems[0]?.amount,
+          accountName: allLineItems[0]?.accountName?.substring(0, 50)
+        });
         
         insertedLineItems = await db.insert(financialLineItems).values(allLineItems).returning();
         
@@ -425,17 +613,41 @@ export async function POST(request: NextRequest) {
         console.log(`✅ Successfully created ${insertedLineItems.length} line items across ${createdStatements.length} statements`);
       } catch (dbError) {
         console.error('❌ Database error inserting line items:', dbError);
-        console.error('❌ Failed line items data sample:', JSON.stringify(allLineItems.slice(0, 3), null, 2));
+        
+        // Log the specific error details
+        if (dbError instanceof Error) {
+          console.error('❌ Error name:', dbError.name);
+          console.error('❌ Error message:', dbError.message);
+          if (dbError.stack) {
+            console.error('❌ Error stack:', dbError.stack.substring(0, 500));
+          }
+        }
+        
+        // Log sample problematic data
+        console.error('❌ Sample line items that failed:', JSON.stringify({
+          count: allLineItems.length,
+          first: allLineItems[0] ? {
+            statementId: allLineItems[0].statementId,
+            accountName: allLineItems[0].accountName,
+            amount: allLineItems[0].amount,
+            confidenceScore: allLineItems[0].confidenceScore,
+            metadata: typeof allLineItems[0].metadata
+          } : 'none'
+        }, null, 2));
         
         // Provide more specific error information
         if (dbError instanceof Error) {
           const errorMsg = dbError.message.toLowerCase();
           if (errorMsg.includes('constraint') || errorMsg.includes('foreign key')) {
             throw new Error(`Database constraint violation: ${dbError.message}. Check that all referenced data exists.`);
-          } else if (errorMsg.includes('null') || errorMsg.includes('not-null')) {
+          } else if (errorMsg.includes('null') || errorMsg.includes('not-null') || errorMsg.includes('violates not-null')) {
             throw new Error(`Missing required field: ${dbError.message}`);
-          } else if (errorMsg.includes('type') || errorMsg.includes('invalid')) {
+          } else if (errorMsg.includes('type') || errorMsg.includes('invalid input syntax')) {
             throw new Error(`Data type error: ${dbError.message}`);
+          } else if (errorMsg.includes('value too long') || errorMsg.includes('string too long')) {
+            throw new Error(`Field length exceeded: ${dbError.message}`);
+          } else if (errorMsg.includes('numeric field overflow')) {
+            throw new Error(`Numeric value exceeds database constraints: ${dbError.message}`);
           }
         }
         
