@@ -150,7 +150,7 @@ export const translations = {
     'dashboard.pnl.ytdSummary': 'Resumen Año a la Fecha (YTD)',
     'dashboard.pnl.executiveMetrics': 'Métricas Ejecutivas',
     'dashboard.pnl.executiveMetricsSubtitle': 'Indicadores clave de rendimiento financiero',
-    'dashboard.pnl.revenueSection': 'Ingresos',
+    'dashboard.pnl.revenueSection': 'Principales Indicadores',
     'dashboard.pnl.costsSection': 'Estructura de Costos',
     'dashboard.pnl.profitabilitySection': 'Métricas de Rentabilidad',
     'dashboard.pnl.operatingExpensesAnalysis': 'Análisis de Gastos Operacionales',
