@@ -5,7 +5,7 @@ import { KPICard } from './KPICard';
 import { WarrenChart, CHART_CONFIGS } from '../charts/WarrenChart';
 import { MetricCard } from './MetricCard';
 import { HeatmapChart } from './HeatmapChart';
-import { ExpenseHeatmapChart } from './ExpenseHeatmapChart';
+import { HorizontalStackedChart } from './HorizontalStackedChart';
 import { ExpenseDetailModal } from './ExpenseDetailModal';
 import { KeyInsights } from './KeyInsights';
 import { PersonnelCostsWidget } from './PersonnelCostsWidget';
@@ -211,7 +211,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   const [expandedExpenseCategory, setExpandedExpenseCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'ytd'>('current');
   const [showAllPeriods, setShowAllPeriods] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('ARS');
   const [displayUnits, setDisplayUnits] = useState<'normal' | 'K' | 'M'>('normal');
   const [originalCurrency, setOriginalCurrency] = useState<string>('USD');
   const [originalUnits, setOriginalUnits] = useState<string>('units');
@@ -539,14 +539,25 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     
     // Conversion flow verified working correctly
     
-    const formatted = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: selectedCurrency,
+    // Get the currency symbol from our supported currencies
+    const currencyInfo = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency);
+    const currencySymbol = currencyInfo?.symbol || selectedCurrency;
+    
+    // Format number without currency
+    const numberFormatter = new Intl.NumberFormat(locale, {
       minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
       maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
-    }).format(convertedValue);
+    });
     
-    return formatted + suffix;
+    const formattedNumber = numberFormatter.format(convertedValue);
+    
+    // Add space before suffix if there is one
+    const suffixWithSpace = suffix ? ` ${suffix}` : '';
+    
+    // Add space after currency symbol for multi-character currencies like ARS
+    const currencyWithSpace = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
+    
+    return `${currencyWithSpace}${formattedNumber}${suffixWithSpace}`;
   };
 
   const formatPercentage = (value: number): string => {
@@ -1221,18 +1232,18 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       </div>
       )}
 
-      {/* Category Breakdown Section with Heatmap */}
+      {/* Category Breakdown Section with Horizontal Stacked Chart */}
       {activeBreakdown && (
         <div className="mb-8">
-          <ExpenseHeatmapChart
+          <HorizontalStackedChart
             data={activeBreakdown === 'cogs' ? data.categories.cogs : data.categories.operatingExpenses}
             title={activeBreakdown === 'cogs' ? t('metrics.cogsBreakdown') : t('metrics.opexBreakdown')}
             subtitle={activeBreakdown === 'cogs' ? t('heatmap.cogsSubtitle') : t('heatmap.opexSubtitle')}
-            type={activeBreakdown}
             currency={selectedCurrency}
             originalCurrency={originalCurrency}
             displayUnits={displayUnits}
             locale={locale}
+            formatValue={formatValue}
             onCategoryClick={(expense) => {
               setSelectedExpense(expense);
               setIsExpenseModalOpen(true);
@@ -1252,74 +1263,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         </div>
       )}
 
-      {/* Cost Analysis - Operating Expenses & COGS Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Operating Expenses Analysis - Collapsible Heatmap */}
-        {data.categories.operatingExpenses && data.categories.operatingExpenses.length > 0 && (
-          <div>
-          <div className="bg-white rounded-2xl shadow-2xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 border border-gray-100 overflow-hidden">
-            {/* Colored Header with collapse/expand controls */}
-            <div className="bg-gradient-to-r from-rose-500 to-pink-600 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-white/20 rounded-lg">
-                    <DocumentTextIcon className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">
-                      {t('dashboard.pnl.operatingExpensesAnalysis')}
-                    </h3>
-                    <p className="text-sm text-white/80 mt-1">
-                      {t('heatmap.opexSubtitle')}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  {/* Fold/Unfold section */}
-                  <button
-                    onClick={() => setIsOpexSectionCollapsed(!isOpexSectionCollapsed)}
-                    className="p-2 text-white/70 hover:text-white transition-colors"
-                    title={isOpexSectionCollapsed ? t('common.expand') : t('common.collapse')}
-                  >
-                    {isOpexSectionCollapsed ? (
-                      <ChevronDownIcon className="h-4 w-4" />
-                    ) : (
-                      <ChevronUpIcon className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Collapsible content */}
-            {!isOpexSectionCollapsed && (
-              <div className="p-6">
-                <ExpenseHeatmapChart
-                    data={data.categories.operatingExpenses}
-                    title=""
-                    subtitle=""
-                    type="opex"
-                    currency={selectedCurrency}
-                    originalCurrency={originalCurrency}
-                    displayUnits={displayUnits}
-                    locale={locale}
-                    onCategoryClick={(expense) => {
-                      console.log('PnL Dashboard - OpEx expense clicked:', expense);
-                      setSelectedExpense(expense);
-                      setIsExpenseModalOpen(true);
-                      console.log('PnL Dashboard - modal state set to true');
-                    }}
-                  />
-              </div>
-            )}
-          </div>
-        </div>
-        )}
-
-        {/* COGS Analysis - Collapsible Heatmap */}
-        {data.categories.cogs && data.categories.cogs.length > 0 && (
-          <div>
+      {/* COGS Analysis - Full Width (Top Priority) */}
+      {data.categories.cogs && data.categories.cogs.length > 0 && (
+        <div className="mb-8">
           <div className="bg-white rounded-2xl shadow-2xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 border border-gray-100 overflow-hidden">
             {/* Colored Header with collapse/expand controls */}
             <div className="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4">
@@ -1357,16 +1303,16 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             
             {/* Collapsible content */}
             {!isCogsSectionCollapsed && (
-              <div className="p-6">
-                <ExpenseHeatmapChart
-                    data={data.categories.cogs}
-                    title=""
-                    subtitle=""
-                    type="cogs"
+              <div className="w-full">
+                <HorizontalStackedChart
+                    data={[...data.categories.cogs].sort((a, b) => b.amount - a.amount)}
                     currency={selectedCurrency}
                     originalCurrency={originalCurrency}
                     displayUnits={displayUnits}
                     locale={locale}
+                    formatValue={formatValue}
+                    title={t('metrics.cogsAnalysis')}
+                    subtitle={t('heatmap.cogsSubtitle')}
                     onCategoryClick={(expense) => {
                       console.log('PnL Dashboard - COGS expense clicked:', expense);
                       setSelectedExpense(expense);
@@ -1377,8 +1323,70 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             )}
           </div>
         </div>
-        )}
-      </div>
+      )}
+
+      {/* Operating Expenses Analysis - Full Width */}
+      {data.categories.operatingExpenses && data.categories.operatingExpenses.length > 0 && (
+        <div className="mb-8">
+          <div className="bg-white rounded-2xl shadow-2xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 border border-gray-100 overflow-hidden">
+            {/* Colored Header with collapse/expand controls */}
+            <div className="bg-gradient-to-r from-rose-500 to-pink-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <DocumentTextIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {t('dashboard.pnl.operatingExpensesAnalysis')}
+                    </h3>
+                    <p className="text-sm text-white/80 mt-1">
+                      {t('heatmap.opexSubtitle')}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Fold/Unfold section */}
+                  <button
+                    onClick={() => setIsOpexSectionCollapsed(!isOpexSectionCollapsed)}
+                    className="p-2 text-white/70 hover:text-white transition-colors"
+                    title={isOpexSectionCollapsed ? t('common.expand') : t('common.collapse')}
+                  >
+                    {isOpexSectionCollapsed ? (
+                      <ChevronDownIcon className="h-4 w-4" />
+                    ) : (
+                      <ChevronUpIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Collapsible content */}
+            {!isOpexSectionCollapsed && (
+              <div className="w-full">
+                <HorizontalStackedChart
+                    data={[...data.categories.operatingExpenses].sort((a, b) => b.amount - a.amount)}
+                    currency={selectedCurrency}
+                    originalCurrency={originalCurrency}
+                    displayUnits={displayUnits}
+                    locale={locale}
+                    formatValue={formatValue}
+                    title={t('metrics.opexAnalysis')}
+                    subtitle={t('heatmap.opexSubtitle')}
+                    onCategoryClick={(expense) => {
+                      console.log('PnL Dashboard - OpEx expense clicked:', expense);
+                      setSelectedExpense(expense);
+                      setIsExpenseModalOpen(true);
+                      console.log('PnL Dashboard - modal state set to true');
+                    }}
+                  />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
 
       {/* Revenue Growth Analysis */}
@@ -1530,11 +1538,19 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-600">{t('efficiency.costPerRevenue')}</span>
                   <span className="font-bold text-lg text-emerald-700">
-                    {selectedCurrency} {((current.cogs + current.operatingExpenses) / current.revenue).toFixed(2)}
+                    {(() => {
+                      const symbol = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency)?.symbol || selectedCurrency;
+                      const symbolWithSpace = symbol.length > 1 ? `${symbol} ` : symbol;
+                      return `${symbolWithSpace}${((current.cogs + current.operatingExpenses) / current.revenue).toFixed(2)}`;
+                    })()}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2 text-xs text-gray-500">
-                  <span>{t('efficiency.optimal')}: &lt; {selectedCurrency} 0.70</span>
+                  <span>{t('efficiency.optimal')}: &lt; {(() => {
+                    const symbol = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency)?.symbol || selectedCurrency;
+                    const symbolWithSpace = symbol.length > 1 ? `${symbol} ` : symbol;
+                    return `${symbolWithSpace}0.70`;
+                  })()}</span>
                 </div>
               </div>
               
@@ -1735,14 +1751,22 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl">
                 <div className="text-2xl font-bold text-purple-700 mb-2">
                   {current.revenue > 0 
-                    ? `${selectedCurrency} ${(((current.cogs + current.operatingExpenses) / current.revenue)).toFixed(2)}`
+                    ? (() => {
+                        const symbol = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency)?.symbol || selectedCurrency;
+                        const symbolWithSpace = symbol.length > 1 ? `${symbol} ` : symbol;
+                        return `${symbolWithSpace}${(((current.cogs + current.operatingExpenses) / current.revenue)).toFixed(2)}`;
+                      })()
                     : 'N/A'
                   }
                 </div>
                 <div className="text-sm text-purple-600 font-medium mb-1">{t('efficiency.costPerRevenue')}</div>
                 <div className="text-xs text-purple-500">
                   {current.revenue > 0 
-                    ? `${t('efficiency.forEvery')} ${selectedCurrency}1 ${t('efficiency.ofRevenue')}, ${selectedCurrency}${(((current.cogs + current.operatingExpenses) / current.revenue)).toFixed(2)} ${t('efficiency.inCosts')}`
+                    ? (() => {
+                        const symbol = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency)?.symbol || selectedCurrency;
+                        const symbolWithSpace = symbol.length > 1 ? `${symbol} ` : symbol;
+                        return `${t('efficiency.forEvery')} ${symbolWithSpace}1 ${t('efficiency.ofRevenue')}, ${symbolWithSpace}${(((current.cogs + current.operatingExpenses) / current.revenue)).toFixed(2)} ${t('efficiency.inCosts')}`;
+                      })()
                     : ''
                   }
                 </div>

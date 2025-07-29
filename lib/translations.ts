@@ -218,11 +218,13 @@ export const translations = {
     'metrics.opexBreakdown': 'Desglose de OpEx',
     'metrics.detailedBreakdown': 'Desglose Detallado',
     'metrics.ytdRevenue': 'Ingresos YTD',
-    'metrics.ytdExpenses': 'Gastos YTD',
+    'metrics.ytdExpenses': 'Egresos YTD',
     'metrics.ytdNetIncome': 'Utilidad Neta YTD',
     'metrics.ytdEbitda': 'EBITDA YTD',
     'metrics.months': 'meses',
     'metrics.cogsBreakdown': 'Desglose de COGS',
+    'metrics.cogsAnalysis': 'Análisis de Costos de Ventas',
+    'metrics.opexAnalysis': 'Análisis de Gastos Operacionales',
     'metrics.noBreakdownAvailable': 'Sin desglose disponible',
     'metrics.industry': 'Industria',
     'metrics.efficient': 'Eficiente',
@@ -231,6 +233,7 @@ export const translations = {
     'metrics.ofOpEx': 'de OpEx',
     'metrics.previous': 'Anterior',
     'metrics.total': 'Total',
+    'metrics.totalCOGS': 'Total COGS',
     'metrics.categories': 'Categorías',
     
     // Executive KPIs
@@ -245,7 +248,7 @@ export const translations = {
     
     // YTD Section
     'ytd.revenueYtd': 'Ingresos YTD',
-    'ytd.expensesYtd': 'Gastos YTD',
+    'ytd.expensesYtd': 'Egresos YTD',
     'ytd.netIncomeYtd': 'Utilidad Neta YTD',
     'ytd.grossMargin': 'Margen Bruto',
     'ytd.operatingMargin': 'Margen Operacional',
@@ -267,7 +270,7 @@ export const translations = {
     'charts.netMargin': 'Margen Neto',
     'charts.revenue': 'Ingresos',
     'charts.costs': 'Costos',
-    'charts.totalCosts': 'Costos Totales',
+    'charts.totalCosts': 'Egresos Totales',
     'charts.cogs': 'Costo de Ventas',
     'charts.operatingExpenses': 'Gastos Operacionales',
     'charts.grossProfit': 'Utilidad Bruta',
@@ -405,8 +408,8 @@ export const translations = {
     'help.ytd.revenue.title': 'Ingresos Acumulados YTD',
     'help.ytd.revenue.content': '<p>Los <strong>Ingresos YTD</strong> (Year-to-Date) muestran el total acumulado desde el inicio del año fiscal hasta la fecha.</p><h4>Total YTD: <strong>{currentValue}</strong></h4><h4>Comparaciones relevantes:</h4><ul><li>Mismo período año anterior: <strong>{benchmarks.lastYear}</strong></li><li>Presupuesto YTD: <strong>{benchmarks.budget}</strong></li><li>Mejor escenario: <strong>{benchmarks.bestCase}</strong></li></ul><h4>Análisis YTD te ayuda a:</h4><ul><li>Evaluar el progreso anual</li><li>Ajustar estrategias a tiempo</li><li>Proyectar cierre de año</li><li>Tomar decisiones informadas</li></ul>',
     
-    'help.ytd.expenses.title': 'Gastos Acumulados YTD',
-    'help.ytd.expenses.content': '<p>Los <strong>Gastos YTD</strong> incluyen todos los costos acumulados (COGS + OpEx) desde el inicio del año.</p><h4>Total Gastos YTD: <strong>{currentValue}</strong></h4><h4>Como % de Ingresos YTD: <strong>{expenseRatio}%</strong></h4><h4>Benchmarks de control de gastos:</h4><ul><li>Presupuesto: <strong>{benchmarks.budget}</strong></li><li>Promedio industria: <strong>{benchmarks.industry}</strong></li><li>Nivel eficiente: <strong>{benchmarks.efficient}</strong></li></ul><h4>Señales de alerta:</h4><ul><li>Gastos creciendo más rápido que ingresos</li><li>Desviación > 10% del presupuesto</li><li>Ratio gastos/ingresos deteriorándose</li></ul>',
+    'help.ytd.expenses.title': 'Egresos Acumulados YTD',
+    'help.ytd.expenses.content': '<p>Los <strong>Egresos YTD</strong> incluyen todos los costos acumulados (COGS + OpEx) desde el inicio del año.</p><h4>Total Egresos YTD: <strong>{currentValue}</strong></h4><h4>Como % de Ingresos YTD: <strong>{expenseRatio}%</strong></h4><h4>Benchmarks de control de egresos:</h4><ul><li>Presupuesto: <strong>{benchmarks.budget}</strong></li><li>Promedio industria: <strong>{benchmarks.industry}</strong></li><li>Nivel eficiente: <strong>{benchmarks.efficient}</strong></li></ul><h4>Señales de alerta:</h4><ul><li>Egresos creciendo más rápido que ingresos</li><li>Desviación > 10% del presupuesto</li><li>Ratio egresos/ingresos deteriorándose</li></ul>',
     
     'help.ytd.netIncome.title': 'Utilidad Neta YTD',
     'help.ytd.netIncome.content': '<p>La <strong>Utilidad Neta YTD</strong> muestra las ganancias acumuladas después de todos los gastos e impuestos.</p><h4>Utilidad Neta YTD: <strong>{currentValue}</strong></h4><h4>Margen Neto YTD: <strong>{margin}%</strong></h4><h4>Niveles de rentabilidad:</h4><ul><li>Excelente: > 20% margen</li><li>Bueno: 15-20% margen</li><li>Aceptable: 10-15% margen</li><li>Punto de equilibrio: 0%</li></ul><h4>Factores clave:</h4><p>La utilidad neta YTD refleja:</p><ul><li>Eficiencia operacional general</li><li>Control de costos</li><li>Estrategia de precios</li><li>Gestión financiera</li></ul>',
@@ -786,6 +789,8 @@ export const translations = {
     'metrics.ytdEbitda': 'YTD EBITDA',
     'metrics.months': 'months',
     'metrics.cogsBreakdown': 'COGS Breakdown',
+    'metrics.cogsAnalysis': 'Cost of Sales Analysis',
+    'metrics.opexAnalysis': 'Operating Expenses Analysis',
     'metrics.noBreakdownAvailable': 'No breakdown available',
     'metrics.industry': 'Industry',
     'metrics.efficient': 'Efficient',
@@ -794,6 +799,7 @@ export const translations = {
     'metrics.ofOpEx': 'of OpEx',
     'metrics.previous': 'Previous',
     'metrics.total': 'Total',
+    'metrics.totalCOGS': 'Total COGS',
     'metrics.categories': 'Categories',
     
     // Executive KPIs

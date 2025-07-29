@@ -207,8 +207,33 @@ export function RevenueGrowthAnalysis({
                 fontSize: '13px'
               }}
               iconType="rect"
+              content={(props) => {
+                // Define the custom order
+                const desiredOrder = [
+                  { dataKey: t('charts.revenue'), color: '#10B981' },
+                  { dataKey: t('charts.totalCosts'), color: '#E11D48' },
+                  { dataKey: t('charts.grossProfit'), color: '#3B82F6' },
+                  { dataKey: t('charts.grossMargin'), color: '#F97316' }
+                ];
+                
+                return (
+                  <div className="flex justify-center items-center space-x-6 pt-6">
+                    {desiredOrder.map((item, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <div 
+                          className="w-3 h-3" 
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-sm text-gray-700 font-medium">
+                          {item.dataKey}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
             />
-            {/* Revenue Bar: Modern Emerald Green with Gradient */}
+            {/* 1. Ingresos Bar: Modern Emerald Green with Gradient */}
             <Bar 
               yAxisId="left"
               dataKey={t('charts.revenue')} 
@@ -216,7 +241,7 @@ export function RevenueGrowthAnalysis({
               radius={[2, 2, 0, 0]}
               isAnimationActive={false}
             />
-            {/* Total Costs Bar: Professional Rose Red with Gradient */}
+            {/* 2. Egresos Totales Bar: Professional Rose Red with Gradient */}
             <Bar 
               yAxisId="left"
               dataKey={t('charts.totalCosts')} 
@@ -224,7 +249,7 @@ export function RevenueGrowthAnalysis({
               radius={[2, 2, 0, 0]}
               isAnimationActive={false}
             />
-            {/* Gross Profit Bar: Modern Blue with Gradient */}
+            {/* 3. Utilidad Bruta Bar: Modern Blue with Gradient */}
             <Bar 
               yAxisId="left"
               dataKey={t('charts.grossProfit')} 
@@ -232,7 +257,7 @@ export function RevenueGrowthAnalysis({
               radius={[2, 2, 0, 0]}
               isAnimationActive={false}
             />
-            {/* Gross Margin Line: Vibrant Orange with Enhanced Style */}
+            {/* 4. Margen Bruto Line: Vibrant Orange with Enhanced Style */}
             <Line 
               yAxisId="right"
               type="monotone" 

@@ -108,7 +108,8 @@ export function ExpenseDetailModal({
           minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
           maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
         }).format(convertedValue);
-        return formatted + suffix;
+        const suffixWithSpace = suffix ? ` ${suffix}` : '';
+        return formatted + suffixWithSpace;
       }
       
       // For all other currencies, show currency code + number to avoid confusion
@@ -118,7 +119,8 @@ export function ExpenseDetailModal({
         maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
       }).format(convertedValue);
       
-      return `${currencyCode} ${numberFormatted}${suffix}`;
+      const suffixWithSpace = suffix ? ` ${suffix}` : '';
+      return `${currencyCode} ${numberFormatted}${suffixWithSpace}`;
       
     } catch (error) {
       // Fallback to simple number formatting
@@ -127,7 +129,8 @@ export function ExpenseDetailModal({
         maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
       }).format(convertedValue);
       
-      return `${currencyCode} ${numberFormatted}${suffix}`;
+      const suffixWithSpace = suffix ? ` ${suffix}` : '';
+      return `${currencyCode} ${numberFormatted}${suffixWithSpace}`;
     }
   };
 

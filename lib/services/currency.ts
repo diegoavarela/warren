@@ -109,5 +109,5 @@ export const SUPPORTED_CURRENCIES = [
   { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
   { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧' },
   { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', flag: '🇧🇷' },
-  { code: 'ARS', symbol: '$', name: 'Argentine Peso', flag: '🇦🇷' }
+  { code: 'ARS', symbol: 'ARS', name: 'Argentine Peso', flag: '🇦🇷' }
 ];
