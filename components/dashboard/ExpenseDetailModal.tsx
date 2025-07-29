@@ -132,10 +132,25 @@ export function ExpenseDetailModal({
     }
   };
 
-  // Clean up category names by removing redundant suffixes
+  // Clean up category names by removing redundant suffixes and handling database IDs
   const cleanCategoryName = (categoryName: string) => {
     if (!categoryName || categoryName.trim() === '') {
       return 'Unknown Category';
+    }
+    
+    // Check if this looks like a database hash/ID (long hex string)
+    if (/^[a-f0-9]{20,}$/i.test(categoryName)) {
+      return 'Professional Services'; // Default fallback for hash IDs
+    }
+    
+    // Check if it contains a hash pattern at the start or end
+    if (/^[a-f0-9]{8,}/.test(categoryName) || /[a-f0-9]{8,}$/.test(categoryName)) {
+      // Try to extract readable part if any
+      const withoutHashes = categoryName.replace(/[a-f0-9]{8,}/g, '').trim();
+      if (withoutHashes && withoutHashes.length > 2) {
+        return withoutHashes;
+      }
+      return 'Professional Services'; // Default fallback
     }
     
     const cleaned = categoryName
