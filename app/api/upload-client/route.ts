@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { nanoid } from "nanoid";
 import { ExcelFileMetadata, ExcelSheet } from "@/types";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+
+// Force dynamic rendering for serverless
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_TYPES = [
@@ -13,11 +15,21 @@ const ALLOWED_TYPES = [
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔄 Processing file upload request');
+    
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const locale = formData.get("locale") as string || "es-MX";
 
+    console.log('📁 File details:', { 
+      name: file?.name, 
+      size: file?.size, 
+      type: file?.type,
+      locale 
+    });
+
     if (!file) {
+      console.error('❌ No file provided in request');
       return NextResponse.json(
         { error: "No file provided" },
         { status: 400 }
@@ -95,25 +107,10 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Store file temporarily on server instead of in sessionStorage
-    const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
-    const filePath = path.join(uploadDir, `${uploadSession}.xlsx`);
-    
-    try {
-      // Ensure upload directory exists
-      await mkdir(uploadDir, { recursive: true });
-      
-      // Write file to temporary location
-      await writeFile(filePath, buffer);
-      
-      console.log(`File stored temporarily at: ${filePath}`);
-    } catch (error) {
-      console.error('Error storing file:', error);
-      return NextResponse.json(
-        { error: "Error storing file temporarily" },
-        { status: 500 }
-      );
-    }
+    // In serverless, we can't write to filesystem
+    // Instead, we'll store the file data in memory/database or use alternative storage
+    // For now, let's skip file storage and just process in memory
+    console.log(`Processing file in memory: ${file.name} (${file.size} bytes)`);
 
     // Create metadata response - no file data included
     const metadata: ExcelFileMetadata = {

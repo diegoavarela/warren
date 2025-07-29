@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, mappingTemplates, companies, users, eq } from "@/lib/db";
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 
+// Force dynamic rendering for serverless
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // GET /api/v1/templates - List templates for accessible companies
 export async function GET(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
     try {
+      // Ensure database connection is available
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
       const url = new URL(request.url);
       const companyId = url.searchParams.get('companyId');
       const statementType = url.searchParams.get('statementType');
