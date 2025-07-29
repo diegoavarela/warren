@@ -156,22 +156,24 @@ export function ExpenseDetailModal({
     
     if (isHashId) {
       if (context === 'account') {
-        // For account items, use more descriptive names based on the parent category
+        // For account items, generate unique descriptive names
         const parentCategory = expense?.category?.toLowerCase() || '';
+        const shortHash = categoryName.slice(-6); // Use last 6 characters for uniqueness
+        
         if (parentCategory.includes('salary') || parentCategory.includes('salaries')) {
-          return 'Salary Payment';
+          return `Salary Payment #${shortHash}`;
         } else if (parentCategory.includes('professional') || parentCategory.includes('service')) {
-          return 'Professional Service';
+          return `Professional Service #${shortHash}`;
         } else if (parentCategory.includes('office') || parentCategory.includes('admin')) {
-          return 'Administrative Expense';
+          return `Administrative Expense #${shortHash}`;
         } else if (parentCategory.includes('marketing') || parentCategory.includes('advertising')) {
-          return 'Marketing Expense';
+          return `Marketing Expense #${shortHash}`;
         } else if (parentCategory.includes('travel')) {
-          return 'Travel Expense';
+          return `Travel Expense #${shortHash}`;
         } else if (parentCategory.includes('meal') || parentCategory.includes('entertainment')) {
-          return 'Meal & Entertainment';
+          return `Meal & Entertainment #${shortHash}`;
         } else {
-          return 'Expense Item';
+          return `Expense Item #${shortHash}`;
         }
       } else {
         return 'Professional Services';

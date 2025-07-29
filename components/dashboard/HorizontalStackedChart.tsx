@@ -49,16 +49,18 @@ const cleanCategoryName = (categoryName: string, context?: 'category' | 'account
   if (isHashId) {
     if (context === 'account' && parentCategory) {
       const parent = parentCategory.toLowerCase();
+      const shortHash = categoryName.slice(-6); // Use last 6 characters for uniqueness
+      
       if (parent.includes('salary') || parent.includes('salaries')) {
-        return 'Salary Payment';
+        return `Salary Payment #${shortHash}`;
       } else if (parent.includes('professional') || parent.includes('service')) {
-        return 'Professional Service';
+        return `Professional Service #${shortHash}`;
       } else if (parent.includes('material')) {
-        return 'Material Cost';
+        return `Material Cost #${shortHash}`;
       } else if (parent.includes('labor')) {
-        return 'Labor Cost';
+        return `Labor Cost #${shortHash}`;
       } else {
-        return 'Cost Item';
+        return `Cost Item #${shortHash}`;
       }
     } else {
       return 'Professional Services';
