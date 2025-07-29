@@ -132,25 +132,47 @@ export function ExpenseDetailModal({
   };
 
   // Clean up category names by removing redundant suffixes and handling database IDs
-  const cleanCategoryName = (categoryName: string) => {
+  const cleanCategoryName = (categoryName: string, context?: 'category' | 'account') => {
     if (!categoryName || categoryName.trim() === '') {
-      return 'Unknown Category';
+      return context === 'account' ? 'Account Item' : 'Unknown Category';
+    }
+    
+    // First check if it's already a readable name
+    if (categoryName.includes(' ') || categoryName.length < 10) {
+      const cleaned = categoryName
+        .replace(/\s*\(CoR\)$/i, '') // Remove (CoR) suffix
+        .replace(/\s*\(cor\)$/i, '') // Remove (cor) suffix
+        .trim();
+      return cleaned || (context === 'account' ? 'Account Item' : 'Professional Services');
     }
     
     // More aggressive pattern matching for database hashes/IDs
-    // Check for any string that looks like hex (contains only hex chars and is long)
-    if (/^[a-f0-9]{16,}$/i.test(categoryName)) {
-      return 'Professional Services';
-    }
+    const isHashId = /^[a-f0-9]{16,}$/i.test(categoryName) || 
+                     /[a-f0-9]{12,}/i.test(categoryName) ||
+                     (categoryName.length > 15 && !/\s/.test(categoryName) && /^[a-zA-Z0-9]+$/.test(categoryName));
     
-    // Check for mixed hex patterns (common in database IDs)
-    if (/[a-f0-9]{12,}/i.test(categoryName)) {
-      return 'Professional Services';
-    }
-    
-    // Check for any string that's mostly numbers and letters without spaces (likely an ID)
-    if (categoryName.length > 15 && !/\s/.test(categoryName) && /^[a-zA-Z0-9]+$/.test(categoryName)) {
-      return 'Professional Services';
+    if (isHashId) {
+      if (context === 'account') {
+        // For account items, use more descriptive names based on the parent category
+        const parentCategory = expense?.category?.toLowerCase() || '';
+        if (parentCategory.includes('salary') || parentCategory.includes('salaries')) {
+          return 'Salary Payment';
+        } else if (parentCategory.includes('professional') || parentCategory.includes('service')) {
+          return 'Professional Service';
+        } else if (parentCategory.includes('office') || parentCategory.includes('admin')) {
+          return 'Administrative Expense';
+        } else if (parentCategory.includes('marketing') || parentCategory.includes('advertising')) {
+          return 'Marketing Expense';
+        } else if (parentCategory.includes('travel')) {
+          return 'Travel Expense';
+        } else if (parentCategory.includes('meal') || parentCategory.includes('entertainment')) {
+          return 'Meal & Entertainment';
+        } else {
+          return 'Expense Item';
+        }
+      } else {
+        return 'Professional Services';
+      }
     }
     
     const cleaned = categoryName
@@ -163,13 +185,13 @@ export function ExpenseDetailModal({
       return 'Contract Services';
     }
     
-    return cleaned || 'Professional Services';
+    return cleaned || (context === 'account' ? 'Account Item' : 'Professional Services');
   };
 
   const revenuePercentage = (expense.amount && totalRevenue) ? (expense.amount / totalRevenue) * 100 : 0;
   const categoryTitle = type === 'cogs' ? t('metrics.costOfGoodsSold') : t('metrics.operatingExpenses');
   const categoryPercentage = expense.percentage || 0;
-  const cleanedCategoryName = cleanCategoryName(expense.category);
+  const cleanedCategoryName = cleanCategoryName(expense.category, 'category');
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
@@ -273,7 +295,7 @@ export function ExpenseDetailModal({
                   {expense.items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">{cleanCategoryName(item.accountName)}</div>
+                        <div className="text-sm font-medium text-gray-900">{cleanCategoryName(item.accountName, 'account')}</div>
                         <div className="text-xs text-gray-600">
                           {item.percentage ? item.percentage.toFixed(1) : '0.0'}% {t('heatmap.ofSubcategory')}
                         </div>
