@@ -2227,11 +2227,59 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
             amount: group.total,
             percentage: (group.total / categoryTotal) * 100,
             // Add detailed items for drill-down functionality
-            items: group.items.map(item => ({
-              accountName: item.accountName,
-              amount: Math.abs(item.amount),
-              percentage: (Math.abs(item.amount) / group.total) * 100
-            }))
+            items: group.items.map(item => {
+              // Clean up account names to remove hash IDs and database artifacts
+              let cleanedAccountName = item.accountName || 'Unknown Account';
+              
+              // Check if it's a database hash ID pattern
+              const isHashId = /^[a-f0-9]{16,}$/i.test(cleanedAccountName) || 
+                              /[a-f0-9]{12,}/i.test(cleanedAccountName) ||
+                              (cleanedAccountName.length > 15 && !/\s/.test(cleanedAccountName) && /^[a-zA-Z0-9]+$/.test(cleanedAccountName));
+              
+              if (isHashId) {
+                // Use subcategory label as a base for meaningful names
+                const subcategoryLabel = subcategoryLabels.get(subcategoryCode) || formatSubcategoryCodeAsFallback(subcategoryCode);
+                
+                if (subcategoryLabel.toLowerCase().includes('salary') || subcategoryLabel.toLowerCase().includes('salaries')) {
+                  cleanedAccountName = 'Personnel Salaries';
+                } else if (subcategoryLabel.toLowerCase().includes('payroll') || subcategoryLabel.toLowerCase().includes('tax')) {
+                  cleanedAccountName = 'Payroll Taxes';
+                } else if (subcategoryLabel.toLowerCase().includes('contract') || subcategoryLabel.toLowerCase().includes('service')) {
+                  cleanedAccountName = 'Contract Services';
+                } else if (subcategoryLabel.toLowerCase().includes('professional')) {
+                  cleanedAccountName = 'Professional Services';
+                } else if (subcategoryLabel.toLowerCase().includes('benefit')) {
+                  cleanedAccountName = 'Employee Benefits';
+                } else if (subcategoryLabel.toLowerCase().includes('travel')) {
+                  cleanedAccountName = 'Travel Expenses';
+                } else if (subcategoryLabel.toLowerCase().includes('office')) {
+                  cleanedAccountName = 'Office Expenses';
+                } else if (subcategoryLabel.toLowerCase().includes('training')) {
+                  cleanedAccountName = 'Training Costs';
+                } else {
+                  // Use a generic name based on the subcategory
+                  cleanedAccountName = subcategoryLabel.replace(/\s*\(.*\)\s*/g, '').trim() || 'Expense Item';
+                }
+              } else {
+                // Clean up readable names by removing (CoR) suffixes and other artifacts
+                cleanedAccountName = cleanedAccountName
+                  .replace(/\s*\(CoR\)\s*/gi, '')
+                  .replace(/\s*\(cor\)\s*/gi, '')
+                  .replace(/\s*-\s*\(CoR\)\s*/gi, '')
+                  .replace(/\s*-\s*\(cor\)\s*/gi, '')
+                  .trim();
+                
+                if (!cleanedAccountName) {
+                  cleanedAccountName = 'Expense Item';
+                }
+              }
+              
+              return {
+                accountName: cleanedAccountName,
+                amount: Math.abs(item.amount),
+                percentage: (Math.abs(item.amount) / group.total) * 100
+              };
+            })
           };
         });
         
