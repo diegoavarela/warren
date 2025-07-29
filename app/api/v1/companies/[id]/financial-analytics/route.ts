@@ -2231,10 +2231,26 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
               // Clean up account names to remove hash IDs and database artifacts
               let cleanedAccountName = item.accountName || 'Unknown Account';
               
-              // Check if it's a database hash ID pattern
-              const isHashId = /^[a-f0-9]{16,}$/i.test(cleanedAccountName) || 
-                              /[a-f0-9]{12,}/i.test(cleanedAccountName) ||
-                              (cleanedAccountName.length > 15 && !/\s/.test(cleanedAccountName) && /^[a-zA-Z0-9]+$/.test(cleanedAccountName));
+              // More precise hash ID detection - only match actual hash patterns, not readable names
+              const isHashId = (
+                // Hex-only strings of 16+ characters
+                /^[a-f0-9]{16,}$/i.test(cleanedAccountName) || 
+                // Contains long hex sequences (12+ chars) with no meaningful words
+                (/[a-f0-9]{12,}/i.test(cleanedAccountName) && 
+                 !cleanedAccountName.toLowerCase().includes('personnel') &&
+                 !cleanedAccountName.toLowerCase().includes('payroll') &&
+                 !cleanedAccountName.toLowerCase().includes('contract') &&
+                 !cleanedAccountName.toLowerCase().includes('service') &&
+                 !cleanedAccountName.toLowerCase().includes('salaries') &&
+                 !cleanedAccountName.toLowerCase().includes('taxes')) ||
+                // Very long alphanumeric strings without spaces (but exclude known patterns)
+                (cleanedAccountName.length > 20 && 
+                 !/\s/.test(cleanedAccountName) && 
+                 /^[a-zA-Z0-9]+$/.test(cleanedAccountName) &&
+                 !cleanedAccountName.toLowerCase().includes('personnel') &&
+                 !cleanedAccountName.toLowerCase().includes('payroll') &&
+                 !cleanedAccountName.toLowerCase().includes('contract'))
+              );
               
               if (isHashId) {
                 // Use subcategory label as a base for meaningful names
@@ -2273,6 +2289,14 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
                   cleanedAccountName = 'Expense Item';
                 }
               }
+              
+              // 🔍 DEBUG: Log what we're processing for this account
+              console.log(`🏷️ Account name processing:`, {
+                original: item.accountName,
+                cleaned: cleanedAccountName,
+                wasHashId: isHashId,
+                subcategoryCode
+              });
               
               return {
                 accountName: cleanedAccountName,
