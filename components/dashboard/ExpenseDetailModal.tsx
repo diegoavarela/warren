@@ -273,7 +273,7 @@ export function ExpenseDetailModal({
                   {expense.items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">{item.accountName}</div>
+                        <div className="text-sm font-medium text-gray-900">{cleanCategoryName(item.accountName)}</div>
                         <div className="text-xs text-gray-600">
                           {item.percentage ? item.percentage.toFixed(1) : '0.0'}% {t('heatmap.ofSubcategory')}
                         </div>
