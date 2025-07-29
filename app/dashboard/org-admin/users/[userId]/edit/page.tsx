@@ -87,7 +87,7 @@ function UserEditPage({ params }: { params: { userId: string } }) {
             lastName: foundUser.lastName,
             organizationRole: foundUser.organizationRole,
             isActive: foundUser.isActive,
-            companyAccess: foundUser.companyAccess.map(ca => ({
+            companyAccess: foundUser.companyAccess.map((ca: any) => ({
               companyId: ca.companyId,
               role: ca.role
             }))

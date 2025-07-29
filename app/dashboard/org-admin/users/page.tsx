@@ -7,7 +7,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Users, Plus, Search, Edit, Trash2, Mail, Shield } from 'lucide-react';
+import { Users, Plus, Search, Edit, Trash2, Mail, Shield, Key } from 'lucide-react';
 import { ROLES } from '@/lib/auth/rbac';
 import { useLocale } from '@/contexts/LocaleContext';
 
@@ -38,6 +38,10 @@ function OrgUsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [resetPasswordUser, setResetPasswordUser] = useState<OrgUser | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState<string>('');
 
   useEffect(() => {
     fetchUsers();
@@ -81,6 +85,45 @@ function OrgUsersPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete user');
     }
+  };
+
+  const handleResetPassword = (targetUser: OrgUser) => {
+    setResetPasswordUser(targetUser);
+    setShowResetModal(true);
+    setNewPassword('');
+  };
+
+  const confirmResetPassword = async () => {
+    if (!resetPasswordUser) return;
+
+    setResetLoading(true);
+
+    try {
+      const response = await fetch(`/api/organizations/${organization?.id}/users/${resetPasswordUser.id}/reset-password`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to reset password');
+      }
+
+      const data = await response.json();
+      setNewPassword(data.temporaryPassword);
+      
+      // Don't close modal immediately - let user copy the password
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to reset password');
+      setShowResetModal(false);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetPasswordUser(null);
+    setNewPassword('');
   };
 
   const getRoleLabel = (role: string) => {
@@ -271,8 +314,18 @@ function OrgUsersPage() {
                         size="sm"
                         onClick={() => router.push(`/dashboard/org-admin/users/${user.id}/edit`)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        title={locale?.startsWith('es') ? 'Editar usuario' : 'Edit user'}
                       >
                         <Edit className="w-4 h-4 text-gray-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleResetPassword(user)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        title={locale?.startsWith('es') ? 'Restablecer contraseña' : 'Reset password'}
+                      >
+                        <Key className="w-4 h-4 text-blue-600" />
                       </Button>
                       {user.id !== user.id && ( // Don't allow deleting yourself
                         <Button
@@ -280,6 +333,7 @@ function OrgUsersPage() {
                           size="sm"
                           onClick={() => handleDeleteUser(user.id, user.email)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          title={locale?.startsWith('es') ? 'Eliminar usuario' : 'Delete user'}
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </Button>
@@ -292,6 +346,99 @@ function OrgUsersPage() {
           </CardBody>
         </Card>
       </div>
+
+      {/* Reset Password Modal */}
+      {showResetModal && resetPasswordUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium mb-4 flex items-center">
+              <Key className="w-5 h-5 mr-2 text-blue-600" />
+              {locale?.startsWith('es') ? 'Restablecer Contraseña' : 'Reset Password'}
+            </h3>
+            
+            {!newPassword ? (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  {locale?.startsWith('es')
+                    ? `¿Estás seguro de que quieres restablecer la contraseña de ${resetPasswordUser.firstName} ${resetPasswordUser.lastName}?`
+                    : `Are you sure you want to reset the password for ${resetPasswordUser.firstName} ${resetPasswordUser.lastName}?`}
+                </p>
+                <p className="text-xs text-orange-600 mb-6">
+                  {locale?.startsWith('es')
+                    ? 'Esto generará una nueva contraseña temporal que deberás compartir con el usuario.'
+                    : 'This will generate a new temporary password that you must share with the user.'}
+                </p>
+                <div className="flex justify-end space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={closeResetModal}
+                    disabled={resetLoading}
+                  >
+                    {locale?.startsWith('es') ? 'Cancelar' : 'Cancel'}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={confirmResetPassword}
+                    disabled={resetLoading}
+                    loading={resetLoading}
+                  >
+                    {resetLoading
+                      ? (locale?.startsWith('es') ? 'Restableciendo...' : 'Resetting...')
+                      : (locale?.startsWith('es') ? 'Restablecer' : 'Reset Password')
+                    }
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center mb-2">
+                    <Shield className="w-5 h-5 text-green-600 mr-2" />
+                    <h4 className="font-semibold text-green-900">
+                      {locale?.startsWith('es') ? '¡Contraseña restablecida!' : 'Password reset successfully!'}
+                    </h4>
+                  </div>
+                  <p className="text-sm text-green-700 mb-3">
+                    {locale?.startsWith('es')
+                      ? 'Nueva contraseña temporal generada. Compártela de forma segura con el usuario.'
+                      : 'New temporary password generated. Share it securely with the user.'}
+                  </p>
+                  
+                  <div className="bg-white border border-green-300 rounded p-3">
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-700">
+                          {locale?.startsWith('es') ? 'Usuario:' : 'User:'}
+                        </span>
+                        <span className="ml-2 font-mono bg-gray-100 px-2 py-1 rounded">
+                          {resetPasswordUser.email}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">
+                          {locale?.startsWith('es') ? 'Nueva contraseña:' : 'New password:'}
+                        </span>
+                        <span className="ml-2 font-mono bg-yellow-100 px-2 py-1 rounded text-yellow-800 select-all">
+                          {newPassword}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button
+                    variant="primary"
+                    onClick={closeResetModal}
+                  >
+                    {locale?.startsWith('es') ? 'Cerrar' : 'Close'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
