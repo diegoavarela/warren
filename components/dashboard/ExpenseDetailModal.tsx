@@ -134,23 +134,29 @@ export function ExpenseDetailModal({
 
   // Clean up category names by removing redundant suffixes and handling database IDs
   const cleanCategoryName = (categoryName: string) => {
+    console.log('🔧 CleanCategoryName input:', categoryName);
+    
     if (!categoryName || categoryName.trim() === '') {
       return 'Unknown Category';
     }
     
-    // Check if this looks like a database hash/ID (long hex string)
-    if (/^[a-f0-9]{20,}$/i.test(categoryName)) {
-      return 'Professional Services'; // Default fallback for hash IDs
+    // More aggressive pattern matching for database hashes/IDs
+    // Check for any string that looks like hex (contains only hex chars and is long)
+    if (/^[a-f0-9]{16,}$/i.test(categoryName)) {
+      console.log('🔍 Detected long hex string, using Professional Services fallback');
+      return 'Professional Services';
     }
     
-    // Check if it contains a hash pattern at the start or end
-    if (/^[a-f0-9]{8,}/.test(categoryName) || /[a-f0-9]{8,}$/.test(categoryName)) {
-      // Try to extract readable part if any
-      const withoutHashes = categoryName.replace(/[a-f0-9]{8,}/g, '').trim();
-      if (withoutHashes && withoutHashes.length > 2) {
-        return withoutHashes;
-      }
-      return 'Professional Services'; // Default fallback
+    // Check for mixed hex patterns (common in database IDs)
+    if (/[a-f0-9]{12,}/i.test(categoryName)) {
+      console.log('🔍 Detected hex pattern in string, using Professional Services fallback');
+      return 'Professional Services';
+    }
+    
+    // Check for any string that's mostly numbers and letters without spaces (likely an ID)
+    if (categoryName.length > 15 && !/\s/.test(categoryName) && /^[a-zA-Z0-9]+$/.test(categoryName)) {
+      console.log('🔍 Detected ID-like string, using Professional Services fallback');
+      return 'Professional Services';
     }
     
     const cleaned = categoryName
@@ -163,7 +169,8 @@ export function ExpenseDetailModal({
       return 'Contract Services';
     }
     
-    return cleaned || 'Contract Services';
+    console.log('🔧 CleanCategoryName output:', cleaned);
+    return cleaned || 'Professional Services';
   };
 
   const revenuePercentage = (expense.amount && totalRevenue) ? (expense.amount / totalRevenue) * 100 : 0;
