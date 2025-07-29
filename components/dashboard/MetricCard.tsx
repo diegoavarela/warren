@@ -7,6 +7,7 @@ import { ArrowUpIcon, ArrowDownIcon, MinusIcon } from '@heroicons/react/24/solid
 import { InformationCircleIcon, ChevronDownIcon, ChevronUpIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { HelpIcon } from '../HelpIcon';
 import { HelpTopic } from '../HelpModal';
+import { currencyService } from '@/lib/services/currency';
 
 interface BreakdownItem {
   label: string;
@@ -27,6 +28,7 @@ interface MetricCardProps {
   showBreakdown?: boolean;
   breakdownData?: BreakdownItem[];
   currency?: string;
+  originalCurrency?: string;
   displayUnits?: 'normal' | 'K' | 'M';
   onClick?: () => void;
   expandedContent?: React.ReactNode;
@@ -42,6 +44,8 @@ interface MetricCardProps {
     margin?: number;
     benchmarks?: Record<string, number>;
   };
+  comparisonPeriod?: 'lastMonth' | 'lastQuarter' | 'lastYear';
+  previousPeriodLabel?: string;
 }
 
 export function MetricCard({
@@ -56,13 +60,16 @@ export function MetricCard({
   showBreakdown = false,
   breakdownData,
   currency = 'USD',
+  originalCurrency,
   displayUnits = 'normal',
   onClick,
   expandedContent,
   colorScheme = 'neutral',
   locale,
   helpTopic,
-  helpContext
+  helpContext,
+  comparisonPeriod,
+  previousPeriodLabel
 }: MetricCardProps) {
   const { locale: contextLocale } = useLocale();
   const { t } = useTranslation(locale || contextLocale);
@@ -73,13 +80,22 @@ export function MetricCard({
         let convertedValue = value;
         let suffix = '';
         
-        // Apply units for currency
+        // Apply currency conversion if original currency is different from display currency
+        if (originalCurrency && currency && originalCurrency !== currency) {
+          convertedValue = currencyService.convertValue(value, originalCurrency, currency);
+        }
+        
+        // Data is stored in thousands in the file
         if (displayUnits === 'K') {
-          convertedValue = value / 1000;
+          // Show as-is with K suffix (data already in thousands)
           suffix = 'K';
         } else if (displayUnits === 'M') {
-          convertedValue = value / 1000000;
+          // Convert thousands to millions: divide by 1000
+          convertedValue = convertedValue / 1000;
           suffix = 'M';
+        } else if (displayUnits === 'normal') {
+          // Convert thousands to normal: multiply by 1000
+          convertedValue = convertedValue * 1000;
         }
         
         const formatted = new Intl.NumberFormat('es-MX', {
@@ -108,6 +124,30 @@ export function MetricCard({
 
   const change = previousValue !== undefined ? calculateChange() : null;
   const displayTrend = trend || change?.trend || 'neutral';
+
+  const getPreviousLabel = (): string => {
+    // If a custom label is provided, use it
+    if (previousPeriodLabel) {
+      return previousPeriodLabel;
+    }
+    
+    // Otherwise, generate label based on comparison period
+    if (comparisonPeriod) {
+      switch (comparisonPeriod) {
+        case 'lastMonth':
+          return t('comparison.lastMonth.short');
+        case 'lastQuarter':
+          return t('comparison.lastQuarter.short');
+        case 'lastYear':
+          return t('comparison.lastYear.short');
+        default:
+          return t('metrics.previous');
+      }
+    }
+    
+    // Fallback to generic "Previous"
+    return t('metrics.previous');
+  };
 
   const getTrendIcon = () => {
     const iconSize = "h-4 w-4";
@@ -195,7 +235,7 @@ export function MetricCard({
       <div 
         className={`relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border ${
           colorStyles.border
-        } ${isClickable ? 'cursor-pointer' : ''} p-6 min-h-[200px] flex flex-col flex-1`}
+        } ${isClickable ? 'cursor-pointer' : ''} p-6 h-full flex flex-col flex-1`}
         onClick={handleClick}
       >
         {/* Header with icon and help */}
@@ -248,6 +288,7 @@ export function MetricCard({
             </span>
           </div>
 
+
           {/* Subtitle */}
           {subtitle && (
             <p className="text-sm text-gray-600">{subtitle}</p>
@@ -256,11 +297,15 @@ export function MetricCard({
         
         {/* Trend and Previous Value - Always at bottom */}
         <div className="flex items-center justify-between mt-auto pt-4">
-          {previousValue !== undefined && (
+          {previousValue !== undefined ? (
             <p className="text-xs text-gray-500">
-              {t('metrics.previous')}: {formatValue(previousValue)}
+              {getPreviousLabel()}: {formatValue(previousValue)}
             </p>
-          )}
+          ) : (comparisonPeriod === 'lastYear' || comparisonPeriod === 'lastQuarter') ? (
+            <p className="text-xs text-gray-400 italic">
+              {comparisonPeriod === 'lastYear' ? t('comparison.noDataLastYear') : t('comparison.noDataLastQuarter')}
+            </p>
+          ) : null}
           
           {change && (
             <div className={`flex items-center text-sm font-medium ${

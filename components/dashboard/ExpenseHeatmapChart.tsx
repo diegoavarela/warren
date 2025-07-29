@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '@/lib/translations';
 import { useLocale } from '@/contexts/LocaleContext';
+import { currencyService } from '@/lib/services/currency';
 
 interface ExpenseData {
   category: string;
@@ -17,6 +18,7 @@ interface ExpenseHeatmapChartProps {
   subtitle?: string;
   type: 'cogs' | 'opex';
   currency?: string;
+  originalCurrency?: string;
   displayUnits?: 'normal' | 'K' | 'M';
   locale?: string;
   onCategoryClick?: (category: ExpenseData) => void;
@@ -28,6 +30,7 @@ export function ExpenseHeatmapChart({
   subtitle,
   type,
   currency = 'USD',
+  originalCurrency,
   displayUnits = 'normal',
   locale,
   onCategoryClick
@@ -38,6 +41,8 @@ export function ExpenseHeatmapChart({
 
   // Convert currency symbol to currency code
   const getCurrencyCode = (currencySymbol: string) => {
+    if (!currencySymbol) return 'USD';
+    
     const currencyMap: { [key: string]: string } = {
       '$': 'USD',
       '€': 'EUR',
@@ -46,32 +51,90 @@ export function ExpenseHeatmapChart({
       'USD': 'USD',
       'EUR': 'EUR',
       'GBP': 'GBP',
-      'JPY': 'JPY'
+      'JPY': 'JPY',
+      'ARS': 'ARS',
+      'MXN': 'MXN',
+      'BRL': 'BRL',
+      'COP': 'COP',
+      'CLP': 'CLP',
+      'PEN': 'PEN'
     };
-    return currencyMap[currencySymbol] || 'USD';
+    return currencyMap[currencySymbol.toUpperCase()] || currencySymbol.toUpperCase();
   };
 
   const formatValue = (value: number) => {
     let convertedValue = value;
-    let suffix = '';
     
-    // Apply units for currency
-    if (displayUnits === 'K') {
-      convertedValue = value / 1000;
-      suffix = 'K';
-    } else if (displayUnits === 'M') {
-      convertedValue = value / 1000000;
-      suffix = 'M';
+    // Apply currency conversion if original currency is different from display currency
+    if (originalCurrency && currency && originalCurrency !== currency) {
+      convertedValue = currencyService.convertValue(value, originalCurrency, currency);
     }
     
-    const formatted = new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: getCurrencyCode(currency),
-      minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
-      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
-    }).format(convertedValue);
+    let suffix = '';
     
-    return formatted + suffix;
+    // Data is stored in thousands in the file
+    if (displayUnits === 'K') {
+      // Show as-is with K suffix (data already in thousands)
+      suffix = 'K';
+    } else if (displayUnits === 'M') {
+      // Convert thousands to millions: divide by 1000
+      convertedValue = convertedValue / 1000;
+      suffix = 'M';
+    } else if (displayUnits === 'normal') {
+      // Convert thousands to normal: multiply by 1000
+      convertedValue = convertedValue * 1000;
+    }
+    
+    const currencyCode = getCurrencyCode(currency);
+    
+    // Get appropriate locale for currency
+    const getLocaleForCurrency = (curr: string) => {
+      switch (curr) {
+        case 'ARS': return 'es-AR';
+        case 'MXN': return 'es-MX';
+        case 'BRL': return 'pt-BR';
+        case 'COP': return 'es-CO';
+        case 'CLP': return 'es-CL';
+        case 'PEN': return 'es-PE';
+        case 'EUR': return 'de-DE';
+        case 'GBP': return 'en-GB';
+        case 'JPY': return 'ja-JP';
+        default: return 'en-US';
+      }
+    };
+    
+    const locale = getLocaleForCurrency(currencyCode);
+    
+    try {
+      // For USD, use traditional currency formatting with $ symbol
+      if (currencyCode === 'USD') {
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+          maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+        }).format(convertedValue);
+        return formatted + suffix;
+      }
+      
+      // For all other currencies, show currency code + number to avoid confusion
+      const numberFormatted = new Intl.NumberFormat(locale, {
+        style: 'decimal',
+        minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+        maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+      }).format(convertedValue);
+      
+      return `${currencyCode} ${numberFormatted}${suffix}`;
+      
+    } catch (error) {
+      // Fallback to simple number formatting
+      const numberFormatted = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+        maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+      }).format(convertedValue);
+      
+      return `${currencyCode} ${numberFormatted}${suffix}`;
+    }
   };
 
   const getColorIntensity = (percentage: number) => {
@@ -115,23 +178,39 @@ export function ExpenseHeatmapChart({
     return { bgClass, textClass };
   };
 
+  // Clean up category names by removing redundant suffixes
+  const cleanCategoryName = (categoryName: string) => {
+    if (!categoryName || categoryName.trim() === '') {
+      return 'Unknown Category';
+    }
+    
+    const cleaned = categoryName
+      .replace(/\s*\(CoR\)$/i, '') // Remove (CoR) suffix
+      .replace(/\s*\(cor\)$/i, '') // Remove (cor) suffix
+      .trim();
+    
+    // Handle specific cases
+    if (cleaned === '(cor)' || cleaned === 'cor' || cleaned === '') {
+      return 'Contract Services';
+    }
+    
+    return cleaned || 'Contract Services';
+  };
+
   // Sort data by amount descending for better visual hierarchy
   const sortedData = [...data].sort((a, b) => b.amount - a.amount);
 
-  // Responsive grid layout based on item count (as per HOW_TO_MAP.md)
-  const getGridCols = () => {
-    const itemCount = data.length;
-    
-    if (itemCount <= 2) return 'grid-cols-1 md:grid-cols-2';
-    if (itemCount <= 4) return 'grid-cols-2 md:grid-cols-2';
-    if (itemCount <= 6) return 'grid-cols-2 md:grid-cols-3';
-    
-    // For >6 items, make heatmap smaller as requested
-    return 'grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
-  };
+  // Force larger squared cards with fixed dimensions
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
+    <div className="bg-white rounded-2xl shadow-2xl p-6" data-testid="expense-heatmap-improved">
+      <style jsx>{`
+        .expense-card-square {
+          aspect-ratio: 1 / 1;
+          width: 100%;
+          height: auto;
+        }
+      `}</style>
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
@@ -140,7 +219,7 @@ export function ExpenseHeatmapChart({
         </p>
       </div>
 
-      <div className={`grid ${getGridCols()} gap-3 mb-6`}>
+      <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6`} data-testid="expense-cards-grid">
         {sortedData.map((item, index) => {
           const { bgClass, textClass } = getColorIntensity(item.percentage);
           const isHovered = hoveredCategory === item.category;
@@ -155,27 +234,22 @@ export function ExpenseHeatmapChart({
               onMouseEnter={() => setHoveredCategory(item.category)}
               onMouseLeave={() => setHoveredCategory(null)}
               className={`
-                relative p-4 rounded-xl transition-all duration-200 border-2 cursor-pointer
-                ${bgClass} ${isHovered ? 'scale-105 shadow-lg' : 'hover:scale-102 hover:shadow-md'}
+                expense-card-square relative p-6 rounded-xl transition-all duration-200 border-2 cursor-pointer
+                ${bgClass} ${isHovered ? 'scale-105 shadow-2xl' : 'hover:scale-102 shadow-lg hover:shadow-xl'}
+                flex flex-col justify-center items-center
               `}
-              style={{
-                minHeight: '120px'
-              }}
             >
-              <div className={`text-center ${textClass}`}>
-                <div className="text-xs font-medium mb-2 leading-tight">
-                  {item.category.length > 20 ? 
-                    `${item.category.substring(0, 20)}...` : 
-                    item.category
-                  }
+              <div className={`text-center ${textClass} h-full flex flex-col justify-center space-y-3`}>
+                <div className="text-sm font-semibold leading-tight px-1 flex items-center justify-center text-center min-h-[3rem]">
+                  {cleanCategoryName(item.category)}
                 </div>
-                <div className="text-sm font-bold mb-1">{formatValue(item.amount)}</div>
-                <div className="text-xs opacity-90">{item.percentage.toFixed(1)}%</div>
+                <div className="text-lg font-bold">{formatValue(item.amount)}</div>
+                <div className="text-base font-semibold">{item.percentage.toFixed(1)}%</div>
               </div>
               
               {isHovered && (
-                <div className="absolute inset-0 bg-black bg-opacity-10 rounded-xl flex items-center justify-center">
-                  <div className="bg-white text-gray-900 px-3 py-1 rounded-lg text-xs font-medium shadow-lg">
+                <div className="absolute inset-0 bg-black bg-opacity-20 rounded-xl flex items-center justify-center">
+                  <div className="bg-white text-gray-900 px-2 py-1 rounded-lg text-xs font-medium shadow-2xl">
                     {t('heatmap.clickToExpand')}
                   </div>
                 </div>
@@ -186,31 +260,31 @@ export function ExpenseHeatmapChart({
       </div>
 
       {/* Summary Stats */}
-      <div className="border-t pt-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="text-center">
-            <div className="text-xl font-bold text-gray-900">
+      <div className="border-t pt-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="text-center bg-gray-50 rounded-lg p-4">
+            <div className="text-lg font-bold text-gray-900 mb-1">
               {formatValue(sortedData.reduce((sum, item) => sum + item.amount, 0))}
             </div>
-            <div className="text-gray-600">{t('metrics.total')}</div>
+            <div className="text-sm font-medium text-gray-600">{t('metrics.total')}</div>
           </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-gray-900">
+          <div className="text-center bg-gray-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-gray-900 mb-1">
               {sortedData.length}
             </div>
-            <div className="text-gray-600">{t('metrics.categories')}</div>
+            <div className="text-sm font-medium text-gray-600">{t('metrics.categories')}</div>
           </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-gray-900">
-              {sortedData.length > 0 ? formatValue(Math.max(...sortedData.map(item => item.amount))) : '0'}
+          <div className="text-center bg-gray-50 rounded-lg p-4">
+            <div className="text-lg font-bold text-gray-900 mb-1">
+              {sortedData.length > 0 ? formatValue(Math.max(...sortedData.map(item => item.amount))) : formatValue(0)}
             </div>
-            <div className="text-gray-600">{t('heatmap.highest')}</div>
+            <div className="text-sm font-medium text-gray-600">{t('heatmap.highest')}</div>
           </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-gray-900">
+          <div className="text-center bg-gray-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-gray-900 mb-1">
               {sortedData.length > 0 ? `${Math.max(...sortedData.map(item => item.percentage)).toFixed(1)}%` : '0%'}
             </div>
-            <div className="text-gray-600">{t('heatmap.largestShare')}</div>
+            <div className="text-sm font-medium text-gray-600">{t('heatmap.largestShare')}</div>
           </div>
         </div>
       </div>

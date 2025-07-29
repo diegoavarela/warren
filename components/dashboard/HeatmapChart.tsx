@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '@/lib/translations';
 import { useLocale } from '@/contexts/LocaleContext';
+import { currencyService } from '@/lib/services/currency';
 
 interface HeatmapData {
   month: string;
@@ -18,6 +19,7 @@ interface HeatmapChartProps {
   interactive?: boolean;
   onExclude?: (months: string[]) => void;
   currency?: string;
+  originalCurrency?: string;
   displayUnits?: 'normal' | 'K' | 'M';
   locale?: string;
 }
@@ -30,6 +32,7 @@ export function HeatmapChart({
   interactive = false,
   onExclude,
   currency = 'USD',
+  originalCurrency,
   displayUnits = 'normal',
   locale
 }: HeatmapChartProps) {
@@ -88,7 +91,32 @@ export function HeatmapChart({
     return { bgClass, textClass };
   };
 
-  const filteredData = data.filter(d => !excludedMonths.has(d.month));
+  // Filter out invalid months and excluded months
+  const validData = data.filter(d => 
+    d.month && 
+    d.month !== 'undefined' && 
+    d.month !== 'Unknown' &&
+    typeof d.value === 'number' && 
+    !isNaN(d.value)
+  );
+  
+  const filteredData = validData.filter(d => !excludedMonths.has(d.month));
+  
+  // Handle case where there's no valid data  
+  if (filteredData.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+        </div>
+        <div className="text-center text-gray-500 py-8">
+          {t('heatmap.noValidData') || 'No valid data available'}
+        </div>
+      </div>
+    );
+  }
+  
   const values = filteredData.map(d => d.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -115,21 +143,31 @@ export function HeatmapChart({
     }
     
     let convertedValue = value;
+    
+    // Apply currency conversion if original currency is different from display currency
+    if (originalCurrency && currency && originalCurrency !== currency) {
+      convertedValue = currencyService.convertValue(value, originalCurrency, currency);
+    }
+    
     let suffix = '';
     
-    // Apply units for currency
+    // Data is stored in thousands in the file
     if (displayUnits === 'K') {
-      convertedValue = value / 1000;
+      // Show as-is with K suffix (data already in thousands)
       suffix = 'K';
     } else if (displayUnits === 'M') {
-      convertedValue = value / 1000000;
+      // Convert thousands to millions: divide by 1000
+      convertedValue = convertedValue / 1000;
       suffix = 'M';
+    } else if (displayUnits === 'normal') {
+      // Convert thousands to normal: multiply by 1000
+      convertedValue = convertedValue * 1000;
     }
     
     const formatted = new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency,
-      minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+      minimumFractionDigits: 0,
       maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
     }).format(convertedValue);
     
@@ -148,8 +186,8 @@ export function HeatmapChart({
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
-        {data.map((item, index) => {
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {validData.map((item, index) => {
           const isExcluded = excludedMonths.has(item.month);
           const { bgClass, textClass } = isExcluded 
             ? { bgClass: 'bg-gray-100', textClass: 'text-gray-600' } 
@@ -160,18 +198,15 @@ export function HeatmapChart({
               key={index}
               onClick={() => handleMonthClick(item.month)}
               className={`
-                relative p-3 rounded-lg transition-all duration-200 border
+                relative p-4 rounded-xl transition-all duration-200 border min-h-[80px] flex flex-col justify-center
                 ${bgClass} ${isExcluded ? 'border-gray-300' : 'border-transparent'}
                 ${interactive ? 'cursor-pointer hover:scale-105 hover:shadow-md' : ''}
                 ${isExcluded ? 'opacity-60' : ''}
               `}
             >
               <div className={`text-center ${textClass}`}>
-                <div className="text-xs font-medium mb-1">{item.month}</div>
-                <div className="text-sm font-bold">{formatValue(item.value)}</div>
-                {item.label && (
-                  <div className="text-xs mt-1 opacity-80">{item.label}</div>
-                )}
+                <div className="text-xs font-medium mb-2">{item.month}</div>
+                <div className="text-xs font-bold leading-tight break-words">{formatValue(item.value)}</div>
               </div>
               {isExcluded && (
                 <div className="absolute inset-0 flex items-center justify-center">

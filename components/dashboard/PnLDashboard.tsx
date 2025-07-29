@@ -50,6 +50,7 @@ interface PnLData {
     revenue: RevenueCategory[];
     cogs: COGSCategory[];
     operatingExpenses: ExpenseCategory[];
+    taxes?: TaxCategory[];
   };
   forecasts?: {
     revenue: ForecastData;
@@ -68,6 +69,8 @@ interface Period {
   operatingExpenses: number;
   operatingIncome: number;
   operatingMargin: number;
+  earningsBeforeTax: number;
+  earningsBeforeTaxMargin: number;
   taxes: number;
   netIncome: number;
   netMargin: number;
@@ -83,6 +86,8 @@ interface YTDMetrics {
   operatingExpenses: number;
   operatingIncome: number;
   operatingMargin: number;
+  earningsBeforeTax: number;
+  earningsBeforeTaxMargin: number;
   taxes: number;
   netIncome: number;
   netMargin: number;
@@ -108,6 +113,14 @@ interface ExpenseCategory {
   amount: number;
   percentage: number;
   subcategories?: { name: string; amount: number }[];
+}
+
+interface TaxCategory {
+  category: string;
+  subcategory: string;
+  amount: number;
+  percentage: number;
+  items?: { accountName: string; amount: number; percentage: number }[];
 }
 
 interface ForecastData {
@@ -288,6 +301,8 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       operatingExpenses: 800000,
       operatingIncome: 700000,
       operatingMargin: 28,
+      earningsBeforeTax: 700000,
+      earningsBeforeTaxMargin: 28,
       taxes: 210000,
       netIncome: 490000,
       netMargin: 19.6,
@@ -313,6 +328,8 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         operatingExpenses: 3800000,
         operatingIncome: 3325000,
         operatingMargin: 28,
+        earningsBeforeTax: 3325000,
+        earningsBeforeTaxMargin: 28,
         taxes: 997500,
         netIncome: 2327500,
         netMargin: 19.6,
@@ -362,6 +379,22 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               { name: 'Gastos Generales', amount: 40000 }
             ]
           }
+        ],
+        taxes: [
+          { 
+            category: 'taxes', 
+            subcategory: 'Income Tax', 
+            amount: 180000, 
+            percentage: 75,
+            items: [{ accountName: 'Federal Income Tax', amount: 180000, percentage: 100 }]
+          },
+          { 
+            category: 'taxes', 
+            subcategory: 'VAT/IVA', 
+            amount: 60000, 
+            percentage: 25,
+            items: [{ accountName: 'IVA por Pagar', amount: 60000, percentage: 100 }]
+          }
         ]
       },
       forecasts: {
@@ -406,6 +439,8 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         operatingExpenses,
         operatingIncome,
         operatingMargin: (operatingIncome / baseRevenue) * 100,
+        earningsBeforeTax: operatingIncome,
+        earningsBeforeTaxMargin: (operatingIncome / baseRevenue) * 100,
         taxes,
         netIncome,
         netMargin: (netIncome / baseRevenue) * 100,
@@ -436,6 +471,8 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         operatingExpenses,
         operatingIncome,
         operatingMargin: (operatingIncome / baseRevenue) * 100,
+        earningsBeforeTax: operatingIncome,
+        earningsBeforeTaxMargin: (operatingIncome / baseRevenue) * 100,
         taxes,
         netIncome,
         netMargin: (netIncome / baseRevenue) * 100,
@@ -481,40 +518,26 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     // No need to multiply by 1000 then divide by 1000 - just add the suffix
     let actualValue = value;
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
+    const originalConvertedValue = convertedValue; // Save for debugging
     
-    // Debug logging for first few calls to verify fix
-    if (Math.random() < 0.05 || value > 50000) { // Log more frequently for large values
-      console.log('💰 Format Value Debug:', {
-        inputValue: value,
-        originalUnits,
-        displayUnits,
-        convertedValue,
-        originalCurrency,
-        selectedCurrency,
-        willUseSuffix: originalUnits === 'thousands' && displayUnits === 'K' ? 'K' : 'none'
-      });
-    }
+    // Currency conversion working correctly
     
-    // Apply display units and suffix based on original units
+    // Apply display units conversion
+    // Data is stored in thousands in the file
     let suffix = '';
-    if (originalUnits === 'thousands' && displayUnits === 'K') {
-      // Data is already in thousands format (46,287 = 46.3M actual)
-      // Just add K suffix, no mathematical conversion needed
+    if (displayUnits === 'K') {
+      // Show as-is with K suffix (data already in thousands)
       suffix = 'K';
-    } else if (originalUnits === 'millions' && displayUnits === 'M') {
-      // Data is already in millions format 
-      // Just add M suffix, no mathematical conversion needed
+    } else if (displayUnits === 'M') {
+      // Convert thousands to millions: divide by 1000
+      convertedValue = convertedValue / 1000;
       suffix = 'M';
-    } else if (originalUnits === 'normal') {
-      // Data is in actual values, apply display unit conversion
-      if (displayUnits === 'K') {
-        convertedValue = convertedValue / 1000;
-        suffix = 'K';
-      } else if (displayUnits === 'M') {
-        convertedValue = convertedValue / 1000000;
-        suffix = 'M';
-      }
+    } else if (displayUnits === 'normal') {
+      // Convert thousands to normal: multiply by 1000
+      convertedValue = convertedValue * 1000;
     }
+    
+    // Conversion flow verified working correctly
     
     const formatted = new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -570,6 +593,24 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   let current = data.currentPeriod;
   let previous = data.previousPeriod;
   const ytd = data.yearToDate;
+
+  // Use comparison data if available (for lastQuarter, lastYear comparisons)
+  if ((data as any).comparisonData && comparisonPeriod !== 'lastMonth') {
+    previous = (data as any).comparisonData;
+    console.log('🔄 Using comparison data for period:', {
+      comparisonPeriod,
+      comparisonMonth: (data as any).comparisonData.month,
+      previousMonth: data.previousPeriod?.month
+    });
+  } else if (comparisonPeriod !== 'lastMonth' && !(data as any).comparisonData) {
+    // No comparison data available for the requested period
+    previous = undefined;
+    console.log('❌ No comparison data available for period:', {
+      comparisonPeriod,
+      requestedPeriod: comparisonPeriod === 'lastQuarter' ? '3 months ago' : '1 year ago',
+      fallbackToPrevious: false
+    });
+  }
   
   console.log('🔍 Period Comparison Debug:', {
     selectedPeriod,
@@ -609,15 +650,25 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       });
       
       if (currentIndex >= 0 && currentIndex < sortedPeriods.length - 1) {
-        previous = sortedPeriods[currentIndex + 1] as any; // periods are sorted newest to oldest, so previous (older) is at currentIndex + 1
+        // Only use sorted periods for lastMonth comparison, preserve comparison data for others
+        if (comparisonPeriod === 'lastMonth') {
+          previous = sortedPeriods[currentIndex + 1] as any; // periods are sorted newest to oldest, so previous (older) is at currentIndex + 1
+        }
+        // else: keep the comparison data that was set earlier for lastQuarter/lastYear
+        
         console.log('✅ Found previous period:', {
           currentPeriod: current.month,
           previousPeriod: previous?.month,
           currentRevenue: current.revenue,
-          previousRevenue: previous?.revenue
+          previousRevenue: previous?.revenue,
+          comparisonPeriod: comparisonPeriod,
+          usingComparisonData: comparisonPeriod !== 'lastMonth'
         });
       } else {
-        previous = undefined;
+        if (comparisonPeriod === 'lastMonth') {
+          previous = undefined;
+        }
+        // else: keep the comparison data that was set earlier (could be null if no data available)
         console.log('❌ No previous period available:', {
           reason: currentIndex === -1 ? 'Period not found in sorted array' : 'This is the oldest period in sorted array',
           currentIndex,
@@ -677,7 +728,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <CurrencyDollarIcon className="h-4 w-4 text-gray-500" />
               <select
                 value={selectedCurrency}
-                onChange={(e) => setSelectedCurrency(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCurrency(e.target.value);
+                }}
                 className="pl-3 pr-10 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[110px]"
               >
                 {SUPPORTED_CURRENCIES.map(curr => (
@@ -788,17 +841,18 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           </div>
           {/* Content */}
           <div className="p-6">
-        <div className="flex flex-col lg:flex-row gap-6 w-full metric-cards-container">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 w-full metric-cards-container">
           <MetricCard
             title={t('metrics.totalRevenue')}
             currentValue={current.revenue}
             previousValue={previous?.revenue}
             ytdValue={ytd.revenue}
+            originalCurrency={originalCurrency}
             format="currency"
             {...currencyProps}
             locale={locale}
             icon={<CurrencyDollarIcon className="h-5 w-5" />}
-            showBreakdown={data.categories.revenue.length > 0}
+            showBreakdown={false}
             breakdownData={data.categories.revenue.map(cat => ({
               label: cat.category,
               value: cat.amount,
@@ -807,6 +861,8 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             }))}
             colorScheme="revenue"
             helpTopic={helpTopics['metrics.totalRevenue']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
             helpContext={{
               currentValue: current.revenue,
               previousValue: previous?.revenue,
@@ -825,11 +881,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             previousValue={previous?.grossProfit}
             ytdValue={ytd.grossProfit}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<BanknotesIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.grossMargin)}`}
             colorScheme="profit"
             helpTopic={helpTopics['metrics.grossProfit']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
             helpContext={{
               currentValue: current.grossProfit,
               previousValue: previous?.grossProfit,
@@ -849,11 +908,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             previousValue={previous?.operatingIncome}
             ytdValue={ytd.operatingIncome}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<ChartBarIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.operatingMargin)}`}
             colorScheme={current.operatingIncome >= 0 ? "profit" : "cost"}
             helpTopic={helpTopics['metrics.operatingIncome']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
             helpContext={{
               currentValue: current.operatingIncome,
               previousValue: previous?.operatingIncome,
@@ -873,11 +935,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             previousValue={previous?.netIncome}
             ytdValue={ytd.netIncome}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<BanknotesIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.netMargin)}`}
             colorScheme={current.netIncome >= 0 ? "profit" : "cost"}
             helpTopic={helpTopics['metrics.netIncome']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
             helpContext={{
               currentValue: current.netIncome,
               previousValue: previous?.netIncome,
@@ -897,11 +962,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             previousValue={previous?.ebitda}
             ytdValue={ytd.ebitda}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.ebitdaMargin)}`}
             colorScheme={current.ebitda >= 0 ? "profit" : "cost"}
             helpTopic={helpTopics['metrics.ebitda']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
             helpContext={{
               currentValue: current.ebitda,
               previousValue: previous?.ebitda,
@@ -939,18 +1007,21 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           </div>
           {/* Content */}
           <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'cogs' ? null : 'cogs')}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          <div className="h-full" onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'cogs' ? null : 'cogs')}>
             <MetricCard
               title={t('metrics.costOfGoodsSold')}
               currentValue={current.cogs}
               previousValue={previous?.cogs}
               ytdValue={ytd.cogs}
               format="currency"
+              originalCurrency={originalCurrency}
               {...currencyProps}
               icon={<CalculatorIcon className="h-5 w-5" />}
               colorScheme="cost"
               helpTopic={helpTopics['metrics.cogs']}
+              comparisonPeriod={comparisonPeriod}
+              previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
               helpContext={{
                 currentValue: current.cogs,
                 previousValue: previous?.cogs,
@@ -965,17 +1036,20 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             />
           </div>
 
-          <div onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'opex' ? null : 'opex')}>
+          <div className="h-full" onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'opex' ? null : 'opex')}>
             <MetricCard
               title={t('metrics.operatingExpenses')}
               currentValue={current.operatingExpenses}
               previousValue={previous?.operatingExpenses}
               ytdValue={ytd.operatingExpenses}
               format="currency"
+              originalCurrency={originalCurrency}
               {...currencyProps}
               icon={<DocumentTextIcon className="h-5 w-5" />}
               colorScheme="cost"
               helpTopic={helpTopics['metrics.operatingExpenses']}
+              comparisonPeriod={comparisonPeriod}
+              previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
               helpContext={{
                 currentValue: current.operatingExpenses,
                 previousValue: previous?.operatingExpenses,
@@ -993,11 +1067,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           <MetricCard
             title={t('metrics.cogsPercentage')}
             currentValue={(current.cogs / current.revenue) * 100}
+            previousValue={previous ? (previous.cogs / previous.revenue) * 100 : undefined}
             format="percentage"
             icon={<ChartBarIcon className="h-5 w-5" />}
             subtitle={`YTD: ${((ytd.cogs / ytd.revenue) * 100).toFixed(1)}%`}
             colorScheme="cost"
             helpTopic={helpTopics['metrics.cogsPercentage']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
             helpContext={{
               currentValue: (current.cogs / current.revenue) * 100,
               previousValue: previous ? (previous.cogs / previous.revenue) * 100 : undefined,
@@ -1014,11 +1091,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           <MetricCard
             title={t('metrics.opexPercentage')}
             currentValue={(current.operatingExpenses / current.revenue) * 100}
+            previousValue={previous ? (previous.operatingExpenses / previous.revenue) * 100 : undefined}
             format="percentage"
             icon={<ChartBarIcon className="h-5 w-5" />}
             subtitle={`YTD: ${((ytd.operatingExpenses / ytd.revenue) * 100).toFixed(1)}%`}
             colorScheme="cost"
             helpTopic={helpTopics['metrics.opexPercentage']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
             helpContext={{
               currentValue: (current.operatingExpenses / current.revenue) * 100,
               previousValue: previous ? (previous.operatingExpenses / previous.revenue) * 100 : undefined,
@@ -1061,6 +1141,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             title={t('metrics.ytdRevenue')}
             currentValue={ytd.revenue}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<CurrencyDollarIcon className="h-5 w-5" />}
             subtitle={`${ytd.monthsIncluded} ${t('metrics.months')}`}
@@ -1071,6 +1152,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             title={t('metrics.ytdExpenses')}
             currentValue={ytd.cogs + ytd.operatingExpenses}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<CalculatorIcon className="h-5 w-5" />}
             colorScheme="cost"
@@ -1080,6 +1162,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             title={t('metrics.ytdNetIncome')}
             currentValue={ytd.netIncome}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<BanknotesIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(ytd.netMargin)}`}
@@ -1090,6 +1173,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             title={t('metrics.ytdEbitda')}
             currentValue={ytd.ebitda}
             format="currency"
+            originalCurrency={originalCurrency}
             {...currencyProps}
             icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(ytd.ebitdaMargin)}`}
@@ -1111,6 +1195,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             subtitle={activeBreakdown === 'cogs' ? t('heatmap.cogsSubtitle') : t('heatmap.opexSubtitle')}
             type={activeBreakdown}
             currency={selectedCurrency}
+            originalCurrency={originalCurrency}
             displayUnits={displayUnits}
             locale={locale}
             onCategoryClick={(expense) => {
@@ -1137,7 +1222,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         {/* Operating Expenses Analysis - Collapsible Heatmap */}
         {data.categories.operatingExpenses && data.categories.operatingExpenses.length > 0 && (
           <div>
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 border border-gray-100 overflow-hidden">
             {/* Colored Header with collapse/expand controls */}
             <div className="bg-gradient-to-r from-rose-500 to-pink-600 px-6 py-4">
               <div className="flex items-center justify-between">
@@ -1181,6 +1266,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     subtitle=""
                     type="opex"
                     currency={selectedCurrency}
+                    originalCurrency={originalCurrency}
                     displayUnits={displayUnits}
                     locale={locale}
                     onCategoryClick={(expense) => {
@@ -1199,7 +1285,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         {/* COGS Analysis - Collapsible Heatmap */}
         {data.categories.cogs && data.categories.cogs.length > 0 && (
           <div>
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 border border-gray-100 overflow-hidden">
             {/* Colored Header with collapse/expand controls */}
             <div className="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4">
               <div className="flex items-center justify-between">
@@ -1243,6 +1329,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     subtitle=""
                     type="cogs"
                     currency={selectedCurrency}
+                    originalCurrency={originalCurrency}
                     displayUnits={displayUnits}
                     locale={locale}
                     onCategoryClick={(expense) => {
@@ -1303,21 +1390,43 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           <div className="p-6">
             
             <div className="space-y-6">
-              {/* Impuestos del período */}
-              <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">{t('tax.periodTaxes')}</span>
-                  <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
+              {/* Tax Breakdown by Category */}
+              {(data.categories as any).taxes?.length ? (
+                <div className="space-y-3">
+                  {(data.categories as any).taxes?.map((taxCategory: TaxCategory, index: number) => (
+                    <div key={index} className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-600">{taxCategory.subcategory}</span>
+                        <span className="font-bold text-lg text-amber-700">{formatValue(taxCategory.amount)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-2">
+                        <span>{formatPercentage(taxCategory.percentage)} of total taxes</span>
+                      </div>
+                      <div className="w-full bg-amber-200 rounded-full h-2">
+                        <div 
+                          className="bg-amber-500 h-2 rounded-full transition-all duration-500" 
+                          style={{ width: `${Math.min(taxCategory.percentage, 100)}%` }} 
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="w-full bg-amber-200 rounded-full h-2">
-                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: '70%' }} />
+              ) : (
+                <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-600">{t('tax.periodTaxes')}</span>
+                    <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
+                  </div>
+                  <div className="w-full bg-amber-200 rounded-full h-2">
+                    <div className="bg-amber-500 h-2 rounded-full" style={{ width: '70%' }} />
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* Tasa efectiva */}
+              {/* Tax Burden (as % of Revenue) */}
               <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600">{t('tax.effectiveRate')}</span>
+                  <span className="text-sm font-medium text-gray-600">{t('tax.taxBurden')}</span>
                   <div className="flex items-center space-x-2">
                     <div className="w-12 h-12 relative">
                       <svg className="w-12 h-12 transform -rotate-90">
@@ -1328,23 +1437,31 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                           strokeWidth="4" 
                           fill="none" 
                           strokeDasharray={`${2 * Math.PI * 18}`}
-                          strokeDashoffset={`${2 * Math.PI * 18 * (1 - (current.operatingIncome > 0 ? Math.min(current.taxes / current.operatingIncome, 1) : 0))}`}
+                          strokeDashoffset={`${2 * Math.PI * 18 * (1 - (current.revenue > 0 ? Math.min(current.taxes / current.revenue, 1) : 0))}`}
                           className="transition-all duration-1000"
                         />
                       </svg>
                       <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-amber-700">
-                        {current.operatingIncome > 0 ? formatPercentage((current.taxes / current.operatingIncome) * 100) : '0%'}
+                        {current.revenue > 0 ? formatPercentage((current.taxes / current.revenue) * 100) : '0%'}
                       </span>
                     </div>
                   </div>
                 </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Taxes as % of revenue
+                </div>
               </div>
               
-              {/* Impuestos YTD */}
+              {/* YTD Tax Summary */}
               <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-600">{t('tax.ytdTaxes')}</span>
                   <span className="font-bold text-lg text-amber-700">{formatValue(ytd.taxes)}</span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  {ytd.revenue > 0 && (
+                    <span>Tax burden: {formatPercentage((ytd.taxes / ytd.revenue) * 100)} of revenue</span>
+                  )}
                 </div>
               </div>
               
@@ -1365,7 +1482,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                   {t('efficiency.title')}
                 </h3>
               </div>
-              <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" className="text-white hover:text-gray-200" />
+              <HelpIcon topic={helpTopics['dashboard.costEfficiency']} size="sm" className="text-white hover:text-gray-200" />
             </div>
           </div>
           
@@ -1464,6 +1581,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               colorScale="revenue"
               interactive={true}
               currency={selectedCurrency}
+              originalCurrency={originalCurrency}
               displayUnits={displayUnits}
               locale={locale}
             />
@@ -1493,6 +1611,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               colorScale="margin"
               interactive={true}
               currency={selectedCurrency}
+              originalCurrency={originalCurrency}
               displayUnits={displayUnits}
               locale={locale}
             />
@@ -1503,9 +1622,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       </div>
 
       {/* Forecast Trends - Revenue & Net Income Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
         {/* Revenue Trend & 6-Month Forecast */}
-        <div>
+        <div className="flex">
           <RevenueForecastTrendsChartJS
             historicalData={data.periods}
             forecastData={data.forecasts?.revenue ? data.forecasts.revenue.months.map((month, idx) => ({
@@ -1525,7 +1644,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         </div>
 
         {/* Net Income Trend & 6-Month Forecast */}
-        <div>
+        <div className="flex">
           <NetIncomeForecastTrendsChartJS
             historicalData={data.periods}
             forecastData={data.forecasts?.netIncome ? data.forecasts.netIncome.months.map((month, idx) => ({
@@ -1609,14 +1728,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     : ''
                   }
                 </div>
-                <div className="flex items-center mt-2">
-                  <div className="flex-1 bg-amber-200 rounded-full h-2">
-                    <div 
-                      className="bg-amber-600 h-2 rounded-full transition-all duration-1000"
-                      style={{ width: `${Math.min(100, ((current.revenue - current.grossProfit) / current.revenue) * 100)}%` }}
-                    />
-                  </div>
-                </div>
               </div>
               
               {/* % OpEx */}
@@ -1633,15 +1744,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     ? `${formatValue(current.operatingExpenses)} ${t('efficiency.ofTotalRevenue')}`
                     : ''
                   }
-                </div>
-                <div className="flex items-center mt-2">
-                  <div className="flex-1 bg-blue-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
-                      style={{ width: `${Math.min(100, (current.operatingExpenses / current.revenue) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-blue-600 ml-2">{t('efficiency.target')}: &lt;25%</span>
                 </div>
               </div>
             </div>
