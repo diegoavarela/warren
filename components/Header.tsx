@@ -144,21 +144,24 @@ export function Header() {
       // Regular breadcrumbs for non-workflow pages
       const paths = pathname.split('/').filter(Boolean);
       
+      // Build breadcrumbs by processing segments and skipping UUIDs
+      let pathSoFar = '';
+      
+      
       for (let i = 0; i < paths.length; i++) {
-        const path = '/' + paths.slice(0, i + 1).join('/');
-        let label = paths[i];
+        const segment = paths[i];
+        pathSoFar += '/' + segment;
         
         // Skip dashboard in breadcrumbs
-        if (label === 'dashboard') continue;
+        if (segment === 'dashboard') continue;
         
-        // Skip UUID-like segments (like user IDs) but keep the path for navigation
-        if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(label)) {
-          // For user edit pages, show "Editar" instead of the UUID
-          if (i < paths.length - 1 && paths[i + 1] === 'edit') {
-            continue; // Skip the UUID, we'll show "Editar" from the next segment
-          }
-          continue; // Skip UUIDs in general
+        // Skip UUID-like segments completely
+        if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(segment)) {
+          continue;
         }
+        
+        
+        let label = segment;
         
         // Translate common paths
         if (label === 'platform-admin') label = locale?.startsWith('es') ? 'Admin Plataforma' : 'Platform Admin';
@@ -178,7 +181,7 @@ export function Header() {
         if (label === 'subcategory-templates') label = locale?.startsWith('es') ? 'Plantillas de Subcategorías' : 'Subcategory Templates';
         
         breadcrumbs.push({ 
-          path, 
+          path: pathSoFar, 
           label: label.charAt(0).toUpperCase() + label.slice(1),
           isCurrent: i === paths.length - 1
         });
