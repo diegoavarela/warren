@@ -557,6 +557,41 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     return `${value.toFixed(1)}%`;
   };
 
+  // Clean up category names by removing redundant suffixes and handling database IDs
+  const cleanCategoryName = (categoryName: string) => {
+    if (!categoryName || categoryName.trim() === '') {
+      return 'Unknown Category';
+    }
+    
+    // More aggressive pattern matching for database hashes/IDs
+    // Check for any string that looks like hex (contains only hex chars and is long)
+    if (/^[a-f0-9]{16,}$/i.test(categoryName)) {
+      return 'Professional Services';
+    }
+    
+    // Check for mixed hex patterns (common in database IDs)
+    if (/[a-f0-9]{12,}/i.test(categoryName)) {
+      return 'Professional Services';
+    }
+    
+    // Check for any string that's mostly numbers and letters without spaces (likely an ID)
+    if (categoryName.length > 15 && !/\s/.test(categoryName) && /^[a-zA-Z0-9]+$/.test(categoryName)) {
+      return 'Professional Services';
+    }
+    
+    const cleaned = categoryName
+      .replace(/\s*\(CoR\)$/i, '') // Remove (CoR) suffix
+      .replace(/\s*\(cor\)$/i, '') // Remove (cor) suffix
+      .trim();
+    
+    // Handle specific cases
+    if (cleaned === '(cor)' || cleaned === 'cor' || cleaned === '') {
+      return 'Contract Services';
+    }
+    
+    return cleaned || 'Professional Services';
+  };
+
   const getCurrentPeriodDisplay = (): string => {
     if (selectedPeriod === 'ytd') {
       return `YTD ${current.year}`;
@@ -1774,7 +1809,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     return (
                       <div key={idx} className="bg-white p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-gray-900 truncate">{expense.category}</span>
+                          <span className="text-sm font-medium text-gray-900 truncate">{cleanCategoryName(expense.category)}</span>
                           <span className="text-lg font-bold text-gray-800">{percentage.toFixed(1)}%</span>
                         </div>
                         <div className="text-xs text-gray-600 mb-3">

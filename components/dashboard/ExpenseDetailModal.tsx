@@ -40,7 +40,6 @@ export function ExpenseDetailModal({
   const { locale: contextLocale } = useLocale();
   const { t } = useTranslation(locale || contextLocale);
 
-  console.log('ExpenseDetailModal render:', { isOpen, expense, type });
 
   if (!expense) return null;
 
@@ -134,8 +133,6 @@ export function ExpenseDetailModal({
 
   // Clean up category names by removing redundant suffixes and handling database IDs
   const cleanCategoryName = (categoryName: string) => {
-    console.log('🔧 CleanCategoryName input:', categoryName);
-    
     if (!categoryName || categoryName.trim() === '') {
       return 'Unknown Category';
     }
@@ -143,19 +140,16 @@ export function ExpenseDetailModal({
     // More aggressive pattern matching for database hashes/IDs
     // Check for any string that looks like hex (contains only hex chars and is long)
     if (/^[a-f0-9]{16,}$/i.test(categoryName)) {
-      console.log('🔍 Detected long hex string, using Professional Services fallback');
       return 'Professional Services';
     }
     
     // Check for mixed hex patterns (common in database IDs)
     if (/[a-f0-9]{12,}/i.test(categoryName)) {
-      console.log('🔍 Detected hex pattern in string, using Professional Services fallback');
       return 'Professional Services';
     }
     
     // Check for any string that's mostly numbers and letters without spaces (likely an ID)
     if (categoryName.length > 15 && !/\s/.test(categoryName) && /^[a-zA-Z0-9]+$/.test(categoryName)) {
-      console.log('🔍 Detected ID-like string, using Professional Services fallback');
       return 'Professional Services';
     }
     
@@ -169,7 +163,6 @@ export function ExpenseDetailModal({
       return 'Contract Services';
     }
     
-    console.log('🔧 CleanCategoryName output:', cleaned);
     return cleaned || 'Professional Services';
   };
 
@@ -305,7 +298,7 @@ export function ExpenseDetailModal({
                   <p className="font-medium mb-1">{t('heatmap.contextInfo')}</p>
                   <p>
                     {t('heatmap.expenseContext')
-                      .replace('{category}', expense.category)
+                      .replace('{category}', cleanedCategoryName)
                       .replace('{amount}', formatValue(expense.amount))
                       .replace('{percentage}', categoryPercentage.toFixed(1))
                       .replace('{type}', categoryTitle)
