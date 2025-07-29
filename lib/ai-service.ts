@@ -1,6 +1,6 @@
 /**
  * AI-Powered Financial Document Analysis Service
- * Uses OpenAI GPT-4 to intelligently analyze and understand Excel financial documents
+ * Uses OpenAI GPT-4o to intelligently analyze and understand Excel financial documents
  */
 
 import OpenAI from 'openai';
@@ -88,8 +88,8 @@ export interface MappingSuggestions {
 }
 
 export class FinancialAI {
-  private model: string = 'gpt-3.5-turbo-16k'; // Using gpt-3.5-turbo-16k for better context and stability
-  private fallbackModel: string = 'gpt-3.5-turbo';
+  private model: string = 'gpt-4o'; // Using GPT-4o for best performance and accuracy
+  private fallbackModel: string = 'gpt-4o-mini'; // GPT-4o-mini as fallback - still better than GPT-3.5
 
   /**
    * Unified analysis: Structure + Classification in a single AI call

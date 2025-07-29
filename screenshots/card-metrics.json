@@ -1,0 +1,30 @@
+{
+  "totalCards": 14,
+  "sampleCards": [
+    {
+      "cardIndex": 0,
+      "width": 162,
+      "height": 162,
+      "aspectRatio": 1,
+      "padding": "24px",
+      "isSquare": true
+    },
+    {
+      "cardIndex": 1,
+      "width": 155,
+      "height": 155,
+      "aspectRatio": 1,
+      "padding": "24px",
+      "isSquare": true
+    },
+    {
+      "cardIndex": 2,
+      "width": 155,
+      "height": 155,
+      "aspectRatio": 1,
+      "padding": "24px",
+      "isSquare": true
+    }
+  ],
+  "allSquare": true
+}

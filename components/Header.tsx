@@ -81,30 +81,96 @@ export function Header() {
     };
   }, []);
 
+  // Check if we're in a workflow
+  const isInWorkflow = pathname && (
+    pathname.includes('/upload') ||
+    pathname.includes('/select-sheet') ||
+    pathname.includes('/period-identification') ||
+    pathname.includes('/mapper') ||
+    pathname.includes('/persist')
+  );
+
+  // Get workflow step info
+  const getWorkflowStep = () => {
+    if (!pathname) return null;
+    if (pathname.includes('/upload')) return { step: 1, name: 'upload' };
+    if (pathname.includes('/select-sheet')) return { step: 2, name: 'select-sheet' };
+    if (pathname.includes('/period-identification')) return { step: 3, name: 'identify-periods' };
+    if (pathname.includes('/mapper')) return { step: 4, name: 'map-accounts' };
+    if (pathname.includes('/persist')) return { step: 5, name: 'save' };
+    return null;
+  };
+
   // Get breadcrumbs based on pathname
   const getBreadcrumbs = () => {
     if (!pathname) return [];
-    const paths = pathname.split('/').filter(Boolean);
+    
     const breadcrumbs = [];
     
-    for (let i = 0; i < paths.length; i++) {
-      const path = '/' + paths.slice(0, i + 1).join('/');
-      let label = paths[i];
+    // Special handling for workflow pages
+    if (isInWorkflow) {
+      // Add Dashboard
+      breadcrumbs.push({ 
+        path: '/dashboard', 
+        label: locale?.startsWith('es') ? 'Panel' : 'Dashboard' 
+      });
       
-      // Skip dashboard in breadcrumbs
-      if (label === 'dashboard') continue;
+      const workflowStep = getWorkflowStep();
       
-      // Translate common paths
-      if (label === 'platform-admin') label = locale?.startsWith('es') ? 'Admin Plataforma' : 'Platform Admin';
-      if (label === 'company-admin') label = locale?.startsWith('es') ? 'Admin Empresa' : 'Company Admin';
-      if (label === 'users') label = locale?.startsWith('es') ? 'Usuarios' : 'Users';
-      if (label === 'companies') label = locale?.startsWith('es') ? 'Empresas' : 'Companies';
-      if (label === 'settings') label = locale?.startsWith('es') ? 'Configuración' : 'Settings';
-      if (label === 'pnl') label = locale?.startsWith('es') ? 'Estado de Resultados' : 'Profit & Loss';
-      if (label === 'cashflow') label = locale?.startsWith('es') ? 'Flujo de Caja' : 'Cash Flow';
-      if (label === 'uploads') label = locale?.startsWith('es') ? 'Historial de Cargas' : 'Upload History';
+      // Add workflow steps
+      const workflowSteps = [
+        { name: 'upload', label: locale?.startsWith('es') ? 'Subir' : 'Upload', path: '/upload' },
+        { name: 'select-sheet', label: locale?.startsWith('es') ? 'Seleccionar Hoja' : 'Select Sheet', path: '/select-sheet' },
+        { name: 'identify-periods', label: locale?.startsWith('es') ? 'Identificar Periodos' : 'Identify Periods', path: '/period-identification' },
+        { name: 'map-accounts', label: locale?.startsWith('es') ? 'Mapear Cuentas' : 'Map Accounts', path: '/enhanced-mapper' },
+        { name: 'save', label: locale?.startsWith('es') ? 'Guardar' : 'Save', path: '/persist' }
+      ];
       
-      breadcrumbs.push({ path, label: label.charAt(0).toUpperCase() + label.slice(1) });
+      for (let i = 0; i < workflowSteps.length; i++) {
+        const step = workflowSteps[i];
+        const isCurrentStep = workflowStep?.name === step.name;
+        const isPastStep = workflowStep && i < (workflowStep.step - 1);
+        
+        breadcrumbs.push({
+          path: isPastStep ? step.path : undefined,
+          label: step.label,
+          isCurrent: isCurrentStep,
+          isDisabled: !isPastStep && !isCurrentStep
+        });
+        
+        if (isCurrentStep) break;
+      }
+    } else {
+      // Regular breadcrumbs for non-workflow pages
+      const paths = pathname.split('/').filter(Boolean);
+      
+      for (let i = 0; i < paths.length; i++) {
+        const path = '/' + paths.slice(0, i + 1).join('/');
+        let label = paths[i];
+        
+        // Skip dashboard in breadcrumbs
+        if (label === 'dashboard') continue;
+        
+        // Translate common paths
+        if (label === 'platform-admin') label = locale?.startsWith('es') ? 'Admin Plataforma' : 'Platform Admin';
+        if (label === 'company-admin') label = locale?.startsWith('es') ? 'Admin Empresa' : 'Company Admin';
+        if (label === 'org-admin') label = locale?.startsWith('es') ? 'Admin Organización' : 'Organization Admin';
+        if (label === 'users') label = locale?.startsWith('es') ? 'Usuarios' : 'Users';
+        if (label === 'companies') label = locale?.startsWith('es') ? 'Empresas' : 'Companies';
+        if (label === 'settings') label = locale?.startsWith('es') ? 'Configuración' : 'Settings';
+        if (label === 'pnl') label = locale?.startsWith('es') ? 'Estado de Resultados' : 'Profit & Loss';
+        if (label === 'cashflow') label = locale?.startsWith('es') ? 'Flujo de Caja' : 'Cash Flow';
+        if (label === 'uploads') label = locale?.startsWith('es') ? 'Historial de Cargas' : 'Upload History';
+        if (label === 'profile') label = locale?.startsWith('es') ? 'Perfil' : 'Profile';
+        if (label === 'organizations') label = locale?.startsWith('es') ? 'Organizaciones' : 'Organizations';
+        if (label === 'subcategory-templates') label = locale?.startsWith('es') ? 'Plantillas de Subcategorías' : 'Subcategory Templates';
+        
+        breadcrumbs.push({ 
+          path, 
+          label: label.charAt(0).toUpperCase() + label.slice(1),
+          isCurrent: i === paths.length - 1
+        });
+      }
     }
     
     return breadcrumbs;
@@ -130,23 +196,45 @@ export function Header() {
             </button>
             
             {/* Breadcrumbs for authenticated users */}
-            {isAuthenticated && pathname !== '/' && (
-              <nav className="hidden md:flex items-center space-x-2 text-sm">
-                {getBreadcrumbs().map((crumb, index, array) => (
-                  <div key={crumb.path} className="flex items-center">
-                    {index > 0 && <ChevronDownIcon className="w-4 h-4 text-gray-400 mx-2 rotate-[-90deg]" />}
+            {isAuthenticated && pathname && pathname !== '/' && (
+              <nav className="flex items-center space-x-1 text-sm flex-1 mx-4 overflow-x-auto">
+                {/* Home icon as first breadcrumb */}
+                <button
+                  onClick={() => router.push('/')}
+                  className="flex items-center text-gray-600 hover:text-blue-600 transition-colors flex-shrink-0 p-1"
+                  title={locale?.startsWith('es') ? 'Inicio' : 'Home'}
+                >
+                  <HomeIcon className="w-4 h-4" />
+                </button>
+                
+                {getBreadcrumbs().map((crumb, index) => (
+                  <div key={`${crumb.path || crumb.label}-${index}`} className="flex items-center">
+                    <ChevronDownIcon className="w-4 h-4 text-gray-400 mx-1 rotate-[-90deg] flex-shrink-0" />
                     <button
-                      onClick={() => router.push(crumb.path)}
-                      className={`hover:text-blue-600 transition-colors ${
-                        index === array.length - 1 
-                          ? 'text-gray-900 font-medium' 
-                          : 'text-gray-600'
+                      onClick={() => crumb.path && router.push(crumb.path)}
+                      disabled={crumb.isDisabled || !crumb.path}
+                      className={`transition-colors whitespace-nowrap px-1 ${
+                        crumb.isCurrent 
+                          ? 'text-blue-600 font-medium cursor-default' 
+                          : crumb.isDisabled || !crumb.path
+                            ? 'text-gray-400 cursor-default'
+                            : 'text-gray-600 hover:text-blue-600 cursor-pointer'
                       }`}
                     >
                       {crumb.label}
                     </button>
                   </div>
                 ))}
+                
+                {/* Show workflow step info */}
+                {isInWorkflow && (
+                  <div className="flex items-center ml-2 text-xs text-gray-500 flex-shrink-0">
+                    <span className="mx-2">•</span>
+                    <span>
+                      {locale?.startsWith('es') ? 'Paso' : 'Step'} {getWorkflowStep()?.step} {locale?.startsWith('es') ? 'de' : 'of'} 5
+                    </span>
+                  </div>
+                )}
               </nav>
             )}
           </div>

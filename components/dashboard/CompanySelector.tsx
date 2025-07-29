@@ -19,6 +19,7 @@ export function CompanySelector({ selectedCompanyId, onCompanyChange, className 
     if (!selectedCompanyId && companies.length > 0) {
       onCompanyChange(companies[0].id);
       sessionStorage.setItem('selectedCompanyId', companies[0].id);
+      sessionStorage.setItem('selectedCompanyName', companies[0].name);
     }
   }, [companies, selectedCompanyId, onCompanyChange]);
 
@@ -78,6 +79,7 @@ export function CompanySelector({ selectedCompanyId, onCompanyChange, className 
                   onClick={() => {
                     onCompanyChange(company.id);
                     sessionStorage.setItem('selectedCompanyId', company.id);
+                    sessionStorage.setItem('selectedCompanyName', company.name);
                     setIsOpen(false);
                   }}
                   className={`w-full px-4 py-3 text-left hover:bg-purple-50 transition-colors ${

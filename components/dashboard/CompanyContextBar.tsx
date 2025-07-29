@@ -55,6 +55,9 @@ export function CompanyContextBar({
       onUploadClick();
     } else {
       sessionStorage.setItem('selectedCompanyId', companyId || '');
+      if (selectedCompany) {
+        sessionStorage.setItem('selectedCompanyName', selectedCompany.name);
+      }
       router.push('/upload');
     }
   };

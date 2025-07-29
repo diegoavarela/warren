@@ -38,8 +38,10 @@ function OrgAdminDashboard() {
   const { t } = useTranslation(locale || 'en-US');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [templates, setTemplates] = useState<SubcategoryTemplate[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
@@ -53,6 +55,7 @@ function OrgAdminDashboard() {
     fetchCompanies();
     if (organization?.id) {
       fetchTemplates();
+      fetchUsers();
     }
   }, [organization?.id]);
 
@@ -95,6 +98,24 @@ function OrgAdminDashboard() {
       console.error('Failed to load templates:', err);
     } finally {
       setTemplatesLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    if (!organization?.id) return;
+    
+    try {
+      setUsersLoading(true);
+      const response = await fetch(`/api/organizations/${organization.id}/users`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const data = await response.json();
+      setUsers(data.users || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setUsersLoading(false);
     }
   };
 
@@ -320,6 +341,113 @@ function OrgAdminDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Users Section */}
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <CardTitle className="flex items-center">
+                  <Users className="mr-2 h-5 w-5" />
+                  {locale?.startsWith('es') ? 'Usuarios' : 'Users'} ({users.length})
+                </CardTitle>
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/dashboard/org-admin/users')}
+                  className="whitespace-nowrap inline-flex items-center"
+                >
+                  {locale?.startsWith('es') ? 'Ver Todos' : 'View All'}
+                </Button>
+                <Button 
+                  variant="primary" 
+                  onClick={() => router.push('/dashboard/org-admin/users/invite')}
+                  className="whitespace-nowrap inline-flex items-center"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {locale?.startsWith('es') ? 'Invitar Usuario' : 'Invite User'}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardBody className="p-0">
+            {usersLoading ? (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <p className="mt-2 text-gray-600">
+                  {locale?.startsWith('es') ? 'Cargando usuarios...' : 'Loading users...'}
+                </p>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-2 text-gray-600">
+                  {locale?.startsWith('es') ? 'No hay usuarios' : 'No users yet'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {locale?.startsWith('es') 
+                    ? 'Invita tu primer usuario para comenzar'
+                    : 'Invite your first user to get started'}
+                </p>
+                <Button 
+                  variant="primary" 
+                  className="mt-4"
+                  onClick={() => router.push('/dashboard/org-admin/users/invite')}
+                >
+                  {locale?.startsWith('es') ? 'Invitar Usuario' : 'Invite User'}
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {users.slice(0, 3).map((user) => (
+                  <div
+                    key={user.id}
+                    className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between"
+                    onClick={() => router.push('/dashboard/org-admin/users')}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-medium">
+                          {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {user.firstName} {user.lastName}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {user.email} • {user.organizationRole === 'admin' 
+                            ? (locale?.startsWith('es') ? 'Admin' : 'Admin')
+                            : (locale?.startsWith('es') ? 'Usuario' : 'User')
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {user.companyAccess?.length > 0 && (
+                        <span>{user.companyAccess.length} {locale?.startsWith('es') ? 'empresas' : 'companies'}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {users.length > 3 && (
+                  <div className="px-6 py-4 text-center">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => router.push('/dashboard/org-admin/users')}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {locale?.startsWith('es') 
+                        ? `Ver todos los ${users.length} usuarios` 
+                        : `View all ${users.length} users`}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardBody>

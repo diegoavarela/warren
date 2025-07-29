@@ -9,6 +9,8 @@ export interface Period {
   operatingExpenses: number;
   operatingIncome: number;
   operatingMargin: number;
+  earningsBeforeTax: number;
+  earningsBeforeTaxMargin: number;
   taxes: number;
   netIncome: number;
   netMargin: number;
@@ -38,6 +40,8 @@ export interface YTDMetrics {
   operatingExpenses: number;
   operatingIncome: number;
   operatingMargin: number;
+  earningsBeforeTax: number;
+  earningsBeforeTaxMargin: number;
   taxes: number;
   netIncome: number;
   netMargin: number;
@@ -76,6 +80,8 @@ export interface PnLData {
   periods: Period[];
   currentPeriod: Period;
   previousPeriod?: Period;
+  comparisonData?: Period;
+  comparisonPeriod?: string;
   yearToDate: YTDMetrics;
   categories: {
     revenue: RevenueCategory[];

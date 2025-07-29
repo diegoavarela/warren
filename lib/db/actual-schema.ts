@@ -23,6 +23,7 @@ export const organizations = pgTable("organizations", {
   tier: varchar("tier", { length: 50 }).notNull().default("starter"),
   locale: varchar("locale", { length: 5 }).default("en-US"),
   baseCurrency: varchar("base_currency", { length: 3 }).default("USD"),
+  timezone: varchar("timezone", { length: 50 }).default("UTC"),
   fiscalYearStart: integer("fiscal_year_start").default(1),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -130,6 +131,11 @@ export const mappingTemplates = pgTable("mapping_templates", {
   validationRules: jsonb("validation_rules"),
   locale: varchar("locale", { length: 5 }),
   currency: varchar("currency", { length: 3 }).notNull(),
+  units: varchar("units", { length: 20 }), // normal, thousands, millions
+  periodStart: date("period_start"),
+  periodEnd: date("period_end"),
+  periodType: varchar("period_type", { length: 20 }), // monthly, quarterly, yearly
+  detectedPeriods: jsonb("detected_periods"), // Array of all periods found
   isDefault: boolean("is_default").default(false),
   usageCount: integer("usage_count").default(0),
   lastUsedAt: timestamp("last_used_at"),

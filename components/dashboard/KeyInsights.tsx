@@ -10,6 +10,9 @@ import {
   InformationCircleIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
+import { useTranslation } from '@/lib/translations';
+import { HelpIcon } from '@/components/HelpIcon';
+import { helpTopics } from '@/lib/help-content';
 
 interface InsightData {
   revenue: number;
@@ -37,9 +40,18 @@ interface Insight {
 interface KeyInsightsProps {
   data: InsightData;
   className?: string;
+  locale?: string;
 }
 
-export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
+export function KeyInsights({ data, className = '', locale = 'es-MX' }: KeyInsightsProps) {
+  const { t } = useTranslation(locale);
+
+  // Helper function to replace placeholders in translated messages
+  const interpolate = (template: string, values: Record<string, string | number>): string => {
+    return Object.entries(values).reduce((result, [key, value]) => {
+      return result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
+    }, template);
+  };
   const generateInsights = (): Insight[] => {
     const insights: Insight[] = [];
 
@@ -51,8 +63,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
         insights.push({
           id: 'revenue-growth-strong',
           type: 'positive',
-          title: 'Crecimiento Sólido de Ingresos',
-          message: `Los ingresos aumentaron ${revenueGrowth.toFixed(1)}% respecto al mes anterior, indicando una fuerte performance comercial.`,
+          title: t('insights.revenue.strongGrowth.title'),
+          message: interpolate(t('insights.revenue.strongGrowth.message'), { growth: revenueGrowth.toFixed(1) }),
           icon: <ArrowTrendingUpIcon className="h-5 w-5" />,
           priority: 'high'
         });
@@ -60,8 +72,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
         insights.push({
           id: 'revenue-decline',
           type: 'negative',
-          title: 'Declive en Ingresos',
-          message: `Los ingresos disminuyeron ${Math.abs(revenueGrowth).toFixed(1)}% este mes. Revisar estrategias comerciales.`,
+          title: t('insights.revenue.decline.title'),
+          message: interpolate(t('insights.revenue.decline.message'), { growth: Math.abs(revenueGrowth).toFixed(1) }),
           icon: <ArrowTrendingDownIcon className="h-5 w-5" />,
           priority: 'high'
         });
@@ -69,8 +81,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
         insights.push({
           id: 'revenue-stable',
           type: 'neutral',
-          title: 'Ingresos Estables',
-          message: `Los ingresos se mantuvieron estables con un crecimiento del ${revenueGrowth.toFixed(1)}%.`,
+          title: t('insights.revenue.stable.title'),
+          message: interpolate(t('insights.revenue.stable.message'), { growth: revenueGrowth.toFixed(1) }),
           icon: <CheckCircleIcon className="h-5 w-5" />,
           priority: 'medium'
         });
@@ -82,8 +94,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       insights.push({
         id: 'strong-margins',
         type: 'positive',
-        title: 'Márgenes Saludables',
-        message: `El margen bruto del ${data.grossMargin.toFixed(1)}% indica una buena estructura de costos y pricing poder.`,
+        title: t('insights.margins.healthy.title'),
+        message: interpolate(t('insights.margins.healthy.message'), { margin: data.grossMargin.toFixed(1) }),
         icon: <CheckCircleIcon className="h-5 w-5" />,
         priority: 'medium'
       });
@@ -91,8 +103,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       insights.push({
         id: 'low-margins',
         type: 'warning',
-        title: 'Márgenes Bajo Presión',
-        message: `El margen bruto del ${data.grossMargin.toFixed(1)}% está por debajo del benchmark. Revisar estructura de costos.`,
+        title: t('insights.margins.pressure.title'),
+        message: interpolate(t('insights.margins.pressure.message'), { margin: data.grossMargin.toFixed(1) }),
         icon: <ExclamationTriangleIcon className="h-5 w-5" />,
         priority: 'high'
       });
@@ -103,8 +115,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       insights.push({
         id: 'strong-cashflow',
         type: 'positive',
-        title: 'Excelente Generación de Efectivo',
-        message: `El flujo de efectivo representa ${((data.cashFlow / data.revenue) * 100).toFixed(1)}% de los ingresos, indicando sólida gestión financiera.`,
+        title: t('insights.cashflow.strong.title'),
+        message: interpolate(t('insights.cashflow.strong.message'), { percentage: ((data.cashFlow / data.revenue) * 100).toFixed(1) }),
         icon: <ArrowTrendingUpIcon className="h-5 w-5" />,
         priority: 'medium'
       });
@@ -112,8 +124,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       insights.push({
         id: 'negative-cashflow',
         type: 'negative',
-        title: 'Flujo de Efectivo Negativo',
-        message: 'El flujo de efectivo negativo requiere atención inmediata. Revisar timing de cobros y pagos.',
+        title: t('insights.cashflow.negative.title'),
+        message: t('insights.cashflow.negative.message'),
         icon: <ExclamationTriangleIcon className="h-5 w-5" />,
         priority: 'high'
       });
@@ -127,8 +139,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
         insights.push({
           id: 'expense-growth-high',
           type: 'warning',
-          title: 'Crecimiento Acelerado de Gastos',
-          message: `Los gastos aumentaron ${expenseGrowth.toFixed(1)}% este mes. Revisar control de costos operacionales.`,
+          title: t('insights.expenses.growth.title'),
+          message: interpolate(t('insights.expenses.growth.message'), { growth: expenseGrowth.toFixed(1) }),
           icon: <ExclamationTriangleIcon className="h-5 w-5" />,
           priority: 'medium'
         });
@@ -136,8 +148,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
         insights.push({
           id: 'expense-reduction',
           type: 'positive',
-          title: 'Optimización de Gastos',
-          message: `Los gastos se redujeron ${Math.abs(expenseGrowth).toFixed(1)}%, mejorando la eficiencia operacional.`,
+          title: t('insights.expenses.reduction.title'),
+          message: interpolate(t('insights.expenses.reduction.message'), { growth: Math.abs(expenseGrowth).toFixed(1) }),
           icon: <CheckCircleIcon className="h-5 w-5" />,
           priority: 'low'
         });
@@ -149,8 +161,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       insights.push({
         id: 'high-profitability',
         type: 'positive',
-        title: 'Alta Rentabilidad Operacional',
-        message: `El margen operacional del ${data.operatingMargin.toFixed(1)}% demuestra excelente control operativo.`,
+        title: t('insights.profitability.high.title'),
+        message: interpolate(t('insights.profitability.high.message'), { margin: data.operatingMargin.toFixed(1) }),
         icon: <SparklesIcon className="h-5 w-5" />,
         priority: 'medium'
       });
@@ -158,8 +170,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       insights.push({
         id: 'low-profitability',
         type: 'warning',
-        title: 'Rentabilidad Operacional Baja',
-        message: `El margen operacional del ${data.operatingMargin.toFixed(1)}% necesita mejora. Revisar eficiencia operativa.`,
+        title: t('insights.profitability.low.title'),
+        message: interpolate(t('insights.profitability.low.message'), { margin: data.operatingMargin.toFixed(1) }),
         icon: <ExclamationTriangleIcon className="h-5 w-5" />,
         priority: 'high'
       });
@@ -170,8 +182,8 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       insights.push({
         id: 'scale-opportunities',
         type: 'neutral',
-        title: 'Oportunidades de Escalamiento',
-        message: 'Con este nivel de ingresos, considerar inversiones en automatización y expansión de capacidades.',
+        title: t('insights.scale.opportunities.title'),
+        message: t('insights.scale.opportunities.message'),
         icon: <LightBulbIcon className="h-5 w-5" />,
         priority: 'low'
       });
@@ -228,25 +240,37 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       <div className={`bg-white rounded-2xl shadow-lg p-6 ${className}`}>
         <div className="flex items-center space-x-3 mb-4">
           <InformationCircleIcon className="h-6 w-6 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Observaciones Clave</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('insights.title')}</h3>
         </div>
-        <p className="text-gray-600">No hay observaciones disponibles en este momento.</p>
+        <p className="text-gray-600">{t('insights.noInsights')}</p>
       </div>
     );
   }
 
   return (
-    <div className={`bg-white rounded-2xl shadow-lg p-6 ${className}`}>
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="bg-gradient-to-br from-purple-500 to-violet-600 p-2 rounded-xl">
-          <SparklesIcon className="h-6 w-6 text-white" />
+    <div className={`bg-white rounded-2xl shadow-lg overflow-hidden ${className}`}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-500 to-violet-600 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <SparklesIcon className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">
+              {t('insights.title')}
+            </h3>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="text-xs font-medium text-white/90 bg-white/20 px-2 py-1 rounded-full">
+              {t('insights.aiPowered')}
+            </span>
+            <HelpIcon topic={helpTopics['dashboard.insights']} size="sm" className="text-white hover:text-gray-200" />
+          </div>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">Observaciones Clave</h3>
-        <div className="flex-1" />
-        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-          IA Powered
-        </span>
       </div>
+      
+      {/* Content */}
+      <div className="p-6">
 
       <div className="space-y-4">
         {insights.slice(0, 4).map((insight) => {
@@ -273,7 +297,7 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
                         ? 'bg-yellow-100 text-yellow-700'
                         : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {insight.priority === 'high' ? 'Alta' : insight.priority === 'medium' ? 'Media' : 'Baja'}
+                      {t(`insights.priority.${insight.priority}`)}
                     </span>
                   </div>
                   <p className={`text-sm ${style.messageColor} leading-relaxed`}>
@@ -289,15 +313,16 @@ export function KeyInsights({ data, className = '' }: KeyInsightsProps) {
       {insights.length > 4 && (
         <div className="mt-4 text-center">
           <button className="text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors">
-            Ver {insights.length - 4} observaciones adicionales
+            {interpolate(t('insights.viewMore'), { count: (insights.length - 4).toString() })}
           </button>
         </div>
       )}
 
       <div className="mt-6 pt-4 border-t border-gray-100">
         <p className="text-xs text-gray-500 text-center">
-          💡 Las observaciones se generan automáticamente basadas en el análisis de tus datos financieros
+          {t('insights.autoGenerated')}
         </p>
+      </div>
       </div>
     </div>
   );

@@ -43,11 +43,12 @@ export function PersonnelCostsWidget({
     let convertedValue = value;
     let suffix = '';
     
+    // FIXED: When data is already in display units (thousands), don't divide again
     if (displayUnits === 'K') {
-      convertedValue = value / 1000;
+      // Data is already in thousands format, just add K suffix
       suffix = 'K';
     } else if (displayUnits === 'M') {
-      convertedValue = value / 1000000;
+      // Data is already in millions format, just add M suffix
       suffix = 'M';
     }
     
@@ -86,7 +87,7 @@ export function PersonnelCostsWidget({
               {locale?.startsWith('es') ? 'Costos de Personal' : 'Personnel Costs'}
             </h3>
           </div>
-          <HelpIcon topic={helpTopics['dashboard.costs']} size="sm" className="text-white hover:text-gray-200" />
+          <HelpIcon topic={helpTopics['dashboard.personnel']} size="sm" className="text-white hover:text-gray-200" />
         </div>
       </div>
 

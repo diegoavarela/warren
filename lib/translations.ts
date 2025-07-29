@@ -37,6 +37,13 @@ export const translations = {
     'common.previous': 'Anterior',
     'common.close': 'Cerrar',
 
+    // Growth and comparison translations
+    'growth.vs': 'vs',
+    'growth.noComparison': 'Sin comparación',
+    'previousMonth': 'mes anterior',
+    'monthOverMonth': 'mes a mes',
+    'yearOverYear': 'año a año',
+
     // Company Management
     'company.select': 'Selecciona una empresa',
     'company.create': 'Crear nueva empresa',
@@ -91,8 +98,8 @@ export const translations = {
     'help.dashboard.ytd.title': 'Resumen YTD (Año hasta la fecha)',
     'help.dashboard.ytd.content': '<p>El resumen YTD muestra los datos acumulados desde el inicio del año fiscal hasta el período actual.</p><ul><li><strong>Ingresos YTD</strong>: Total de ingresos acumulados</li><li><strong>Margen Bruto</strong>: Porcentaje de utilidad después de costos directos</li><li><strong>Margen Operacional</strong>: Porcentaje después de gastos operativos</li><li><strong>Margen Neto</strong>: Porcentaje de utilidad final</li></ul>',
     
-    'help.dashboard.revenue.title': 'Análisis de Ingresos',
-    'help.dashboard.revenue.content': '<p>Esta sección desglosa tus fuentes de ingresos por categorías.</p><p>Puedes ver:</p><ul><li>Monto total por categoría</li><li>Porcentaje de contribución</li><li>Tendencia vs período anterior</li></ul>',
+    'help.dashboard.revenue.title': 'Análisis de Crecimiento de Ingresos',
+    'help.dashboard.revenue.content': '<p>Esta sección analiza el crecimiento de ingresos y tendencias de rendimiento.</p><h4>Métrica de Crecimiento:</h4><p>El porcentaje mostrado en el encabezado indica el <strong>crecimiento mes a mes</strong> comparando:</p><ul><li><strong>Mes actual</strong>: Ingresos del período seleccionado</li><li><strong>Mes anterior</strong>: Ingresos del mes inmediatamente anterior</li></ul><h4>Interpretación:</h4><ul><li><strong>Positivo (+)</strong>: Los ingresos aumentaron respecto al mes anterior</li><li><strong>Negativo (-)</strong>: Los ingresos disminuyeron respecto al mes anterior</li><li><strong>Magnitud</strong>: Indica qué tan significativo fue el cambio</li></ul><h4>Análisis del Gráfico:</h4><ul><li><strong>Barras verdes</strong>: Ingresos totales por mes</li><li><strong>Barras rojas</strong>: Costos totales (COGS + OpEx)</li><li><strong>Barras azules</strong>: Ganancia bruta por mes</li><li><strong>Línea naranja</strong>: Tendencia del margen bruto (%)</li></ul><p><strong>Tip:</strong> Para eliminar efectos estacionales, compara con el mismo mes del año anterior usando el selector de comparación.</p>',
     
     'help.dashboard.costs.title': 'Estructura de Costos',
     'help.dashboard.costs.content': '<p>Analiza la composición de tus costos de ventas (COGS).</p><p>Incluye:</p><ul><li>Costos directos de producción</li><li>Materiales</li><li>Mano de obra directa</li><li>Otros costos variables</li></ul>',
@@ -147,6 +154,34 @@ export const translations = {
     'dashboard.pnl.costsSection': 'Estructura de Costos',
     'dashboard.pnl.profitabilitySection': 'Métricas de Rentabilidad',
     'dashboard.pnl.operatingExpensesAnalysis': 'Análisis de Gastos Operacionales',
+    'dashboard.pnl.cogsAnalysis': 'Análisis de Costos de Ventas',
+    'dashboard.pnl.performanceOverview': 'Resumen de Performance',
+    
+    // Performance Overview
+    'performance.monthlyRevenueTitle': 'Performance Mensual de Ingresos',
+    'performance.revenueSubtitle': 'Información de cada mes disponible hasta un año atrás',
+    'performance.monthlyMarginTitle': 'Performance de Margen Neto Mensual',
+    'performance.marginSubtitle': 'Información de cada mes disponible hasta un año atrás',
+    
+    // Comparison Period Selector
+    'comparison.title': 'Comparar con',
+    'comparison.lastMonth': 'Mes anterior',
+    'comparison.lastMonth.short': 'mes anterior',
+    'comparison.lastQuarter': 'Trimestre anterior',
+    'comparison.lastQuarter.short': 'trimestre anterior',
+    'comparison.lastYear': 'Año anterior',
+    'comparison.lastYear.short': 'año anterior',
+    'comparison.description': 'Crecimiento vs {period}',
+    'comparison.noDataLastYear': 'Sin datos del año anterior',
+    'comparison.noDataLastQuarter': 'Sin datos del trimestre anterior',
+    
+    // Current Month Overview
+    'currentMonth.overview.title': 'Resumen de {month}',
+    'currentMonth.overview.subtitle': 'Indicadores financieros clave del período actual',
+    'growth.noData': 'N/A',
+    'growth.vsComparison': 'vs {period}',
+    'growth.previousPeriod': 'período anterior',
+    'metrics.ofSales': 'de ventas',
     'dashboard.pnl.trendsAnalysis': 'Análisis y Tendencias',
     'dashboard.pnl.bankSummary': 'Resumen Bancario',
     'dashboard.pnl.investmentPortfolio': 'Portafolio de Inversiones',
@@ -171,7 +206,9 @@ export const translations = {
     'metrics.cogsPercentage': '% COGS sobre Ingresos',
     'metrics.opexPercentage': '% OpEx sobre Ingresos',
     'metrics.grossProfit': 'Utilidad Bruta',
+    'metrics.grossMargin': 'Margen Bruto',
     'metrics.operatingIncome': 'Utilidad Operacional',
+    'metrics.earningsBeforeTax': 'Utilidad Antes de Impuestos',
     'metrics.ebitda': 'EBITDA',
     'metrics.netIncome': 'Utilidad Neta',
     'metrics.margin': 'Margen',
@@ -212,6 +249,7 @@ export const translations = {
     'ytd.netIncomeYtd': 'Utilidad Neta YTD',
     'ytd.grossMargin': 'Margen Bruto',
     'ytd.operatingMargin': 'Margen Operacional',
+    'ytd.earningsBeforeTaxMargin': 'Margen Antes de Impuestos',
     'ytd.ebitdaMargin': 'Margen EBITDA',
     'ytd.netMargin': 'Margen Neto',
     'ytd.monthsIncluded': 'Meses Incluidos',
@@ -228,11 +266,33 @@ export const translations = {
     'charts.operatingMargin': 'Margen Operativo',
     'charts.netMargin': 'Margen Neto',
     'charts.revenue': 'Ingresos',
+    'charts.costs': 'Costos',
+    'charts.totalCosts': 'Costos Totales',
+    'charts.cogs': 'Costo de Ventas',
+    'charts.operatingExpenses': 'Gastos Operacionales',
+    'charts.grossProfit': 'Utilidad Bruta',
     'charts.expenses': 'Gastos',
     'charts.netIncome': 'Utilidad Neta',
     'charts.monthsOfData': 'meses de datos',
     'charts.last': 'Últimos',
     'charts.months': 'meses',
+    
+    // Profit Margin Trends
+    'profitMargin.trends.title': 'Tendencia de Márgenes de Beneficio',
+    'profitMargin.averageGross': 'Margen Bruto Promedio',
+    'profitMargin.averageNet': 'Margen Neto Promedio',
+    
+    // Revenue & Net Income Forecasts
+    'forecast.revenue.title': 'Tendencia de Ingresos y Pronóstico a 6 Meses',
+    'forecast.netIncome.title': 'Tendencia de Utilidad Neta y Pronóstico a 6 Meses',
+    'forecast.currentTrend': 'Tendencia Actual',
+    'forecast.sixMonthProjection': 'Proyección 6 Meses',
+    'forecast.confidenceRange': 'Rango de Confianza',
+    
+    // Revenue Growth Analysis
+    'revenue.growthAnalysis.title': 'Análisis de Crecimiento de Ingresos', 
+    'revenue.current': 'Ingresos Actuales',
+    'revenue.ytdTotal': 'Ingresos YTD',
     
     // Forecast translations
     'forecast.methodology': 'Metodología',
@@ -250,13 +310,29 @@ export const translations = {
     'heatmap.netMargin': 'Heatmap de Margen Neto',
     'heatmap.monthlyPerformance': 'Performance mensual',
     'heatmap.clickToExclude': 'Click para excluir meses',
+    'heatmap.clickForDetails': 'Haz clic en cualquier categoría para ver detalles',
+    'heatmap.clickToExpand': 'Clic para expandir',
+    'heatmap.highest': 'Más alto',
+    'heatmap.largestShare': 'Mayor participación',
+    'heatmap.detailedBreakdown': 'Desglose detallado',
+    'heatmap.totalAmount': 'Monto total',
+    'heatmap.ofCategory': 'de {category}',
+    'heatmap.visualBreakdown': 'Desglose visual',
+    'heatmap.shareOfCategory': 'Participación en {category}',
+    'heatmap.shareOfRevenue': 'Participación en ingresos',
+    'heatmap.benchmarkComparison': 'Comparación con benchmarks',
+    'heatmap.contextInfo': 'Información contextual',
+    'heatmap.expenseContext': 'La categoría {category} representa {amount} ({percentage}%) del total de {type}.',
     
     // Tax and Efficiency
     'tax.summary': 'Resumen de Impuestos',
     'tax.periodTaxes': 'Impuestos del período',
     'tax.effectiveRate': 'Tasa efectiva',
+    'tax.taxBurden': 'Carga Tributaria',
     'tax.ytdTaxes': 'Impuestos YTD',
+    'tax.breakdown': 'Desglose por categoría',
     'efficiency.title': 'Eficiencia de Costos',
+    'efficiency.costBreakdown': 'Desglose de Costos',
     'efficiency.costPerRevenue': 'Costo por peso de ingreso',
     'efficiency.optimal': 'Óptimo',
     'efficiency.operationalRoi': 'ROI Operacional',
@@ -270,6 +346,12 @@ export const translations = {
     'efficiency.retained': 'retenido',
     'efficiency.cogsToRevenue': 'COGS / Revenue',
     'efficiency.target': 'Objetivo',
+    'efficiency.ofRevenue': 'de ingresos',
+    'efficiency.inCosts': 'en costos',
+    'efficiency.costOfRevenuePercent': '% Costo de Ingresos',
+    'efficiency.opexPercent': '% OpEx',
+    'efficiency.ofTotalRevenue': 'de ingresos totales',
+    'costs.others': 'Otros',
     
     // Banking and Investments
     'bank.mainAccount': 'Cuenta Principal',
@@ -310,6 +392,9 @@ export const translations = {
     
     'help.metrics.operatingIncome.title': 'Utilidad Operacional',
     'help.metrics.operatingIncome.content': '<p>La <strong>Utilidad Operacional</strong> muestra la rentabilidad de las operaciones principales del negocio.</p><h4>Utilidad Operacional actual: <strong>{currentValue}</strong></h4><h4>Margen Operacional: <strong>{margin}%</strong></h4><h4>Benchmarks de Margen Operacional:</h4><ul><li>Excelente: > 25%</li><li>Bueno: 20-25%</li><li>Promedio: 15-20%</li><li>Bajo: < 10%</li></ul><h4>Significado:</h4><p>Indica qué tan eficientemente el negocio convierte ventas en ganancias antes de gastos financieros e impuestos.</p>',
+    
+    'help.metrics.earningsBeforeTax.title': 'Utilidad Antes de Impuestos',
+    'help.metrics.earningsBeforeTax.content': '<p>La <strong>Utilidad Antes de Impuestos</strong> muestra las ganancias después de todos los gastos operacionales y financieros, pero antes de impuestos.</p><h4>Utilidad Antes de Impuestos actual: <strong>{currentValue}</strong></h4><h4>Margen Antes de Impuestos: <strong>{margin}%</strong></h4><h4>Benchmarks de Margen Antes de Impuestos:</h4><ul><li>Excelente: > 22%</li><li>Bueno: 18-22%</li><li>Promedio: 12-18%</li><li>Bajo: < 8%</li></ul><h4>Importancia:</h4><p>Esta métrica es útil para:</p><ul><li>Evaluar la eficiencia operacional y financiera</li><li>Comparar empresas con diferentes cargas tributarias</li><li>Proyectar el impacto de cambios fiscales</li><li>Analizar la rentabilidad antes de efectos impositivos</li></ul>',
     
     'help.metrics.ebitda.title': 'EBITDA',
     'help.metrics.ebitda.content': '<p>El <strong>EBITDA</strong> (Earnings Before Interest, Taxes, Depreciation, and Amortization) mide la rentabilidad operativa sin efectos contables.</p><h4>EBITDA actual: <strong>{currentValue}</strong></h4><h4>Margen EBITDA: <strong>{margin}%</strong></h4><h4>Benchmarks de Margen EBITDA:</h4><ul><li>Excelente: > 30%</li><li>Bueno: 25-30%</li><li>Promedio: 20-25%</li><li>Bajo: < 15%</li></ul><h4>Usos del EBITDA:</h4><ul><li>Comparar empresas de diferentes sectores</li><li>Evaluar capacidad de generar flujo de caja</li><li>Base para valoración de empresas</li><li>Análisis de capacidad de endeudamiento</li></ul>',
@@ -365,6 +450,89 @@ export const translations = {
     'mapper.aiAnalysis.periods': 'períodos',
     // Duplicates removed - already defined above
     'common.skip': 'Omitir',
+    'common.expand': 'Expandir',
+    'common.collapse': 'Colapsar',
+    
+    // Heatmap subtitles
+    'heatmap.cogsSubtitle': 'Desglose de costos por categoría - Clic para análisis detallado',
+    'heatmap.opexSubtitle': 'Desglose de gastos operacionales - Clic para análisis detallado',
+    'heatmap.accountDetails': 'Detalles de cuentas',
+    'heatmap.ofSubcategory': 'de la subcategoría',
+
+    // Key Insights translations
+    'insights.title': 'Observaciones Clave',
+    'insights.aiPowered': 'IA Powered',
+    'insights.noInsights': 'No hay observaciones disponibles en este momento.',
+    'insights.viewMore': 'Ver {count} observaciones adicionales',
+    'insights.autoGenerated': '💡 Las observaciones se generan automáticamente basadas en el análisis de tus datos financieros',
+    'insights.priority.high': 'Alta',
+    'insights.priority.medium': 'Media',
+    'insights.priority.low': 'Baja',
+    
+    // Revenue insights
+    'insights.revenue.strongGrowth.title': 'Crecimiento Sólido de Ingresos',
+    'insights.revenue.strongGrowth.message': 'Los ingresos aumentaron {growth}% respecto al mes anterior, indicando una fuerte performance comercial.',
+    'insights.revenue.decline.title': 'Declive en Ingresos',
+    'insights.revenue.decline.message': 'Los ingresos disminuyeron {growth}% este mes. Revisar estrategias comerciales.',
+    'insights.revenue.stable.title': 'Ingresos Estables',
+    'insights.revenue.stable.message': 'Los ingresos se mantuvieron estables con un crecimiento del {growth}%.',
+    
+    // Margin insights
+    'insights.margins.healthy.title': 'Márgenes Saludables',
+    'insights.margins.healthy.message': 'El margen bruto del {margin}% indica una buena estructura de costos y pricing poder.',
+    'insights.margins.pressure.title': 'Márgenes Bajo Presión',
+    'insights.margins.pressure.message': 'El margen bruto del {margin}% está por debajo del benchmark. Revisar estructura de costos.',
+    
+    // Cash flow insights
+    'insights.cashflow.strong.title': 'Excelente Generación de Efectivo',
+    'insights.cashflow.strong.message': 'El flujo de efectivo representa {percentage}% de los ingresos, indicando sólida gestión financiera.',
+    'insights.cashflow.negative.title': 'Flujo de Efectivo Negativo',
+    'insights.cashflow.negative.message': 'El flujo de efectivo negativo requiere atención inmediata. Revisar timing de cobros y pagos.',
+    
+    // Expense insights
+    'insights.expenses.growth.title': 'Crecimiento Acelerado de Gastos',
+    'insights.expenses.growth.message': 'Los gastos aumentaron {growth}% este mes. Revisar control de costos operacionales.',
+    'insights.expenses.reduction.title': 'Optimización de Gastos',
+    'insights.expenses.reduction.message': 'Los gastos se redujeron {growth}%, mejorando la eficiencia operacional.',
+    
+    // Profitability insights
+    'insights.profitability.high.title': 'Alta Rentabilidad Operacional',
+    'insights.profitability.high.message': 'El margen operacional del {margin}% demuestra excelente control operativo.',
+    'insights.profitability.low.title': 'Rentabilidad Operacional Baja',
+    'insights.profitability.low.message': 'El margen operacional del {margin}% necesita mejora. Revisar eficiencia operativa.',
+    
+    // Scale insights
+    'insights.scale.opportunities.title': 'Oportunidades de Escalamiento',
+    'insights.scale.opportunities.message': 'Con este nivel de ingresos, considerar inversiones en automatización y expansión de capacidades.',
+    
+    // Help content for new dashboard sections (Spanish)
+    'help.dashboard.performance.title': 'Resumen de Rendimiento',
+    'help.dashboard.performance.content': '<p>Seguimiento visual del rendimiento a lo largo del tiempo:</p><ul><li><strong>Ingresos Mensuales</strong>: Rastrea patrones de ingresos y estacionalidad</li><li><strong>Márgenes Mensuales</strong>: Monitorea tendencias de rentabilidad</li><li>La intensidad del color indica niveles de rendimiento</li><li>Haz clic en las celdas para análisis detallado del período</li></ul>',
+
+    'help.dashboard.opex.title': 'Análisis de Gastos Operacionales',
+    'help.dashboard.opex.content': '<p>Desglose detallado de gastos operacionales:</p><ul><li><strong>Categorías de Gastos</strong>: Ve todos los tipos de costos operacionales</li><li><strong>Distribución Porcentual</strong>: Observa la asignación de costos</li><li><strong>Categorías Clicables</strong>: Profundiza para ver detalles</li><li>Identifica oportunidades de optimización de costos</li></ul>',
+
+    'help.dashboard.cogs.title': 'Análisis de Costos de Ventas',
+    'help.dashboard.cogs.content': '<p>Análisis de costos directos de producción:</p><ul><li><strong>Costos de Materiales</strong>: Materias primas y suministros</li><li><strong>Mano de Obra Directa</strong>: Costos de la fuerza laboral de producción</li><li><strong>Costos Variables</strong>: Gastos relacionados con la producción</li><li>Rastrea la eficiencia de costos y márgenes</li></ul>',
+
+    'help.dashboard.personnel.title': 'Análisis de Costos de Personal',
+    'help.dashboard.personnel.content': '<p>Análisis integral de nómina y costos de personal:</p><ul><li><strong>Salarios Base</strong>: Compensación base de empleados</li><li><strong>Beneficios e Impuestos</strong>: Costos adicionales de personal</li><li><strong>Costo vs Ingresos</strong>: Eficiencia del costo de personal</li><li>Rastrea el ROI de la inversión en personal</li></ul>',
+
+    'help.dashboard.insights.title': 'Observaciones Clave con IA',
+    'help.dashboard.insights.content': '<p>Análisis inteligente de tu rendimiento financiero:</p><ul><li><strong>Reconocimiento de Patrones</strong>: Identifica tendencias y anomalías</li><li><strong>Alertas de Rendimiento</strong>: Cambios clave y oportunidades</li><li><strong>Recomendaciones</strong>: Insights accionables para mejoras</li><li>Soporte para decisiones basadas en datos</li></ul>',
+
+    'help.dashboard.costEfficiency.title': 'Análisis de Eficiencia de Costos',
+    'help.dashboard.costEfficiency.content': '<p>El <strong>Análisis de Eficiencia de Costos</strong> mide qué tan eficientemente utilizas tus recursos para generar ingresos. Te ayuda a identificar oportunidades de optimización.</p><h4>Cómo se Calculan las Métricas:</h4><ul><li><strong>Costo por Peso de Ingreso</strong>: (COGS + Gastos Operativos) ÷ Ingresos Totales<br/><em>Ejemplo: Si tienes $50K COGS + $30K OpEx = $80K costos totales, y $200K ingresos, entonces = $0.40. Esto significa que por cada $1 de ingreso, gastas $0.40 en costos.</em></li><li><strong>% Costo de Ingresos</strong>: ((Ingresos - Utilidad Bruta) ÷ Ingresos) × 100<br/><em>Ejemplo: Si ingresos son $200K y utilidad bruta es $150K, entonces = ($200K - $150K) ÷ $200K = 25%. Muestra qué porcentaje de tus ingresos va a costos directos.</em></li><li><strong>% Gastos Operacionales</strong>: (Gastos Operativos ÷ Ingresos) × 100<br/><em>Ejemplo: Si OpEx es $30K e ingresos $200K, entonces OpEx% = 15%. Meta mostrada: &lt;25%.</em></li></ul><h4>Rangos de Referencia:</h4><ul><li>Costo por peso: &lt; $0.70 es excelente, $0.70-$0.85 es bueno, &gt; $0.85 necesita optimización</li><li>% Costo de ingresos: &lt; 35% es saludable, 35-45% es promedio, &gt; 45% requiere atención</li><li>% OpEx: &lt; 25% es eficiente, 25-35% es normal, &gt; 35% necesita revisión</li></ul><p><strong>Todos los cálculos se basan en los datos financieros del período actual de tus estados financieros cargados.</strong></p>',
+
+    // Trend Analysis Help Topics
+    'help.dashboard.revenueTrends.title': 'Tendencia de Ingresos y Pronóstico',
+    'help.dashboard.revenueTrends.content': '<p><strong>Análisis de Tendencias de Ingresos</strong> muestra el comportamiento histórico y proyección futura de tus ingresos.</p><h4>Qué Significa el Porcentaje en la Cabecera:</h4><p>El <strong>porcentaje mostrado</strong> representa el cambio mes a mes comparado con el período anterior. Por ejemplo, si el mes actual tiene $100K y el anterior $80K, entonces: ($100K - $80K) ÷ $80K × 100 = 25% de crecimiento.</p><h4>Cómo Leer el Gráfico:</h4><ul><li><strong>Línea Verde Sólida</strong>: Tus ingresos reales históricos</li><li><strong>Línea Azul Punteada</strong>: Pronóstico de ingresos futuros</li><li><strong>Línea Gris Punteada</strong>: Línea de tendencia calculada</li><li><strong>Área Azul Sombreada</strong>: Rango de confianza del pronóstico</li></ul><h4>¿Qué son "Confianza Superior" e "Inferior"?</h4><p><strong>Confianza Superior (95%)</strong>: La línea superior del área sombreada. Representa el <em>mejor escenario posible</em> - hay 95% de probabilidad que tus ingresos reales NO superen este valor.</p><p><strong>Confianza Inferior (95%)</strong>: La línea inferior del área sombreada. Representa el <em>peor escenario posible</em> - hay 95% de probabilidad que tus ingresos reales NO caigan por debajo de este valor.</p><h4>Ejemplo Práctico:</h4><p>Si el pronóstico para junio es $50K, la confianza superior podría ser $60K y la inferior $40K. Esto significa que estadísticamente hay 95% de probabilidad que tus ingresos reales de junio estén entre $40K-$60K.</p>',
+    'help.dashboard.netIncomeTrends.title': 'Tendencia de Utilidad Neta y Pronóstico',
+    'help.dashboard.netIncomeTrends.content': '<p><strong>Análisis de Tendencias de Utilidad Neta</strong> muestra el comportamiento y proyección de tu rentabilidad neta.</p><h4>Qué Significa el Porcentaje en la Cabecera:</h4><p>El <strong>porcentaje mostrado</strong> representa el cambio mes a mes en utilidad neta. Por ejemplo, si este mes tienes $20K de utilidad y el anterior $15K, entonces: ($20K - $15K) ÷ $15K × 100 = 33.3% de crecimiento en rentabilidad.</p><h4>Cómo Leer el Gráfico:</h4><ul><li><strong>Línea Verde Sólida</strong>: Tu utilidad neta real histórica</li><li><strong>Línea Morada Punteada</strong>: Pronóstico de utilidad neta futura</li><li><strong>Línea Gris Punteada</strong>: Línea de tendencia calculada</li><li><strong>Área Morada Sombreada</strong>: Rango de confianza del pronóstico</li></ul><h4>¿Qué son "Confianza Superior" e "Inferior"?</h4><p><strong>Confianza Superior (95%)</strong>: La línea superior del área sombreada. Representa el <em>mejor escenario posible</em> de rentabilidad - hay 95% de probabilidad que tu utilidad neta real NO supere este valor.</p><p><strong>Confianza Inferior (95%)</strong>: La línea inferior del área sombreada. Representa el <em>peor escenario posible</em> de rentabilidad - hay 95% de probabilidad que tu utilidad neta real NO caiga por debajo de este valor.</p><h4>Ejemplo Práctico:</h4><p>Si el pronóstico de utilidad para junio es $8K, la confianza superior podría ser $12K y la inferior $4K. Esto significa que estadísticamente hay 95% de probabilidad que tu utilidad real de junio esté entre $4K-$12K.</p>',
+    'help.dashboard.forecasting.title': 'Metodología de Pronóstico',
+    'help.dashboard.forecasting.content': '<p><strong>Sistema de Pronóstico Financiero</strong> utiliza métodos estadísticos para predecir valores futuros basados en datos históricos.</p><h4>Proceso de Cálculo:</h4><ol><li><strong>Análisis de Datos Históricos</strong>: Examina los últimos meses de datos</li><li><strong>Regresión Lineal</strong>: Calcula la línea de tendencia que mejor se ajusta</li><li><strong>Proyección</strong>: Extiende la tendencia 6 meses hacia el futuro</li><li><strong>Cálculo de Incertidumbre</strong>: Determina qué tan confiable es la predicción</li></ol><h4>Interpretación del Rango de Confianza:</h4><ul><li><strong>±10-20%</strong>: Predicción muy confiable</li><li><strong>±20-40%</strong>: Predicción moderadamente confiable</li><li><strong>±40%+</strong>: Alta incertidumbre, usar con precaución</li></ul><h4>Limitaciones:</h4><ul><li>Asume que las tendencias pasadas continúan</li><li>No considera eventos extraordinarios futuros</li><li>Menos preciso para datos muy variables</li></ul>',
+    'help.dashboard.profitMarginTrends.title': 'Tendencia de Márgenes de Beneficio',
+    'help.dashboard.profitMarginTrends.content': '<p><strong>Análisis de Tendencias de Márgenes</strong> muestra la evolución de tus márgenes de rentabilidad a lo largo del tiempo.</p><h4>Qué Muestran las Líneas:</h4><ul><li><strong>Línea Verde (Margen Bruto)</strong>: Rentabilidad después de descontar costos directos de producción<br/><em>Fórmula: (Ingresos - COGS) ÷ Ingresos × 100</em></li><li><strong>Línea Azul (Margen Neto)</strong>: Rentabilidad final después de todos los gastos<br/><em>Fórmula: Utilidad Neta ÷ Ingresos × 100</em></li></ul><h4>Cómo Interpretar las Tendencias:</h4><ul><li><strong>Márgenes Crecientes</strong>: Mejora en eficiencia o poder de fijación de precios</li><li><strong>Márgenes Decrecientes</strong>: Presión en costos o competencia en precios</li><li><strong>Brecha entre Márgenes</strong>: La diferencia muestra el impacto de gastos operativos</li></ul><h4>Rangos de Referencia por Industria:</h4><ul><li><strong>Margen Bruto</strong>: 20-80% (varía mucho por sector)</li><li><strong>Margen Neto</strong>: 5-15% se considera saludable</li><li><strong>Brecha Ideal</strong>: Menor diferencia indica mejor control de gastos</li></ul><h4>Estadísticas Mostradas:</h4><p>Los promedios te ayudan a evaluar tu rendimiento general y detectar si las fluctuaciones son normales o requieren atención.</p>',
   },
   en: {
     // Authentication
@@ -403,6 +571,13 @@ export const translations = {
     'common.next': 'Next',
     'common.previous': 'Previous',
     'common.close': 'Close',
+
+    // Growth and comparison translations
+    'growth.vs': 'vs',
+    'growth.noComparison': 'No comparison',
+    'previousMonth': 'previous month',
+    'monthOverMonth': 'month over month',
+    'yearOverYear': 'year over year',
 
     // Company Management
     'company.select': 'Select a company',
@@ -458,8 +633,8 @@ export const translations = {
     'help.dashboard.ytd.title': 'YTD Summary (Year to Date)',
     'help.dashboard.ytd.content': '<p>The YTD summary shows accumulated data from the beginning of the fiscal year to the current period.</p><ul><li><strong>YTD Revenue</strong>: Total accumulated revenue</li><li><strong>Gross Margin</strong>: Profit percentage after direct costs</li><li><strong>Operating Margin</strong>: Percentage after operating expenses</li><li><strong>Net Margin</strong>: Final profit percentage</li></ul>',
     
-    'help.dashboard.revenue.title': 'Revenue Analysis',
-    'help.dashboard.revenue.content': '<p>This section breaks down your revenue sources by categories.</p><p>You can see:</p><ul><li>Total amount by category</li><li>Contribution percentage</li><li>Trend vs previous period</li></ul>',
+    'help.dashboard.revenue.title': 'Revenue Growth Analysis',
+    'help.dashboard.revenue.content': '<p>This section analyzes revenue growth and performance trends.</p><h4>Growth Metric:</h4><p>The percentage shown in the header indicates <strong>month-over-month growth</strong> comparing:</p><ul><li><strong>Current month</strong>: Revenue from the selected period</li><li><strong>Previous month</strong>: Revenue from the immediately preceding month</li></ul><h4>Interpretation:</h4><ul><li><strong>Positive (+)</strong>: Revenue increased vs previous month</li><li><strong>Negative (-)</strong>: Revenue decreased vs previous month</li><li><strong>Magnitude</strong>: Indicates how significant the change was</li></ul><h4>Chart Analysis:</h4><ul><li><strong>Green bars</strong>: Total revenue per month</li><li><strong>Red bars</strong>: Total costs (COGS + OpEx)</li><li><strong>Blue bars</strong>: Gross profit per month</li><li><strong>Orange line</strong>: Gross margin trend (%)</li></ul><p><strong>Tip:</strong> To eliminate seasonal effects, compare with the same month from the previous year using the comparison selector.</p>',
     
     'help.dashboard.costs.title': 'Cost Structure',
     'help.dashboard.costs.content': '<p>Analyze the composition of your cost of goods sold (COGS).</p><p>Includes:</p><ul><li>Direct production costs</li><li>Materials</li><li>Direct labor</li><li>Other variable costs</li></ul>',
@@ -475,6 +650,34 @@ export const translations = {
     
     'help.dashboard.units.title': 'Display Units',
     'help.dashboard.units.content': '<p>Adjust units for better readability:</p><ul><li><strong>Normal</strong>: Full values</li><li><strong>K</strong>: Thousands (divide by 1,000)</li><li><strong>M</strong>: Millions (divide by 1,000,000)</li></ul>',
+    
+    'help.dashboard.performance.title': 'Performance Overview',
+    'help.dashboard.performance.content': '<p>Visual performance tracking over time:</p><ul><li><strong>Monthly Revenue</strong>: Track revenue patterns and seasonality</li><li><strong>Monthly Margins</strong>: Monitor profitability trends</li><li>Color intensity indicates performance levels</li><li>Click cells for detailed period analysis</li></ul>',
+    
+    'help.dashboard.opex.title': 'Operating Expenses Analysis',
+    'help.dashboard.opex.content': '<p>Detailed breakdown of operating expenses:</p><ul><li><strong>Expense Categories</strong>: View all operating cost types</li><li><strong>Percentage Distribution</strong>: See cost allocation</li><li><strong>Clickable Categories</strong>: Drill down for details</li><li>Identify cost optimization opportunities</li></ul>',
+    
+    'help.dashboard.cogs.title': 'Cost of Goods Sold Analysis', 
+    'help.dashboard.cogs.content': '<p>Analysis of direct production costs:</p><ul><li><strong>Material Costs</strong>: Raw materials and supplies</li><li><strong>Direct Labor</strong>: Production workforce costs</li><li><strong>Variable Costs</strong>: Production-related expenses</li><li>Track cost efficiency and margins</li></ul>',
+    
+    'help.dashboard.personnel.title': 'Personnel Costs Analysis',
+    'help.dashboard.personnel.content': '<p>Comprehensive payroll and personnel cost analysis:</p><ul><li><strong>Base Salaries</strong>: Employee base compensation</li><li><strong>Benefits & Taxes</strong>: Additional personnel costs</li><li><strong>Cost vs Revenue</strong>: Personnel cost efficiency</li><li>Track personnel investment ROI</li></ul>',
+    
+    'help.dashboard.insights.title': 'AI-Powered Key Insights',
+    'help.dashboard.insights.content': '<p>Intelligent analysis of your financial performance:</p><ul><li><strong>Pattern Recognition</strong>: Identify trends and anomalies</li><li><strong>Performance Alerts</strong>: Key changes and opportunities</li><li><strong>Recommendations</strong>: Actionable insights for improvement</li><li>Data-driven decision support</li></ul>',
+
+    'help.dashboard.costEfficiency.title': 'Cost Efficiency Analysis',
+    'help.dashboard.costEfficiency.content': '<p><strong>Cost Efficiency Analysis</strong> measures how efficiently you use resources to generate revenue. It helps identify optimization opportunities.</p><h4>How Metrics Are Calculated:</h4><ul><li><strong>Cost per Revenue Dollar</strong>: (COGS + Operating Expenses) ÷ Total Revenue<br/><em>Example: If you have $50K COGS + $30K OpEx = $80K total costs, and $200K revenue, then = $0.40. This means for every $1 of revenue, you spend $0.40 in costs.</em></li><li><strong>% Cost of Revenue</strong>: ((Revenue - Gross Profit) ÷ Revenue) × 100<br/><em>Example: If revenue is $200K and gross profit is $150K, then = ($200K - $150K) ÷ $200K = 25%. This shows what percentage of your revenue goes to direct costs.</em></li><li><strong>% Operating Expenses</strong>: (Operating Expenses ÷ Revenue) × 100<br/><em>Example: If OpEx is $30K and revenue is $200K, then OpEx% = 15%. Target shown: &lt;25%.</em></li></ul><h4>Benchmark Ranges:</h4><ul><li>Cost per dollar: &lt; $0.70 is excellent, $0.70-$0.85 is good, &gt; $0.85 needs optimization</li><li>% Cost of revenue: &lt; 35% is healthy, 35-45% is average, &gt; 45% requires attention</li><li>% OpEx: &lt; 25% is efficient, 25-35% is normal, &gt; 35% needs review</li></ul><p><strong>All calculations are based on current period financial data from your uploaded statements.</strong></p>',
+
+    // Trend Analysis Help Topics
+    'help.dashboard.revenueTrends.title': 'Revenue Trends & Forecast',
+    'help.dashboard.revenueTrends.content': '<p><strong>Revenue Trend Analysis</strong> shows historical behavior and future projection of your revenue.</p><h4>What the Header Percentage Means:</h4><p>The <strong>percentage shown</strong> represents month-over-month change compared to the previous period. For example, if current month has $100K and previous had $80K, then: ($100K - $80K) ÷ $80K × 100 = 25% growth.</p><h4>How to Read the Chart:</h4><ul><li><strong>Solid Green Line</strong>: Your actual historical revenue</li><li><strong>Dashed Blue Line</strong>: Future revenue forecast</li><li><strong>Dashed Gray Line</strong>: Calculated trend line</li><li><strong>Blue Shaded Area</strong>: Forecast confidence range</li></ul><h4>What are "Upper" and "Lower Confidence"?</h4><p><strong>Upper Confidence (95%)</strong>: The top line of the shaded area. Represents the <em>best possible scenario</em> - there\'s a 95% probability your actual revenue will NOT exceed this value.</p><p><strong>Lower Confidence (95%)</strong>: The bottom line of the shaded area. Represents the <em>worst possible scenario</em> - there\'s a 95% probability your actual revenue will NOT fall below this value.</p><h4>Practical Example:</h4><p>If the forecast for June is $50K, upper confidence might be $60K and lower confidence $40K. This means statistically there\'s a 95% probability your actual June revenue will be between $40K-$60K.</p>',
+    'help.dashboard.netIncomeTrends.title': 'Net Income Trends & Forecast',
+    'help.dashboard.netIncomeTrends.content': '<p><strong>Net Income Trend Analysis</strong> shows behavior and projection of your net profitability.</p><h4>What the Header Percentage Means:</h4><p>The <strong>percentage shown</strong> represents month-over-month change in net income. For example, if this month you have $20K profit and previous had $15K, then: ($20K - $15K) ÷ $15K × 100 = 33.3% growth in profitability.</p><h4>How to Read the Chart:</h4><ul><li><strong>Solid Green Line</strong>: Your actual historical net income</li><li><strong>Dashed Purple Line</strong>: Future net income forecast</li><li><strong>Dashed Gray Line</strong>: Calculated trend line</li><li><strong>Purple Shaded Area</strong>: Forecast confidence range</li></ul><h4>What are "Upper" and "Lower Confidence"?</h4><p><strong>Upper Confidence (95%)</strong>: The top line of the shaded area. Represents the <em>best possible profitability scenario</em> - there\'s a 95% probability your actual net income will NOT exceed this value.</p><p><strong>Lower Confidence (95%)</strong>: The bottom line of the shaded area. Represents the <em>worst possible profitability scenario</em> - there\'s a 95% probability your actual net income will NOT fall below this value.</p><h4>Practical Example:</h4><p>If the net income forecast for June is $8K, upper confidence might be $12K and lower confidence $4K. This means statistically there\'s a 95% probability your actual June net income will be between $4K-$12K.</p>',
+    'help.dashboard.forecasting.title': 'Forecasting Methodology',
+    'help.dashboard.forecasting.content': '<p><strong>Financial Forecasting System</strong> uses statistical methods to predict future values based on historical data.</p><h4>Calculation Process:</h4><ol><li><strong>Historical Data Analysis</strong>: Examines recent months of data</li><li><strong>Linear Regression</strong>: Calculates the best-fit trend line</li><li><strong>Projection</strong>: Extends the trend 6 months into the future</li><li><strong>Uncertainty Calculation</strong>: Determines how reliable the prediction is</li></ol><h4>Confidence Range Interpretation:</h4><ul><li><strong>±10-20%</strong>: Very reliable prediction</li><li><strong>±20-40%</strong>: Moderately reliable prediction</li><li><strong>±40%+</strong>: High uncertainty, use with caution</li></ul><h4>Limitations:</h4><ul><li>Assumes past trends will continue</li><li>Doesn\'t account for future extraordinary events</li><li>Less accurate for highly variable data</li></ul>',
+    'help.dashboard.profitMarginTrends.title': 'Profit Margin Trends',
+    'help.dashboard.profitMarginTrends.content': '<p><strong>Profit Margin Trend Analysis</strong> shows the evolution of your profitability margins over time.</p><h4>What the Lines Show:</h4><ul><li><strong>Green Line (Gross Margin)</strong>: Profitability after deducting direct production costs<br/><em>Formula: (Revenue - COGS) ÷ Revenue × 100</em></li><li><strong>Blue Line (Net Margin)</strong>: Final profitability after all expenses<br/><em>Formula: Net Income ÷ Revenue × 100</em></li></ul><h4>How to Interpret Trends:</h4><ul><li><strong>Increasing Margins</strong>: Improving efficiency or pricing power</li><li><strong>Decreasing Margins</strong>: Cost pressure or price competition</li><li><strong>Gap Between Margins</strong>: The difference shows impact of operating expenses</li></ul><h4>Industry Reference Ranges:</h4><ul><li><strong>Gross Margin</strong>: 20-80% (varies greatly by sector)</li><li><strong>Net Margin</strong>: 5-15% is considered healthy</li><li><strong>Ideal Gap</strong>: Smaller difference indicates better expense control</li></ul><h4>Displayed Statistics:</h4><p>The averages help you evaluate your overall performance and detect whether fluctuations are normal or require attention.</p>',
     
     // Upload Help Topics
     'help.upload.template.title': 'Template Selection',
@@ -514,6 +717,34 @@ export const translations = {
     'dashboard.pnl.costsSection': 'Cost Structure',
     'dashboard.pnl.profitabilitySection': 'Profitability Metrics',
     'dashboard.pnl.operatingExpensesAnalysis': 'Operating Expenses Analysis',
+    'dashboard.pnl.cogsAnalysis': 'Cost of Goods Sold Analysis',
+    'dashboard.pnl.performanceOverview': 'Performance Overview',
+    
+    // Performance Overview
+    'performance.monthlyRevenueTitle': 'Monthly Revenue Performance',
+    'performance.revenueSubtitle': 'Information from each available month up to one year back',
+    'performance.monthlyMarginTitle': 'Monthly Net Margin Performance',
+    'performance.marginSubtitle': 'Information from each available month up to one year back',
+    
+    // Comparison Period Selector
+    'comparison.title': 'Compare with',
+    'comparison.lastMonth': 'Last month',
+    'comparison.lastMonth.short': 'last month',
+    'comparison.lastQuarter': 'Last quarter',
+    'comparison.lastQuarter.short': 'last quarter',
+    'comparison.lastYear': 'Last year',
+    'comparison.lastYear.short': 'last year',
+    'comparison.description': 'Growth vs {period}',
+    'comparison.noDataLastYear': 'No data from last year',
+    'comparison.noDataLastQuarter': 'No data from last quarter',
+    
+    // Current Month Overview
+    'currentMonth.overview.title': '{month} Overview',
+    'currentMonth.overview.subtitle': 'Key financial indicators for the current period',
+    'growth.noData': 'N/A',
+    'growth.vsComparison': 'vs {period}',
+    'growth.previousPeriod': 'previous period',
+    'metrics.ofSales': 'of sales',
     'dashboard.pnl.trendsAnalysis': 'Analysis and Trends',
     'dashboard.pnl.bankSummary': 'Bank Summary',
     'dashboard.pnl.investmentPortfolio': 'Investment Portfolio',
@@ -538,7 +769,9 @@ export const translations = {
     'metrics.cogsPercentage': '% COGS of Revenue',
     'metrics.opexPercentage': '% OpEx of Revenue',
     'metrics.grossProfit': 'Gross Profit',
+    'metrics.grossMargin': 'Gross Margin',
     'metrics.operatingIncome': 'Operating Income',
+    'metrics.earningsBeforeTax': 'Earnings Before Tax',
     'metrics.ebitda': 'EBITDA',
     'metrics.netIncome': 'Net Income',
     'metrics.margin': 'Margin',
@@ -579,6 +812,7 @@ export const translations = {
     'ytd.netIncomeYtd': 'YTD Net Income',
     'ytd.grossMargin': 'Gross Margin',
     'ytd.operatingMargin': 'Operating Margin',
+    'ytd.earningsBeforeTaxMargin': 'Earnings Before Tax Margin',
     'ytd.ebitdaMargin': 'EBITDA Margin',
     'ytd.netMargin': 'Net Margin',
     'ytd.monthsIncluded': 'Months Included',
@@ -595,11 +829,31 @@ export const translations = {
     'charts.operatingMargin': 'Operating Margin',
     'charts.netMargin': 'Net Margin',
     'charts.revenue': 'Revenue',
+    'charts.costs': 'Costs',
+    'charts.totalCosts': 'Total Costs',
+    'charts.grossProfit': 'Gross Profit',
     'charts.expenses': 'Expenses',
     'charts.netIncome': 'Net Income',
     'charts.monthsOfData': 'months of data',
     'charts.last': 'Last',
     'charts.months': 'months',
+    
+    // Profit Margin Trends
+    'profitMargin.trends.title': 'Profit Margin Trends',
+    'profitMargin.averageGross': 'Average Gross Margin',
+    'profitMargin.averageNet': 'Average Net Margin',
+    
+    // Revenue & Net Income Forecasts
+    'forecast.revenue.title': 'Revenue Trend & 6-Month Forecast',
+    'forecast.netIncome.title': 'Net Income Trend & 6-Month Forecast',
+    'forecast.currentTrend': 'Current Trend',
+    'forecast.sixMonthProjection': '6-Month Projection',
+    'forecast.confidenceRange': 'Confidence Range',
+    
+    // Revenue Growth Analysis
+    'revenue.growthAnalysis.title': 'Revenue Growth Analysis', 
+    'revenue.current': 'Current Revenue',
+    'revenue.ytdTotal': 'YTD Revenue',
     
     // Forecast translations
     'forecast.methodology': 'Methodology',
@@ -617,13 +871,29 @@ export const translations = {
     'heatmap.netMargin': 'Net Margin Heatmap',
     'heatmap.monthlyPerformance': 'Monthly performance',
     'heatmap.clickToExclude': 'Click to exclude months',
+    'heatmap.clickForDetails': 'Click on any category to see details',
+    'heatmap.clickToExpand': 'Click to expand',
+    'heatmap.highest': 'Highest',
+    'heatmap.largestShare': 'Largest share',
+    'heatmap.detailedBreakdown': 'Detailed breakdown',
+    'heatmap.totalAmount': 'Total amount',
+    'heatmap.ofCategory': 'of {category}',
+    'heatmap.visualBreakdown': 'Visual breakdown',
+    'heatmap.shareOfCategory': 'Share of {category}',
+    'heatmap.shareOfRevenue': 'Share of revenue',
+    'heatmap.benchmarkComparison': 'Benchmark comparison',
+    'heatmap.contextInfo': 'Context information',
+    'heatmap.expenseContext': 'The {category} category represents {amount} ({percentage}%) of total {type}.',
     
     // Tax and Efficiency
     'tax.summary': 'Tax Summary',
     'tax.periodTaxes': 'Period taxes',
     'tax.effectiveRate': 'Effective rate',
+    'tax.taxBurden': 'Tax Burden',
     'tax.ytdTaxes': 'YTD Taxes',
+    'tax.breakdown': 'Category breakdown',
     'efficiency.title': 'Cost Efficiency',
+    'efficiency.costBreakdown': 'Cost Breakdown',
     'efficiency.costPerRevenue': 'Cost per revenue dollar',
     'efficiency.optimal': 'Optimal',
     'efficiency.operationalRoi': 'Operational ROI',
@@ -637,6 +907,12 @@ export const translations = {
     'efficiency.retained': 'retained',
     'efficiency.cogsToRevenue': 'COGS to Revenue',
     'efficiency.target': 'Target',
+    'efficiency.ofRevenue': 'of revenue',
+    'efficiency.inCosts': 'in costs',
+    'efficiency.costOfRevenuePercent': '% Cost of Revenue',
+    'efficiency.opexPercent': '% OpEx',
+    'efficiency.ofTotalRevenue': 'of total revenue',
+    'costs.others': 'Others',
     
     // Banking and Investments
     'bank.mainAccount': 'Main Account',
@@ -677,6 +953,9 @@ export const translations = {
     
     'help.metrics.operatingIncome.title': 'Operating Income',
     'help.metrics.operatingIncome.content': '<p><strong>Operating Income</strong> shows the profitability of the business\'s core operations.</p><h4>Current Operating Income: <strong>{currentValue}</strong></h4><h4>Operating Margin: <strong>{margin}%</strong></h4><h4>Operating Margin Benchmarks:</h4><ul><li>Excellent: > 25%</li><li>Good: 20-25%</li><li>Average: 15-20%</li><li>Low: < 10%</li></ul><h4>Meaning:</h4><p>Indicates how efficiently the business converts sales into profits before financial expenses and taxes.</p>',
+    
+    'help.metrics.earningsBeforeTax.title': 'Earnings Before Tax',
+    'help.metrics.earningsBeforeTax.content': '<p><strong>Earnings Before Tax</strong> shows profits after all operational and financial expenses, but before taxes.</p><h4>Current Earnings Before Tax: <strong>{currentValue}</strong></h4><h4>Earnings Before Tax Margin: <strong>{margin}%</strong></h4><h4>Earnings Before Tax Margin Benchmarks:</h4><ul><li>Excellent: > 22%</li><li>Good: 18-22%</li><li>Average: 12-18%</li><li>Low: < 8%</li></ul><h4>Importance:</h4><p>This metric is useful for:</p><ul><li>Evaluating operational and financial efficiency</li><li>Comparing companies with different tax burdens</li><li>Projecting the impact of tax changes</li><li>Analyzing profitability before tax effects</li></ul>',
     
     'help.metrics.ebitda.title': 'EBITDA',
     'help.metrics.ebitda.content': '<p><strong>EBITDA</strong> (Earnings Before Interest, Taxes, Depreciation, and Amortization) measures operating profitability without accounting effects.</p><h4>Current EBITDA: <strong>{currentValue}</strong></h4><h4>EBITDA Margin: <strong>{margin}%</strong></h4><h4>EBITDA Margin Benchmarks:</h4><ul><li>Excellent: > 30%</li><li>Good: 25-30%</li><li>Average: 20-25%</li><li>Low: < 15%</li></ul><h4>EBITDA uses:</h4><ul><li>Compare companies across sectors</li><li>Evaluate cash flow generation capacity</li><li>Basis for company valuation</li><li>Debt capacity analysis</li></ul>',
@@ -733,6 +1012,60 @@ export const translations = {
     'mapper.aiAnalysis.periods': 'periods',
     // Duplicates removed - already defined above
     'common.skip': 'Skip',
+    'common.expand': 'Expand',
+    'common.collapse': 'Collapse',
+    
+    // Heatmap subtitles
+    'heatmap.cogsSubtitle': 'Cost breakdown by category - Click for detailed analysis',
+    'heatmap.opexSubtitle': 'Operating expenses breakdown - Click for detailed analysis',
+    'heatmap.accountDetails': 'Account Details',
+    'heatmap.ofSubcategory': 'of subcategory',
+
+    // Key Insights translations
+    'insights.title': 'Key Insights',
+    'insights.aiPowered': 'AI Powered',
+    'insights.noInsights': 'No insights available at this time.',
+    'insights.viewMore': 'View {count} additional insights',
+    'insights.autoGenerated': '💡 Insights are automatically generated based on your financial data analysis',
+    'insights.priority.high': 'High',
+    'insights.priority.medium': 'Medium',
+    'insights.priority.low': 'Low',
+    
+    // Revenue insights
+    'insights.revenue.strongGrowth.title': 'Strong Revenue Growth',
+    'insights.revenue.strongGrowth.message': 'Revenue increased {growth}% compared to the previous month, indicating strong commercial performance.',
+    'insights.revenue.decline.title': 'Revenue Decline',
+    'insights.revenue.decline.message': 'Revenue decreased {growth}% this month. Review commercial strategies.',
+    'insights.revenue.stable.title': 'Stable Revenue',
+    'insights.revenue.stable.message': 'Revenue remained stable with {growth}% growth.',
+    
+    // Margin insights
+    'insights.margins.healthy.title': 'Healthy Margins',
+    'insights.margins.healthy.message': 'The {margin}% gross margin indicates good cost structure and pricing power.',
+    'insights.margins.pressure.title': 'Margins Under Pressure',
+    'insights.margins.pressure.message': 'The {margin}% gross margin is below benchmark. Review cost structure.',
+    
+    // Cash flow insights
+    'insights.cashflow.strong.title': 'Excellent Cash Generation',
+    'insights.cashflow.strong.message': 'Cash flow represents {percentage}% of revenue, indicating solid financial management.',
+    'insights.cashflow.negative.title': 'Negative Cash Flow',
+    'insights.cashflow.negative.message': 'Negative cash flow requires immediate attention. Review timing of collections and payments.',
+    
+    // Expense insights
+    'insights.expenses.growth.title': 'Accelerated Expense Growth',
+    'insights.expenses.growth.message': 'Expenses increased {growth}% this month. Review operational cost control.',
+    'insights.expenses.reduction.title': 'Expense Optimization',
+    'insights.expenses.reduction.message': 'Expenses were reduced by {growth}%, improving operational efficiency.',
+    
+    // Profitability insights
+    'insights.profitability.high.title': 'High Operational Profitability',
+    'insights.profitability.high.message': 'The {margin}% operating margin demonstrates excellent operational control.',
+    'insights.profitability.low.title': 'Low Operational Profitability',
+    'insights.profitability.low.message': 'The {margin}% operating margin needs improvement. Review operational efficiency.',
+    
+    // Scale insights
+    'insights.scale.opportunities.title': 'Scaling Opportunities',
+    'insights.scale.opportunities.message': 'With this revenue level, consider investments in automation and capacity expansion.',
   }
 };
 

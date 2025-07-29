@@ -95,7 +95,7 @@ function OrganizationSettingsPage() {
           name: organization.name || '',
           locale: organization.locale || 'en-US',
           baseCurrency: organization.baseCurrency || 'USD',
-          timezone: 'America/Mexico_City'
+          timezone: organization.timezone || 'UTC'
         },
         security: {
           requireTwoFactor: false,

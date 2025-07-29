@@ -99,6 +99,7 @@ export const DEFAULT_FINANCIAL_CATEGORIES: CategoryOption[] = [
   { value: 'loss_on_sale', label: 'Pérdida en Venta de Activos', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.OTHER_INCOME_EXPENSES },
   { value: 'interest_expense', label: 'Gastos Financieros', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.OTHER_INCOME_EXPENSES },
   { value: 'foreign_exchange', label: 'Diferencia Cambiaria', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.OTHER_INCOME_EXPENSES },
+  { value: 'other_income_expense', label: 'Otros Ingresos / (Gastos)', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.OTHER_INCOME_EXPENSES },
   
   // P&L - Taxes
   { value: 'income_tax', label: 'Impuesto sobre la Renta', icon: null, isInflow: false, statementType: 'profit_loss', isCustom: false, group: CATEGORY_GROUPS.TAXES },
@@ -111,6 +112,7 @@ export const DEFAULT_FINANCIAL_CATEGORIES: CategoryOption[] = [
   { value: 'gross_profit', label: 'UTILIDAD BRUTA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
   { value: 'gross_margin', label: 'MARGEN BRUTO', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
   { value: 'operating_income', label: 'UTILIDAD OPERATIVA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
+  { value: 'earnings_before_tax', label: 'UTILIDAD ANTES DE IMPUESTOS', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
   { value: 'ebitda', label: 'EBITDA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
   { value: 'ebit', label: 'EBIT', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },
   { value: 'net_income', label: 'UTILIDAD NETA', icon: null, isInflow: true, statementType: 'profit_loss', isCustom: false, group: 'Totales', categoryType: 'total' },

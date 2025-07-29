@@ -22,6 +22,7 @@ export interface Organization {
   name: string;
   locale?: string;
   baseCurrency?: string;
+  timezone?: string;
 }
 
 interface AuthContextType {

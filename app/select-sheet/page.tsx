@@ -4,7 +4,6 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppLayout } from "@/components/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { WorkflowBreadcrumbs } from "@/components/Breadcrumbs";
 import { 
   CheckCircleIcon, 
   ExclamationTriangleIcon,
@@ -130,13 +129,6 @@ function SelectSheetContent() {
       <AppLayout showFooter={true}>
         <div className="container mx-auto px-4 py-2 pb-20">
           <div className="max-w-4xl mx-auto">
-            {/* Breadcrumbs */}
-            <div className="mb-4">
-              <WorkflowBreadcrumbs 
-                currentStep="select-sheet" 
-                fileName={fileName}
-              />
-            </div>
 
             <div className="mb-3">
               <h1 className="text-xl font-bold text-gray-900">

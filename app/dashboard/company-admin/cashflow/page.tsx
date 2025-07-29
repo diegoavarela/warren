@@ -15,13 +15,31 @@ export default function CashFlowDashboardPage() {
   const { user } = useAuth();
   const { locale } = useLocale();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [hybridParserData, setHybridParserData] = useState<any>(null);
 
-  // Get company ID from session storage if available
+  // Get company ID and hybrid parser data from session storage if available
   useEffect(() => {
-    if (typeof window !== 'undefined' && !selectedCompanyId) {
-      const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
-      if (storedCompanyId) {
-        setSelectedCompanyId(storedCompanyId);
+    if (typeof window !== 'undefined') {
+      // Get company ID
+      if (!selectedCompanyId) {
+        const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
+        if (storedCompanyId) {
+          setSelectedCompanyId(storedCompanyId);
+        }
+      }
+      
+      // Check for hybrid parser result data
+      const hybridParserResult = sessionStorage.getItem('hybridParserResult');
+      if (hybridParserResult) {
+        try {
+          const parsedData = JSON.parse(hybridParserResult);
+          setHybridParserData(parsedData);
+          
+          // Clear the session storage after using it
+          sessionStorage.removeItem('hybridParserResult');
+        } catch (error) {
+          console.error('Error parsing hybrid parser result:', error);
+        }
       }
     }
   }, []); // Empty dependency array ensures this runs only once
@@ -57,6 +75,12 @@ export default function CashFlowDashboardPage() {
                     className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
+                  </button>
+                  <button
+                    onClick={() => router.push('/hybrid-parser-test')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Test Hybrid Parser
                   </button>
                 </div>
               </div>

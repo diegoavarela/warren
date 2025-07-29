@@ -49,6 +49,9 @@ function UploadPage() {
       if (response.ok) {
         const data = await response.json();
         setSelectedCompany(data.data);
+        if (data.data?.name) {
+          sessionStorage.setItem('selectedCompanyName', data.data.name);
+        }
       } else {
         console.warn('Failed to fetch company details:', response.status);
       }
@@ -143,19 +146,19 @@ function UploadPage() {
 
                 {/* Template Selection */}
                 {selectedCompany && (
-                  <div className="bg-white rounded-2xl shadow-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="bg-white rounded-2xl shadow-lg p-5">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <DocumentTextIcon className="h-6 w-6 text-purple-600" />
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <DocumentTextIcon className="h-5 w-5 text-purple-600" />
+                        <h3 className="text-base font-semibold text-gray-900">
                           {locale?.startsWith('es') ? 'Selección de Plantilla' : 'Template Selection'}
                         </h3>
                       </div>
-                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                         {locale?.startsWith('es') ? 'Opcional' : 'Optional'}
                       </span>
                     </div>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-sm text-gray-600 mb-4">
                       {locale?.startsWith('es') 
                         ? 'Selecciona una plantilla guardada para aplicar automáticamente el mapeo. Si no seleccionas ninguna, podrás mapear manualmente.'
                         : 'Select a saved template to automatically apply mapping. If you don\'t select any, you can map manually.'}

@@ -480,6 +480,13 @@ export async function GET(
 
       // Calculate comparison data for growth percentages
       if (comparisonStatement) {
+        console.log('💰 Building Comparison Data:', {
+          comparisonPeriod,
+          comparisonStatementId: comparisonStatement.id,
+          comparisonPeriodEnd: comparisonStatement.periodEnd,
+          formattedMonth: formatMonth(comparisonStatement.periodEnd)
+        });
+        
         const compItems = await getProcessedLineItems(comparisonStatement.id);
         const compRevenue = calculateRevenue(compItems);
         const compCogs = calculateCOGS(compItems);
@@ -492,16 +499,52 @@ export async function GET(
         const compNetIncome = getMappedTotal(compItems, 'net_income') || (compOperatingIncome + compOtherIncome - compOtherExpenses - compTaxes);
         const compEbitda = getMappedTotal(compItems, 'ebitda') || compOperatingIncome;
 
+        // Calculate margins for comparison data
+        const compGrossMargin = compRevenue > 0 ? (compGrossProfit / compRevenue) * 100 : 0;
+        const compOperatingMargin = compRevenue > 0 ? (compOperatingIncome / compRevenue) * 100 : 0;
+        const compNetMargin = compRevenue > 0 ? (compNetIncome / compRevenue) * 100 : 0;
+        const compEbitdaMargin = compRevenue > 0 ? (compEbitda / compRevenue) * 100 : 0;
+        
+        // Extract year from period end date
+        const comparisonDate = new Date(comparisonStatement.periodEnd);
+        const comparisonYear = comparisonDate.getFullYear();
+        
         comparisonData = {
+          id: comparisonStatement.id,
           month: formatMonth(comparisonStatement.periodEnd),
+          year: comparisonYear,
           revenue: compRevenue,
           cogs: compCogs,
           grossProfit: compGrossProfit,
+          grossMargin: compGrossMargin,
           operatingExpenses: compOperatingExpenses,
           operatingIncome: compOperatingIncome,
+          operatingMargin: compOperatingMargin,
+          earningsBeforeTax: compOtherIncome - compOtherExpenses,
+          earningsBeforeTaxMargin: compRevenue > 0 ? ((compOtherIncome - compOtherExpenses) / compRevenue) * 100 : 0,
+          taxes: compTaxes,
           netIncome: compNetIncome,
-          ebitda: compEbitda
+          netMargin: compNetMargin,
+          ebitda: compEbitda,
+          ebitdaMargin: compEbitdaMargin
         };
+        
+        console.log('🔧 Comparison Data Construction:', {
+          comparisonPeriodRequested: comparisonPeriod,
+          comparisonStatementPeriodEnd: comparisonStatement.periodEnd,
+          formattedMonth: formatMonth(comparisonStatement.periodEnd),
+          comparisonDataMonth: comparisonData.month,
+          comparisonDataYear: comparisonData.year,
+          comparisonDataFields: Object.keys(comparisonData)
+        });
+        
+        console.log('✅ Comparison Data Created:', {
+          month: comparisonData.month,
+          revenue: comparisonData.revenue,
+          comparisonPeriod
+        });
+      } else {
+        console.log('❌ No comparison statement found for period:', comparisonPeriod);
       }
 
       // DEBUG: Check what financial statements exist for this company
@@ -1007,9 +1050,9 @@ function calculateTaxes(items: ProcessedLineItem[]): number {
   const taxesByName = taxItemsByName.reduce((sum, item) => sum + Math.abs(item.amount), 0);
   console.log(`Taxes by name matching: ${taxesByName}`);
   
-  // Use the higher value (in case categorization failed)
-  const finalTaxes = Math.max(taxesByCategory, taxesByName);
-  console.log(`Final taxes value: ${finalTaxes}`);
+  // Prioritize category-based calculation if available, otherwise use keyword matching
+  const finalTaxes = taxesByCategory > 0 ? taxesByCategory : taxesByName;
+  console.log(`Final taxes value: ${finalTaxes} (using ${taxesByCategory > 0 ? 'category-based' : 'keyword-based'} calculation)`);
   console.log('=== END TAX DEBUG ===\n');
   
   return finalTaxes;
@@ -1035,7 +1078,23 @@ function getTaxesBreakdown(items: ProcessedLineItem[]) {
   const subcategoryBreakdown: { [key: string]: { items: typeof taxItems, total: number } } = {};
   
   taxItems.forEach(item => {
-    const subcategoryKey = item.subcategory || 'other_taxes';
+    // Improve subcategory assignment based on account name if subcategory is generic
+    let subcategoryKey = item.subcategory || 'other_taxes';
+    
+    // If subcategory is generic, try to infer from account name
+    if (subcategoryKey === 'other_taxes' && item.accountName) {
+      const accountName = item.accountName.toLowerCase();
+      if (accountName.includes('gross income') || accountName.includes('iibb')) {
+        subcategoryKey = 'gross_income_tax';
+      } else if (accountName.includes('income tax') || accountName.includes('isr')) {
+        subcategoryKey = 'income_tax';
+      } else if (accountName.includes('iva') || accountName.includes('vat')) {
+        subcategoryKey = 'vat_tax';
+      } else if (accountName.includes('payroll') || accountName.includes('nomina')) {
+        subcategoryKey = 'payroll_tax';
+      }
+    }
+    
     if (!subcategoryBreakdown[subcategoryKey]) {
       subcategoryBreakdown[subcategoryKey] = { items: [], total: 0 };
     }
@@ -1196,6 +1255,14 @@ async function getComparisonStatement(companyId: string, currentStatement: any, 
   const currentDate = new Date(currentStatement.periodEnd);
   let targetDate: Date;
   
+  console.log('🔍 Comparison Statement Debug:', {
+    comparisonPeriod,
+    currentStatementPeriodEnd: currentStatement.periodEnd,
+    currentDate: currentDate.toISOString(),
+    currentMonth: currentDate.getMonth() + 1, // +1 because getMonth() is 0-based
+    currentYear: currentDate.getFullYear()
+  });
+  
   switch (comparisonPeriod) {
     case 'lastMonth':
       targetDate = new Date(currentDate);
@@ -1204,10 +1271,23 @@ async function getComparisonStatement(companyId: string, currentStatement: any, 
     case 'lastQuarter':
       targetDate = new Date(currentDate);
       targetDate.setMonth(currentDate.getMonth() - 3);
+      console.log('📅 Last Quarter Calculation:', {
+        originalMonth: currentDate.getMonth() + 1,
+        targetMonth: targetDate.getMonth() + 1,
+        targetYear: targetDate.getFullYear(),
+        targetDateISO: targetDate.toISOString()
+      });
       break;
     case 'lastYear':
       targetDate = new Date(currentDate);
       targetDate.setFullYear(currentDate.getFullYear() - 1);
+      console.log('📅 Last Year Calculation:', {
+        originalMonth: currentDate.getMonth() + 1,
+        originalYear: currentDate.getFullYear(),
+        targetMonth: targetDate.getMonth() + 1,
+        targetYear: targetDate.getFullYear(),
+        targetDateISO: targetDate.toISOString()
+      });
       break;
     default:
       // Default to last month
@@ -1226,6 +1306,16 @@ async function getComparisonStatement(companyId: string, currentStatement: any, 
     ))
     .orderBy(desc(financialStatements.periodEnd))
     .limit(1);
+    
+  console.log('🎯 Comparison Statement Result:', {
+    found: !!comparison,
+    comparisonPeriodEnd: comparison?.periodEnd,
+    comparisonSourceFile: comparison?.sourceFile,
+    targetDateFormatted: targetDate.toISOString().split('T')[0],
+    comparisonPeriod: comparisonPeriod,
+    searchedForYear: targetDate.getFullYear(),
+    searchedForMonth: targetDate.getMonth() + 1
+  });
     
   return comparison;
 }
@@ -1845,7 +1935,18 @@ function formatMonth(date: string): string {
     console.warn('Invalid month index:', monthIndex, 'for date:', date);
     return 'Unknown';
   }
-  return `${months[monthIndex]} ${d.getFullYear()}`;
+  const formatted = `${months[monthIndex]} ${d.getFullYear()}`;
+  
+  console.log('🗓️ formatMonth Debug:', {
+    inputDate: date,
+    parsedDate: d.toISOString(),
+    monthIndex: monthIndex,
+    monthName: months[monthIndex],
+    year: d.getFullYear(),
+    formatted: formatted
+  });
+  
+  return formatted;
 }
 
 function formatMonthFromPeriodId(periodId: string): string {
@@ -2001,10 +2102,12 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
     revenue: Array<{category: string; subcategory: string; amount: number; percentage: number; items?: Array<{accountName: string; amount: number; percentage: number}>}>;
     cogs: Array<{category: string; subcategory: string; amount: number; percentage: number; items?: Array<{accountName: string; amount: number; percentage: number}>}>;
     operatingExpenses: Array<{category: string; subcategory: string; amount: number; percentage: number; items?: Array<{accountName: string; amount: number; percentage: number}>}>;
+    taxes: Array<{category: string; subcategory: string; amount: number; percentage: number; items?: Array<{accountName: string; amount: number; percentage: number}>}>;
   } = {
     revenue: [],
     cogs: [],
-    operatingExpenses: []
+    operatingExpenses: [],
+    taxes: []
   };
 
   // Helper function to get detail items for a category using the same logic as calculateByCategory
@@ -2051,14 +2154,16 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
   const categorizedItems = {
     revenue: getDetailItemsForCategory(items, 'revenue'),
     cogs: getDetailItemsForCategory(items, 'cogs'),
-    operatingExpenses: getDetailItemsForCategory(items, 'operating_expenses')
+    operatingExpenses: getDetailItemsForCategory(items, 'operating_expenses'),
+    taxes: getDetailItemsForCategory(items, 'taxes')
   };
 
   // Calculate totals for percentage calculations (using same logic as main calculations)
   const totals = {
     revenue: calculateRevenue(items),
     cogs: calculateCOGS(items),
-    operatingExpenses: calculateOperatingExpenses(items)
+    operatingExpenses: calculateOperatingExpenses(items),
+    taxes: calculateTaxes(items)
   };
 
   // Debug: Log what we found for each category
@@ -2066,7 +2171,8 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
   console.log('Categorized items:', {
     revenue: categorizedItems.revenue.length,
     cogs: categorizedItems.cogs.length,
-    operatingExpenses: categorizedItems.operatingExpenses.length
+    operatingExpenses: categorizedItems.operatingExpenses.length,
+    taxes: categorizedItems.taxes.length
   });
   console.log('Totals:', totals);
   
@@ -2098,26 +2204,13 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
             console.log(`Using fallback for subcategory code "${subcategoryCode}" -> "${subcategoryLabel}"`);
           }
           
-          // Always use the original Excel mapped names as per HOW_TO_MAP.md requirements
-          // For single items, use the account name directly
-          // For multiple items, use the most representative name or aggregate them properly
-          let displayName = subcategoryLabel; // fallback
+          // Always group by subcategory from the Excel mapping
+          // Use the subcategory code directly from the mapping - no made-up labels
+          let displayName = subcategoryCode; // Use the actual subcategory from Excel
           
-          if (group.items.length === 1) {
-            // Single item: use its original Excel account name
-            displayName = group.items[0].accountName;
-          } else if (group.items.length > 1) {
-            // Multiple items: check if they have a common pattern or use the subcategory
-            const accountNames = group.items.map(item => item.accountName);
-            const commonWords = findCommonWords(accountNames);
-            
-            if (commonWords.length > 0) {
-              // Use common words as display name
-              displayName = commonWords.join(' ');
-            } else {
-              // Use the subcategory label as a group name, but ensure it represents the original mapping
-              displayName = subcategoryLabel;
-            }
+          // Only use database labels if they exist, otherwise use the raw subcategory code
+          if (subcategoryLabels.has(subcategoryCode)) {
+            displayName = subcategoryLabels.get(subcategoryCode) || subcategoryCode;
           }
           
           return {

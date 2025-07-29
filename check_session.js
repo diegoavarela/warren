@@ -1,0 +1,1 @@
+console.log("Session storage keys:", Object.keys(sessionStorage)); console.log("ValidationResults:", sessionStorage.getItem("validationResults")); console.log("AccountMapping:", sessionStorage.getItem("accountMapping"));

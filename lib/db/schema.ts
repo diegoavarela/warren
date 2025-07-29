@@ -22,6 +22,7 @@ export const organizations = pgTable("organizations", {
   tier: varchar("tier", { length: 50 }).notNull().default("starter"), // starter, professional, enterprise
   locale: varchar("locale", { length: 5 }).default("en-US"),
   baseCurrency: varchar("base_currency", { length: 3 }).default("USD"),
+  timezone: varchar("timezone", { length: 50 }).default("UTC"),
   fiscalYearStart: integer("fiscal_year_start").default(1), // January = 1
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

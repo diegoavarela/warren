@@ -1,0 +1,105 @@
+{
+  "timestamp": "2025-07-23T17:25:10.478Z",
+  "url": "http://localhost:4000/dashboard/pnl",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "totalTextElements": 2,
+  "languageIssues": 1,
+  "layoutIssues": 6,
+  "expectedSections": {
+    "Current Month Overview": false,
+    "Cost Structure": false,
+    "Key Insights": false,
+    "YTD Summary": false,
+    "Operating Expenses Analysis": false,
+    "COGS Analysis": false,
+    "Revenue Growth Analysis": false,
+    "Cost Analysis": false,
+    "Cost Efficiency Metrics": false,
+    "Personnel Cost Analysis": false,
+    "Taxes": false,
+    "Performance Overview": false
+  },
+  "details": {
+    "languageIssues": [
+      {
+        "index": 1,
+        "tagName": "H2",
+        "className": "",
+        "text": "This page could not be found.",
+        "hasTranslationKey": false,
+        "isLikelyUntranslated": true,
+        "xpath": "BODY/DIV[1]/DIV[1]/DIV[1]/DIV[1]/H2[1]"
+      }
+    ],
+    "layoutIssues": [
+      {
+        "type": "missing_section",
+        "message": "Expected section \"YTD\" not found",
+        "severity": "warning"
+      },
+      {
+        "type": "missing_section",
+        "message": "Expected section \"Revenue\" not found",
+        "severity": "warning"
+      },
+      {
+        "type": "missing_section",
+        "message": "Expected section \"Cost\" not found",
+        "severity": "warning"
+      },
+      {
+        "type": "missing_section",
+        "message": "Expected section \"Efficiency\" not found",
+        "severity": "warning"
+      },
+      {
+        "type": "missing_section",
+        "message": "Expected section \"Personnel\" not found",
+        "severity": "warning"
+      },
+      {
+        "type": "missing_section",
+        "message": "Expected section \"Tax\" not found",
+        "severity": "warning"
+      }
+    ],
+    "sectionsFound": [],
+    "sectionsMissing": [
+      "Current Month Overview",
+      "Cost Structure",
+      "Key Insights",
+      "YTD Summary",
+      "Operating Expenses Analysis",
+      "COGS Analysis",
+      "Revenue Growth Analysis",
+      "Cost Analysis",
+      "Cost Efficiency Metrics",
+      "Personnel Cost Analysis",
+      "Taxes",
+      "Performance Overview"
+    ],
+    "allText": [
+      {
+        "index": 0,
+        "tagName": "H1",
+        "className": "next-error-h1",
+        "text": "404",
+        "hasTranslationKey": false,
+        "isLikelyUntranslated": false,
+        "xpath": "BODY/DIV[1]/DIV[1]/DIV[1]/H1[1]"
+      },
+      {
+        "index": 1,
+        "tagName": "H2",
+        "className": "",
+        "text": "This page could not be found.",
+        "hasTranslationKey": false,
+        "isLikelyUntranslated": true,
+        "xpath": "BODY/DIV[1]/DIV[1]/DIV[1]/DIV[1]/H2[1]"
+      }
+    ]
+  }
+}

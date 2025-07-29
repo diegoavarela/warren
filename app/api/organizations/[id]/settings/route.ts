@@ -78,13 +78,14 @@ export async function PUT(
 
     try {
       const body = await req.json();
-      const { name, locale, baseCurrency } = body;
+      const { name, locale, baseCurrency, timezone } = body;
 
       // Prepare update data
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
       if (locale !== undefined) updateData.locale = locale;
       if (baseCurrency !== undefined) updateData.baseCurrency = baseCurrency;
+      if (timezone !== undefined) updateData.timezone = timezone;
       updateData.updatedAt = new Date();
 
       const [updatedOrganization] = await db

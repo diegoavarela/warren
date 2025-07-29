@@ -4,6 +4,8 @@ import React from 'react';
 import { Line } from 'react-chartjs-2';
 import { ChartOptions } from 'chart.js';
 import { ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
+import { HelpIcon } from '../HelpIcon';
+import { helpTopics } from '@/lib/help-content';
 import '@/lib/utils/chartSetup'; // Register Chart.js components
 
 interface ProfitMarginTrendsProps {
@@ -111,6 +113,11 @@ export function ProfitMarginTrendsChartJS({
               Tendencia de Márgenes de Beneficio
             </h3>
           </div>
+          <HelpIcon 
+            topic={helpTopics['dashboard.profitMarginTrends']} 
+            size="sm" 
+            className="text-white hover:text-gray-200"
+          />
         </div>
       </div>
 

@@ -142,8 +142,11 @@ export function SearchableCategoryDropdown({
                   <option value="Ingresos">Ingresos</option>
                   <option value="Costos">Costos</option>
                   <option value="Gastos Operativos">Gastos Operativos</option>
-                  <option value="Gastos Financieros">Gastos Financieros</option>
+                  <option value="Otros Ingresos">Otros Ingresos</option>
+                  <option value="Otros Gastos">Otros Gastos</option>
+                  <option value="Otros Ingresos/Gastos">Otros Ingresos/Gastos</option>
                   <option value="Impuestos">Impuestos</option>
+                  <option value="Totales">Totales</option>
                   <option value="Otros">Otros</option>
                 </select>
                 <div className="flex gap-1">

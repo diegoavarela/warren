@@ -46,6 +46,8 @@ export function ExpenseDetailModal({
 
   // Convert currency symbol to currency code
   const getCurrencyCode = (currencySymbol: string) => {
+    if (!currencySymbol) return 'USD';
+    
     const currencyMap: { [key: string]: string } = {
       '$': 'USD',
       '€': 'EUR',
@@ -54,36 +56,105 @@ export function ExpenseDetailModal({
       'USD': 'USD',
       'EUR': 'EUR',
       'GBP': 'GBP',
-      'JPY': 'JPY'
+      'JPY': 'JPY',
+      'ARS': 'ARS',
+      'MXN': 'MXN',
+      'BRL': 'BRL',
+      'COP': 'COP',
+      'CLP': 'CLP',
+      'PEN': 'PEN'
     };
-    return currencyMap[currencySymbol] || 'USD';
+    return currencyMap[currencySymbol.toUpperCase()] || currencySymbol.toUpperCase();
   };
 
   const formatValue = (value: number) => {
     let convertedValue = value;
     let suffix = '';
     
+    // FIXED: When data is already in display units (thousands), don't divide again
     if (displayUnits === 'K') {
-      convertedValue = value / 1000;
+      // Data is already in thousands format, just add K suffix
       suffix = 'K';
     } else if (displayUnits === 'M') {
-      convertedValue = value / 1000000;
+      // Data is already in millions format, just add M suffix
       suffix = 'M';
     }
     
-    const formatted = new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: getCurrencyCode(currency),
-      minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
-      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
-    }).format(convertedValue);
+    const currencyCode = getCurrencyCode(currency);
     
-    return formatted + suffix;
+    // Get appropriate locale for currency
+    const getLocaleForCurrency = (curr: string) => {
+      switch (curr) {
+        case 'ARS': return 'es-AR';
+        case 'MXN': return 'es-MX';
+        case 'BRL': return 'pt-BR';
+        case 'COP': return 'es-CO';
+        case 'CLP': return 'es-CL';
+        case 'PEN': return 'es-PE';
+        case 'EUR': return 'de-DE';
+        case 'GBP': return 'en-GB';
+        case 'JPY': return 'ja-JP';
+        default: return 'en-US';
+      }
+    };
+    
+    const locale = getLocaleForCurrency(currencyCode);
+    
+    try {
+      // For USD, use traditional currency formatting with $ symbol
+      if (currencyCode === 'USD') {
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+          maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+        }).format(convertedValue);
+        return formatted + suffix;
+      }
+      
+      // For all other currencies, show currency code + number to avoid confusion
+      const numberFormatted = new Intl.NumberFormat(locale, {
+        style: 'decimal',
+        minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+        maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+      }).format(convertedValue);
+      
+      return `${currencyCode} ${numberFormatted}${suffix}`;
+      
+    } catch (error) {
+      // Fallback to simple number formatting
+      const numberFormatted = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+        maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+      }).format(convertedValue);
+      
+      return `${currencyCode} ${numberFormatted}${suffix}`;
+    }
   };
 
-  const revenuePercentage = (expense.amount / totalRevenue) * 100;
+  // Clean up category names by removing redundant suffixes
+  const cleanCategoryName = (categoryName: string) => {
+    if (!categoryName || categoryName.trim() === '') {
+      return 'Unknown Category';
+    }
+    
+    const cleaned = categoryName
+      .replace(/\s*\(CoR\)$/i, '') // Remove (CoR) suffix
+      .replace(/\s*\(cor\)$/i, '') // Remove (cor) suffix
+      .trim();
+    
+    // Handle specific cases
+    if (cleaned === '(cor)' || cleaned === 'cor' || cleaned === '') {
+      return 'Contract Services';
+    }
+    
+    return cleaned || 'Contract Services';
+  };
+
+  const revenuePercentage = (expense.amount && totalRevenue) ? (expense.amount / totalRevenue) * 100 : 0;
   const categoryTitle = type === 'cogs' ? t('metrics.costOfGoodsSold') : t('metrics.operatingExpenses');
-  const categoryPercentage = expense.percentage;
+  const categoryPercentage = expense.percentage || 0;
+  const cleanedCategoryName = cleanCategoryName(expense.category);
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
@@ -103,7 +174,7 @@ export function ExpenseDetailModal({
                   </div>
                   <div>
                     <Dialog.Title className="text-lg font-semibold text-gray-900">
-                      {expense.category}
+                      {cleanedCategoryName}
                     </Dialog.Title>
                     <Dialog.Description className="text-sm text-gray-600">
                       {categoryTitle} - {t('heatmap.detailedBreakdown')}
@@ -123,7 +194,7 @@ export function ExpenseDetailModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-gray-900">
-                  {formatValue(expense.amount)}
+                  {formatValue(expense.amount || 0)}
                 </div>
                 <div className="text-sm text-gray-600">{t('heatmap.totalAmount')}</div>
               </div>
@@ -132,7 +203,7 @@ export function ExpenseDetailModal({
                   {categoryPercentage.toFixed(1)}%
                 </div>
                 <div className="text-sm text-gray-600">
-                  {t('heatmap.ofCategory')} {categoryTitle}
+                  {t('heatmap.ofCategory').replace('{category}', categoryTitle)}
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
@@ -150,7 +221,7 @@ export function ExpenseDetailModal({
               {/* Category Percentage Bar */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>{t('heatmap.shareOfCategory')} {categoryTitle}</span>
+                  <span>{t('heatmap.shareOfCategory').replace('{category}', categoryTitle)}</span>
                   <span className="font-medium">{categoryPercentage.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
@@ -178,30 +249,6 @@ export function ExpenseDetailModal({
               </div>
             </div>
 
-            {/* Benchmark Comparison */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-gray-900">{t('heatmap.benchmarkComparison')}</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-green-50 rounded-lg p-4">
-                  <div className="text-sm text-green-800 mb-1">{t('metrics.efficient')}</div>
-                  <div className="text-lg font-bold text-green-900">
-                    {formatValue(totalRevenue * (type === 'cogs' ? 0.30 : 0.15))}
-                  </div>
-                  <div className="text-xs text-green-700">
-                    {type === 'cogs' ? '30%' : '15%'} {t('metrics.ofRevenue')}
-                  </div>
-                </div>
-                <div className="bg-yellow-50 rounded-lg p-4">
-                  <div className="text-sm text-yellow-800 mb-1">{t('metrics.industry')}</div>
-                  <div className="text-lg font-bold text-yellow-900">
-                    {formatValue(totalRevenue * (type === 'cogs' ? 0.35 : 0.20))}
-                  </div>
-                  <div className="text-xs text-yellow-700">
-                    {type === 'cogs' ? '35%' : '20%'} {t('metrics.ofRevenue')}
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Account Details within Subcategory */}
             {expense.items && expense.items.length > 0 && (
@@ -213,13 +260,13 @@ export function ExpenseDetailModal({
                       <div className="flex-1">
                         <div className="text-sm font-medium text-gray-900">{item.accountName}</div>
                         <div className="text-xs text-gray-600">
-                          {item.percentage.toFixed(1)}% {t('heatmap.ofSubcategory')}
+                          {item.percentage ? item.percentage.toFixed(1) : '0.0'}% {t('heatmap.ofSubcategory')}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-gray-900">{formatValue(item.amount)}</div>
+                        <div className="text-sm font-bold text-gray-900">{formatValue(item.amount || 0)}</div>
                         <div className="text-xs text-gray-600">
-                          {((item.amount / totalRevenue) * 100).toFixed(1)}% {t('metrics.ofRevenue')}
+                          {item.amount && totalRevenue ? ((item.amount / totalRevenue) * 100).toFixed(1) : '0.0'}% {t('metrics.ofRevenue')}
                         </div>
                       </div>
                     </div>
@@ -235,7 +282,12 @@ export function ExpenseDetailModal({
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-1">{t('heatmap.contextInfo')}</p>
                   <p>
-                    {t('heatmap.expenseContext')} {expense.category} ({categoryTitle}): {formatValue(expense.amount)} ({categoryPercentage.toFixed(1)}%)
+                    {t('heatmap.expenseContext')
+                      .replace('{category}', expense.category)
+                      .replace('{amount}', formatValue(expense.amount))
+                      .replace('{percentage}', categoryPercentage.toFixed(1))
+                      .replace('{type}', categoryTitle)
+                    }
                   </p>
                 </div>
                 </div>

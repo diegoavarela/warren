@@ -6,7 +6,6 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { CheckCircleIcon, QuestionMarkCircleIcon, XCircleIcon, ChevronRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/lib/translations';
-import { WorkflowBreadcrumbs } from '@/components/Breadcrumbs';
 import { detectPeriodsWithData, formatPeriodDisplay, getPeriodColor, DetectedPeriod } from '@/lib/utils/period-detection';
 
 // Remove old interface - using DetectedPeriod from utility
@@ -185,13 +184,6 @@ function PeriodIdentificationContent() {
     <ProtectedRoute>
       <AppLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Breadcrumbs */}
-          <div className="mb-4">
-            <WorkflowBreadcrumbs 
-              currentStep="identify-periods" 
-              fileName={fileName}
-            />
-          </div>
           
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="mb-6">

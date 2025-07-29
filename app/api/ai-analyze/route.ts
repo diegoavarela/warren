@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { financialAI } from "@/lib/ai-service";
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
+import { LocalAccountClassifier } from "@/lib/local-classifier";
 
 export async function POST(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
       case 'suggest':
         result = await financialAI.generateMappingSuggestions(rawData, fileName);
         break;
+
         
       default:
         return NextResponse.json(
@@ -101,3 +103,4 @@ export async function POST(request: NextRequest) {
     }
   });
 }
+

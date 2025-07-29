@@ -45,6 +45,48 @@ export const helpTopics: Record<string, HelpTopic> = {
     category: 'dashboard',
     relatedTopics: ['dashboard.units']
   },
+  'dashboard.performance': {
+    id: 'dashboard.performance',
+    titleKey: 'help.dashboard.performance.title',
+    contentKey: 'help.dashboard.performance.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.revenue', 'dashboard.costs']
+  },
+  'dashboard.opex': {
+    id: 'dashboard.opex',
+    titleKey: 'help.dashboard.opex.title',
+    contentKey: 'help.dashboard.opex.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.costs', 'dashboard.profitability']
+  },
+  'dashboard.cogs': {
+    id: 'dashboard.cogs',
+    titleKey: 'help.dashboard.cogs.title', 
+    contentKey: 'help.dashboard.cogs.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.costs', 'dashboard.profitability']
+  },
+  'dashboard.personnel': {
+    id: 'dashboard.personnel',
+    titleKey: 'help.dashboard.personnel.title',
+    contentKey: 'help.dashboard.personnel.content', 
+    category: 'dashboard',
+    relatedTopics: ['dashboard.costs', 'dashboard.opex']
+  },
+  'dashboard.insights': {
+    id: 'dashboard.insights',
+    titleKey: 'help.dashboard.insights.title',
+    contentKey: 'help.dashboard.insights.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.revenue', 'dashboard.profitability']
+  },
+  'dashboard.costEfficiency': {
+    id: 'dashboard.costEfficiency',
+    titleKey: 'help.dashboard.costEfficiency.title',
+    contentKey: 'help.dashboard.costEfficiency.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.costs', 'dashboard.profitability', 'dashboard.opex']
+  },
   'dashboard.units': {
     id: 'dashboard.units',
     titleKey: 'help.dashboard.units.title',
@@ -254,6 +296,36 @@ export const helpTopics: Record<string, HelpTopic> = {
     contentKey: 'help.filters.units.content',
     category: 'filters',
     relatedTopics: ['dashboard.units', 'filters.currency']
+  },
+  
+  // Trend Analysis Topics
+  'dashboard.revenueTrends': {
+    id: 'dashboard.revenueTrends',
+    titleKey: 'help.dashboard.revenueTrends.title',
+    contentKey: 'help.dashboard.revenueTrends.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.revenue', 'dashboard.forecasting']
+  },
+  'dashboard.netIncomeTrends': {
+    id: 'dashboard.netIncomeTrends',
+    titleKey: 'help.dashboard.netIncomeTrends.title',
+    contentKey: 'help.dashboard.netIncomeTrends.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.profitability', 'dashboard.forecasting']
+  },
+  'dashboard.forecasting': {
+    id: 'dashboard.forecasting',
+    titleKey: 'help.dashboard.forecasting.title',
+    contentKey: 'help.dashboard.forecasting.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.revenueTrends', 'dashboard.netIncomeTrends']
+  },
+  'dashboard.profitMarginTrends': {
+    id: 'dashboard.profitMarginTrends',
+    titleKey: 'help.dashboard.profitMarginTrends.title',
+    contentKey: 'help.dashboard.profitMarginTrends.content',
+    category: 'dashboard',
+    relatedTopics: ['dashboard.profitability', 'metrics.grossProfit', 'metrics.netIncome']
   }
 };
 

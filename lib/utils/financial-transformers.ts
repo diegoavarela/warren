@@ -4,7 +4,7 @@ import { Period, PnLData, YTDMetrics } from '@/types/financial';
 export function transformToPnLData(apiData: any): PnLData | null {
   if (!apiData) return null;
 
-  const { currentMonth, previousMonth, yearToDate, categories, trends, chartData } = apiData;
+  const { currentMonth, previousMonth, yearToDate, categories, trends, chartData, comparisonData, comparisonPeriod } = apiData;
 
   if (!currentMonth) return null;
 
@@ -22,6 +22,11 @@ export function transformToPnLData(apiData: any): PnLData | null {
     }
   }
   
+  // Ensure year is a number
+  if (typeof year === 'string') {
+    year = parseInt(year, 10);
+  }
+  
   const currentPeriod: Period = {
     id: currentMonth.id || `${year}-${getMonthIndex(monthName)}`,
     month: monthName,
@@ -33,6 +38,8 @@ export function transformToPnLData(apiData: any): PnLData | null {
     operatingExpenses: currentMonth.operatingExpenses || 0,
     operatingIncome: currentMonth.operatingIncome || 0,
     operatingMargin: currentMonth.operatingMargin || 0,
+    earningsBeforeTax: currentMonth.earningsBeforeTax || 0,
+    earningsBeforeTaxMargin: currentMonth.earningsBeforeTaxMargin || 0,
     taxes: currentMonth.taxes || 0,
     netIncome: currentMonth.netIncome || 0,
     netMargin: currentMonth.netMargin || 0,
@@ -70,6 +77,11 @@ export function transformToPnLData(apiData: any): PnLData | null {
       }
     }
     
+    // Ensure year is a number
+    if (typeof prevYear === 'string') {
+      prevYear = parseInt(prevYear, 10);
+    }
+    
     previousPeriod = {
       id: previousMonth.id || `${prevYear}-${getMonthIndex(prevMonthName)}`,
       month: prevMonthName,
@@ -81,6 +93,8 @@ export function transformToPnLData(apiData: any): PnLData | null {
       operatingExpenses: previousMonth.operatingExpenses || 0,
       operatingIncome: previousMonth.operatingIncome || 0,
       operatingMargin: previousMonth.operatingMargin || 0,
+      earningsBeforeTax: previousMonth.earningsBeforeTax || 0,
+      earningsBeforeTaxMargin: previousMonth.earningsBeforeTaxMargin || 0,
       taxes: previousMonth.taxes || 0,
       netIncome: previousMonth.netIncome || 0,
       netMargin: previousMonth.netMargin || 0,
@@ -112,6 +126,8 @@ export function transformToPnLData(apiData: any): PnLData | null {
     operatingExpenses: yearToDate?.operatingExpenses || 0,
     operatingIncome: yearToDate?.operatingIncome || 0,
     operatingMargin: yearToDate?.operatingMargin || 0,
+    earningsBeforeTax: yearToDate?.earningsBeforeTax || 0,
+    earningsBeforeTaxMargin: yearToDate?.earningsBeforeTaxMargin || 0,
     taxes: yearToDate?.taxes || 0,
     netIncome: yearToDate?.netIncome || 0,
     netMargin: yearToDate?.netMargin || 0,
@@ -132,54 +148,104 @@ export function transformToPnLData(apiData: any): PnLData | null {
   
   if (chartData && Array.isArray(chartData)) {
     // Use chartData if available (from API)
-    periods = chartData.map((item: any) => {
-      // Extract month and year from the month string if needed
-      let monthName = item.month;
-      let year = item.year || new Date().getFullYear();
-      
-      // If month is in format "May 2025", parse it
-      if (monthName && monthName.includes(' ')) {
-        const parts = monthName.split(' ');
-        monthName = parts[0];
-        if (parts[1]) {
-          year = parseInt(parts[1], 10);
+    periods = chartData
+      .filter((item: any) => {
+        // Validate period data
+        if (!item.month || !item.year || item.month === 'undefined' || item.month === 'Unknown') {
+          console.warn('❌ Filtering out invalid period data:', {
+            month: item.month,
+            year: item.year,
+            revenue: item.revenue,
+            id: item.id
+          });
+          return false;
         }
-      }
-      
-      const periodId = item.id || `${year}-${getMonthIndex(monthName)}`;
-      
-      return {
-        id: periodId,
-        month: monthName,
-        year: year,
-        revenue: item.revenue || 0,
-        cogs: item.cogs || 0,
-        grossProfit: item.grossProfit || 0,
-        grossMargin: item.grossMargin || 0,
-        operatingExpenses: item.operatingExpenses || 0,
-        operatingIncome: item.operatingIncome || 0,
-        operatingMargin: item.operatingMargin || 0,
-        taxes: item.taxes || 0,
-        netIncome: item.netIncome || 0,
-        netMargin: item.netMargin || 0,
-        ebitda: item.ebitda || 0,
-        ebitdaMargin: item.ebitdaMargin || 0,
-        // Personnel costs
-        totalPersonnelCost: item.totalPersonnelCost,
-        personnelSalariesCoR: item.personnelSalariesCoR,
-        payrollTaxesCoR: item.payrollTaxesCoR,
-        personnelSalariesOp: item.personnelSalariesOp,
-        payrollTaxesOp: item.payrollTaxesOp,
-        healthCoverage: item.healthCoverage,
-        personnelBenefits: item.personnelBenefits,
-        // Contract services
-        contractServicesCoR: item.contractServicesCoR,
-        contractServicesOp: item.contractServicesOp,
-        professionalServices: item.professionalServices,
-        salesMarketing: item.salesMarketing,
-        facilitiesAdmin: item.facilitiesAdmin
-      };
-    });
+        
+        // Skip periods with no data
+        if (!item.revenue && !item.cogs && !item.operatingExpenses) {
+          return false;
+        }
+        
+        // Enhanced year parsing with fallback
+        let year = item.year;
+        if (typeof year === 'string') {
+          year = parseInt(year, 10);
+        }
+        
+        // Skip future periods
+        const monthIndex = getMonthIndexFromName(item.month);
+        if (monthIndex === -1 || isNaN(year)) {
+          console.warn('Invalid month name or year:', { 
+            month: item.month, 
+            year: item.year, 
+            parsedYear: year,
+            monthIndex 
+          });
+          return false;
+        }
+        
+        const periodDate = new Date(year, monthIndex);
+        const currentDate = new Date();
+        if (periodDate > currentDate) {
+          return false;
+        }
+        
+        return true;
+      })
+      .map((item: any) => {
+        let monthName = item.month;
+        let year = item.year;
+        
+        // Handle cases where month might be in "Month Year" format
+        if (monthName && monthName.includes(' ')) {
+          const parts = monthName.split(' ');
+          monthName = parts[0];
+          if (parts[1] && !year) {
+            year = parseInt(parts[1], 10);
+          }
+        }
+        
+        // Ensure year is a number
+        if (typeof year === 'string') {
+          year = parseInt(year, 10);
+        }
+        
+        const periodId = item.id || `${year}-${getMonthIndex(monthName)}`;
+        
+        return {
+          id: periodId,
+          month: monthName,
+          year: year,
+          revenue: item.revenue || 0,
+          cogs: item.cogs || 0,
+          grossProfit: item.grossProfit || 0,
+          grossMargin: item.grossMargin || 0,
+          operatingExpenses: item.operatingExpenses || 0,
+          operatingIncome: item.operatingIncome || 0,
+          operatingMargin: item.operatingMargin || 0,
+          earningsBeforeTax: item.earningsBeforeTax || 0,
+          earningsBeforeTaxMargin: item.earningsBeforeTaxMargin || 0,
+          taxes: item.taxes || 0,
+          netIncome: item.netIncome || 0,
+          netMargin: item.netMargin || 0,
+          ebitda: item.ebitda || 0,
+          ebitdaMargin: item.ebitdaMargin || 0,
+          // Personnel costs
+          totalPersonnelCost: item.totalPersonnelCost,
+          personnelSalariesCoR: item.personnelSalariesCoR,
+          payrollTaxesCoR: item.payrollTaxesCoR,
+          personnelSalariesOp: item.personnelSalariesOp,
+          payrollTaxesOp: item.payrollTaxesOp,
+          healthCoverage: item.healthCoverage,
+          personnelBenefits: item.personnelBenefits,
+          // Contract services
+          contractServicesCoR: item.contractServicesCoR,
+          contractServicesOp: item.contractServicesOp,
+          professionalServices: item.professionalServices,
+          salesMarketing: item.salesMarketing,
+          facilitiesAdmin: item.facilitiesAdmin
+        };
+      });
   } else if (trends?.revenue) {
     // Fallback to trends if chartData is not available
     periods = trends.revenue.map((item: any, index: number) => ({
@@ -202,20 +268,70 @@ export function transformToPnLData(apiData: any): PnLData | null {
   }
 
   // Add current and previous periods to the list if not already included
-  if (!periods.find(p => p.id === currentPeriod.id)) {
+  // Use month+year matching instead of ID matching for more reliable duplicate detection
+  const currentPeriodExists = periods.find(p => 
+    p.month === currentPeriod.month && p.year === currentPeriod.year
+  );
+  if (!currentPeriodExists) {
     periods.push(currentPeriod);
   }
-  if (previousPeriod && !periods.find(p => p.id === previousPeriod.id)) {
-    periods.push(previousPeriod);
+  
+  if (previousPeriod) {
+    const previousPeriodExists = periods.find(p => 
+      p.month === previousPeriod.month && p.year === previousPeriod.year
+    );
+    if (!previousPeriodExists) {
+      periods.push(previousPeriod);
+    }
   }
 
+  // Final deduplication: Remove any remaining duplicates based on month+year
+  const uniquePeriods = new Map<string, any>();
+  periods.forEach(period => {
+    // Skip invalid periods
+    if (!period.month || period.month === 'undefined' || period.month === 'Unknown' || 
+        !period.year || isNaN(period.year)) {
+      console.warn('Skipping invalid period in transformer:', period);
+      return;
+    }
+    
+    const key = `${period.month}-${period.year}`;
+    if (!uniquePeriods.has(key)) {
+      uniquePeriods.set(key, period);
+    } else {
+      console.warn('Removing duplicate period in frontend transformer:', period.month, period.year);
+    }
+  });
+  
+  const finalPeriods = Array.from(uniquePeriods.values()).sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    const monthOrder = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const monthA = monthOrder.indexOf(a.month);
+    const monthB = monthOrder.indexOf(b.month);
+    return monthA - monthB;
+  });
+
+  console.log('Final periods after deduplication:', finalPeriods.map(p => `${p.month} ${p.year}`).join(', '));
+  
+  // Debug: Check for any undefined or invalid months
+  finalPeriods.forEach((period, index) => {
+    if (!period.month || period.month === 'undefined' || period.month === 'Unknown') {
+      console.error(`❌ Invalid month found at index ${index}:`, period);
+    }
+    if (!period.year || isNaN(period.year)) {
+      console.error(`❌ Invalid year found at index ${index}:`, period);
+    }
+  });
+
   // Generate forecasts based on trends
-  const forecasts = generateForecasts(periods, currentPeriod);
+  const forecasts = generateForecasts(finalPeriods, currentPeriod);
 
   return {
-    periods,
+    periods: finalPeriods,
     currentPeriod,
     previousPeriod,
+    comparisonData,
+    comparisonPeriod,
     yearToDate: ytdMetrics,
     categories: transformedCategories,
     forecasts
@@ -269,6 +385,19 @@ function getMonthIndex(monthName: string): string {
   
   if (index === -1) return '01'; // Default to January if not found
   return String(index + 1).padStart(2, '0');
+}
+
+function getMonthIndexFromName(monthName: string): number {
+  const monthsEs = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const monthsEn = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  
+  const lowerMonth = monthName.toLowerCase();
+  let index = monthsEs.indexOf(lowerMonth);
+  if (index === -1) {
+    index = monthsEn.indexOf(lowerMonth);
+  }
+  
+  return index;
 }
 
 function calculateGrowthPercentage(current: number, previous: number): number {

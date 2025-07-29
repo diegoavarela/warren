@@ -44,11 +44,12 @@ export function HelpModal({ isOpen, onClose, topic, defaultCategory = 'general' 
     let convertedValue = value;
     let suffix = '';
     
+    // FIXED: When data is already in display units (thousands), don't divide again
     if (displayUnits === 'K') {
-      convertedValue = value / 1000;
+      // Data is already in thousands format, just add K suffix
       suffix = 'K';
     } else if (displayUnits === 'M') {
-      convertedValue = value / 1000000;
+      // Data is already in millions format, just add M suffix
       suffix = 'M';
     }
     

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { currencyService } from '@/lib/services/currency';
 
 interface FinancialDataResponse {
@@ -18,6 +18,12 @@ interface FinancialDataResponse {
       margins: any[];
     };
     statements?: any[];
+    currentPeriod?: any;
+    previousPeriod?: any;
+    comparisonData?: any;
+    comparisonPeriod?: string;
+    periods?: any[];
+    chartData?: any[];
   };
   error?: string;
 }
@@ -38,6 +44,7 @@ export function useFinancialData(options: UseFinancialDataOptions) {
   const [data, setData] = useState<FinancialDataResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchFinancialData = useCallback(async () => {
     if (!companyId) {
@@ -45,6 +52,14 @@ export function useFinancialData(options: UseFinancialDataOptions) {
       setLoading(false);
       return;
     }
+
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
 
     try {
       setLoading(true);
@@ -62,7 +77,9 @@ export function useFinancialData(options: UseFinancialDataOptions) {
       
       console.log('Fetching financial data from:', analyticsUrl);
       
-      const response = await fetch(analyticsUrl);
+      const response = await fetch(analyticsUrl, {
+        signal: abortControllerRef.current.signal
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch financial data: ${response.statusText}`);
@@ -81,22 +98,38 @@ export function useFinancialData(options: UseFinancialDataOptions) {
         throw new Error(result.error || 'Failed to fetch financial data');
       }
     } catch (err) {
+      // Don't set error state if request was aborted
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('Request aborted:', err.message);
+        return;
+      }
       console.error('Error fetching financial data:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
-  }, [companyId, statementId, selectedPeriod]);
+  }, [companyId, statementId, selectedPeriod, comparisonPeriod]);
 
   useEffect(() => {
     fetchFinancialData();
+  }, [companyId, statementId, selectedPeriod, comparisonPeriod]);
 
+  useEffect(() => {
     // Set up auto-refresh if enabled
     if (autoRefresh && refreshInterval > 0) {
       const interval = setInterval(fetchFinancialData, refreshInterval);
       return () => clearInterval(interval);
     }
   }, [fetchFinancialData, autoRefresh, refreshInterval]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const refetch = useCallback(() => {
     return fetchFinancialData();

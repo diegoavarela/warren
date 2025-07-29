@@ -734,7 +734,7 @@ export function MatrixExcelViewerV2({
       // Add a small delay to ensure the UI updates
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setAiProgress('🚀 Enviando datos a OpenAI GPT-3.5 para análisis semántico...');
+      setAiProgress('🚀 Enviando datos a OpenAI GPT-4o para análisis semántico...');
       setProgressPercentage(88);
       
       // Add surrounding context for better classification
@@ -1550,7 +1550,7 @@ export function MatrixExcelViewerV2({
                       </p>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
                         <div className="animate-pulse">⚡</div>
-                        <span>Procesando con OpenAI GPT-3.5</span>
+                        <span>Procesando con OpenAI GPT-4o</span>
                       </div>
                       {showForceButton && (
                         <div className="mt-4 pt-4 border-t border-gray-300 w-full">

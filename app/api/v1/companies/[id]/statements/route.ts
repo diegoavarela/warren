@@ -3,6 +3,8 @@ import { db, financialStatements, financialLineItems, companies, eq, desc, and, 
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 import { decrypt, decryptObject, encrypt, encryptObject } from "@/lib/encryption";
 import { v4 as uuidv4 } from "uuid";
+import { validatePeriods, getPeriodValidationStatus } from "@/lib/utils/period-validation";
+import { parsePeriodLabel } from "@/lib/utils/period-detection";
 
 // GET /api/v1/companies/[id]/statements - Get all financial statements for a company
 export async function GET(
@@ -216,6 +218,58 @@ export async function POST(
         return `${year}-${month}-01`;
       };
       
+      // Validate periods before processing
+      const detectedPeriods = periods.map((period: string) => {
+        const parseResult = parsePeriodLabel(period);
+        return {
+          columnIndex: 0,
+          label: period,
+          parsedDate: parseResult.date,
+          month: parseResult.date ? parseResult.date.getMonth() + 1 : 0,
+          year: parseResult.date ? parseResult.date.getFullYear() : 0,
+          periodType: parseResult.type,
+          confidence: parseResult.confidence,
+          hasData: true, // Assume has data since it's being uploaded
+          dataPoints: 1,
+          classification: 'ACTUAL' as const
+        };
+      });
+
+      // Get existing periods for this company
+      const existingStatements = await db
+        .select()
+        .from(financialStatements)
+        .where(eq(financialStatements.companyId, companyId));
+      
+      const existingPeriods = existingStatements.map((stmt: any) => ({
+        periodEnd: stmt.periodEnd,
+        createdAt: stmt.createdAt,
+        updatedAt: stmt.updatedAt,
+        id: stmt.id
+      }));
+
+      // Validate periods
+      const validationResult = validatePeriods(detectedPeriods, existingPeriods);
+      
+      if (!validationResult.isValid) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Period validation failed',
+            details: {
+              errors: validationResult.errors,
+              warnings: validationResult.warnings
+            }
+          },
+          { status: 400 }
+        );
+      }
+
+      // Log warnings if any
+      if (validationResult.warnings.length > 0) {
+        console.warn('Period validation warnings:', validationResult.warnings);
+      }
+      
       // Determine period range
       const periodStart = convertPeriodToDate(periods[0]);
       const periodEnd = convertPeriodToDate(periods[periods.length - 1]);
@@ -278,18 +332,66 @@ export async function POST(
         // Calculate total across all periods
         const totalAmount = Object.values(periodValues).reduce((sum: number, val: any) => sum + (val || 0), 0);
 
-        // Determine category based on flowType
+        // Determine category based on flowType and classification content
         let category = 'other';
         if (classification.flowType === 'inbound') {
           category = 'revenue';
         } else if (classification.flowType === 'outbound') {
-          if (classification.category.toLowerCase().includes('cost of') || 
-              classification.category.toLowerCase().includes('cogs')) {
+          const categoryLower = classification.category.toLowerCase();
+          
+          // Enhanced COGS detection
+          if (categoryLower.includes('cost of') || 
+              categoryLower.includes('cogs') ||
+              categoryLower.includes('cost of sales') ||
+              categoryLower.includes('cost of goods') ||
+              categoryLower.includes('cost of revenue') ||
+              categoryLower.includes('direct cost') ||
+              categoryLower.includes('costo de') ||
+              categoryLower.includes('costo de ventas')) {
             category = 'cogs';
-          } else if (classification.category.toLowerCase().includes('operating')) {
+          }
+          // Enhanced Operating Expenses detection
+          else if (categoryLower.includes('operating') ||
+                   categoryLower.includes('administrative') ||
+                   categoryLower.includes('selling') ||
+                   categoryLower.includes('general') ||
+                   categoryLower.includes('opex') ||
+                   categoryLower.includes('gastos') ||
+                   categoryLower.includes('personnel') ||
+                   categoryLower.includes('salary') ||
+                   categoryLower.includes('marketing') ||
+                   categoryLower.includes('office') ||
+                   categoryLower.includes('rent') ||
+                   categoryLower.includes('utilities')) {
             category = 'operating_expenses';
-          } else {
-            category = 'expenses';
+          }
+          // Tax expenses
+          else if (categoryLower.includes('tax') ||
+                   categoryLower.includes('impuesto') ||
+                   categoryLower.includes('fiscal')) {
+            category = 'taxes';
+          }
+          // Other income/expenses
+          else if (categoryLower.includes('other income') ||
+                   categoryLower.includes('interest income') ||
+                   categoryLower.includes('otros ingresos')) {
+            category = 'other_income';
+          }
+          else if (categoryLower.includes('other expense') ||
+                   categoryLower.includes('interest expense') ||
+                   categoryLower.includes('otros gastos')) {
+            category = 'other_expenses';
+          }
+          // Depreciation and amortization
+          else if (categoryLower.includes('depreciation') ||
+                   categoryLower.includes('depreciación') ||
+                   categoryLower.includes('amortization') ||
+                   categoryLower.includes('amortización')) {
+            category = 'depreciation';
+          }
+          // Default to operating expenses for most outbound flows
+          else {
+            category = 'operating_expenses';
           }
         }
 

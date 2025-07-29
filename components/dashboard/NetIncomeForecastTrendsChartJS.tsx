@@ -4,6 +4,8 @@ import React, { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import { ChartOptions } from 'chart.js';
 import { CurrencyDollarIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
+import { HelpIcon } from '../HelpIcon';
+import { helpTopics } from '@/lib/help-content';
 import '@/lib/utils/chartSetup'; // Register Chart.js components
 
 interface DataPoint {
@@ -205,7 +207,7 @@ export function NetIncomeForecastTrendsChartJS({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-full flex flex-col">
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -226,21 +228,28 @@ export function NetIncomeForecastTrendsChartJS({
               ) : (
                 <ArrowTrendingDownIcon className="w-5 h-5" />
               )}
-              <span className="font-bold text-sm">{formatPercentage(currentTrendPercentage)}</span>
+              <span className="font-bold text-sm">
+                {formatPercentage(currentTrendPercentage)} vs {locale?.startsWith('es') ? 'Mes Anterior' : 'Previous Month'}
+              </span>
             </div>
+            <HelpIcon 
+              topic={helpTopics['dashboard.netIncomeTrends']} 
+              size="sm" 
+              className="text-white hover:text-gray-200"
+            />
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-6 flex-1 flex flex-col">
         {/* Chart */}
-        <div className="h-80">
+        <div className="h-80 flex-shrink-0">
           <Line data={chartData} options={options} />
         </div>
         
         {/* Forecast Summary */}
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-3 gap-4 flex-shrink-0">
           <div className="bg-emerald-50 rounded-lg p-4">
             <p className="text-sm text-gray-600">Tendencia Actual</p>
             <p className="text-lg font-semibold text-emerald-900">

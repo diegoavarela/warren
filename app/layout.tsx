@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import "@/lib/utils/chartSetup"; // Initialize Chart.js
 
 const inter = Inter({ 
   subsets: ["latin"],
