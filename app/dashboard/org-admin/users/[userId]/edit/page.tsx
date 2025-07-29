@@ -9,10 +9,9 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '@/components/ui/Card';
 import {
-  UserPlusIcon,
-  EnvelopeIcon,
   UserIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
 
@@ -21,45 +20,90 @@ interface Company {
   name: string;
   taxId?: string;
   industry?: string;
-  locale?: string;
-  baseCurrency?: string;
-  isActive: boolean;
   organizationId: string;
-  createdAt: Date;
 }
 
-interface InvitationForm {
+interface UserData {
+  id: string;
   email: string;
   firstName: string;
   lastName: string;
   organizationRole: string;
+  isActive: boolean;
+  emailVerified: boolean;
+  companyAccess: {
+    companyId: string;
+    companyName: string;
+    role: string;
+    isActive: boolean;
+  }[];
+}
+
+interface EditForm {
+  firstName: string;
+  lastName: string;
+  organizationRole: string;
+  isActive: boolean;
   companyAccess: {
     companyId: string;
     role: string;
   }[];
 }
 
-function OrgUserInvitePage() {
+function UserEditPage({ params }: { params: { userId: string } }) {
   const router = useRouter();
   const { user, organization } = useAuth();
   const { locale } = useLocale();
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [form, setForm] = useState<InvitationForm>({
-    email: '',
+  const [form, setForm] = useState<EditForm>({
     firstName: '',
     lastName: '',
     organizationRole: 'user',
+    isActive: true,
     companyAccess: []
   });
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
-  const [createdUserEmail, setCreatedUserEmail] = useState<string>('');
 
   useEffect(() => {
-    fetchCompanies();
-  }, [organization?.id]);
+    if (organization?.id) {
+      fetchUser();
+      fetchCompanies();
+    }
+  }, [organization?.id, params.userId]);
+
+  const fetchUser = async () => {
+    try {
+      const response = await fetch(`/api/organizations/${organization?.id}/users`);
+      if (response.ok) {
+        const data = await response.json();
+        const foundUser = data.users.find((u: UserData) => u.id === params.userId);
+        if (foundUser) {
+          setUserData(foundUser);
+          setForm({
+            firstName: foundUser.firstName,
+            lastName: foundUser.lastName,
+            organizationRole: foundUser.organizationRole,
+            isActive: foundUser.isActive,
+            companyAccess: foundUser.companyAccess.map(ca => ({
+              companyId: ca.companyId,
+              role: ca.role
+            }))
+          });
+        } else {
+          setError('User not found');
+        }
+      } else {
+        setError('Failed to fetch user data');
+      }
+    } catch (error) {
+      setError('Error fetching user data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -67,11 +111,7 @@ function OrgUserInvitePage() {
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.data)) {
-          const mappedCompanies = data.data.map((company: any) => ({
-            ...company,
-            createdAt: new Date(company.createdAt)
-          }));
-          setCompanies(mappedCompanies);
+          setCompanies(data.data);
         }
       }
     } catch (error) {
@@ -121,12 +161,12 @@ function OrgUserInvitePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/organizations/${organization?.id}/users`, {
-        method: 'POST',
+      const response = await fetch(`/api/organizations/${organization?.id}/users/${params.userId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -134,31 +174,51 @@ function OrgUserInvitePage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setSuccess(true);
-        setTemporaryPassword(data.temporaryPassword || null);
-        setCreatedUserEmail(form.email);
-        setForm({ 
-          email: '', 
-          firstName: '', 
-          lastName: '', 
-          organizationRole: 'user',
-          companyAccess: []
-        });
+        router.push('/dashboard/org-admin/users');
       } else {
         const data = await response.json();
-        setError(data.error || (locale?.startsWith('es') ? 'Error al enviar invitación' : 'Failed to send invitation'));
+        setError(data.error || (locale?.startsWith('es') ? 'Error al actualizar usuario' : 'Failed to update user'));
       }
     } catch (error) {
       setError(locale?.startsWith('es') ? 'Error de red' : 'Network error');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   const handleBack = () => {
     router.push('/dashboard/org-admin/users');
   };
+
+  if (loading) {
+    return (
+      <AppLayout showFooter={true}>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <p className="mt-2 text-gray-600">
+              {locale?.startsWith('es') ? 'Cargando usuario...' : 'Loading user...'}
+            </p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error && !userData) {
+    return (
+      <AppLayout showFooter={true}>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600">{error}</p>
+            <Button onClick={handleBack} variant="outline" className="mt-4">
+              {locale?.startsWith('es') ? 'Volver a usuarios' : 'Back to users'}
+            </Button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout showFooter={true}>
@@ -174,92 +234,38 @@ function OrgUserInvitePage() {
               ← {locale?.startsWith('es') ? 'Volver a usuarios' : 'Back to users'}
             </Button>
             <h1 className="text-3xl font-bold text-gray-900">
-              {locale?.startsWith('es') ? 'Invitar Usuario a la Organización' : 'Invite User to Organization'}
+              {locale?.startsWith('es') ? 'Editar Usuario' : 'Edit User'}
             </h1>
             <p className="text-gray-600 mt-2">
               {locale?.startsWith('es')
-                ? `Envía una invitación para agregar un nuevo usuario a ${organization?.name}`
-                : `Send an invitation to add a new user to ${organization?.name}`}
+                ? `Edita la información de ${userData?.firstName} ${userData?.lastName}`
+                : `Edit ${userData?.firstName} ${userData?.lastName}'s information`}
             </p>
           </div>
 
-          {/* Success Message */}
-          {success && (
-            <Card className="mb-6 border-green-200 bg-green-50">
-              <CardBody className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <ShieldCheckIcon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-green-900">
-                      {locale?.startsWith('es') ? '¡Usuario creado exitosamente!' : 'User created successfully!'}
-                    </h3>
-                    <p className="text-sm text-green-700">
-                      {locale?.startsWith('es')
-                        ? 'El usuario puede ahora iniciar sesión con las credenciales proporcionadas'
-                        : 'The user can now log in with the provided credentials'}
-                    </p>
-                  </div>
-                </div>
-                
-                {temporaryPassword && (
-                  <div className="bg-white border border-green-300 rounded-lg p-4">
-                    <h4 className="font-semibold text-green-900 mb-2">
-                      {locale?.startsWith('es') ? 'Credenciales de acceso:' : 'Login credentials:'}
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          {locale?.startsWith('es') ? 'Email:' : 'Email:'}
-                        </span>
-                        <span className="ml-2 font-mono bg-gray-100 px-2 py-1 rounded">
-                          {createdUserEmail}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          {locale?.startsWith('es') ? 'Contraseña temporal:' : 'Temporary password:'}
-                        </span>
-                        <span className="ml-2 font-mono bg-yellow-100 px-2 py-1 rounded text-yellow-800">
-                          {temporaryPassword}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-green-600 mt-3">
-                      {locale?.startsWith('es')
-                        ? '⚠️ Comparte estas credenciales de forma segura con el usuario.'
-                        : '⚠️ Share these credentials securely with the user.'}
-                    </p>
-                  </div>
-                )}
-              </CardBody>
-            </Card>
-          )}
-
-          {/* Invitation Form */}
+          {/* Edit Form */}
           <div className="max-w-4xl mx-auto">
             <Card className="shadow-xl border-0 bg-white">
               <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-xl">
                 <div className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <UserPlusIcon className="w-8 h-8 text-white" />
+                    <UserIcon className="w-8 h-8 text-white" />
                   </div>
                   <div>
                     <CardTitle className="text-2xl font-bold text-white">
-                      {locale?.startsWith('es') ? 'Invitar Nuevo Usuario' : 'Invite New User'}
+                      {locale?.startsWith('es') ? 'Información del Usuario' : 'User Information'}
                     </CardTitle>
                     <CardDescription className="text-blue-100 text-base">
                       {locale?.startsWith('es')
-                        ? 'Agrega un nuevo miembro a tu organización'
-                        : 'Add a new member to your organization'}
+                        ? 'Actualiza los datos y permisos del usuario'
+                        : 'Update user data and permissions'}
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardBody className="p-8">
                 <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Email */}
+                  {/* Email (Read-only) */}
                   <div className="space-y-3">
                     <label className="text-sm font-semibold text-gray-800 flex items-center space-x-2">
                       <EnvelopeIcon className="w-5 h-5 text-blue-600" />
@@ -267,12 +273,13 @@ function OrgUserInvitePage() {
                     </label>
                     <input
                       type="email"
-                      required
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-800 placeholder-gray-500"
-                      placeholder={locale?.startsWith('es') ? 'usuario@empresa.com' : 'user@company.com'}
+                      value={userData?.email || ''}
+                      disabled
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed"
                     />
+                    <p className="text-xs text-gray-500">
+                      {locale?.startsWith('es') ? 'El correo electrónico no puede ser modificado' : 'Email address cannot be changed'}
+                    </p>
                   </div>
 
                   {/* Name Fields Row */}
@@ -289,7 +296,6 @@ function OrgUserInvitePage() {
                         value={form.firstName}
                         onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                         className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-800 placeholder-gray-500"
-                        placeholder={locale?.startsWith('es') ? 'Juan' : 'John'}
                       />
                     </div>
 
@@ -305,40 +311,75 @@ function OrgUserInvitePage() {
                         value={form.lastName}
                         onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                         className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-800 placeholder-gray-500"
-                        placeholder={locale?.startsWith('es') ? 'Pérez' : 'Doe'}
                       />
                     </div>
                   </div>
 
-                  {/* Organization Role */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-semibold text-gray-800 flex items-center space-x-2">
-                      <ShieldCheckIcon className="w-5 h-5 text-blue-600" />
-                      <span>{locale?.startsWith('es') ? 'Rol en la Organización' : 'Organization Role'}</span>
-                    </label>
-                    <select
-                      value={form.organizationRole}
-                      onChange={(e) => setForm({ ...form, organizationRole: e.target.value })}
-                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-800 bg-white appearance-none cursor-pointer"
-                    >
-                      {organizationRoles.map((role) => (
-                        <option key={role.value} value={role.value}>
-                          {role.label}
-                        </option>
-                      ))}
-                    </select>
+                  {/* Organization Role and Status Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Organization Role */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-gray-800 flex items-center space-x-2">
+                        <ShieldCheckIcon className="w-5 h-5 text-blue-600" />
+                        <span>{locale?.startsWith('es') ? 'Rol en la Organización' : 'Organization Role'}</span>
+                      </label>
+                      <select
+                        value={form.organizationRole}
+                        onChange={(e) => setForm({ ...form, organizationRole: e.target.value })}
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-800 bg-white appearance-none cursor-pointer"
+                      >
+                        {organizationRoles.map((role) => (
+                          <option key={role.value} value={role.value}>
+                            {role.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Active Status */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-gray-800">
+                        {locale?.startsWith('es') ? 'Estado' : 'Status'}
+                      </label>
+                      <div className="flex items-center space-x-4 pt-2">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="isActive"
+                            checked={form.isActive}
+                            onChange={() => setForm({ ...form, isActive: true })}
+                            className="mr-2 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-green-600 font-medium">
+                            {locale?.startsWith('es') ? 'Activo' : 'Active'}
+                          </span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="isActive"
+                            checked={!form.isActive}
+                            onChange={() => setForm({ ...form, isActive: false })}
+                            className="mr-2 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-red-600 font-medium">
+                            {locale?.startsWith('es') ? 'Inactivo' : 'Inactive'}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Company Access */}
                   {companies.length > 0 && (
                     <div className="space-y-4">
                       <label className="text-sm font-semibold text-gray-800">
-                        {locale?.startsWith('es') ? 'Acceso a Empresas (Opcional)' : 'Company Access (Optional)'}
+                        {locale?.startsWith('es') ? 'Acceso a Empresas' : 'Company Access'}
                       </label>
                       <p className="text-sm text-gray-600">
                         {locale?.startsWith('es') 
-                          ? 'Selecciona las empresas a las que el usuario tendrá acceso y su rol en cada una.'
-                          : 'Select which companies the user will have access to and their role in each.'}
+                          ? 'Configura el acceso del usuario a las empresas y su rol en cada una.'
+                          : 'Configure user access to companies and their role in each.'}
                       </p>
                       <div className="space-y-3">
                         {companies.map((company) => (
@@ -384,20 +425,19 @@ function OrgUserInvitePage() {
                     </div>
                   )}
 
-                  {/* Submit Button */}
+                  {/* Submit Buttons */}
                   <div className="flex flex-col sm:flex-row gap-4 pt-6">
                     <Button
                       type="submit"
                       variant="primary"
                       size="lg"
-                      disabled={loading}
-                      loading={loading}
-                      leftIcon={!loading && <EnvelopeIcon className="w-5 h-5" />}
+                      disabled={saving}
+                      loading={saving}
                       className="flex-1"
                     >
-                      {loading
-                        ? (locale?.startsWith('es') ? 'Enviando Invitación...' : 'Sending Invitation...')
-                        : (locale?.startsWith('es') ? 'Enviar Invitación' : 'Send Invitation')
+                      {saving
+                        ? (locale?.startsWith('es') ? 'Guardando...' : 'Saving...')
+                        : (locale?.startsWith('es') ? 'Guardar Cambios' : 'Save Changes')
                       }
                     </Button>
                     <Button
@@ -413,27 +453,6 @@ function OrgUserInvitePage() {
                 </form>
               </CardBody>
             </Card>
-
-            {/* Info Section */}
-            <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-2">
-                    {locale?.startsWith('es') ? '¿Qué sucede después?' : 'What happens next?'}
-                  </h3>
-                  <p className="text-sm text-blue-800">
-                    {locale?.startsWith('es')
-                      ? 'El usuario recibirá un correo electrónico con un enlace para crear su cuenta y unirse a tu organización. Podrá acceder inmediatamente según el rol asignado.'
-                      : 'The user will receive an email with a link to create their account and join your organization. They will have immediate access based on their assigned role.'}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -441,10 +460,10 @@ function OrgUserInvitePage() {
   );
 }
 
-export default function OrgUserInvitePageWrapper() {
+export default function UserEditPageWrapper({ params }: { params: { userId: string } }) {
   return (
     <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
-      <OrgUserInvitePage />
+      <UserEditPage params={params} />
     </ProtectedRoute>
   );
 }

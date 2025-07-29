@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyJWT } from '@/lib/auth/jwt';
 import { db, users, companyUsers, companies, eq, and } from '@/lib/db';
 import { ROLES } from '@/lib/auth/rbac';
+import { hashPassword, generateSecurePassword } from '@/lib/auth/password';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -199,7 +200,10 @@ export async function POST(
           .where(eq(users.id, targetUser.id));
       }
     } else {
-      // Create new user
+      // Create new user with generated password
+      const temporaryPassword = generateSecurePassword(12);
+      const hashedPassword = await hashPassword(temporaryPassword);
+      
       const newUserResult = await db
         .insert(users)
         .values({
@@ -210,13 +214,13 @@ export async function POST(
           organizationId,
           isActive: true,
           emailVerified: false,
-          passwordHash: '', // Will be set when user accepts invitation
+          passwordHash: hashedPassword,
           locale: 'en-US',
           twoFactorEnabled: false
         })
         .returning();
 
-      targetUser = newUserResult[0];
+      targetUser = { ...newUserResult[0], temporaryPassword };
     }
 
     // Handle company access assignments
@@ -275,7 +279,7 @@ export async function POST(
 
     console.log(`✅ User ${targetUser.email} invited to organization ${organizationId} as ${organizationRole}`);
 
-    return NextResponse.json({
+    const response: any = {
       success: true,
       message: 'User invited to organization successfully',
       user: {
@@ -289,7 +293,15 @@ export async function POST(
           role: ca.role
         }))
       }
-    });
+    };
+
+    // Include temporary password if a new user was created
+    if (targetUser.temporaryPassword) {
+      response.temporaryPassword = targetUser.temporaryPassword;
+      response.message = 'User invited to organization successfully. Please share the temporary password securely.';
+    }
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Organization user invitation error:', error);
