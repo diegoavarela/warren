@@ -2213,6 +2213,14 @@ async function getCategoriesBreakdown(items: ProcessedLineItem[], companyId: str
             displayName = subcategoryLabels.get(subcategoryCode) || subcategoryCode;
           }
           
+          // 🔍 DEBUG: Log what we're actually sending to frontend
+          console.log(`🏷️ Category being sent to frontend:`, {
+            subcategoryCode,
+            displayName,
+            hasDbLabel: subcategoryLabels.has(subcategoryCode),
+            dbLabel: subcategoryLabels.get(subcategoryCode)
+          });
+          
           return {
             category: displayName, // Use consistent display name
             subcategory: subcategoryCode, // Keep original code for reference
