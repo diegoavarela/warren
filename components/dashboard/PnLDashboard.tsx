@@ -1071,6 +1071,30 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             />
           </div>
 
+          <MetricCard
+            title={t('metrics.cogsPercentage')}
+            currentValue={(current.cogs / current.revenue) * 100}
+            previousValue={previous ? (previous.cogs / previous.revenue) * 100 : undefined}
+            format="percentage"
+            icon={<ChartBarIcon className="h-5 w-5" />}
+            subtitle={`YTD: ${((ytd.cogs / ytd.revenue) * 100).toFixed(1)}%`}
+            colorScheme="cost"
+            helpTopic={helpTopics['metrics.cogsPercentage']}
+            comparisonPeriod={comparisonPeriod}
+            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
+            helpContext={{
+              currentValue: (current.cogs / current.revenue) * 100,
+              previousValue: previous ? (previous.cogs / previous.revenue) * 100 : undefined,
+              ytdValue: (ytd.cogs / ytd.revenue) * 100,
+              benchmarks: {
+                excellent: 30,
+                good: 35,
+                average: 40,
+                poor: 45
+              }
+            }}
+          />
+
           <div className="h-full" onDoubleClick={() => setActiveBreakdown(activeBreakdown === 'opex' ? null : 'opex')}>
             <MetricCard
               title={t('metrics.operatingExpenses')}
@@ -1098,30 +1122,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               }}
             />
           </div>
-
-          <MetricCard
-            title={t('metrics.cogsPercentage')}
-            currentValue={(current.cogs / current.revenue) * 100}
-            previousValue={previous ? (previous.cogs / previous.revenue) * 100 : undefined}
-            format="percentage"
-            icon={<ChartBarIcon className="h-5 w-5" />}
-            subtitle={`YTD: ${((ytd.cogs / ytd.revenue) * 100).toFixed(1)}%`}
-            colorScheme="cost"
-            helpTopic={helpTopics['metrics.cogsPercentage']}
-            comparisonPeriod={comparisonPeriod}
-            previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
-            helpContext={{
-              currentValue: (current.cogs / current.revenue) * 100,
-              previousValue: previous ? (previous.cogs / previous.revenue) * 100 : undefined,
-              ytdValue: (ytd.cogs / ytd.revenue) * 100,
-              benchmarks: {
-                excellent: 30,
-                good: 35,
-                average: 40,
-                poor: 45
-              }
-            }}
-          />
 
           <MetricCard
             title={t('metrics.opexPercentage')}
