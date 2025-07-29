@@ -151,6 +151,15 @@ export function Header() {
         // Skip dashboard in breadcrumbs
         if (label === 'dashboard') continue;
         
+        // Skip UUID-like segments (like user IDs) but keep the path for navigation
+        if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(label)) {
+          // For user edit pages, show "Editar" instead of the UUID
+          if (i < paths.length - 1 && paths[i + 1] === 'edit') {
+            continue; // Skip the UUID, we'll show "Editar" from the next segment
+          }
+          continue; // Skip UUIDs in general
+        }
+        
         // Translate common paths
         if (label === 'platform-admin') label = locale?.startsWith('es') ? 'Admin Plataforma' : 'Platform Admin';
         if (label === 'company-admin') label = locale?.startsWith('es') ? 'Admin Empresa' : 'Company Admin';
@@ -158,6 +167,9 @@ export function Header() {
         if (label === 'users') label = locale?.startsWith('es') ? 'Usuarios' : 'Users';
         if (label === 'companies') label = locale?.startsWith('es') ? 'Empresas' : 'Companies';
         if (label === 'settings') label = locale?.startsWith('es') ? 'Configuración' : 'Settings';
+        if (label === 'edit') label = locale?.startsWith('es') ? 'Editar' : 'Edit';
+        if (label === 'invite') label = locale?.startsWith('es') ? 'Invitar' : 'Invite';
+        if (label === 'new') label = locale?.startsWith('es') ? 'Nuevo' : 'New';
         if (label === 'pnl') label = locale?.startsWith('es') ? 'Estado de Resultados' : 'Profit & Loss';
         if (label === 'cashflow') label = locale?.startsWith('es') ? 'Flujo de Caja' : 'Cash Flow';
         if (label === 'uploads') label = locale?.startsWith('es') ? 'Historial de Cargas' : 'Upload History';
