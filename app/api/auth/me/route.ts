@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
         id: orgResult[0].id,
         name: orgResult[0].name,
         locale: orgResult[0].locale,
-        baseCurrency: orgResult[0].baseCurrency
+        baseCurrency: orgResult[0].baseCurrency,
+        timezone: orgResult[0].timezone
       } : null
     });
 

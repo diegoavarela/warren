@@ -131,6 +131,7 @@ function OrganizationSettingsPage() {
           name: formData.general.name,
           locale: formData.general.locale,
           baseCurrency: formData.general.baseCurrency,
+          timezone: formData.general.timezone,
         }),
       });
 
