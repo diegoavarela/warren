@@ -520,7 +520,13 @@ export function ManualCategorySelector({
         </div>
         
         {/* Category List */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div 
+          className="flex-1 overflow-y-auto p-6"
+          onWheel={(e) => {
+            // Prevent wheel event from bubbling to parent (prevents page scroll)
+            e.stopPropagation();
+          }}
+        >
           {groupedCategories.length === 0 ? (
             <p className="text-center text-gray-500 py-8">
               No se encontraron categorías que coincidan con "{searchTerm}"

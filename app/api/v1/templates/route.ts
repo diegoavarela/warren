@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, mappingTemplates, companies, users, eq } from "@/lib/db";
+import { db, mappingTemplates, companies, users, eq, desc, and } from "@/lib/db";
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 
 // Force dynamic rendering for serverless
@@ -74,8 +74,8 @@ export async function GET(request: NextRequest) {
         })
         .from(mappingTemplates)
         .leftJoin(companies, eq(mappingTemplates.companyId, companies.id))
-        .where(...conditions)
-        .orderBy(mappingTemplates.isDefault, mappingTemplates.usageCount);
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(mappingTemplates.isDefault), desc(mappingTemplates.usageCount));
       
       return NextResponse.json({
         success: true,

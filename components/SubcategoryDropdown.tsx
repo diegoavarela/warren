@@ -145,6 +145,10 @@ export function SubcategoryDropdown({
           ref={dropdownRef}
           className="rounded-md bg-white text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm overflow-hidden"
           style={dropdownStyle}
+          onWheel={(e) => {
+            // Prevent wheel event from bubbling to parent (prevents page scroll)
+            e.stopPropagation();
+          }}
         >
           {/* Search input */}
           <div className="sticky top-0 z-10 bg-white px-2 py-1 border-b border-gray-200">
@@ -203,7 +207,14 @@ export function SubcategoryDropdown({
           )}
 
           {/* Subcategory options */}
-          <div className="overflow-y-auto" style={{ maxHeight: 'calc(100% - 100px)' }}>
+          <div 
+            className="overflow-y-auto" 
+            style={{ maxHeight: 'calc(100% - 100px)' }}
+            onWheel={(e) => {
+              // Prevent wheel event from bubbling to parent (prevents page scroll)
+              e.stopPropagation();
+            }}
+          >
             {filteredSubcategories.map((subcategory) => (
               <button
                 key={subcategory.value}

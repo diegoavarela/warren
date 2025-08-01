@@ -904,11 +904,12 @@ export function MatrixExcelViewerV2({
       return newTypes;
     });
     
+    // Get account name for this row
+    const accountNameCol = conceptColumns.find(cc => cc.columnType === 'account_name')?.columnIndex ?? 0;
+    const accountName = String(displayData[rowIndex]?.[accountNameCol] || '');
+    
     // If changing to/from section header or total, update detectedTotalRows
     if (type === 'section_header' || type === 'total') {
-      const accountNameCol = conceptColumns.find(cc => cc.columnType === 'account_name')?.columnIndex ?? 0;
-      const accountName = displayData[rowIndex]?.[accountNameCol] || '';
-      
       setDetectedTotalRows(prev => {
         // Remove any existing detection for this row
         const filtered = prev.filter(t => t.rowIndex !== rowIndex);
@@ -917,7 +918,7 @@ export function MatrixExcelViewerV2({
         if (type === 'section_header' || type === 'total') {
           filtered.push({
             rowIndex,
-            accountName: String(accountName),
+            accountName: accountName,
             totalType: type === 'section_header' ? 'section_header' : 'section_total',
             confidence: 1.0,
             detectionReasons: ['Manual override']
@@ -929,6 +930,60 @@ export function MatrixExcelViewerV2({
     } else if (type === 'account' || type === null) {
       // Remove from detected totals
       setDetectedTotalRows(prev => prev.filter(t => t.rowIndex !== rowIndex));
+    }
+    
+    // AUTO-SET CATEGORY: When type is 'total', automatically set category to 'total'
+    if (type === 'total' && accountName) {
+      setAccountClassifications(prev => {
+        const existingIndex = prev.findIndex(c => c.accountName === accountName);
+        
+        if (existingIndex >= 0) {
+          // Update existing classification to 'total' category
+          return prev.map(c => 
+            c.accountName === accountName 
+              ? { ...c, suggestedCategory: 'total', isInflow: false } // totals are typically not inflow
+              : c
+          );
+        } else {
+          // Create new classification for this account
+          const newClassification: AccountClassification = {
+            accountName: accountName,
+            suggestedCategory: 'total',
+            confidence: 1.0, // High confidence since it's manual
+            isInflow: false, // totals are typically not inflow
+            alternativeCategories: [],
+            reasoning: 'Automatically set to total category based on manual type selection'
+          };
+          return [...prev, newClassification];
+        }
+      });
+    }
+    
+    // AUTO-SET CATEGORY: When type is 'section_header', automatically set category to 'section'
+    if (type === 'section_header' && accountName) {
+      setAccountClassifications(prev => {
+        const existingIndex = prev.findIndex(c => c.accountName === accountName);
+        
+        if (existingIndex >= 0) {
+          // Update existing classification to 'section' category
+          return prev.map(c => 
+            c.accountName === accountName 
+              ? { ...c, suggestedCategory: 'section', isInflow: false } // sections are typically not inflow
+              : c
+          );
+        } else {
+          // Create new classification for this account
+          const newClassification: AccountClassification = {
+            accountName: accountName,
+            suggestedCategory: 'section',
+            confidence: 1.0, // High confidence since it's manual
+            isInflow: false, // sections are typically not inflow
+            alternativeCategories: [],
+            reasoning: 'Automatically set to section category based on manual type selection'
+          };
+          return [...prev, newClassification];
+        }
+      });
     }
   };
 
