@@ -18,19 +18,48 @@ export async function GET(
       );
     }
 
-    // Read the temporarily stored file
-    const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
-    const filePath = path.join(uploadDir, `${session}.xlsx`);
-    
+    // Try to read from file system first, then from memory cache
     let buffer: Buffer;
+    
     try {
+      // Try file system first (local development)
+      const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
+      const filePath = path.join(uploadDir, `${session}.xlsx`);
       buffer = await readFile(filePath);
-    } catch (error) {
-      console.error('Error reading file:', error);
-      return NextResponse.json(
-        { error: "Upload session not found or expired" },
-        { status: 404 }
-      );
+      console.log(`📁 File read from disk: ${filePath}`);
+    } catch (fileError) {
+      console.log('📁 File not found on disk, checking memory cache...');
+      
+      // Fallback to memory cache (serverless environment)
+      if (global.fileCache && global.fileCache.has(session)) {
+        const cached = global.fileCache.get(session);
+        
+        if (!cached) {
+          return NextResponse.json(
+            { error: "Upload session not found" },
+            { status: 404 }
+          );
+        }
+        
+        // Check if cache is expired (30 minutes)
+        const isExpired = Date.now() - cached.timestamp > 30 * 60 * 1000;
+        if (isExpired) {
+          global.fileCache.delete(session);
+          return NextResponse.json(
+            { error: "Upload session expired" },
+            { status: 404 }
+          );
+        }
+        
+        buffer = cached.buffer;
+        console.log(`💾 File read from memory cache: ${session}`);
+      } else {
+        console.error('Error: Upload session not found in file system or memory cache');
+        return NextResponse.json(
+          { error: "Upload session not found or expired" },
+          { status: 404 }
+        );
+      }
     }
 
     // Parse Excel file with formatting preserved (matching the working mapper)

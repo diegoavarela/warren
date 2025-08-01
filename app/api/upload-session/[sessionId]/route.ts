@@ -16,28 +16,57 @@ export async function GET(
       );
     }
 
-    const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
-    const filePath = path.join(uploadDir, `${sessionId}.xlsx`);
+    // Try to read from file system first, then from memory cache
+    let fileBuffer: Buffer;
     
     try {
-      // Read the file from temporary storage
-      const fileBuffer = await readFile(filePath);
+      // Try file system first (local development)
+      const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
+      const filePath = path.join(uploadDir, `${sessionId}.xlsx`);
+      fileBuffer = await readFile(filePath);
+      console.log(`📁 File read from disk: ${filePath}`);
+    } catch (fileError) {
+      console.log('📁 File not found on disk, checking memory cache...');
       
-      // Convert to base64 for consistency with existing code
-      const base64Data = fileBuffer.toString('base64');
-      
-      return NextResponse.json({
-        success: true,
-        fileData: base64Data
-      });
-      
-    } catch (error) {
-      console.error('Error reading file:', error);
-      return NextResponse.json(
-        { error: "File not found or expired" },
-        { status: 404 }
-      );
+      // Fallback to memory cache (serverless environment)
+      if (global.fileCache && global.fileCache.has(sessionId)) {
+        const cached = global.fileCache.get(sessionId);
+        
+        if (!cached) {
+          return NextResponse.json(
+            { error: "Upload session not found" },
+            { status: 404 }
+          );
+        }
+        
+        // Check if cache is expired (30 minutes)
+        const isExpired = Date.now() - cached.timestamp > 30 * 60 * 1000;
+        if (isExpired) {
+          global.fileCache.delete(sessionId);
+          return NextResponse.json(
+            { error: "Upload session expired" },
+            { status: 404 }
+          );
+        }
+        
+        fileBuffer = cached.buffer;
+        console.log(`💾 File read from memory cache: ${sessionId}`);
+      } else {
+        console.error('Error: Upload session not found in file system or memory cache');
+        return NextResponse.json(
+          { error: "File not found or expired" },
+          { status: 404 }
+        );
+      }
     }
+    
+    // Convert to base64 for consistency with existing code
+    const base64Data = fileBuffer.toString('base64');
+    
+    return NextResponse.json({
+      success: true,
+      fileData: base64Data
+    });
 
   } catch (error) {
     console.error("Session retrieval error:", error);

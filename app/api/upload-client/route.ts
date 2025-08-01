@@ -107,24 +107,35 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Save file to disk for period identification page
-    // In development, we can write to filesystem
+    // Save file buffer in-memory cache for serverless compatibility
     try {
+      // Try file system first (works in local development)
       const { writeFileSync, mkdirSync } = await import('fs');
       const { join } = await import('path');
       
-      // Ensure upload directory exists
       const uploadDir = join(process.cwd(), 'tmp', 'uploads');
       mkdirSync(uploadDir, { recursive: true });
       
-      // Save file with session ID as filename
       const filePath = join(uploadDir, `${uploadSession}.xlsx`);
       writeFileSync(filePath, buffer);
       
-      console.log(`📁 File saved: ${filePath}`);
+      console.log(`📁 File saved to disk: ${filePath}`);
     } catch (saveError) {
-      console.error('⚠️ Failed to save file to disk:', saveError);
-      // Continue anyway - file is still processed in memory
+      console.log('⚠️ File system not available (serverless environment), using in-memory storage');
+      
+      // Fallback: Store in global memory cache for serverless environments
+      if (!global.fileCache) {
+        global.fileCache = new Map();
+      }
+      
+      // Store buffer with expiration (30 minutes)
+      global.fileCache.set(uploadSession, {
+        buffer: buffer,
+        timestamp: Date.now(),
+        filename: file.name
+      });
+      
+      console.log(`💾 File cached in memory: ${uploadSession}`);
     }
     
     console.log(`Processing file: ${file.name} (${file.size} bytes)`);
