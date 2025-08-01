@@ -1,0 +1,25 @@
+{
+  "companyId": "b1dea3ff-cac4-45cc-be78-5488e612c2a8",
+  "companyName": "VTEX Solutions SRL",
+  "totalPeriods": 5,
+  "availablePeriods": [
+    "2025-01-01 to 2025-01-31",
+    "2025-02-01 to 2025-02-28",
+    "2025-03-01 to 2025-03-31",
+    "2025-04-01 to 2025-04-30",
+    "2025-05-01 to 2025-05-31"
+  ],
+  "dataFiles": [
+    "b1dea3ff-2025-01.json",
+    "b1dea3ff-2025-02.json",
+    "b1dea3ff-2025-03.json",
+    "b1dea3ff-2025-04.json",
+    "b1dea3ff-2025-05.json"
+  ],
+  "lastUpdated": "2025-07-30T18:20:04.543Z",
+  "instructions": {
+    "usage": "Each period file contains raw financial data for that specific period",
+    "note": "No pre-calculated metrics - AI should calculate everything on-demand",
+    "structure": "lineItems array contains all transactions for the period"
+  }
+}

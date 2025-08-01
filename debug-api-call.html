@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug API Call</title>
+</head>
+<body>
+    <h1>Debug Financial Statements API</h1>
+    <p>Open browser console to see results</p>
+    
+    <script>
+        async function testAPI() {
+            const companyId = 'b1dea3ff-cac4-45cc-be78-5488e612c2a8';
+            const url = `http://localhost:4000/api/v1/companies/${companyId}/statements`;
+            
+            console.log('🔍 Testing API call to:', url);
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include' // Include cookies for auth
+                });
+                
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                const data = await response.json();
+                console.log('📄 Response data:', data);
+                
+                if (data.success && data.data?.statements) {
+                    const statements = data.data.statements;
+                    console.log(`✅ Found ${statements.length} statements:`);
+                    
+                    statements.forEach((stmt, idx) => {
+                        console.log(`${idx + 1}. Type: ${stmt.statementType}, Period: ${stmt.periodStart} to ${stmt.periodEnd}`);
+                    });
+                    
+                    // Test P&L filtering
+                    const pnlData = statements.filter(stmt => 
+                        stmt.statementType === 'profit_loss' || stmt.statementType === 'pnl' || !stmt.statementType
+                    );
+                    console.log(`🎯 P&L statements after filtering: ${pnlData.length}`);
+                    
+                    // Test formatPeriodRange
+                    if (pnlData.length > 0) {
+                        const sortedStatements = [...pnlData].sort((a, b) => 
+                            new Date(a.periodStart || a.periodEnd).getTime() - new Date(b.periodStart || b.periodEnd).getTime()
+                        );
+                        
+                        const firstPeriod = sortedStatements[0];
+                        const lastPeriod = sortedStatements[sortedStatements.length - 1];
+                        
+                        console.log('📅 First period:', firstPeriod.periodStart, firstPeriod.periodEnd);
+                        console.log('📅 Last period:', lastPeriod.periodStart, lastPeriod.periodEnd);
+                        
+                        const startDate = new Date(firstPeriod.periodStart || firstPeriod.periodEnd);
+                        const endDate = new Date(lastPeriod.periodEnd);
+                        
+                        const formatOptions = { month: 'short', year: 'numeric' };
+                        const periodRange = `${startDate.toLocaleDateString('es-MX', formatOptions)} - ${endDate.toLocaleDateString('es-MX', formatOptions)}`;
+                        
+                        console.log('📅 Formatted period range:', periodRange);
+                    }
+                } else {
+                    console.log('❌ No statements found or API error');
+                }
+                
+            } catch (error) {
+                console.error('💥 API call failed:', error);
+            }
+        }
+        
+        // Run test when page loads
+        testAPI();
+    </script>
+</body>
+</html>

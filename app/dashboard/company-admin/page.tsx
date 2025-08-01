@@ -21,7 +21,8 @@ import {
   XCircleIcon,
   UsersIcon,
   BanknotesIcon,
-  TrashIcon
+  TrashIcon,
+  ChatBubbleBottomCenterTextIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
 import { validatePeriods, getPeriodValidationStatus } from '@/lib/utils/period-validation';
@@ -218,10 +219,16 @@ function CompanyAdminDashboard() {
     try {
       const response = await fetch(`/api/v1/companies/${companyId}/statements`);
       console.log('Response status:', response.status);
+      console.log('Response URL:', response.url);
       
       if (response.ok) {
         const data = await response.json();
         console.log('Financial statements data:', data);
+        console.log('Data structure check:');
+        console.log('- data.success:', data.success);
+        console.log('- data.data:', data.data);
+        console.log('- data.data?.statements:', data.data?.statements);
+        console.log('- Array.isArray(data.data?.statements):', Array.isArray(data.data?.statements));
         
         if (data.success && data.data?.statements && Array.isArray(data.data.statements)) {
           // Sort statements by periodEnd in descending order (newest first)
@@ -259,12 +266,24 @@ function CompanyAdminDashboard() {
         } else {
           console.warn('Unexpected data structure:', data);
           console.log('data.data structure:', data.data);
+          console.log('typeof data.data:', typeof data.data);
+          console.log('data keys:', Object.keys(data));
+          if (data.data) {
+            console.log('data.data keys:', Object.keys(data.data));
+          }
           setPnlStatements([]);
           setCashFlowStatements([]);
         }
       } else {
-        const errorData = await response.json();
-        console.error('API error:', errorData);
+        console.error('API response not OK. Status:', response.status, response.statusText);
+        try {
+          const errorData = await response.json();
+          console.error('API error data:', errorData);
+        } catch (e) {
+          console.error('Could not parse error response as JSON');
+          const errorText = await response.text();
+          console.error('Error response text:', errorText);
+        }
       }
     } catch (error) {
       console.error('Error fetching financial statements:', error);
@@ -294,7 +313,7 @@ function CompanyAdminDashboard() {
     }
   };
 
-  const formatPeriodRange = (template: any) => {
+  const formatTemplatePeriodRange = (template: any) => {
     if (!template.periodStart || !template.periodEnd) return '';
     
     try {
@@ -457,8 +476,116 @@ function CompanyAdminDashboard() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* P&L Column */}
+                <div className="space-y-6">
+                  {/* AI Financial Chat Card - Compact with aligned cards */}
+                  <Card className="border-2 border-purple-100 bg-gradient-to-r from-purple-50 to-indigo-50">
+                    <CardBody className="p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <ChatBubbleBottomCenterTextIcon className="w-6 h-6 text-purple-600 mr-2" />
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900">
+                              {locale?.startsWith('es') ? 'Chat Financiero con IA' : 'AI Financial Chat'}
+                            </h3>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {formatPeriodRange(pnlStatements.concat(cashFlowStatements), locale) || 
+                                (locale?.startsWith('es') ? 'Sin datos cargados' : 'No data loaded')}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Right-aligned P&L and CF Cards + Periods + GPT Badge */}
+                        <div className="flex items-center space-x-3">
+                          {/* Periods Available */}
+                          {(pnlStatements.length > 0 || cashFlowStatements.length > 0) && (
+                            <div className="bg-white px-3 py-1 rounded-lg border border-purple-200">
+                              <div className="text-xs text-gray-600">
+                                <div className="font-medium text-purple-600">
+                                  {pnlStatements.length + cashFlowStatements.length} {locale?.startsWith('es') ? 'períodos' : 'periods'}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {locale?.startsWith('es') ? 'disponibles' : 'available'}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* P&L Card */}
+                          <div className={`bg-white px-3 py-2 rounded-lg border-2 transition-colors ${
+                            pnlStatements.length > 0 ? 'border-blue-200 bg-blue-50/50' : 'border-gray-200'
+                          }`}>
+                            <div className="flex items-center space-x-2">
+                              <ChartBarIcon className={`w-4 h-4 ${
+                                pnlStatements.length > 0 ? 'text-blue-600' : 'text-gray-400'
+                              }`} />
+                              <span className="font-semibold text-sm text-gray-900">P&L</span>
+                              <span className={`text-sm font-bold ${
+                                pnlStatements.length > 0 ? 'text-green-600' : 'text-gray-400'
+                              }`}>
+                                {pnlStatements.length > 0 ? '✓' : '-'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Cash Flow Card */}
+                          <div className={`bg-white px-3 py-2 rounded-lg border-2 transition-colors ${
+                            cashFlowStatements.length > 0 ? 'border-green-200 bg-green-50/50' : 'border-gray-200'
+                          }`}>
+                            <div className="flex items-center space-x-2">
+                              <BanknotesIcon className={`w-4 h-4 ${
+                                cashFlowStatements.length > 0 ? 'text-green-600' : 'text-gray-400'
+                              }`} />
+                              <span className="font-semibold text-sm text-gray-900">CF</span>
+                              <span className={`text-sm font-bold ${
+                                cashFlowStatements.length > 0 ? 'text-green-600' : 'text-gray-400'
+                              }`}>
+                                {cashFlowStatements.length > 0 ? '✓' : '-'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* GPT Badge */}
+                          <span className={`text-sm px-3 py-2 rounded-lg font-medium ${(pnlStatements.length > 0 || cashFlowStatements.length > 0) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            GPT-4o
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 items-center">
+                        <Button
+                          variant="primary"
+                          onClick={() => {
+                            sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                            router.push('/dashboard/company-admin/financial-chat');
+                          }}
+                          leftIcon={<ChatBubbleBottomCenterTextIcon className="w-4 h-4" />}
+                          className="bg-purple-600 hover:bg-purple-700 px-4 py-2"
+                          disabled={pnlStatements.length === 0 && cashFlowStatements.length === 0}
+                        >
+                          {locale?.startsWith('es') ? 'Abrir Chat IA' : 'Open AI Chat'}
+                        </Button>
+                        <div className="flex-1">
+                          {(pnlStatements.length === 0 && cashFlowStatements.length === 0) ? (
+                            <p className="text-xs text-gray-500">
+                              {locale?.startsWith('es') 
+                                ? 'Sube datos financieros para habilitar el chat'
+                                : 'Upload financial data to enable chat'}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-gray-600">
+                              {locale?.startsWith('es') 
+                                ? 'Pregunta sobre ingresos, gastos, tendencias y análisis'
+                                : 'Ask about revenue, expenses, trends and analysis'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  {/* P&L and Cash Flow Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* P&L Column */}
                   <div className="space-y-4">
                     {/* P&L Dashboard Card */}
                     <Card className="border-2 border-blue-100">
@@ -544,7 +671,7 @@ function CompanyAdminDashboard() {
                                 <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
                                   <span>{locale?.startsWith('es') ? 'Creada:' : 'Created:'} {new Date(template.createdAt).toLocaleDateString(locale || 'es-MX', { month: 'short', day: 'numeric' })}</span>
                                   {template.periodStart && template.periodEnd && (
-                                    <span>{locale?.startsWith('es') ? 'Período:' : 'Period:'} {formatPeriodRange(template)}</span>
+                                    <span>{locale?.startsWith('es') ? 'Período:' : 'Period:'} {formatTemplatePeriodRange(template)}</span>
                                   )}
                                 </div>
                               </div>
@@ -658,7 +785,7 @@ function CompanyAdminDashboard() {
                                 <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
                                   <span>{locale?.startsWith('es') ? 'Creada:' : 'Created:'} {new Date(template.createdAt).toLocaleDateString(locale || 'es-MX', { month: 'short', day: 'numeric' })}</span>
                                   {template.periodStart && template.periodEnd && (
-                                    <span>{locale?.startsWith('es') ? 'Período:' : 'Period:'} {formatPeriodRange(template)}</span>
+                                    <span>{locale?.startsWith('es') ? 'Período:' : 'Period:'} {formatTemplatePeriodRange(template)}</span>
                                   )}
                                 </div>
                               </div>
@@ -683,8 +810,9 @@ function CompanyAdminDashboard() {
                         </CardBody>
                       </Card>
                     )}
+                    </div>
                   </div>
-                  </div>
+                </div>
                 </div>
               )}
             </div>

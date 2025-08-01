@@ -239,22 +239,24 @@ function OrgAdminDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <CardTitle>Companies ({companies.length})</CardTitle>
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search companies..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+                <CardTitle className="flex items-center gap-2 whitespace-nowrap">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                  <span>{locale?.startsWith('es') ? 'Empresas' : 'Companies'} ({companies.length})</span>
+                </CardTitle>
+                {/* Search Bar - Simple */}
+                <input
+                  type="text"
+                  placeholder={locale?.startsWith('es') ? '🔍 Buscar empresas...' : '🔍 Search companies...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="px-3 py-2 w-64 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
-              <Button variant="primary" onClick={handleCreateCompany} className="whitespace-nowrap inline-flex items-center">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Company
+              <Button variant="primary" onClick={handleCreateCompany} className="whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span>{locale?.startsWith('es') ? 'Crear Empresa' : 'Create Company'}</span>
+                </div>
               </Button>
             </div>
           </CardHeader>
@@ -292,7 +294,7 @@ function OrgAdminDashboard() {
                     onClick={() => handleSelectCompany(company.id)}
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Building2 className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
@@ -367,10 +369,12 @@ function OrgAdminDashboard() {
                 <Button 
                   variant="primary" 
                   onClick={() => router.push('/dashboard/org-admin/users/invite')}
-                  className="whitespace-nowrap inline-flex items-center"
+                  className="whitespace-nowrap"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  {locale?.startsWith('es') ? 'Invitar Usuario' : 'Invite User'}
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span>{locale?.startsWith('es') ? 'Invitar Usuario' : 'Invite User'}</span>
+                  </div>
                 </Button>
               </div>
             </div>
@@ -465,10 +469,12 @@ function OrgAdminDashboard() {
               <Button 
                 variant="primary" 
                 onClick={() => router.push('/dashboard/org-admin/subcategory-templates')}
-                className="whitespace-nowrap inline-flex items-center"
+                className="whitespace-nowrap"
               >
-                <Settings className="mr-2 h-4 w-4" />
-                {locale?.startsWith('es') ? 'Gestionar Plantillas' : 'Manage Templates'}
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>{locale?.startsWith('es') ? 'Gestionar Plantillas' : 'Manage Templates'}</span>
+                </div>
               </Button>
             </div>
           </CardHeader>

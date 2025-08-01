@@ -107,10 +107,27 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // In serverless, we can't write to filesystem
-    // Instead, we'll store the file data in memory/database or use alternative storage
-    // For now, let's skip file storage and just process in memory
-    console.log(`Processing file in memory: ${file.name} (${file.size} bytes)`);
+    // Save file to disk for period identification page
+    // In development, we can write to filesystem
+    try {
+      const { writeFileSync, mkdirSync } = await import('fs');
+      const { join } = await import('path');
+      
+      // Ensure upload directory exists
+      const uploadDir = join(process.cwd(), 'tmp', 'uploads');
+      mkdirSync(uploadDir, { recursive: true });
+      
+      // Save file with session ID as filename
+      const filePath = join(uploadDir, `${uploadSession}.xlsx`);
+      writeFileSync(filePath, buffer);
+      
+      console.log(`📁 File saved: ${filePath}`);
+    } catch (saveError) {
+      console.error('⚠️ Failed to save file to disk:', saveError);
+      // Continue anyway - file is still processed in memory
+    }
+    
+    console.log(`Processing file: ${file.name} (${file.size} bytes)`);
 
     // Create metadata response - no file data included
     const metadata: ExcelFileMetadata = {

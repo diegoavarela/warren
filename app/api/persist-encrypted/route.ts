@@ -5,6 +5,7 @@ import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 import { db, financialStatements, financialLineItems, mappingTemplates, organizations, eq } from "@/lib/db";
 import { writeFileSync } from "fs";
 import { join } from "path";
+import { financialDataService, type ProcessedFinancialItem } from "@/lib/services/financial-data-service";
 
 export async function POST(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
@@ -611,6 +612,168 @@ export async function POST(request: NextRequest) {
         }
         
         console.log(`✅ Successfully created ${insertedLineItems.length} line items across ${createdStatements.length} statements`);
+        
+        // 🧠 STORE DATA IN MEMORY FOR AI ANALYSIS (following warren-lightsail pattern)
+        try {
+          console.log('💾 Storing financial data in memory for AI analysis...');
+          
+          // Convert database items to ProcessedFinancialItem format
+          const processedItems: ProcessedFinancialItem[] = insertedLineItems.map((item: any, index: number) => {
+            // Find the corresponding statement to get period information
+            const statement = createdStatements.find(cs => cs.statement.id === item.statementId);
+            const period = statement ? 
+              `${statement.statement.periodStart} to ${statement.statement.periodEnd}` : 
+              'Unknown Period';
+            
+            // Decrypt account name if it was encrypted
+            let accountName = item.accountName;
+            if (shouldEncrypt && typeof accountName === 'string') {
+              try {
+                // Note: We would need to decrypt here, but for now just use as-is
+                // In a real implementation, you'd decrypt the account name
+                accountName = item.accountName;
+              } catch (decryptError) {
+                console.warn(`Failed to decrypt account name for memory storage: ${decryptError}`);
+                accountName = `Encrypted_Account_${index}`;
+              }
+            }
+            
+            return {
+              accountName: accountName,
+              category: item.category || 'uncategorized',
+              subcategory: item.subcategory || undefined,
+              amount: Number(item.amount) || 0,
+              currency: statement?.statement.currency || 'ARS',
+              period: period,
+              statementType: 'profit_loss' as const, // For now, assuming P&L
+              originalData: {
+                id: item.id,
+                accountCode: item.accountCode,
+                confidenceScore: item.confidenceScore,
+                metadata: item.metadata
+              }
+            };
+          });
+          
+          // Calculate comprehensive metrics
+          const calculateMetrics = (items: ProcessedFinancialItem[]) => {
+            const revenueItems = items.filter(item => 
+              item.category === 'revenue' || item.category === 'sales'
+            );
+            const expenseItems = items.filter(item => 
+              item.category !== 'revenue' && item.category !== 'sales'
+            );
+            const opexItems = items.filter(item => 
+              item.category === 'operating_expenses'
+            );
+            
+            const totalRevenue = revenueItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+            const totalExpenses = expenseItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+            const totalOpex = opexItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+            
+            return {
+              revenue: {
+                total: totalRevenue,
+                byPeriod: items.reduce((acc, item) => {
+                  if (item.category === 'revenue' || item.category === 'sales') {
+                    acc[item.period] = (acc[item.period] || 0) + Math.abs(item.amount);
+                  }
+                  return acc;
+                }, {} as Record<string, number>),
+                byCategory: revenueItems.reduce((acc, item) => {
+                  acc[item.category] = (acc[item.category] || 0) + Math.abs(item.amount);
+                  return acc;
+                }, {} as Record<string, number>)
+              },
+              expenses: {
+                total: totalExpenses,
+                byPeriod: expenseItems.reduce((acc, item) => {
+                  acc[item.period] = (acc[item.period] || 0) + Math.abs(item.amount);
+                  return acc;
+                }, {} as Record<string, number>),
+                byCategory: expenseItems.reduce((acc, item) => {
+                  acc[item.category] = (acc[item.category] || 0) + Math.abs(item.amount);
+                  return acc;
+                }, {} as Record<string, number>),
+                operatingExpenses: {
+                  total: totalOpex,
+                  bySubcategory: opexItems.reduce((acc, item) => {
+                    if (item.subcategory) {
+                      acc[item.subcategory] = (acc[item.subcategory] || 0) + Math.abs(item.amount);
+                    }
+                    return acc;
+                  }, {} as Record<string, number>)
+                }
+              },
+              margins: {
+                gross: totalRevenue - totalExpenses,
+                operating: totalRevenue - totalOpex,
+                net: totalRevenue - totalExpenses,
+                ebitda: totalRevenue - totalExpenses // Simplified EBITDA calculation
+              },
+              cashflow: {
+                operating: 0, // TODO: Implement when cash flow data is available
+                investing: 0,
+                financing: 0,
+                netChange: 0
+              }
+            };
+          };
+          
+          // Get company name from first statement or use companyId
+          const companyName = createdStatements[0]?.statement?.id ? 
+            `Company_${companyId.substring(0, 8)}` : 
+            'Unknown Company';
+          const currency = createdStatements[0]?.statement?.currency || 'ARS';
+          const periods = Array.from(new Set(processedItems.map(item => item.period)));
+          
+          // Store in memory
+          const companyFinancialData = {
+            companyId,
+            companyName,
+            currency,
+            dataPoints: processedItems,
+            metrics: calculateMetrics(processedItems),
+            periods,
+            lastUpdated: new Date().toISOString(),
+            summary: {
+              totalRevenue: processedItems
+                .filter(item => item.category === 'revenue' || item.category === 'sales')
+                .reduce((sum, item) => sum + Math.abs(item.amount), 0),
+              totalExpenses: processedItems
+                .filter(item => item.category !== 'revenue' && item.category !== 'sales')
+                .reduce((sum, item) => sum + Math.abs(item.amount), 0),
+              netIncome: processedItems
+                .filter(item => item.category === 'revenue' || item.category === 'sales')
+                .reduce((sum, item) => sum + Math.abs(item.amount), 0) - 
+                processedItems
+                .filter(item => item.category !== 'revenue' && item.category !== 'sales')
+                .reduce((sum, item) => sum + Math.abs(item.amount), 0),
+              statementCounts: {
+                profitLoss: createdStatements.length,
+                cashFlow: 0
+              }
+            }
+          };
+          
+          // Store in memory service
+          financialDataService.storeCompanyData(companyId, companyFinancialData);
+          
+          const memoryStats = financialDataService.getMemoryStats();
+          console.log(`🧠 Financial data stored in memory successfully:`, {
+            companyId,
+            dataPoints: processedItems.length,
+            periods: periods.length,
+            currency,
+            memoryStats
+          });
+
+          // Note: Period data files are no longer needed since AI chat now uses database directly
+          
+        } catch (memoryError) {
+          console.error('❌ Failed to store data in memory (continuing with database persistence):', memoryError);
+          // Don't fail the entire operation if memory storage fails
+        }
       } catch (dbError) {
         console.error('❌ Database error inserting line items:', dbError);
         

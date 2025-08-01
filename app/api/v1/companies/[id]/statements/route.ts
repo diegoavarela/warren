@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, financialStatements, financialLineItems, companies, eq, desc, and, sql } from "@/lib/db";
+import { db } from "@/lib/db";
+import { financialStatements, financialLineItems, companies } from "@/lib/db/actual-schema";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
 import { decrypt, decryptObject, encrypt, encryptObject } from "@/lib/encryption";
 import { v4 as uuidv4 } from "uuid";

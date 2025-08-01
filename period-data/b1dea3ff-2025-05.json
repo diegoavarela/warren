@@ -1,0 +1,183 @@
+{
+  "period": "2025-05-01 to 2025-05-31",
+  "companyId": "b1dea3ff-cac4-45cc-be78-5488e612c2a8",
+  "companyName": "VTEX Solutions SRL",
+  "currency": "ARS",
+  "lineItems": [
+    {
+      "accountName": "SRL Services",
+      "category": "revenue",
+      "subcategory": "services",
+      "amount": 56708,
+      "accountCode": "ROW_4"
+    },
+    {
+      "accountName": "Personnel Salaries - (CoR)",
+      "category": "cogs",
+      "subcategory": "salaries",
+      "amount": 13752,
+      "accountCode": "ROW_10"
+    },
+    {
+      "accountName": "Payroll Taxes (CoR)",
+      "category": "cogs",
+      "subcategory": "salaries",
+      "amount": 3430,
+      "accountCode": "ROW_11"
+    },
+    {
+      "accountName": "Contract Services (CoR)",
+      "category": "cogs",
+      "subcategory": "salaries",
+      "amount": 7663,
+      "accountCode": "ROW_12"
+    },
+    {
+      "accountName": "Health Coverage (CoR)",
+      "category": "cogs",
+      "subcategory": "employee_benefits",
+      "amount": 684,
+      "accountCode": "ROW_13"
+    },
+    {
+      "accountName": "Total Cost of Goods Sold",
+      "category": "cogs",
+      "subcategory": "materials",
+      "amount": 25529,
+      "accountCode": "ROW_17"
+    },
+    {
+      "accountName": "Personnel Operating Salaries",
+      "category": "operating_expenses",
+      "subcategory": "salaries",
+      "amount": 9218,
+      "accountCode": "ROW_22"
+    },
+    {
+      "accountName": "Payroll Operating Taxes",
+      "category": "operating_expenses",
+      "subcategory": "salaries",
+      "amount": 1290,
+      "accountCode": "ROW_23"
+    },
+    {
+      "accountName": "Health Coverage - Non-Billable Labor",
+      "category": "operating_expenses",
+      "subcategory": "salaries",
+      "amount": 129,
+      "accountCode": "ROW_24"
+    },
+    {
+      "accountName": "Personnel - benefits",
+      "category": "operating_expenses",
+      "subcategory": "salaries",
+      "amount": 162,
+      "accountCode": "ROW_25"
+    },
+    {
+      "accountName": "Contract Operating Services",
+      "category": "operating_expenses",
+      "subcategory": "salaries",
+      "amount": 5723,
+      "accountCode": "ROW_26"
+    },
+    {
+      "accountName": "Meals and Entertainment",
+      "category": "operating_expenses",
+      "subcategory": "meals_and_entertainment",
+      "amount": 394,
+      "accountCode": "ROW_30"
+    },
+    {
+      "accountName": "Travel, Transfers and Accommodation",
+      "category": "operating_expenses",
+      "subcategory": "travel_accommodation",
+      "amount": 278,
+      "accountCode": "ROW_31"
+    },
+    {
+      "accountName": "Bank Fees",
+      "category": "operating_expenses",
+      "subcategory": "bank_fees",
+      "amount": 595,
+      "accountCode": "ROW_32"
+    },
+    {
+      "accountName": "Computer and Equipment",
+      "category": "operating_expenses",
+      "subcategory": "office_supplies",
+      "amount": 279,
+      "accountCode": "ROW_33"
+    },
+    {
+      "accountName": "Dues and Subscriptions",
+      "category": "operating_expenses",
+      "subcategory": "technology",
+      "amount": 372,
+      "accountCode": "ROW_34"
+    },
+    {
+      "accountName": "Cell Phones",
+      "category": "operating_expenses",
+      "subcategory": "utilities",
+      "amount": 14,
+      "accountCode": "ROW_40"
+    },
+    {
+      "accountName": "Prof. Services- Accounting",
+      "category": "operating_expenses",
+      "subcategory": "professional_services",
+      "amount": 376,
+      "accountCode": "ROW_42"
+    },
+    {
+      "accountName": "Prof. Services- Financial Advisor",
+      "category": "operating_expenses",
+      "subcategory": "salaries",
+      "amount": 35,
+      "accountCode": "ROW_43"
+    },
+    {
+      "accountName": "Prof. Services- Payroll",
+      "category": "operating_expenses",
+      "subcategory": "professional_services",
+      "amount": 432,
+      "accountCode": "ROW_47"
+    },
+    {
+      "accountName": "Software & Subscriptions",
+      "category": "operating_expenses",
+      "subcategory": "technology",
+      "amount": 1365,
+      "accountCode": "ROW_48"
+    },
+    {
+      "accountName": "Transfers from DL",
+      "category": "other_income_expense",
+      "subcategory": "other_income",
+      "amount": 10242,
+      "accountCode": "ROW_60"
+    },
+    {
+      "accountName": "Payments to DL",
+      "category": "other_income_expense",
+      "subcategory": "other_expense",
+      "amount": 10861,
+      "accountCode": "ROW_61"
+    },
+    {
+      "accountName": "Gross Income Tax (IIBB)",
+      "category": "taxes",
+      "subcategory": "other_taxes",
+      "amount": 630,
+      "accountCode": "ROW_75"
+    }
+  ],
+  "metadata": {
+    "totalLineItems": 24,
+    "statementType": "profit_loss",
+    "periodStart": "2025-05-01",
+    "periodEnd": "2025-05-31",
+    "lastUpdated": "2025-07-30T18:20:04.541Z"
+  }
+}

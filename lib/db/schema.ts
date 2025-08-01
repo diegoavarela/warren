@@ -176,6 +176,12 @@ export const mappingTemplates = pgTable("mapping_templates", {
   columnMappings: jsonb("column_mappings").notNull(), // column index -> field mapping
   validationRules: jsonb("validation_rules"), // custom validation rules
   locale: varchar("locale", { length: 5 }),
+  currency: varchar("currency", { length: 3 }), // detected currency
+  units: varchar("units", { length: 20 }), // units, thousands, millions
+  periodStart: date("period_start"), // detected period start
+  periodEnd: date("period_end"), // detected period end
+  periodType: varchar("period_type", { length: 20 }), // monthly, quarterly, yearly
+  detectedPeriods: jsonb("detected_periods"), // array of detected periods
   isDefault: boolean("is_default").default(false),
   usageCount: integer("usage_count").default(0),
   lastUsedAt: timestamp("last_used_at"),

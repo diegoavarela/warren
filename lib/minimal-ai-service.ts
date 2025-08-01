@@ -228,63 +228,19 @@ Use exact numbers from the data above. Be precise about periods and metrics.`;
         return data.slice(0, 6); // Default to first 6 months
       };
       
-      // Generic fallback using actual data
-      const chartType = getChartType(queryLower);
-      const metric = getMetric(queryLower, monthlyData);
-      const periodData = getPeriodData(queryLower, monthlyData);
-      
-      if (periodData.length > 0) {
-        const chartData = periodData.map(m => ({
-          label: m.month,
-          value: m[metric] || 0
-        }));
-        
-        const total = chartData.reduce((sum, d) => sum + d.value, 0);
-        const currency = summary.companyName ? 'ARS' : 'USD'; // Simplified currency detection
-        
-        // Generate period description
-        const periodDesc = queryLower.includes('q1') ? 'Q1' : 
-                          queryLower.includes('q2') ? 'Q2' : 
-                          queryLower.includes('ytd') ? 'YTD' : 
-                          'Recent';
-        
-        // Generate metric description with availability info
-        const hasGrossProfit = periodData.some((m: any) => m.grossProfit && m.grossProfit > 0);
-        const hasEBITDA = periodData.some((m: any) => m.ebitda && m.ebitda > 0);
-        const hasCOGS = periodData.some((m: any) => m.cogs && m.cogs > 0);
-        const hasOPEX = periodData.some((m: any) => m.opex && m.opex > 0);
-        
-        let metricDesc = '';
-        if (metric === 'cogs') {
-          metricDesc = hasCOGS ? 'COGS (Cost of Goods Sold)' : 'Total Expenses (COGS not available)';
-        } else if (metric === 'opex') {
-          metricDesc = hasOPEX ? 'OPEX (Operating Expenses)' : 'Total Expenses (OPEX not available)';
-        } else if (metric === 'grossProfit') {
-          metricDesc = hasGrossProfit ? 'Gross Profit' : 'Net Income (Gross Profit not available)';
-        } else if (metric === 'ebitda') {
-          metricDesc = hasEBITDA ? 'EBITDA' : 'Net Income (EBITDA not available)';
-        } else if (metric === 'expenses') {
-          metricDesc = 'Total Expenses';
-        } else if (metric === 'netIncome') {
-          metricDesc = 'Net Income';
-        } else {
-          metricDesc = 'Revenue';
-        }
-        
-        return {
-          message: `${periodDesc} ${metricDesc}: ${chartData.map(d => `${d.label}: ${d.value.toLocaleString()}`).join(', ')} ${currency}. Total: ${total.toLocaleString()} ${currency}`,
-          chartData: {
-            type: chartType,
-            title: `${periodDesc} ${metricDesc} ${chartType === 'pie' ? 'Distribution' : chartType === 'line' ? 'Trend' : chartType === 'area' ? 'Performance' : 'Analysis'}`,
-            data: chartData.filter(d => d.value > 0), // Only show non-zero values
-            currency: currency
-          },
-          confidence: 85
-        };
-      }
+      // Simple fallback with basic chart
+      const chartType = queryLower.includes('pie') ? 'pie' : 
+                       queryLower.includes('line') ? 'line' : 
+                       queryLower.includes('area') ? 'area' : 'bar';
 
       return {
-        message: 'I encountered an error processing your request. Please try rephrasing your question.',
+        message: 'I encountered an error processing your request. Please try a different query.',
+        chartData: {
+          type: chartType,
+          title: 'Error - No Data Available',
+          data: [{ label: 'No Data', value: 0 }],
+          currency: 'USD'
+        },
         confidence: 0
       };
     }

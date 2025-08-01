@@ -98,6 +98,20 @@ const CardBody = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
 
 CardBody.displayName = 'CardBody';
 
+const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={`p-6 ${className || ''}`}
+        {...props}
+      />
+    );
+  }
+);
+
+CardContent.displayName = 'CardContent';
+
 const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
     return (
@@ -140,4 +154,4 @@ const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLPara
 
 CardDescription.displayName = 'CardDescription';
 
-export { Card, CardHeader, CardBody, CardFooter, CardTitle, CardDescription, cardVariants };
+export { Card, CardHeader, CardBody, CardContent, CardFooter, CardTitle, CardDescription, cardVariants };

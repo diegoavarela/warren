@@ -175,7 +175,7 @@ export class FinancialDataAggregator {
         .orderBy(desc(financialStatements.periodEnd));
 
       console.log('🔍 AGGREGATOR DEBUG - Found statements:', statements.length);
-      statements.forEach(stmt => {
+      statements.forEach((stmt: any) => {
         console.log(`  - ${stmt.statementType}: ${stmt.periodStart} to ${stmt.periodEnd} (${stmt.currency})`);
       });
 

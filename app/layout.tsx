@@ -46,6 +46,11 @@ export default function RootLayout({
             </div>
           </AuthProvider>
         </LocaleProvider>
+        
+        {/* Development Authentication Helper - Only in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <script src="/dev-auth-helper.js" async />
+        )}
       </body>
     </html>
   );
