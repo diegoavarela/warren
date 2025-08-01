@@ -514,16 +514,13 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   };
 
   const formatValue = (value: number): string => {
-    // FIXED: When data is in thousands, numbers are already in display format
-    // No need to multiply by 1000 then divide by 1000 - just add the suffix
+    // Handle edge cases
+    if (!value || isNaN(value)) return '0';
+    
     let actualValue = value;
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
-    const originalConvertedValue = convertedValue; // Save for debugging
-    
-    // Currency conversion working correctly
     
     // Apply display units conversion
-    // Data is stored in thousands in the file
     let suffix = '';
     if (displayUnits === 'K') {
       // Show as-is with K suffix (data already in thousands)
@@ -537,22 +534,54 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       convertedValue = convertedValue * 1000;
     }
     
-    // Conversion flow verified working correctly
+    // Handle very large numbers by auto-scaling
+    if (displayUnits === 'normal' && Math.abs(convertedValue) >= 1000000000) {
+      // Auto-scale to billions
+      convertedValue = convertedValue / 1000000000;
+      suffix = 'B';
+    } else if (displayUnits === 'normal' && Math.abs(convertedValue) >= 1000000) {
+      // Auto-scale to millions
+      convertedValue = convertedValue / 1000000;
+      suffix = 'M';
+    } else if (displayUnits === 'K' && Math.abs(convertedValue) >= 1000000) {
+      // Auto-scale K to M
+      convertedValue = convertedValue / 1000;
+      suffix = 'M';
+    }
     
     // Get the currency symbol from our supported currencies
     const currencyInfo = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency);
     const currencySymbol = currencyInfo?.symbol || selectedCurrency;
     
-    // Format number without currency
+    // Format number with appropriate precision based on magnitude
+    const magnitude = Math.abs(convertedValue);
+    let maximumFractionDigits = 0;
+    let minimumFractionDigits = 0;
+    
+    if (magnitude < 10) {
+      maximumFractionDigits = 2;
+      minimumFractionDigits = 1;
+    } else if (magnitude < 100) {
+      maximumFractionDigits = 1;
+      minimumFractionDigits = 0;
+    } else {
+      maximumFractionDigits = 0;
+      minimumFractionDigits = 0;
+    }
+    
+    // Use compact notation for very large numbers
+    const useCompactNotation = magnitude >= 1000000;
+    
     const numberFormatter = new Intl.NumberFormat(locale, {
-      minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
-      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+      minimumFractionDigits,
+      maximumFractionDigits,
+      ...(useCompactNotation && { notation: 'compact', compactDisplay: 'short' })
     });
     
     const formattedNumber = numberFormatter.format(convertedValue);
     
-    // Add space before suffix if there is one
-    const suffixWithSpace = suffix ? ` ${suffix}` : '';
+    // Add space before suffix if there is one and not using compact notation
+    const suffixWithSpace = (suffix && !useCompactNotation) ? ` ${suffix}` : '';
     
     // Add space after currency symbol for multi-character currencies like ARS
     const currencyWithSpace = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
@@ -574,33 +603,43 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       return 'Unknown Category';
     }
     
-    // More aggressive pattern matching for database hashes/IDs
-    // Check for any string that looks like hex (contains only hex chars and is long)
-    if (/^[a-f0-9]{16,}$/i.test(categoryName)) {
+    const trimmedName = categoryName.trim();
+    
+    // More conservative database ID detection to avoid false positives with Spanish names
+    // Only flag as database ID if it's clearly a hash (all hex chars, long, no spaces)
+    const isDefinitelyHashId = /^[a-f0-9]{24,}$/i.test(trimmedName);
+    
+    // Check for UUID patterns (contains hyphens and is hex)
+    const isUUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(trimmedName);
+    
+    // Check for very long alphanumeric strings without meaningful words (likely database IDs)
+    const isLikelyId = trimmedName.length > 20 && 
+                       !/\s/.test(trimmedName) && 
+                       /^[a-zA-Z0-9_-]+$/.test(trimmedName) &&
+                       !/^(servicios|productos|gastos|ingresos|costos|ventas|administr|profesional|marketing|personal|salarios|impuestos|intereses|depreciacion|amortizacion)/i.test(trimmedName);
+    
+    if (isDefinitelyHashId || isUUID || isLikelyId) {
       return 'Professional Services';
     }
     
-    // Check for mixed hex patterns (common in database IDs)
-    if (/[a-f0-9]{12,}/i.test(categoryName)) {
-      return 'Professional Services';
-    }
-    
-    // Check for any string that's mostly numbers and letters without spaces (likely an ID)
-    if (categoryName.length > 15 && !/\s/.test(categoryName) && /^[a-zA-Z0-9]+$/.test(categoryName)) {
-      return 'Professional Services';
-    }
-    
-    const cleaned = categoryName
+    // Clean up common suffixes but preserve Spanish account names
+    const cleaned = trimmedName
       .replace(/\s*\(CoR\)$/i, '') // Remove (CoR) suffix
       .replace(/\s*\(cor\)$/i, '') // Remove (cor) suffix
+      .replace(/\s*\(total\)$/i, '') // Remove (total) suffix
       .trim();
     
-    // Handle specific cases
+    // Handle specific edge cases
     if (cleaned === '(cor)' || cleaned === 'cor' || cleaned === '') {
       return 'Contract Services';
     }
     
-    return cleaned || 'Professional Services';
+    // Preserve Spanish account names and improve readability
+    const formatted = cleaned
+      .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between camelCase
+      .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+    
+    return formatted || 'Professional Services';
   };
 
   const getCurrentPeriodDisplay = (): string => {

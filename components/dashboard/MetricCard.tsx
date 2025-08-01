@@ -75,6 +75,9 @@ export function MetricCard({
   const { t } = useTranslation(locale || contextLocale);
   const [isExpanded, setIsExpanded] = useState(false);
   const formatValue = (value: number): string => {
+    // Handle edge cases
+    if (!value || isNaN(value)) return '0';
+    
     switch (format) {
       case 'currency':
         let convertedValue = value;
@@ -85,27 +88,55 @@ export function MetricCard({
           convertedValue = currencyService.convertValue(value, originalCurrency, currency);
         }
         
-        // Data is stored in thousands in the file
+        // Data is stored in thousands in the file - handle display units with auto-scaling
         if (displayUnits === 'K') {
-          // Show as-is with K suffix (data already in thousands)
           suffix = 'K';
+          // Auto-scale K to M if too large
+          if (Math.abs(convertedValue) >= 1000000) {
+            convertedValue = convertedValue / 1000;
+            suffix = 'M';
+          }
         } else if (displayUnits === 'M') {
-          // Convert thousands to millions: divide by 1000
           convertedValue = convertedValue / 1000;
           suffix = 'M';
+          // Auto-scale M to B if too large
+          if (Math.abs(convertedValue) >= 1000) {
+            convertedValue = convertedValue / 1000;
+            suffix = 'B';
+          }
         } else if (displayUnits === 'normal') {
-          // Convert thousands to normal: multiply by 1000
           convertedValue = convertedValue * 1000;
+          // Auto-scale normal to M/B if too large
+          if (Math.abs(convertedValue) >= 1000000000) {
+            convertedValue = convertedValue / 1000000000;
+            suffix = 'B';
+          } else if (Math.abs(convertedValue) >= 1000000) {
+            convertedValue = convertedValue / 1000000;
+            suffix = 'M';
+          }
         }
         
-        const formatted = new Intl.NumberFormat('es-MX', {
-          style: 'currency',
-          currency,
-          minimumFractionDigits: displayUnits === 'normal' ? 0 : 1,
-          maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
-        }).format(convertedValue);
+        // Use compact notation for extremely large numbers
+        const useCompactNotation = Math.abs(convertedValue) >= 1000000;
         
-        return formatted + suffix;
+        if (useCompactNotation) {
+          const formatted = new Intl.NumberFormat(locale || 'es-MX', {
+            style: 'currency',
+            currency,
+            notation: 'compact',
+            compactDisplay: 'short',
+            maximumFractionDigits: 1
+          }).format(convertedValue);
+          return formatted;
+        } else {
+          const formatted = new Intl.NumberFormat(locale || 'es-MX', {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: suffix ? 1 : 0,
+            maximumFractionDigits: suffix ? 1 : 0
+          }).format(convertedValue);
+          return formatted + (suffix ? ` ${suffix}` : '');
+        }
       case 'percentage':
         return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
       default:
@@ -276,22 +307,21 @@ export function MetricCard({
         </div>
         
         {/* Title */}
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 leading-tight">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 leading-tight truncate" title={title}>
           {title}
         </h3>
         
         {/* Main Value - Flex grow to take available space */}
         <div className="flex-grow flex flex-col justify-center">
-          <div className="flex items-baseline mb-2">
-            <span className={`text-2xl font-bold text-gray-900`}>
+          <div className="flex items-baseline mb-2 overflow-hidden">
+            <span className={`text-2xl font-bold text-gray-900 truncate min-w-0 flex-1`} title={formatValue(currentValue)}>
               {formatValue(currentValue)}
             </span>
           </div>
 
-
           {/* Subtitle */}
           {subtitle && (
-            <p className="text-sm text-gray-600">{subtitle}</p>
+            <p className="text-sm text-gray-600 truncate" title={subtitle}>{subtitle}</p>
           )}
         </div>
         
