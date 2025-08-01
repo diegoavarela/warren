@@ -99,20 +99,48 @@ export interface UserContext {
 
 // Check if user has permission
 export function hasPermission(user: UserContext, permission: Permission, companyId?: string): boolean {
+  console.log('🔐 PERMISSION CHECK:', {
+    userId: user.id,
+    userRole: user.role,
+    permission,
+    companyId,
+    companyAccessCount: user.companyAccess?.length || 0
+  });
+
   // Check organization-level permissions
   const orgPermissions = ROLE_PERMISSIONS[user.role] || [];
-  if (orgPermissions.includes(permission)) {
+  const hasOrgPermission = orgPermissions.includes(permission);
+  
+  console.log('🔐 ORG PERMISSION CHECK:', {
+    userRole: user.role,
+    orgPermissions: orgPermissions.slice(0, 3), // Log first 3 for brevity
+    hasOrgPermission,
+    requestedPermission: permission
+  });
+  
+  if (hasOrgPermission) {
+    console.log('✅ PERMISSION GRANTED - Organization level access');
     return true;
   }
   
   // Check company-level permissions if companyId provided
   if (companyId && user.companyAccess) {
     const companyAccess = user.companyAccess.find(access => access.companyId === companyId);
-    if (companyAccess) {
-      return companyAccess.permissions.includes(permission);
+    
+    console.log('🔐 COMPANY PERMISSION CHECK:', {
+      companyId,
+      foundCompanyAccess: !!companyAccess,
+      companyPermissions: companyAccess?.permissions || [],
+      hasCompanyPermission: companyAccess?.permissions.includes(permission) || false
+    });
+    
+    if (companyAccess && companyAccess.permissions.includes(permission)) {
+      console.log('✅ PERMISSION GRANTED - Company level access');
+      return true;
     }
   }
   
+  console.log('❌ PERMISSION DENIED - No access found');
   return false;
 }
 
@@ -212,20 +240,51 @@ export async function withRBAC(
 ) {
   try {
     const token = request.cookies.get('auth-token')?.value;
+    const url = new URL(request.url);
+    
+    console.log('🔍 RBAC DEBUG - Token check:', {
+      hasToken: !!token,
+      tokenValue: token === 'mock-session-token' ? 'MOCK_TOKEN' : token?.substring(0, 10) + '...',
+      isDevelopment: process.env.NODE_ENV === 'development',
+      requestPath: url.pathname
+    });
 
     // Mock auth for development - temporarily bypass org check
     if (process.env.NODE_ENV === 'development' && token === 'mock-session-token') {
+      console.log('🔧 RBAC DEBUG - Using mock authentication for development');
+      
       const mockUser: UserContext = {
         id: 'clz1234567890abcdef', // CUID2 format
         email: 'platform@warren.com', 
         organizationId: 'clz1234567890abcdef', // Use same ID to avoid FK constraint
         role: ROLES.SUPER_ADMIN,
-        companyAccess: []
+        companyAccess: [
+          // Add explicit company access for the test company
+          {
+            companyId: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8', // VTEX Solutions SRL
+            role: ROLES.SUPER_ADMIN,
+            permissions: [
+              PERMISSIONS.VIEW_FINANCIAL_DATA,
+              PERMISSIONS.EDIT_FINANCIAL_DATA,
+              PERMISSIONS.MANAGE_COMPANY,
+              PERMISSIONS.UPLOAD_FILES
+            ]
+          }
+        ]
       };
+      
+      console.log('🔧 RBAC DEBUG - Mock user created:', {
+        userId: mockUser.id,
+        role: mockUser.role,
+        companyAccessCount: mockUser.companyAccess?.length || 0,
+        hasVTEXAccess: mockUser.companyAccess?.some(ca => ca.companyId === 'b1dea3ff-cac4-45cc-be78-5488e612c2a8') || false
+      });
+      
       return await handler(request, mockUser);
     }
 
     if (!token) {
+      console.log('🔒 RBAC DEBUG - No token provided, rejecting request');
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
