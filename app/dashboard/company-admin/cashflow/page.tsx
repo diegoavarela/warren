@@ -18,44 +18,50 @@ export default function CashFlowDashboardPage() {
   const [currentPeriod, setCurrentPeriod] = useState<string>('');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date());
   const [hybridParserData, setHybridParserData] = useState<any>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Fix hydration: Only run after component mounts
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Get company ID and hybrid parser data from session storage if available
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Get company ID
-      if (!selectedCompanyId) {
-        const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
-        if (storedCompanyId) {
-          setSelectedCompanyId(storedCompanyId);
-        }
-      }
-      
-      // Set current period to actual current month
-      if (!currentPeriod && locale) {
-        const currentDate = new Date();
-        const formattedPeriod = currentDate.toLocaleDateString(locale?.startsWith('es') ? 'es-MX' : 'en-US', { 
-          month: 'long', 
-          year: 'numeric' 
-        });
-        setCurrentPeriod(formattedPeriod);
-        setLastUpdate(new Date());
-      }
-      
-      // Check for hybrid parser result data
-      const hybridParserResult = sessionStorage.getItem('hybridParserResult');
-      if (hybridParserResult) {
-        try {
-          const parsedData = JSON.parse(hybridParserResult);
-          setHybridParserData(parsedData);
-          
-          // Clear the session storage after using it
-          sessionStorage.removeItem('hybridParserResult');
-        } catch (error) {
-          console.error('Error parsing hybrid parser result:', error);
-        }
+    if (!isMounted || typeof window === 'undefined') return;
+    
+    // Get company ID
+    if (!selectedCompanyId) {
+      const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
+      if (storedCompanyId) {
+        setSelectedCompanyId(storedCompanyId);
       }
     }
-  }, [selectedCompanyId, currentPeriod, locale]); // Add dependencies
+    
+    // Set current period to actual current month
+    if (!currentPeriod && locale) {
+      const currentDate = new Date();
+      const formattedPeriod = currentDate.toLocaleDateString(locale?.startsWith('es') ? 'es-MX' : 'en-US', { 
+        month: 'long', 
+        year: 'numeric' 
+      });
+      setCurrentPeriod(formattedPeriod);
+      setLastUpdate(new Date());
+    }
+    
+    // Check for hybrid parser result data
+    const hybridParserResult = sessionStorage.getItem('hybridParserResult');
+    if (hybridParserResult) {
+      try {
+        const parsedData = JSON.parse(hybridParserResult);
+        setHybridParserData(parsedData);
+        
+        // Clear the session storage after using it
+        sessionStorage.removeItem('hybridParserResult');
+      } catch (error) {
+        console.error('Error parsing hybrid parser result:', error);
+      }
+    }
+  }, [isMounted, selectedCompanyId, currentPeriod, locale]); // Add isMounted dependency
 
   return (
     <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.COMPANY_ADMIN]}>
@@ -93,8 +99,15 @@ export default function CashFlowDashboardPage() {
               </div>
             </div>
 
-            {/* Cash Flow Dashboard Component */}
-            <CashFlowDashboard companyId={selectedCompanyId} currency="$" locale={locale} />
+            {/* Cash Flow Dashboard Component - Only render after hydration */}
+            {isMounted ? (
+              <CashFlowDashboard companyId={selectedCompanyId} currency="$" locale={locale} />
+            ) : (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Loading dashboard...</span>
+              </div>
+            )}
           </div>
         </div>
       </AppLayout>

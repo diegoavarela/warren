@@ -150,7 +150,8 @@ export function CashFlowDashboard({
   // Note: Removed auto-detection logic since we default to 'M' for cash flow data
 
   useEffect(() => {
-    if (!companyId) return;
+    // Don't load data if companyId is empty string (initial state)
+    if (!companyId || companyId === '') return;
 
     const loadData = async () => {
       setLoading(true);
@@ -487,7 +488,8 @@ export function CashFlowDashboard({
     displayUnits: displayUnits
   };
 
-  if (loading || (!isDirectMode && !regularData)) {
+  // Show loading state if no companyId yet (waiting for hydration) or data loading
+  if (!companyId || companyId === '' || loading || (!isDirectMode && !regularData)) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
