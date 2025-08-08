@@ -57,6 +57,7 @@ export const companies = pgTable("companies", {
   locale: varchar("locale", { length: 5 }),
   baseCurrency: varchar("base_currency", { length: 3 }),
   fiscalYearStart: integer("fiscal_year_start"),
+  cashflowDirectMode: boolean("cashflow_direct_mode").notNull().default(false),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

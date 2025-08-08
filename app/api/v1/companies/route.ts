@@ -13,16 +13,26 @@ export async function GET(request: NextRequest) {
       let companyList;
       
       if (accessibleCompanyIds.includes('*')) {
-        // Super admin or org admin - can see all companies in their organization
-        console.log(`🔍 Fetching companies for admin user ${user.email} (org: ${user.organizationId})`);
+        // Super admin can see ALL companies, org admin can see companies in their organization
+        console.log(`🔍 Fetching companies for admin user ${user.email} (role: ${user.role}, org: ${user.organizationId})`);
         
-        companyList = await db
-          .select()
-          .from(companies)
-          .where(and(
-            eq(companies.organizationId, user.organizationId),
-            eq(companies.isActive, true)
-          ));
+        if (user.role === 'super_admin') {
+          // Platform admin sees ALL companies across ALL organizations
+          companyList = await db
+            .select()
+            .from(companies)
+            .where(eq(companies.isActive, true))
+            .orderBy(companies.organizationId, companies.name);
+        } else {
+          // Org admin sees only companies in their organization
+          companyList = await db
+            .select()
+            .from(companies)
+            .where(and(
+              eq(companies.organizationId, user.organizationId),
+              eq(companies.isActive, true)
+            ));
+        }
         
         console.log(`📊 Admin query result: Found ${companyList.length} companies`);
         console.log('Companies found:', companyList.map((c: any) => ({

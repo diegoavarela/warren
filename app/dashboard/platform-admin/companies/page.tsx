@@ -32,6 +32,7 @@ interface Company {
   locale: string;
   baseCurrency: string;
   displayUnits?: string;
+  cashflowDirectMode?: boolean;
   isActive: boolean;
   createdAt: string;
 }
@@ -50,6 +51,7 @@ export default function CompaniesPage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [updatingCompany, setUpdatingCompany] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompaniesGroupedByOrg();
@@ -113,6 +115,41 @@ export default function CompaniesPage() {
       newExpanded.add(orgId);
     }
     setExpandedOrgs(newExpanded);
+  };
+
+  const toggleCashflowDirectMode = async (companyId: string, currentValue: boolean) => {
+    setUpdatingCompany(companyId);
+    try {
+      const response = await fetch(`/api/v1/companies/${companyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cashflowDirectMode: !currentValue
+        }),
+      });
+
+      if (response.ok) {
+        // Update the local state
+        setOrganizations(orgs => 
+          orgs.map(org => ({
+            ...org,
+            companies: org.companies.map(company => 
+              company.id === companyId 
+                ? { ...company, cashflowDirectMode: !currentValue }
+                : company
+            )
+          }))
+        );
+      } else {
+        alert(locale?.startsWith('es') ? 'Error al actualizar empresa' : 'Failed to update company');
+      }
+    } catch (error) {
+      alert(locale?.startsWith('es') ? 'Error de red' : 'Network error');
+    } finally {
+      setUpdatingCompany(null);
+    }
   };
 
   const filteredOrganizations = organizations.map(org => ({
@@ -301,8 +338,7 @@ export default function CompaniesPage() {
                         {org.companies.map((company) => (
                           <div
                             key={company.id}
-                            className="bg-white border-2 rounded-xl p-5 hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer"
-                            onClick={() => router.push(`/dashboard/platform-admin/companies/${company.id}`)}
+                            className="bg-white border-2 rounded-xl p-5 hover:shadow-lg hover:border-blue-200 transition-all"
                           >
                             <div className="flex items-start justify-between mb-3">
                               <h4 className="font-semibold text-gray-900 text-base">{company.name}</h4>
@@ -345,6 +381,27 @@ export default function CompaniesPage() {
                                 <span className="px-2 py-1 bg-gray-100 rounded text-gray-600">
                                   {company.baseCurrency}
                                 </span>
+                                {/* Cash Flow Direct Access Toggle */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleCashflowDirectMode(company.id, company.cashflowDirectMode || false);
+                                  }}
+                                  disabled={updatingCompany === company.id}
+                                  className={`px-2 py-1 text-xs font-medium rounded transition-all ${
+                                    company.cashflowDirectMode
+                                      ? 'bg-green-100 text-green-700 border border-green-200'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                                  } ${updatingCompany === company.id ? 'opacity-50 cursor-wait' : ''}`}
+                                  title={locale?.startsWith('es') 
+                                    ? (company.cashflowDirectMode ? 'Cash Flow directo habilitado' : 'Habilitar Cash Flow directo')
+                                    : (company.cashflowDirectMode ? 'Direct Cash Flow enabled' : 'Enable direct Cash Flow')
+                                  }
+                                >
+                                  {updatingCompany === company.id ? '...' : 
+                                   company.cashflowDirectMode ? 'CF ✓' : 'CF'
+                                  }
+                                </button>
                               </div>
                               <div className="flex space-x-1">
                                 <button

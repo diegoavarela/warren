@@ -102,6 +102,102 @@ export async function DELETE(
   });
 }
 
+// PATCH /api/v1/companies/[id] - Update a company
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withRBAC(request, async (req, user) => {
+    try {
+      const companyId = params.id;
+      const body = await request.json();
+
+      // Check permissions - only super admins can update company settings
+      if (user.role !== 'super_admin') {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: {
+              code: 'INSUFFICIENT_PERMISSIONS',
+              message: 'Only platform admins can update company settings'
+            }
+          },
+          { status: 403 }
+        );
+      }
+
+      // Check if company exists
+      const [existingCompany] = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.id, companyId))
+        .limit(1);
+
+      if (!existingCompany) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Company not found'
+            }
+          },
+          { status: 404 }
+        );
+      }
+
+      // Update the company (currently only supports cashflowDirectMode)
+      const updateData: any = {};
+      if ('cashflowDirectMode' in body) {
+        updateData.cashflowDirectMode = Boolean(body.cashflowDirectMode);
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: {
+              code: 'NO_UPDATES',
+              message: 'No valid updates provided'
+            }
+          },
+          { status: 400 }
+        );
+      }
+
+      const [updatedCompany] = await db
+        .update(companies)
+        .set({
+          ...updateData,
+          updatedAt: new Date()
+        })
+        .where(eq(companies.id, companyId))
+        .returning();
+
+      console.log(`✅ Company ${existingCompany.name} updated by platform admin ${user.email}`);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Company updated successfully',
+        data: updatedCompany
+      });
+
+    } catch (error) {
+      console.error('Company PATCH error:', error);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Failed to update company'
+          }
+        },
+        { status: 500 }
+      );
+    }
+  });
+}
+
 // GET /api/v1/companies/[id] - Get a single company
 export async function GET(
   request: NextRequest,

@@ -97,7 +97,7 @@ export function MetricCard({
             suffix = 'M';
           }
         } else if (displayUnits === 'M') {
-          convertedValue = convertedValue / 1000;
+          convertedValue = convertedValue / 1000000; // Correctly scale to millions
           suffix = 'M';
           // Auto-scale M to B if too large
           if (Math.abs(convertedValue) >= 1000) {
@@ -105,8 +105,8 @@ export function MetricCard({
             suffix = 'B';
           }
         } else if (displayUnits === 'normal') {
-          convertedValue = convertedValue * 1000;
-          // Auto-scale normal to M/B if too large
+          // Don't multiply by 1000 - data is already in correct ARS format
+          // Auto-scale to M/B for readability only when user hasn't explicitly chosen units
           if (Math.abs(convertedValue) >= 1000000000) {
             convertedValue = convertedValue / 1000000000;
             suffix = 'B';

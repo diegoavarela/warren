@@ -35,6 +35,7 @@ interface Company {
   industry?: string;
   locale?: string;
   baseCurrency?: string;
+  cashflowDirectMode?: boolean;
   isActive: boolean;
   organizationId: string;
   createdAt: Date;
@@ -584,7 +585,7 @@ function CompanyAdminDashboard() {
                   </Card>
 
                   {/* P&L and Cash Flow Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* P&L Column */}
                   <div className="space-y-4">
                     {/* P&L Dashboard Card */}
@@ -711,18 +712,34 @@ function CompanyAdminDashboard() {
                         </h3>
                       </div>
                       
-                      {cashFlowStatements.length > 0 ? (
+                      {cashFlowStatements.length > 0 || (getSelectedCompany()?.cashflowDirectMode) ? (
                         <div className="space-y-4">
                           <div className="border-l-4 border-green-500 pl-4 space-y-2">
-                            <div className="text-sm text-gray-600">
-                              <strong>{locale?.startsWith('es') ? 'Última subida:' : 'Last upload:'}</strong> {formatLastUpload(cashFlowStatements, locale)}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              <strong>{locale?.startsWith('es') ? 'Período:' : 'Period:'}</strong> {formatPeriodRange(cashFlowStatements)}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              <strong>{locale?.startsWith('es') ? 'Plantilla:' : 'Template:'}</strong> {cashFlowTemplateName}
-                            </div>
+                            {getSelectedCompany()?.cashflowDirectMode ? (
+                              <>
+                                <div className="text-sm text-gray-600">
+                                  <strong>{locale?.startsWith('es') ? 'Estado:' : 'Status:'}</strong> {locale?.startsWith('es') ? 'Datos disponibles' : 'Data available'}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  <strong>{locale?.startsWith('es') ? 'Período:' : 'Period:'}</strong> {new Date().getFullYear()}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  <strong>{locale?.startsWith('es') ? 'Fuente:' : 'Source:'}</strong> {locale?.startsWith('es') ? 'Sistema integrado' : 'Integrated system'}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-sm text-gray-600">
+                                  <strong>{locale?.startsWith('es') ? 'Última subida:' : 'Last upload:'}</strong> {formatLastUpload(cashFlowStatements, locale)}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  <strong>{locale?.startsWith('es') ? 'Período:' : 'Period:'}</strong> {formatPeriodRange(cashFlowStatements)}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  <strong>{locale?.startsWith('es') ? 'Plantilla:' : 'Template:'}</strong> {cashFlowTemplateName}
+                                </div>
+                              </>
+                            )}
                           </div>
                           
                           <div className="flex flex-col sm:flex-row gap-3">
@@ -737,17 +754,19 @@ function CompanyAdminDashboard() {
                             >
                               {locale?.startsWith('es') ? 'Ver Dashboard' : 'See Dashboard'}
                             </Button>
-                            <Button
-                              variant="secondary"
-                              onClick={() => {
-                                sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                                router.push('/upload');
-                              }}
-                              leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
-                              className="flex-1"
-                            >
-                              {locale?.startsWith('es') ? 'Subir Nuevos Datos' : 'Upload New Data'}
-                            </Button>
+                            {!getSelectedCompany()?.cashflowDirectMode && (
+                              <Button
+                                variant="secondary"
+                                onClick={() => {
+                                  sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                                  router.push('/upload');
+                                }}
+                                leftIcon={<CloudArrowUpIcon className="w-4 h-4" />}
+                                className="flex-1"
+                              >
+                                {locale?.startsWith('es') ? 'Subir Nuevos Datos' : 'Upload New Data'}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ) : (

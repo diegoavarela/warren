@@ -15,6 +15,8 @@ export default function CashFlowDashboardPage() {
   const { user } = useAuth();
   const { locale } = useLocale();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [currentPeriod, setCurrentPeriod] = useState<string>('');
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date());
   const [hybridParserData, setHybridParserData] = useState<any>(null);
 
   // Get company ID and hybrid parser data from session storage if available
@@ -26,6 +28,17 @@ export default function CashFlowDashboardPage() {
         if (storedCompanyId) {
           setSelectedCompanyId(storedCompanyId);
         }
+      }
+      
+      // Set current period to actual current month
+      if (!currentPeriod && locale) {
+        const currentDate = new Date();
+        const formattedPeriod = currentDate.toLocaleDateString(locale?.startsWith('es') ? 'es-MX' : 'en-US', { 
+          month: 'long', 
+          year: 'numeric' 
+        });
+        setCurrentPeriod(formattedPeriod);
+        setLastUpdate(new Date());
       }
       
       // Check for hybrid parser result data
@@ -42,7 +55,7 @@ export default function CashFlowDashboardPage() {
         }
       }
     }
-  }, []); // Empty dependency array ensures this runs only once
+  }, [selectedCompanyId, currentPeriod, locale]); // Add dependencies
 
   return (
     <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.COMPANY_ADMIN]}>
@@ -51,8 +64,8 @@ export default function CashFlowDashboardPage() {
           {/* Company Context Bar */}
           <CompanyContextBar 
             companyId={selectedCompanyId}
-            currentPeriod="Diciembre 2024"
-            lastUpdate={new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)} // 5 days ago for demo
+            currentPeriod={currentPeriod}
+            lastUpdate={lastUpdate}
           />
           
           <div className="container mx-auto px-4 py-8">
@@ -75,12 +88,6 @@ export default function CashFlowDashboardPage() {
                     className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
-                  </button>
-                  <button
-                    onClick={() => router.push('/hybrid-parser-test')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Test Hybrid Parser
                   </button>
                 </div>
               </div>
