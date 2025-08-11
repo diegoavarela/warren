@@ -429,6 +429,20 @@ export const translations = {
     
     'help.filters.units.title': 'Escala de Visualización (Normal, K, M)',
     'help.filters.units.content': '<p>El <strong>selector de unidades</strong> ajusta la escala de visualización de los valores monetarios para mejorar la legibilidad según la magnitud de las cifras.</p><h4>Opciones disponibles:</h4><ul><li><strong>Normal</strong>: Muestra valores completos (ej: $1,234,567)</li><li><strong>K (Miles)</strong>: Divide entre 1,000 (ej: $1,234.6K)</li><li><strong>M (Millones)</strong>: Divide entre 1,000,000 (ej: $1.2M)</li></ul><h4>¿Cuándo usar cada escala?</h4><ul><li><strong>Normal</strong>:<ul><li>Empresas pequeñas con cifras < $100,000</li><li>Análisis detallado de costos específicos</li><li>Revisión de transacciones individuales</li><li>Documentos legales o auditorías</li></ul></li><li><strong>Miles (K)</strong>:<ul><li>Empresas medianas ($100K - $10M en ingresos)</li><li>Reportes operativos mensuales</li><li>Dashboards ejecutivos para PyMEs</li><li>Facilita la lectura sin perder precisión</li></ul></li><li><strong>Millones (M)</strong>:<ul><li>Grandes empresas (> $10M en ingresos)</li><li>Reportes para juntas directivas</li><li>Presentaciones a inversionistas</li><li>Análisis de alto nivel estratégico</li></ul></li></ul><h4>Impacto en la visualización:</h4><ul><li>Solo afecta la <strong>presentación</strong>, no los cálculos</li><li>Los porcentajes y ratios permanecen sin cambios</li><li>Gráficos se ajustan automáticamente</li><li>Tooltips muestran valores completos al pasar el cursor</li></ul><h4>Mejores prácticas por audiencia:</h4><ul><li><strong>Operaciones diarias</strong>: Usa Normal o K para precisión</li><li><strong>Gerencia media</strong>: Usa K para balance entre detalle y claridad</li><li><strong>Alta dirección</strong>: Usa M para enfoque estratégico</li><li><strong>Reportes externos</strong>: Sigue estándares de la industria</li></ul><h4>Consideraciones importantes:</h4><ul><li>⚠️ Mantén consistencia en todo el reporte</li><li>⚠️ Indica claramente las unidades en títulos/notas</li><li>⚠️ En reuniones, confirma que todos entienden la escala</li><li>⚠️ Para comparaciones, usa la misma escala</li></ul><h4>Tips profesionales:</h4><ul><li>Ajusta según el rango de valores (si tienes $100K a $10M, usa K)</li><li>En presentaciones, empieza con M y profundiza a K si es necesario</li><li>Para KPIs específicos, considera mantener valores completos</li><li>Exporta con unidades claras en encabezados</li></ul>',
+
+    // Contenido de ayuda específico para Cash Flow en español
+    'help.dashboard.cashflow.title': 'Dashboard de Flujo de Caja',
+    'help.dashboard.cashflow.content': 'Monitorea las entradas y salidas de efectivo de tu empresa. Este dashboard proporciona análisis en tiempo real de tu posición de efectivo, incluyendo métricas del período actual, resúmenes año a la fecha, y análisis predictivos para planificación futura.',
+    'help.dashboard.composition.title': 'Composición del Flujo de Caja',
+    'help.dashboard.composition.content': 'Analiza el desglose de tus entradas y salidas de efectivo por categoría. Ve datos del mes actual con información detallada sobre fuentes de ingresos y categorías de gastos. Haz clic en las categorías agrupadas para obtener desgloses detallados.',
+    'help.dashboard.trends.title': 'Tendencias del Flujo de Caja',
+    'help.dashboard.trends.content': 'Rastrea el rendimiento de tu flujo de caja a lo largo del tiempo con análisis de tendencias y pronósticos. Compara datos reales vs proyectados y monitorea métricas clave como balance final y patrones de generación mensual.',
+    'help.dashboard.heatmap.title': 'Mapa de Calor del Flujo de Caja',
+    'help.dashboard.heatmap.content': 'Visualiza el rendimiento del flujo de caja a través de los meses con mapas de intensidad codificados por color. Cambia entre vistas de flujo neto, entradas y salidas. Los colores más oscuros indican valores más altos, con datos de pronóstico mostrados con bordes.',
+    'help.dashboard.runway.title': 'Análisis de Runway',
+    'help.dashboard.runway.content': 'Calcula cuánto tiempo durará tu posición actual de efectivo basado en patrones de gasto. Monitorea tasas de quema y recibe alertas cuando el runway caiga por debajo de niveles seguros.',
+    'help.dashboard.scenarios.title': 'Planificación de Escenarios',
+    'help.dashboard.scenarios.content': 'Modela diferentes escenarios de negocio ajustando supuestos de ingresos y gastos. Compara resultados optimistas, realistas y pesimistas para tomar decisiones informadas.',
     
     // Add help category translation
     'help.category.filters': 'Filtros',
@@ -823,6 +837,20 @@ export const translations = {
     'ytd.netMargin': 'Net Margin',
     'ytd.monthsIncluded': 'Months Included',
     
+    // Cash Flow Help Content
+    'help.dashboard.cashflow.title': 'Cash Flow Dashboard',
+    'help.dashboard.cashflow.content': 'Monitor your company\'s cash inflows and outflows. This dashboard provides real-time analysis of your cash position, including current period metrics, year-to-date summaries, and predictive analytics for future planning.',
+    'help.dashboard.composition.title': 'Cash Flow Composition',
+    'help.dashboard.composition.content': 'Analyze the breakdown of your cash inflows and outflows by category. View current month data with detailed insights into revenue sources and expense categories. Click on grouped categories for detailed breakdowns.',
+    'help.dashboard.trends.title': 'Cash Flow Trends',
+    'help.dashboard.trends.content': 'Track your cash flow performance over time with trend analysis and forecasting. Compare actual vs forecast data and monitor key metrics like final balance and monthly generation patterns.',
+    'help.dashboard.heatmap.title': 'Cash Flow Heatmap',
+    'help.dashboard.heatmap.content': 'Visualize cash flow performance across months with color-coded intensity maps. Switch between net flow, inflows, and outflows views. Darker colors indicate higher values, with forecast data shown with bordered cells.',
+    'help.dashboard.runway.title': 'Runway Analysis',
+    'help.dashboard.runway.content': 'Calculate how long your current cash position will last based on spending patterns. Monitor burn rates and get alerts when runway drops below safe levels.',
+    'help.dashboard.scenarios.title': 'Scenario Planning',
+    'help.dashboard.scenarios.content': 'Model different business scenarios by adjusting revenue and expense assumptions. Compare optimistic, realistic, and pessimistic outcomes to make informed decisions.',
+
     // Charts and Heatmaps
     'charts.revenueForecast': 'Revenue Forecast',
     'charts.netIncomeForecast': 'Net Income Forecast',

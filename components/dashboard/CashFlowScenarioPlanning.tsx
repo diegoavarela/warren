@@ -389,7 +389,7 @@ export function CashFlowScenarioPlanning({
         </div>
 
         {/* Tab Content */}
-        <div className="min-h-[400px]">
+        <div className="min-h-[300px] sm:min-h-[400px]">
           {activeTab === 'config' && (
             <div className="space-y-4">
 
@@ -503,7 +503,7 @@ export function CashFlowScenarioPlanning({
               </div>
 
               {/* Compact Chart */}
-              <div className="h-64">
+              <div className="h-56 sm:h-64">
                 {getChartData() && <Line data={getChartData()!} options={chartOptions} />}
               </div>
 

@@ -572,7 +572,7 @@ export function CashFlowDashboard({
       <div className="space-y-8">
         {/* Global Controls - Exact copy from P&L */}
         <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 lg:gap-6">
             {/* Left side - Period and Comparison */}
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
@@ -723,7 +723,7 @@ export function CashFlowDashboard({
             </div>
             {/* Content */}
             <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 w-full metric-cards-container">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 w-full metric-cards-container">
                 <MetricCard
                   title={locale?.startsWith('es') ? 'Entradas Totales' : 'Total Inflows'}
                   currentValue={current.totalInflows}
@@ -825,7 +825,7 @@ export function CashFlowDashboard({
             </div>
             {/* Content */}
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <MetricCard
                   title={locale?.startsWith('es') ? 'Entradas YTD' : 'YTD Inflows'}
                   currentValue={ytd.totalInflows}
@@ -930,7 +930,7 @@ export function CashFlowDashboard({
               </div>
               
               {/* Row 3: Planificación de Escenarios | Análisis de Runway */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 <CashFlowScenarioPlanning
                   historicalData={data.periods}
                   currentBalance={current.finalBalance || current.netCashFlow}
@@ -950,7 +950,7 @@ export function CashFlowDashboard({
               </div>
               
               {/* Row 4: Composición Cash Flow | Mapa de Calor Cash Flow */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 <CashFlowComposition
                   historicalData={directData?.periods || []}
                   formatValue={formatValue}

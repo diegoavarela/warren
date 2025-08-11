@@ -376,7 +376,7 @@ export function CashFlowForecastTrendsChartJS({
         </div>
         
         {/* Forecast Summary */}
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 flex-shrink-0">
           <div className="bg-cyan-50 rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">
               {locale?.startsWith('es') ? 'Cambio Aug vs Jul' : 'Aug vs Jul Change'}

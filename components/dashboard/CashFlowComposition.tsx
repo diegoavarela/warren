@@ -409,7 +409,7 @@ export function CashFlowComposition({
         <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
           <button
             onClick={() => setViewMode('both')}
-            className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center space-x-2 ${
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all flex items-center justify-center space-x-2 min-h-[44px] ${
               viewMode === 'both'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -420,7 +420,7 @@ export function CashFlowComposition({
           </button>
           <button
             onClick={() => setViewMode('inflows')}
-            className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center space-x-2 ${
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all flex items-center justify-center space-x-2 min-h-[44px] ${
               viewMode === 'inflows'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -431,7 +431,7 @@ export function CashFlowComposition({
           </button>
           <button
             onClick={() => setViewMode('outflows')}
-            className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center space-x-2 ${
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all flex items-center justify-center space-x-2 min-h-[44px] ${
               viewMode === 'outflows'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -445,7 +445,7 @@ export function CashFlowComposition({
         {chartData ? (
           <div className="space-y-6">
             {/* Chart */}
-            <div className="h-96 max-h-96 overflow-y-auto">
+            <div className="h-80 sm:h-96 max-h-96 overflow-y-auto">
               <Bar 
                 ref={chartRef}
                 data={chartData} 

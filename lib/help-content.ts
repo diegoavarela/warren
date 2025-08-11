@@ -2,6 +2,49 @@ import { HelpTopic } from '@/components/HelpModal';
 
 // Define all help topics with their relationships
 export const helpTopics: Record<string, HelpTopic> = {
+  // Cash Flow Dashboard topics
+  'dashboard.cashflow': {
+    id: 'dashboard.cashflow',
+    titleKey: 'help.dashboard.cashflow.title',
+    contentKey: 'help.dashboard.cashflow.content',
+    category: 'cashflow',
+    relatedTopics: ['dashboard.composition', 'dashboard.trends', 'dashboard.heatmap']
+  },
+  'dashboard.composition': {
+    id: 'dashboard.composition',
+    titleKey: 'help.dashboard.composition.title',
+    contentKey: 'help.dashboard.composition.content',
+    category: 'cashflow',
+    relatedTopics: ['dashboard.cashflow', 'dashboard.trends']
+  },
+  'dashboard.trends': {
+    id: 'dashboard.trends',
+    titleKey: 'help.dashboard.trends.title',
+    contentKey: 'help.dashboard.trends.content',
+    category: 'cashflow',
+    relatedTopics: ['dashboard.cashflow', 'dashboard.heatmap']
+  },
+  'dashboard.heatmap': {
+    id: 'dashboard.heatmap',
+    titleKey: 'help.dashboard.heatmap.title',
+    contentKey: 'help.dashboard.heatmap.content',
+    category: 'cashflow',
+    relatedTopics: ['dashboard.trends', 'dashboard.composition']
+  },
+  'dashboard.runway': {
+    id: 'dashboard.runway',
+    titleKey: 'help.dashboard.runway.title',
+    contentKey: 'help.dashboard.runway.content',
+    category: 'cashflow',
+    relatedTopics: ['dashboard.scenarios', 'dashboard.cashflow']
+  },
+  'dashboard.scenarios': {
+    id: 'dashboard.scenarios',
+    titleKey: 'help.dashboard.scenarios.title',
+    contentKey: 'help.dashboard.scenarios.content',
+    category: 'cashflow',
+    relatedTopics: ['dashboard.runway', 'dashboard.trends']
+  },
   // Dashboard topics
   'dashboard.ytd': {
     id: 'dashboard.ytd',
