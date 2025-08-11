@@ -187,7 +187,7 @@ export function CashFlowHeatmap({
           </div>
           <div className="flex items-center space-x-2">
             <HelpIcon 
-              topic={helpTopics['dashboard.heatmap'] || helpTopics['dashboard.cashflow']} 
+              topic={helpTopics['dashboard.cashflow.heatmap'] || helpTopics['dashboard.cashflow']} 
               size="sm" 
               className="text-white hover:text-gray-200"
             />

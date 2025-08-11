@@ -8,7 +8,7 @@ export const helpTopics: Record<string, HelpTopic> = {
     titleKey: 'help.dashboard.cashflow.title',
     contentKey: 'help.dashboard.cashflow.content',
     category: 'cashflow',
-    relatedTopics: ['dashboard.composition', 'dashboard.trends', 'dashboard.heatmap']
+    relatedTopics: ['dashboard.composition', 'dashboard.trends', 'dashboard.cashflow.heatmap']
   },
   'dashboard.composition': {
     id: 'dashboard.composition',
@@ -22,12 +22,12 @@ export const helpTopics: Record<string, HelpTopic> = {
     titleKey: 'help.dashboard.trends.title',
     contentKey: 'help.dashboard.trends.content',
     category: 'cashflow',
-    relatedTopics: ['dashboard.cashflow', 'dashboard.heatmap']
+    relatedTopics: ['dashboard.cashflow', 'dashboard.cashflow.heatmap']
   },
-  'dashboard.heatmap': {
-    id: 'dashboard.heatmap',
-    titleKey: 'help.dashboard.heatmap.title',
-    contentKey: 'help.dashboard.heatmap.content',
+  'dashboard.cashflow.heatmap': {
+    id: 'dashboard.cashflow.heatmap',
+    titleKey: 'help.dashboard.cashflow.heatmap.title',
+    contentKey: 'help.dashboard.cashflow.heatmap.content',
     category: 'cashflow',
     relatedTopics: ['dashboard.trends', 'dashboard.composition']
   },
