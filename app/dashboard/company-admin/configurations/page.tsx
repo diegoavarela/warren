@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, FileSpreadsheet, Trash2, Edit, TrendingUp, DollarSign, ArrowLeft } from 'lucide-react';
+import { PlusCircle, FileSpreadsheet, Trash2, Edit, TrendingUp, DollarSign, ArrowLeft, Code2, Copy, Check } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
 
@@ -38,6 +38,10 @@ export default function ConfigurationsPage() {
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showJsonModal, setShowJsonModal] = useState(false);
+  const [selectedConfigJson, setSelectedConfigJson] = useState<any>(null);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
+  const [jsonCopied, setJsonCopied] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -90,6 +94,37 @@ export default function ConfigurationsPage() {
     } catch (error) {
       console.error('Error deleting configuration:', error);
       toast.error('Failed to delete configuration');
+    }
+  };
+
+  const handleViewJson = async (configId: string) => {
+    try {
+      const response = await fetch(`/api/configurations/${configId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch configuration');
+      }
+
+      const data = await response.json();
+      setSelectedConfigJson(data.data.configJson);
+      setSelectedConfigId(configId);
+      setShowJsonModal(true);
+    } catch (error) {
+      console.error('Error fetching configuration:', error);
+      toast.error('Failed to load configuration JSON');
+    }
+  };
+
+  const handleCopyJson = async () => {
+    if (selectedConfigJson) {
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(selectedConfigJson, null, 2));
+        setJsonCopied(true);
+        toast.success('JSON copied to clipboard');
+        setTimeout(() => setJsonCopied(false), 2000);
+      } catch (error) {
+        toast.error('Failed to copy JSON');
+      }
     }
   };
 
@@ -244,6 +279,15 @@ export default function ConfigurationsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleViewJson(config.id)}
+                      className="flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      title="View JSON Configuration"
+                    >
+                      <Code2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}/edit`)}
                       className="flex items-center justify-center"
                     >
@@ -299,6 +343,56 @@ export default function ConfigurationsPage() {
           ))}
         </div>
       )}
+
+      {/* JSON Modal */}
+      {showJsonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <Code2 className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold">Configuration JSON</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyJson}
+                  leftIcon={jsonCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  className={jsonCopied ? "text-green-600 border-green-300" : ""}
+                >
+                  {jsonCopied ? 'Copied!' : 'Copy JSON'}
+                </Button>
+                <button
+                  onClick={() => setShowJsonModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold p-1"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-auto max-h-[calc(90vh-120px)]">
+              <pre className="bg-gray-50 rounded-lg p-4 text-sm overflow-x-auto border">
+                <code className="text-gray-800 whitespace-pre-wrap">
+                  {selectedConfigJson ? JSON.stringify(selectedConfigJson, null, 2) : 'Loading...'}
+                </code>
+              </pre>
+            </div>
+            <div className="flex justify-between items-center p-6 border-t bg-gray-50">
+              <div className="text-sm text-gray-600">
+                <strong>Note:</strong> This is a read-only view. Use the Edit button to modify the configuration.
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowJsonModal(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     </AppLayout>
   );
