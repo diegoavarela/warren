@@ -1,17 +1,54 @@
-# CLAUDE.md - Warren V2 Development Guidelines
+# CLAUDE.md - Warren Configuration-Based System Guidelines
 
 ## Project Overview
-Warren V2 is a financial analytics platform that helps organizations manage and analyze their P&L and Cash Flow data through an intuitive dashboard interface.
+Warren Configuration-Based System is the clean, production-ready version of the financial analytics platform that uses only configuration-driven data sources. This replaces all hardcoded data and legacy mapping systems while maintaining 100% identical UI/UX to Warren V2.
 
 ## Key Reference Documents
-- **User_Journey_Maps.md** - CRITICAL: Defines all user flows, requirements, and expected behaviors
-- **lib/db/schema.ts** - Database schema and relationships
+- **MIGRATION_PLAN.md** - CRITICAL: Complete 16-day migration plan with atomic tasks
+- **ARCHITECTURE.md** - System design and data flow architecture
+- **API_DOCUMENTATION.md** - All endpoint specifications and examples
+- **DATABASE_CHANGES.md** - Required schema modifications and performance indexes
+- **TESTING_STRATEGY.md** - Comprehensive testing approach for data accuracy
+- **User_Journey_Maps.md** - User flows and requirements (maintain identical behavior)
+- **lib/db/actual-schema.ts** - Database schema and relationships
 - **lib/auth/rbac.ts** - Role-based access control definitions
 
 ## User Roles (Per User_Journey_Maps.md)
 1. **Platform Admin** - Manages companies and organization admins
 2. **Organization Admin** - Manages companies, users, and templates within their organization
 3. **Regular User** - Views P&L and Cash Flow data only
+
+## CRITICAL - Clean Configuration-Based System
+
+### System Architecture
+- **Data Source**: ONLY `processedFinancialData` table (configuration-based)
+- **No Legacy Code**: All hardcoded data and old mapping systems REMOVED
+- **Dashboard Data Flow**: `processedFinancialData` → New APIs → React Hooks → Dashboard UI
+- **Identical UI/UX**: Pixel-perfect match with Warren V2, only data source is different
+
+### Core Components (Keep & Use)
+1. **Configuration System**: Complete configuration builder and management
+2. **File Processing**: Upload, process with configuration, store in `processedFinancialData`
+3. **Dashboard Components**: All existing UI components (unchanged visually)
+4. **Authentication & Authorization**: User management and RBAC system
+
+### Data Architecture
+```
+Excel File → Configuration Processing → processedFinancialData → API → Dashboard
+                                                                 ↓
+                                    New Endpoints: /api/processed-data/*
+```
+
+### New API Endpoints (Configuration-Based)
+- `GET /api/processed-data/pnl/[companyId]` - P&L dashboard data
+- `GET /api/processed-data/cashflow/[companyId]` - Cash Flow dashboard data
+- `GET /api/processed-data/companies/[companyId]/periods` - Available periods
+- `GET /api/processed-data/[companyId]/summary` - Data summary
+
+### Migration Completed Status
+✅ **Phase 1**: Repository setup and documentation complete
+🔄 **Phase 2**: Ready to begin database performance optimization
+⏳ **Phase 3-10**: Execute remaining migration phases per MIGRATION_PLAN.md
 
 ## Critical Requirements
 
@@ -29,9 +66,11 @@ Warren V2 is a financial analytics platform that helps organizations manage and 
 - Help content must be available in all supported languages
 
 ### Navigation Flow
-1. **Upload Flow**: Upload → Template Selection → Mapping → Save → P&L Dashboard
+1. **Upload Flow**: Upload → Configuration Selection → Mapping → Process → Dashboard
 2. **Dashboard Access**: Only P&L and Cash Flow (NO Executive Dashboard)
 3. **Company Context**: Must persist throughout all pages
+4. **After Processing**: Show "View Dashboard" button that navigates to appropriate dashboard (P&L or Cash Flow)
+5. **Data Source**: ALL data comes from `processedFinancialData` table (configuration-based)
 
 ### Dashboard Requirements
 
@@ -51,8 +90,12 @@ Warren V2 is a financial analytics platform that helps organizations manage and 
 13. Bank Summary & Investment Portal with titles
 14. Key Insights
 
-#### Cash Flow Dashboard:
-- To be defined (pending in User_Journey_Maps.md)
+#### Cash Flow Dashboard Must Include:
+- Must show EXACTLY as Warren V2 (pixel-perfect match)
+- ALL data from `processedFinancialData` table (configuration-based)
+- All existing widgets: Growth Analysis, Forecast Trends, Scenario Planning, Runway Analysis
+- Same calculations and metrics as Warren V2
+- Same UI/UX as Warren V2 implementation
 
 ### Upload Process Requirements
 1. Template selection at start (organization-wide templates)
@@ -120,20 +163,50 @@ interface WidgetProps {
 3. Don't skip help icons or multilingual support
 4. Don't create inconsistent UI patterns
 5. Don't ignore readability issues
+6. **NEVER use browser alerts** - Use toast notifications instead
+7. **NEVER use hardcoded data** - All data must come from `processedFinancialData`
+8. **NEVER change dashboard UI/UX** - Must be pixel-perfect match with Warren V2
+9. **NEVER skip data accuracy testing** - All calculations must match Warren V2 exactly
 
-## When Implementing:
-1. Always check User_Journey_Maps.md first
-2. Ensure multilingual support
-3. Add help content
-4. Test with different screen sizes
-5. Verify role-based access
-6. Check loading states
-7. Ensure smooth navigation without refreshes
+## UI/UX Standards - CRITICAL
+### Toast Notifications
+- **NEVER** use `alert()`, `confirm()`, or `prompt()` - these are terrible UX
+- **ALWAYS** use the toast notification system: `components/ui/Toast.tsx`
+- Import: `import { useToast, ToastContainer } from '@/components/ui/Toast'`
+- Usage: `toast.success()`, `toast.error()`, `toast.warning()`, `toast.info()`
+- Add `<ToastContainer />` to render toasts
 
-## Questions to Ask:
-- Does this match the User Journey?
-- Is it multilingual?
-- Does it have help?
-- Is the data readable?
-- Does it work for all 3 user types?
-- Is the navigation clear?
+## Development Process (Configuration-Based System)
+
+### Before Starting Any Task:
+1. ✅ Check **MIGRATION_PLAN.md** for current phase and task status
+2. ✅ Review **ARCHITECTURE.md** for data flow and system design
+3. ✅ Check **API_DOCUMENTATION.md** for endpoint specifications
+4. ✅ Review **TESTING_STRATEGY.md** for testing requirements
+5. ✅ Ensure task aligns with User_Journey_Maps.md
+
+### When Implementing:
+1. **Data Source**: Use ONLY `processedFinancialData` table via new APIs
+2. **UI/UX**: Maintain pixel-perfect match with Warren V2
+3. **Testing**: Include data accuracy tests comparing to Warren V2
+4. **Performance**: API responses must be <500ms
+5. **Multilingual**: All UI elements must support multiple languages
+6. **Help Content**: Every widget needs help icon with explanations
+7. **Role-Based Access**: Verify permissions for all user types
+8. **Error Handling**: Use toast notifications, never browser alerts
+
+### Questions to Ask:
+- Does this use configuration-based data from `processedFinancialData`?
+- Are calculations identical to Warren V2?
+- Is the UI pixel-perfect match with Warren V2?
+- Does it work for all 3 user types (Platform Admin, Org Admin, Regular User)?
+- Are there comprehensive tests (unit, integration, E2E, data accuracy)?
+- Is performance optimized (<500ms API responses)?
+- Is it multilingual with help content?
+
+### Code Quality Standards:
+- **TypeScript**: Full type safety, no `any` types
+- **Error Handling**: Comprehensive error boundaries and API error handling
+- **Performance**: Optimized queries, caching, lazy loading
+- **Testing**: 90%+ coverage with data accuracy validation
+- **Documentation**: Clear comments and API documentation

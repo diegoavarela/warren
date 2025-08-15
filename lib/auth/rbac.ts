@@ -316,3 +316,31 @@ export async function withRBAC(
     );
   }
 }
+
+/**
+ * Check if user has access to a specific company with required roles
+ */
+export async function hasCompanyAccess(
+  userId: string, 
+  companyId: string, 
+  requiredRoles: string[]
+): Promise<boolean> {
+  try {
+    // Load user's company access
+    const companyAccess = await loadUserCompanyAccess(userId);
+    
+    // Check if user has access to the company with one of the required roles
+    const access = companyAccess?.find(ca => ca.companyId === companyId);
+    
+    if (!access) {
+      return false;
+    }
+    
+    // Check if user's role for this company is in the required roles
+    return requiredRoles.includes(access.role);
+    
+  } catch (error) {
+    console.error('Error checking company access:', error);
+    return false;
+  }
+}

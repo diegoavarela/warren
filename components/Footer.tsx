@@ -17,39 +17,39 @@ export function Footer() {
 
   const footerSections = [
     {
-      title: locale?.startsWith('es') ? 'Producto' : 'Product',
+      title: 'Product',
       links: [
-        { label: locale?.startsWith('es') ? 'Características' : 'Features', href: '/features' },
-        { label: locale?.startsWith('es') ? 'Precios' : 'Pricing', href: '/pricing' },
-        { label: locale?.startsWith('es') ? 'Integraciones' : 'Integrations', href: '/integrations' },
-        { label: locale?.startsWith('es') ? 'Actualizaciones' : 'Updates', href: '/updates' }
+        { label: 'Features', href: '/features' },
+        { label: 'Pricing', href: '/pricing' },
+        { label: 'Integrations', href: '/integrations' },
+        { label: 'Updates', href: '/updates' }
       ]
     },
     {
-      title: locale?.startsWith('es') ? 'Empresa' : 'Company',
+      title: 'Company',
       links: [
-        { label: locale?.startsWith('es') ? 'Acerca de' : 'About', href: '/about' },
-        { label: locale?.startsWith('es') ? 'Blog' : 'Blog', href: '/blog' },
-        { label: locale?.startsWith('es') ? 'Carreras' : 'Careers', href: '/careers' },
-        { label: locale?.startsWith('es') ? 'Contacto' : 'Contact', href: '/contact' }
+        { label: 'About', href: '/about' },
+        { label: 'Blog', href: '/blog' },
+        { label: 'Careers', href: '/careers' },
+        { label: 'Contact', href: '/contact' }
       ]
     },
     {
-      title: locale?.startsWith('es') ? 'Recursos' : 'Resources',
+      title: 'Resources',
       links: [
-        { label: locale?.startsWith('es') ? 'Documentación' : 'Documentation', href: '/docs' },
-        { label: locale?.startsWith('es') ? 'Guías' : 'Guides', href: '/guides' },
-        { label: locale?.startsWith('es') ? 'API' : 'API', href: '/api' },
-        { label: locale?.startsWith('es') ? 'Estado del Sistema' : 'System Status', href: '/status' }
+        { label: 'Documentation', href: '/docs' },
+        { label: 'Guides', href: '/guides' },
+        { label: 'API', href: '/api' },
+        { label: 'System Status', href: '/status' }
       ]
     },
     {
-      title: locale?.startsWith('es') ? 'Legal' : 'Legal',
+      title: 'Legal',
       links: [
-        { label: locale?.startsWith('es') ? 'Términos' : 'Terms', href: '/terms' },
-        { label: locale?.startsWith('es') ? 'Privacidad' : 'Privacy', href: '/privacy' },
-        { label: locale?.startsWith('es') ? 'Seguridad' : 'Security', href: '/security' },
-        { label: locale?.startsWith('es') ? 'Cookies' : 'Cookies', href: '/cookies' }
+        { label: 'Terms', href: '/terms' },
+        { label: 'Privacy', href: '/privacy' },
+        { label: 'Security', href: '/security' },
+        { label: 'Cookies', href: '/cookies' }
       ]
     }
   ];
@@ -71,9 +71,7 @@ export function Footer() {
               </div>
             </div>
             <p className="text-sm text-gray-400 mb-6 max-w-xs">
-              {locale?.startsWith('es') 
-                ? 'La plataforma líder en análisis financiero automatizado para empresas latinoamericanas.'
-                : 'The leading automated financial analysis platform for Latin American companies.'}
+              The leading automated financial analysis platform for Latin American companies.
             </p>
             
             {/* Contact Info */}
@@ -119,19 +117,19 @@ export function Footer() {
             <div className="flex items-center space-x-2">
               <ShieldCheckIcon className="w-5 h-5 text-green-500" />
               <span className="text-sm">
-                {locale?.startsWith('es') ? 'SOC 2 Certificado' : 'SOC 2 Certified'}
+                SOC 2 Certified
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <DocumentTextIcon className="w-5 h-5 text-blue-500" />
               <span className="text-sm">
-                {locale?.startsWith('es') ? 'ISO 27001' : 'ISO 27001'}
+                ISO 27001
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <ShieldCheckIcon className="w-5 h-5 text-purple-500" />
               <span className="text-sm">
-                {locale?.startsWith('es') ? 'GDPR Compliant' : 'GDPR Compliant'}
+                GDPR Compliant
               </span>
             </div>
           </div>
@@ -144,7 +142,7 @@ export function Footer() {
           <div className="flex flex-col md:flex-row items-center justify-between text-sm">
             <div className="mb-2 md:mb-0">
               <p>
-                © {currentYear} Warren Financial Parser. {locale?.startsWith('es') ? 'Todos los derechos reservados.' : 'All rights reserved.'}
+                © {currentYear} Warren Financial Parser. All rights reserved.
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -152,7 +150,7 @@ export function Footer() {
               <span className="text-gray-600">|</span>
               <a href="/help" className="hover:text-white transition-colors flex items-center space-x-1">
                 <QuestionMarkCircleIcon className="w-4 h-4" />
-                <span>{locale?.startsWith('es') ? 'Ayuda' : 'Help'}</span>
+                <span>Help</span>
               </a>
             </div>
           </div>

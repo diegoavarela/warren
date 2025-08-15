@@ -119,11 +119,16 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
     
     const breadcrumbs = [];
     
-    // Always add Dashboard as the root
-    breadcrumbs.push({ 
-      path: '/dashboard', 
-      label: locale?.startsWith('es') ? 'Panel' : 'Dashboard' 
-    });
+    // Don't add Dashboard to breadcrumbs for P&L and Cash Flow dashboards
+    const isFinancialDashboard = pathname.includes('/pnl') || pathname.includes('/cashflow');
+    
+    // Add Dashboard as the root only if not in financial dashboards
+    if (!isFinancialDashboard) {
+      breadcrumbs.push({ 
+        path: '/dashboard', 
+        label: locale?.startsWith('es') ? 'Panel' : 'Dashboard' 
+      });
+    }
     
     // Special handling for workflow pages
     if (isInWorkflow) {
@@ -174,10 +179,10 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
       const path = '/' + paths.slice(0, i + 1).join('/');
       let label = paths[i];
       
-      // Skip UUIDs and translate common paths
+      // Skip UUIDs from breadcrumbs
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(label);
       if (isUUID) {
-        label = locale?.startsWith('es') ? 'Editar' : 'Edit';
+        continue; // Skip UUIDs entirely from breadcrumbs
       } else {
         const translations: Record<string, { es: string; en: string }> = {
           'dashboard': { es: 'Panel', en: 'Dashboard' },
@@ -193,6 +198,7 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
           'cashflow': { es: 'Flujo de Caja', en: 'Cash Flow' },
           'uploads': { es: 'Historial de Cargas', en: 'Upload History' },
           'subcategory-templates': { es: 'Plantillas de Subcategorías', en: 'Subcategory Templates' },
+          'configurations': { es: 'Configuraciones', en: 'Configurations' },
           'new': { es: 'Nuevo', en: 'New' },
           'edit': { es: 'Editar', en: 'Edit' },
           'enhanced-mapper': { es: 'Mapear Cuentas', en: 'Map Accounts' },

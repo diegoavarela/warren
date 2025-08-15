@@ -186,6 +186,7 @@ export async function GET(request: NextRequest) {
           baseCurrency: companies.baseCurrency,
           fiscalYearStart: companies.fiscalYearStart,
           isActive: companies.isActive,
+          organizationId: companies.organizationId,
           createdAt: companies.createdAt
         })
         .from(companies)
@@ -211,7 +212,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      companies: companyList
+      data: companyList
     });
 
   } catch (error) {

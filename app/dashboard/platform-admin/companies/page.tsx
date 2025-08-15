@@ -66,7 +66,7 @@ export default function CompaniesPage() {
       const orgsData = await orgsResponse.json();
       
       // Fetch all companies
-      const companiesResponse = await fetch('/api/v1/companies');
+      const companiesResponse = await fetch('/api/companies');
       const companiesData = await companiesResponse.json();
       
       if (orgsResponse.ok && companiesResponse.ok) {
@@ -120,7 +120,7 @@ export default function CompaniesPage() {
   const toggleCashflowDirectMode = async (companyId: string, currentValue: boolean) => {
     setUpdatingCompany(companyId);
     try {
-      const response = await fetch(`/api/v1/companies/${companyId}`, {
+      const response = await fetch(`/api/companies/${companyId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

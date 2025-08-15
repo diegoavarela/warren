@@ -348,7 +348,7 @@ export class DirectCashFlowProvider {
    */
   static async hasDirectAccess(companyId: string): Promise<boolean> {
     try {
-      const response = await fetch(`/api/v1/companies/${companyId}`);
+      const response = await fetch(`/api/companies/${companyId}`);
       if (response.ok) {
         const data = await response.json();
         return data.data?.cashflowDirectMode === true;

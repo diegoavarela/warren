@@ -15,7 +15,7 @@ import { RevenueForecastTrendsChartJS } from './RevenueForecastTrendsChartJS';
 import { NetIncomeForecastTrendsChartJS } from './NetIncomeForecastTrendsChartJS';
 import { ComparisonPeriodSelector } from './ComparisonPeriodSelector';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
-import { useFinancialData } from '@/lib/hooks/useFinancialData';
+import { useProcessedPnLDataLegacy } from '@/lib/hooks/useProcessedPnLData';
 import { transformToPnLData } from '@/lib/utils/financial-transformers';
 import { filterValidPeriods, sortPeriods } from '@/lib/utils/period-utils';
 import { PnLData as PnLDataType } from '@/types/financial';
@@ -150,14 +150,11 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   const [isOpexSectionCollapsed, setIsOpexSectionCollapsed] = useState(false);
   const [isCogsSectionCollapsed, setIsCogsSectionCollapsed] = useState(false);
   
-  // Fetch real data using the hook
-  const { data: apiData, loading: apiLoading, error, refetch } = useFinancialData({
-    companyId: useMockData ? undefined : companyId,
-    statementId,
-    autoRefresh: false, // Disable auto-refresh to prevent constant page updates
-    selectedPeriod: selectedPeriod || undefined,
-    comparisonPeriod: comparisonPeriod
-  });
+  // Fetch real data using the new processed data hook
+  const { data: apiData, loading: apiLoading, error, refetch } = useProcessedPnLDataLegacy(
+    useMockData ? '' : companyId || '',
+    12 // limit to 12 periods
+  );
   
   // Refetch data when selected period or comparison period changes
   useEffect(() => {

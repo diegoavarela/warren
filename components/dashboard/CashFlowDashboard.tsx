@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { DirectCashFlowProvider, DirectCashFlowData } from '@/lib/services/direct-cashflow-provider';
+import { useLiveCashFlowData, LiveCashFlowDataResponse } from '@/lib/hooks/useLiveCashFlowData';
 import { KPICard } from './KPICard';
 import { WarrenChart, CHART_CONFIGS } from '../charts/WarrenChart';
 import { MetricCard } from './MetricCard';
@@ -104,11 +104,95 @@ export function CashFlowDashboard({
   locale = 'es-MX',
   onPeriodChange 
 }: CashFlowDashboardProps) {
-  const [directData, setDirectData] = useState<DirectCashFlowData | null>(null);
+  // Use the new processed Cash Flow data hook
+  const { 
+    data: processedData, 
+    loading, 
+    error 
+  } = useLiveCashFlowData({
+    companyId: companyId || ''
+  });
+
+  console.log('🔍 Cash Flow Dashboard: Live hook data:', { processedData, loading, error, companyId });
+  
+  // Debug: Check which configuration is being used for LIVE data
+  if (processedData) {
+    console.log('🔧 LIVE Configuration Debug - Dashboard is using:');
+    console.log('- Configuration Name:', processedData.data?.metadata?.configurationName);
+    console.log('- Configuration ID:', processedData.metadata?.configurationId);
+    console.log('- Data Source:', processedData.metadata?.source, '(should be live-configuration)');
+    console.log('- Processed At:', processedData.metadata?.requestedAt);
+    console.log('- Data Structure:', {
+      periodsCount: processedData.data?.periods?.length,
+      periodsFirstFew: processedData.data?.periods?.slice(0, 3),
+      hasDataRows: Object.keys(processedData.data?.data?.dataRows || {}).length > 0,
+      hasCategories: Object.keys(processedData.data?.data?.categories || {}).length > 0
+    });
+  }
+  
+  // Debug: Show the actual structure of LIVE processedData
+  if (processedData) {
+    console.log('📊 LIVE Cash Flow Debug - Full processed data structure:', JSON.stringify(processedData, null, 2));
+    console.log('📊 LIVE Cash Flow Debug - Data periods:', processedData.data?.periods);
+    console.log('📊 LIVE Cash Flow Debug - Data rows keys:', Object.keys(processedData.data?.data?.dataRows || {}));
+    
+    // Look for Excel structure mapping
+    if (processedData.data?.data?.structure) {
+      console.log('📊 Cash Flow Debug - Structure mapping found:', processedData.data.data.structure);
+    }
+    if (processedData.data?.data?.periodsRow) {
+      console.log('📊 Cash Flow Debug - Periods row:', processedData.data.data.periodsRow);
+      console.log('📊 Cash Flow Debug - Periods range:', processedData.data.data.periodsRange);
+    }
+    
+    // Show current values being used
+    const febIndex = 1; // February should be index 1
+    console.log('📊 Cash Flow Debug - February values (index 1):');
+    console.log('- totalInflows:', processedData.data?.data?.dataRows?.totalInflows?.values[febIndex]);
+    console.log('- totalOutflows:', processedData.data?.data?.dataRows?.totalOutflows?.values[febIndex]);
+    console.log('- finalBalance:', processedData.data?.data?.dataRows?.finalBalance?.values[febIndex]);
+    console.log('- monthlyGeneration:', processedData.data?.data?.dataRows?.monthlyGeneration?.values[febIndex]);
+  }
+
+  // Transform processed data to the format expected by the dashboard
+  const directData = processedData ? {
+    periods: processedData.data.periods.map((period: string, index: number) => {
+      // Generate proper dates - assuming monthly periods starting from Jan 2025
+      const year = 2025;
+      const month = index + 1; // 1-based month
+      const periodStart = new Date(year, month - 1, 1); // month is 0-based in Date constructor
+      const periodEnd = new Date(year, month, 0); // Last day of the month
+      
+      return {
+        id: `period-${index}`,
+        companyId: companyId || '',
+        periodStart: periodStart.toISOString().split('T')[0],
+        periodEnd: periodEnd.toISOString().split('T')[0],
+        periodType: 'monthly' as const,
+        lineItems: [], // Empty array to prevent filter errors
+        totalInflows: processedData.data.data.dataRows?.totalInflows?.values[index] || 0,
+        totalOutflows: Math.abs(processedData.data.data.dataRows?.totalOutflows?.values[index] || 0),
+        netCashFlow: processedData.data.data.dataRows?.monthlyGeneration?.values[index] || 0,
+        currency: processedData.data.metadata.currency,
+        initialBalance: processedData.data.data.dataRows?.initialBalance?.values[index] || 0,
+        finalBalance: processedData.data.data.dataRows?.finalBalance?.values[index] || 0,
+        lowestBalance: processedData.data.data.dataRows?.finalBalance?.values[index] || 0, // Use finalBalance as fallback
+        monthlyGeneration: processedData.data.data.dataRows?.monthlyGeneration?.values[index] || 0
+      };
+    }),
+    summary: {
+      totalPeriods: processedData.data.periods.length,
+      currency: processedData.data.metadata.currency,
+      periodRange: `${processedData.data.periods[0]} - ${processedData.data.periods[processedData.data.periods.length - 1]}`,
+      lastUpdated: new Date().toISOString()
+    }
+  } : null;
+
+  const isDirectMode = !!processedData;
+  
+  console.log('🔍 Cash Flow Dashboard: isDirectMode =', isDirectMode, 'processedData exists =', !!processedData);
+  
   const [regularData, setRegularData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [isDirectMode, setIsDirectMode] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   
   // Dashboard state matching P&L exactly
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
@@ -149,55 +233,45 @@ export function CashFlowDashboard({
 
   // Note: Removed auto-detection logic since we default to 'M' for cash flow data
 
+  // Handle period change callback when data is available
   useEffect(() => {
-    // Don't load data if companyId is empty string (initial state)
-    if (!companyId || companyId === '') return;
+    if (isDirectMode && directData && onPeriodChange && directData.periods.length > 0) {
+      const latestPeriod = directData.periods[directData.periods.length - 1];
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
+                        'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const periodName = `${monthNames[new Date(latestPeriod.periodEnd).getMonth()]} ${new Date(latestPeriod.periodEnd).getFullYear()}`;
+      onPeriodChange(periodName, new Date());
+    }
+  }, [isDirectMode, directData, onPeriodChange]);
 
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const hasDirectAccess = await DirectCashFlowProvider.hasDirectAccess(companyId);
-        setIsDirectMode(hasDirectAccess);
-
-        if (hasDirectAccess) {
-          const data = await DirectCashFlowProvider.getCashFlowData(companyId);
-          setDirectData(data);
-          
-          if (onPeriodChange && data.periods.length > 0) {
-            const latestPeriod = data.periods[data.periods.length - 1];
-            const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
-                              'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-            const periodName = `${monthNames[new Date(latestPeriod.periodEnd).getMonth()]} ${new Date(latestPeriod.periodEnd).getFullYear()}`;
-            onPeriodChange(periodName, new Date());
-          }
-        } else {
-          const response = await fetch(`/api/v1/companies/${companyId}/statements`);
+  // Handle processed data loading
+  useEffect(() => {
+    if (isDirectMode && companyId && companyId !== '') {
+      const loadRegularData = async () => {
+        try {
+          const response = await fetch(`/api/processed-data/cashflow/${companyId}`);
           if (response.ok) {
             const data = await response.json();
-            if (data.success && data.data?.statements) {
-              const cashFlowStatements = data.data.statements.filter((stmt: any) => 
-                stmt.statementType === 'cash_flow' || stmt.statementType === 'cashflow'
-              );
-              setRegularData(cashFlowStatements);
+            if (data.success && data.data) {
+              // The new API returns transformed dashboard data directly
+              console.log('🔍 Cash Flow Dashboard: Received data from API:', data);
+              console.log('📊 Cash Flow Dashboard: Setting regularData to:', data.data);
+              setRegularData(data.data);
             } else {
               setRegularData([]);
             }
           } else {
             setRegularData([]);
           }
+        } catch (err) {
+          console.error('Error loading regular cash flow data:', err);
+          setRegularData([]);
         }
-      } catch (err) {
-        console.error('Error loading cash flow data:', err);
-        setError('Failed to load cash flow data');
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    loadData();
-  }, [companyId, onPeriodChange]);
+      loadRegularData();
+    }
+  }, [isDirectMode, companyId]);
 
   useEffect(() => {
     fetchExchangeRates();
@@ -305,33 +379,13 @@ export function CashFlowDashboard({
   };
 
   const transformDirectDataToCashFlowData = (directData: DirectCashFlowData): CashFlowData => {
-    // Access the raw data arrays directly from DirectCashFlowProvider
+    // Use actual data from the periods instead of hardcoded values
     const vortexData = {
-      totalIncome: [
-        59668571.76, 124286721.19, 49028145.22, 43986311.69, 45041107.22,
-        70743748.26, 60226045.06, 60201807.32, 74083639.80, 77581524.17,
-        74712965.17, 76840412.53, 60186491.18, 60186491.18, 60186491.18
-      ],
-      totalExpense: [
-        -50276617.68, -103744703.24, -58449803.16, -47711123.53, -55485486.71,
-        -68759657.53, -76072485.38, -54716848.36, -59798946.91, -62085039.97,
-        -61162761.83, -71695905.31, -61336057.22, -55175112.14, -55227902.71
-      ],
-      finalBalance: [
-        27688182.78, 48230200.73, 38055493.55, 31704995.07, 21341755.57,
-        23654970.71, 7823657.59, 13308616.55, 27593309.44, 43089793.63,
-        56639996.97, 61784504.19, 60634938.16, 65646317.20, 70604905.67
-      ],
-      lowestBalance: [
-        17400329.22, 20992175.80, 27014109.05, 20800398.06, 19289367.11,
-        17918172.79, 7823657.59, 995900.22, 6666925.37, 12870372.73,
-        27495560.14, 42474429.74, 27179001.47, 32190380.51, 37148968.98
-      ],
-      monthlyGeneration: [
-        9391954.08, 20542017.95, -10171698.78, -6339211.08, -10355576.51,
-        2271065.15, -15846440.33, 5484958.97, 14284692.88, 15496484.19,
-        13550203.34, 5144507.22, -1149566.03, 5011379.04, 4958588.47
-      ]
+      totalIncome: directData.periods.map(p => p.totalInflows),
+      totalExpense: directData.periods.map(p => -p.totalOutflows), // Negative for consistency
+      finalBalance: directData.periods.map(p => p.finalBalance),
+      lowestBalance: directData.periods.map(p => p.lowestBalance),
+      monthlyGeneration: directData.periods.map(p => p.monthlyGeneration)
     };
 
     const periods: CashFlowPeriodData[] = directData.periods.map((period, index) => {
@@ -367,18 +421,30 @@ export function CashFlowDashboard({
         finalBalance,
         lowestBalance,
         monthlyGeneration: monthlyGeneration, // Row 114 - Monthly Cash Generation
-        operatingCashFlow: period.lineItems.filter(li => li.category === 'operating_activities').reduce((sum, li) => sum + li.amount, 0),
-        investingCashFlow: period.lineItems.filter(li => li.category === 'investing_activities').reduce((sum, li) => sum + li.amount, 0),
-        financingCashFlow: period.lineItems.filter(li => li.category === 'financing_activities').reduce((sum, li) => sum + li.amount, 0),
+        operatingCashFlow: (period.lineItems || []).filter(li => li.category === 'operating_activities').reduce((sum, li) => sum + li.amount, 0),
+        investingCashFlow: (period.lineItems || []).filter(li => li.category === 'investing_activities').reduce((sum, li) => sum + li.amount, 0),
+        financingCashFlow: (period.lineItems || []).filter(li => li.category === 'financing_activities').reduce((sum, li) => sum + li.amount, 0),
         cashBurnRate: Math.abs(monthlyCashBurn), // For runway calculation
         runwayMonths
       };
     });
 
-    // Find August 2025 as the current period (fixed mapping to match Excel data)
-    const currentPeriodIndex = periods.findIndex(p => p.month === 'Aug' && p.year === 2025);
-    const currentPeriod = currentPeriodIndex >= 0 ? periods[currentPeriodIndex] : periods[7]; // Fallback to index 7 (Aug-2025)
-    const previousPeriod = currentPeriodIndex > 0 ? periods[currentPeriodIndex - 1] : periods[6]; // Jul-2025
+    // Find current period - use the most recent period available or August 2025 if present
+    console.log('🔍 Looking for current period in periods:', periods.map(p => `${p.month} ${p.year}`));
+    
+    let currentPeriodIndex = periods.findIndex(p => p.month === 'Aug' && p.year === 2025);
+    
+    // If August 2025 not found, use the most recent period available
+    if (currentPeriodIndex === -1) {
+      currentPeriodIndex = periods.length - 1; // Most recent period
+      console.log('⚠️ August 2025 not found, using most recent period:', currentPeriodIndex);
+    }
+    
+    const currentPeriod = currentPeriodIndex >= 0 ? periods[currentPeriodIndex] : periods[Math.min(0, periods.length - 1)]; // Safe fallback
+    const previousPeriod = currentPeriodIndex > 0 ? periods[currentPeriodIndex - 1] : (periods.length > 1 ? periods[periods.length - 2] : null);
+    
+    console.log(`✅ Selected current period: ${currentPeriod?.month} ${currentPeriod?.year} (index: ${currentPeriodIndex})`);
+    console.log(`📅 Selected previous period: ${previousPeriod?.month} ${previousPeriod?.year}`);
 
     // YTD calculation: January 2025 to August 2025 (current month) - Direct calculation
     const ytdTotalInflows = vortexData.totalIncome.slice(0, 8).reduce((sum, val) => sum + val, 0); // Jan-Aug 2025
@@ -406,7 +472,7 @@ export function CashFlowDashboard({
       averageMonthlyGeneration: ytdNetCashFlow / 8,
       monthsIncluded: 8,
       averageCashBurn: vortexData.monthlyGeneration.slice(0, 8).filter(val => val < 0).reduce((sum, val) => sum + Math.abs(val), 0) / 8,
-      projectedRunway: currentPeriod.runwayMonths || 0
+      projectedRunway: currentPeriod?.runwayMonths || 0
     };
 
     const totalOperating = periods.reduce((sum, p) => sum + Math.abs(p.operatingCashFlow), 0);

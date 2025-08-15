@@ -62,7 +62,13 @@ export function Header() {
   // Handle client-side mounting
   useEffect(() => {
     setMounted(true);
+    console.log('Header: Component mounted, isAuthenticated:', isAuthenticated, 'user:', user);
   }, []);
+
+  // Debug authentication state changes
+  useEffect(() => {
+    console.log('Header: Auth state changed - isAuthenticated:', isAuthenticated, 'user:', user);
+  }, [isAuthenticated, user]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -421,18 +427,28 @@ export function Header() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2" data-testid="auth-buttons">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => router.push('/login')}
+                  onClick={() => {
+                    console.log('Sign In button clicked');
+                    router.push('/login');
+                  }}
+                  className="min-w-[80px] bg-opacity-100"
+                  data-testid="sign-in-button"
                 >
                   {mounted ? t('auth.login') : 'Sign In'}
                 </Button>
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => router.push('/signup')}
+                  onClick={() => {
+                    console.log('Sign Up button clicked');
+                    router.push('/signup');
+                  }}
+                  className="min-w-[80px] bg-opacity-100"
+                  data-testid="sign-up-button"
                 >
                   {mounted ? t('auth.signup') : 'Sign Up'}
                 </Button>

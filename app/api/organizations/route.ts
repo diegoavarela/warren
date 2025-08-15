@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT } from '@/lib/auth/jwt';
 import { signJWT } from '@/lib/auth/jwt';
-import { db, organizations, users, eq } from '@/lib/db';
+import { db, organizations, users, companies, eq, sql } from '@/lib/db';
 import { ROLES, hasPermission, PERMISSIONS } from '@/lib/auth/rbac';
 import bcrypt from 'bcryptjs';
 
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all organizations
+    // Get all organizations with company and user counts
     const allOrganizations = await db
       .select({
         id: organizations.id,
@@ -181,7 +181,17 @@ export async function GET(request: NextRequest) {
         tier: organizations.tier,
         isActive: organizations.isActive,
         createdAt: organizations.createdAt,
-        updatedAt: organizations.updatedAt
+        updatedAt: organizations.updatedAt,
+        companiesCount: sql<number>`(
+          SELECT COUNT(*)::int 
+          FROM companies 
+          WHERE organization_id = ${organizations.id}
+        )`.as('companies_count'),
+        usersCount: sql<number>`(
+          SELECT COUNT(*)::int 
+          FROM users 
+          WHERE organization_id = ${organizations.id}
+        )`.as('users_count')
       })
       .from(organizations)
       .orderBy(organizations.createdAt);

@@ -55,8 +55,8 @@ export default function OrganizationsPage() {
         const mappedOrgs = data.organizations.map((org: any) => ({
           ...org,
           createdAt: new Date(org.createdAt),
-          companiesCount: 0, // TODO: Fetch actual count
-          usersCount: 0 // TODO: Fetch actual count
+          companiesCount: org.companies_count || 0,
+          usersCount: org.users_count || 0
         }));
         setOrganizations(mappedOrgs);
       } else {

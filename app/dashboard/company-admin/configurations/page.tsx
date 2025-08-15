@@ -1,0 +1,294 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/badge';
+import { PlusCircle, FileSpreadsheet, Settings, Eye, Trash2, Edit, TrendingUp, DollarSign, ArrowLeft } from 'lucide-react';
+import { AppLayout } from '@/components/AppLayout';
+import { useToast, ToastContainer } from '@/components/ui/Toast';
+
+interface Configuration {
+  id: string;
+  companyId: string;
+  version: number;
+  type: 'cashflow' | 'pnl';
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  isTemplate: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  createdByName: string;
+  createdByLastName: string;
+}
+
+export default function ConfigurationsPage() {
+  const router = useRouter();
+  // For now, use a mock selected company until we integrate with the context
+  const selectedCompany = { id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8', name: 'VTEX Solutions SRL' };
+  const [configurations, setConfigurations] = useState<Configuration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (selectedCompany?.id) {
+      fetchConfigurations();
+    }
+  }, [selectedCompany?.id]);
+
+  const fetchConfigurations = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/configurations?companyId=${selectedCompany?.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch configurations');
+      }
+
+      const result = await response.json();
+      setConfigurations(result.data || []);
+    } catch (error) {
+      console.error('Error fetching configurations:', error);
+      toast.error('Failed to load configurations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteConfiguration = async (configId: string) => {
+    // First click sets up confirmation, second click executes
+    if (deleteConfirmId !== configId) {
+      setDeleteConfirmId(configId);
+      toast.warning('Click delete button again to confirm deletion', 'This action cannot be undone');
+      setTimeout(() => setDeleteConfirmId(null), 5000); // Reset after 5 seconds
+      return;
+    }
+
+    setDeleteConfirmId(null);
+
+    try {
+      const response = await fetch(`/api/configurations/${configId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete configuration');
+      }
+
+      toast.success('Configuration deleted successfully');
+      fetchConfigurations(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting configuration:', error);
+      toast.error('Failed to delete configuration');
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    return type === 'cashflow' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-green-100 text-green-800 border-green-200';
+  };
+
+  const getTypeName = (type: string) => {
+    return type === 'cashflow' ? 'Cash Flow' : 'P&L Statement';
+  };
+
+  const getTypeIcon = (type: string) => {
+    return type === 'cashflow' ? 
+      <TrendingUp className="h-4 w-4" /> : 
+      <DollarSign className="h-4 w-4" />;
+  };
+
+  const getCardBorderColor = (type: string) => {
+    return type === 'cashflow' ? 'border-l-blue-500' : 'border-l-green-500';
+  };
+
+  const getTypeDescription = (type: string) => {
+    return type === 'cashflow' ? 
+      'Analyzes cash inflows and outflows over time' : 
+      'Tracks revenue, expenses, and profitability';
+  };
+
+  if (!selectedCompany) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card>
+          <CardBody>
+            <p className="text-center text-gray-500">
+              Please select a company to manage configurations.
+            </p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <ToastContainer 
+        toasts={toast.toasts} 
+        onClose={toast.removeToast} 
+        position="top-right" 
+      />
+      <div className="container mx-auto py-6">
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          {/* Back Navigation */}
+          <button
+            onClick={() => router.push('/dashboard/company-admin')}
+            className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 mb-4 text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Volver a Administración</span>
+          </button>
+          
+          <h1 className="text-3xl font-bold">Gestión de Configuraciones</h1>
+          <p className="text-muted-foreground mt-2">
+            Crear y gestionar configuraciones de análisis de Excel para {selectedCompany.name}
+          </p>
+        </div>
+        <Button 
+          onClick={() => router.push('/dashboard/company-admin/configurations/new')}
+          leftIcon={<PlusCircle className="h-4 w-4" />}
+        >
+          Nueva Configuración
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </CardHeader>
+              <CardBody>
+                <div className="h-3 bg-gray-200 rounded w-full"></div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      ) : configurations.length === 0 ? (
+        <Card className="text-center py-12">
+          <CardBody>
+            <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">Aún no hay configuraciones</h3>
+            <p className="text-gray-500 mb-4">
+              Crea tu primera configuración de análisis de Excel para comenzar.
+            </p>
+            <Button 
+              onClick={() => router.push('/dashboard/company-admin/configurations/new')}
+              leftIcon={<PlusCircle className="h-4 w-4" />}
+            >
+              Crear Configuración
+            </Button>
+          </CardBody>
+        </Card>
+      ) : (
+        <div className="grid gap-6">
+          {configurations.map((config) => (
+            <Card key={config.id} className={`hover:shadow-md transition-shadow border-l-4 ${getCardBorderColor(config.type)}`}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${getTypeColor(config.type)}`}>
+                        {getTypeIcon(config.type)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-xl">{config.name}</CardTitle>
+                          {config.isTemplate && (
+                            <Badge className="bg-gray-100 text-gray-800">Plantilla</Badge>
+                          )}
+                          {!config.isActive && (
+                            <Badge className="bg-red-100 text-red-800">Inactiva</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className={getTypeColor(config.type)}>
+                            {getTypeName(config.type)}
+                          </Badge>
+                          <span className="text-sm text-gray-500">•</span>
+                          <span className="text-sm text-gray-500">{getTypeDescription(config.type)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <CardDescription>
+                      {config.description || 'Sin descripción proporcionada'}
+                    </CardDescription>
+                    <div className="text-sm text-gray-500">
+                      Versión {config.version} • Creada por {config.createdByName} {config.createdByLastName} 
+                      • {new Date(config.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}`)}
+                      className="flex items-center justify-center"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}/edit`)}
+                      className="flex items-center justify-center"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteConfiguration(config.id)}
+                      className={`flex items-center justify-center ${
+                        deleteConfirmId === config.id 
+                          ? 'text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800' 
+                          : 'text-destructive hover:text-destructive'
+                      }`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardBody>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-500">
+                    Última actualización: {new Date(config.updatedAt).toLocaleDateString()}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}/validate`)}
+                      leftIcon={<Settings className="h-4 w-4" />}
+                    >
+                      Probar Configuración
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}/process`)}
+                      leftIcon={<FileSpreadsheet className="h-4 w-4" />}
+                    >
+                      Procesar Archivos
+                    </Button>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      )}
+      </div>
+    </AppLayout>
+  );
+}

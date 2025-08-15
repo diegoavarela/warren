@@ -62,7 +62,7 @@ function OrgAdminDashboard() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/companies');
+      const response = await fetch('/api/companies');
       if (!response.ok) {
         throw new Error('Failed to fetch companies');
       }
@@ -128,7 +128,7 @@ function OrgAdminDashboard() {
     if (!editingCompany) return;
     
     try {
-      const response = await fetch(`/api/v1/companies/${editingCompany.id}`, {
+      const response = await fetch(`/api/companies/${editingCompany.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +162,7 @@ function OrgAdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/v1/companies/${companyId}`, {
+      const response = await fetch(`/api/companies/${companyId}`, {
         method: 'DELETE',
       });
 

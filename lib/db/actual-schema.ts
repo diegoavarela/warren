@@ -286,3 +286,72 @@ export type OrganizationSubcategory = typeof organizationSubcategories.$inferSel
 export type CompanySubcategory = typeof companySubcategories.$inferSelect;
 export type SubcategoryTemplate = typeof subcategoryTemplates.$inferSelect;
 export type CompanySubcategoryTemplate = typeof companySubcategoryTemplates.$inferSelect;
+
+// NEW CONFIG-DRIVEN ARCHITECTURE TABLES
+
+// Company Configurations - Configuration files for parsing Excel files
+export const companyConfigurations = pgTable("company_configurations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  version: integer("version").notNull().default(1),
+  type: varchar("type", { length: 20 }).notNull(), // 'cashflow' | 'pnl'
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  configJson: jsonb("config_json").notNull(), // Full configuration structure
+  metadata: jsonb("metadata"), // currency, units, locale, etc.
+  isActive: boolean("is_active").default(true),
+  isTemplate: boolean("is_template").default(false), // Can be used as template by other companies
+  parentConfigId: uuid("parent_config_id"), // If derived from template
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyConfigVersion: unique().on(table.companyId, table.type, table.version),
+}));
+
+// Financial Data Files - Store information about uploaded Excel files
+export const financialDataFiles = pgTable("financial_data_files", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  originalFilename: varchar("original_filename", { length: 255 }).notNull(),
+  filePath: varchar("file_path", { length: 500 }), // Legacy field - now optional
+  fileContent: text("file_content"), // Base64 encoded file content stored in database
+  fileSize: integer("file_size").notNull(),
+  fileHash: varchar("file_hash", { length: 64 }), // SHA256 hash for deduplication
+  mimeType: varchar("mime_type", { length: 100 }),
+  uploadSession: varchar("upload_session", { length: 100 }),
+  uploadedBy: uuid("uploaded_by").references(() => users.id).notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Processed Financial Data - Links Excel files to configurations and stores processed results
+export const processedFinancialData = pgTable("processed_financial_data", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  configId: uuid("config_id").references(() => companyConfigurations.id).notNull(),
+  fileId: uuid("file_id").references(() => financialDataFiles.id).notNull(),
+  dataJson: jsonb("data_json").notNull(), // Processed data in standardized format
+  validationResults: jsonb("validation_results"), // Validation errors/warnings
+  processingStatus: varchar("processing_status", { length: 50 }).notNull().default("pending"), // pending, processing, completed, failed
+  processingError: text("processing_error"), // Error message if processing failed
+  periodStart: date("period_start"),
+  periodEnd: date("period_end"),
+  currency: varchar("currency", { length: 3 }),
+  units: varchar("units", { length: 20 }), // normal, thousands, millions
+  processedBy: uuid("processed_by").references(() => users.id).notNull(),
+  processedAt: timestamp("processed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyConfigFile: unique().on(table.companyId, table.configId, table.fileId),
+}));
+
+// Export new types
+export type CompanyConfiguration = typeof companyConfigurations.$inferSelect;
+export type NewCompanyConfiguration = typeof companyConfigurations.$inferInsert;
+export type FinancialDataFile = typeof financialDataFiles.$inferSelect;
+export type NewFinancialDataFile = typeof financialDataFiles.$inferInsert;
+export type ProcessedFinancialData = typeof processedFinancialData.$inferSelect;
+export type NewProcessedFinancialData = typeof processedFinancialData.$inferInsert;
