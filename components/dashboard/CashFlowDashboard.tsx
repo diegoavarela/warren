@@ -74,6 +74,32 @@ interface YTDMetrics {
   projectedRunway: number;
 }
 
+interface DirectCashFlowData {
+  periods: Array<{
+    id: string;
+    companyId: string;
+    periodStart: string;
+    periodEnd: string;
+    periodType: 'monthly';
+    lineItems: any[];
+    totalInflows: number;
+    totalOutflows: number;
+    netCashFlow: number;
+    currency: string;
+    initialBalance: number;
+    finalBalance: number;
+    lowestBalance: number;
+    monthlyGeneration: number;
+  }>;
+  summary: {
+    totalPeriods: number;
+    currency: string;
+    periodRange: string;
+    lastUpdated: string;
+  };
+  data: any;
+}
+
 interface CashFlowData {
   periods: CashFlowPeriodData[];
   currentPeriod: CashFlowPeriodData;
@@ -262,7 +288,7 @@ export function CashFlowDashboard({
   // Set selectedPeriod to August 2025 (current period) when data is available
   useEffect(() => {
     if (isDirectMode && directData && !selectedPeriod) {
-      const data = transformDirectDataToCashFlowData(directData);
+      const data = transformDirectDataToCashFlowData(directData, selectedPeriod);
       // Find August 2025 period specifically
       const augustPeriod = data.periods.find(p => p.month === 'Aug' && p.year === 2025);
       if (augustPeriod?.id) {
@@ -421,17 +447,17 @@ export function CashFlowDashboard({
     return ((current - previous) / previous) * 100;
   };
 
-  const transformDirectDataToCashFlowData = (directData: DirectCashFlowData): CashFlowData => {
+  const transformDirectDataToCashFlowData = (directData: DirectCashFlowData, targetPeriodId?: string): CashFlowData => {
     // Use actual data from the periods instead of hardcoded values
     const vortexData = {
-      totalIncome: directData.periods.map(p => p.totalInflows),
-      totalExpense: directData.periods.map(p => -p.totalOutflows), // Negative for consistency
-      finalBalance: directData.periods.map(p => p.finalBalance),
-      lowestBalance: directData.periods.map(p => p.lowestBalance),
-      monthlyGeneration: directData.periods.map(p => p.monthlyGeneration)
+      totalIncome: directData.periods.map((p: any) => p.totalInflows),
+      totalExpense: directData.periods.map((p: any) => -p.totalOutflows), // Negative for consistency
+      finalBalance: directData.periods.map((p: any) => p.finalBalance),
+      lowestBalance: directData.periods.map((p: any) => p.lowestBalance),
+      monthlyGeneration: directData.periods.map((p: any) => p.monthlyGeneration)
     };
 
-    const periods: CashFlowPeriodData[] = directData.periods.map((period, index) => {
+    const periods: CashFlowPeriodData[] = directData.periods.map((period: any, index: number) => {
       const totalInflows = vortexData.totalIncome[index] || 0;
       const totalOutflows = Math.abs(vortexData.totalExpense[index]) || 0;
       const netCashFlow = vortexData.monthlyGeneration[index] || 0;
@@ -464,27 +490,39 @@ export function CashFlowDashboard({
         finalBalance,
         lowestBalance,
         monthlyGeneration: monthlyGeneration, // Row 114 - Monthly Cash Generation
-        operatingCashFlow: (period.lineItems || []).filter(li => li.category === 'operating_activities').reduce((sum, li) => sum + li.amount, 0),
-        investingCashFlow: (period.lineItems || []).filter(li => li.category === 'investing_activities').reduce((sum, li) => sum + li.amount, 0),
-        financingCashFlow: (period.lineItems || []).filter(li => li.category === 'financing_activities').reduce((sum, li) => sum + li.amount, 0),
+        operatingCashFlow: (period.lineItems || []).filter((li: any) => li.category === 'operating_activities').reduce((sum: number, li: any) => sum + li.amount, 0),
+        investingCashFlow: (period.lineItems || []).filter((li: any) => li.category === 'investing_activities').reduce((sum: number, li: any) => sum + li.amount, 0),
+        financingCashFlow: (period.lineItems || []).filter((li: any) => li.category === 'financing_activities').reduce((sum: number, li: any) => sum + li.amount, 0),
         cashBurnRate: Math.abs(monthlyCashBurn), // For runway calculation
         runwayMonths
       };
     });
 
-    // Find current period - use the most recent period available or August 2025 if present
+    // Find current period - use targetPeriodId if provided, otherwise August 2025 or most recent
     console.log('🔍 Looking for current period in periods:', periods.map(p => `${p.month} ${p.year}`));
+    console.log('🎯 Target period ID:', targetPeriodId);
     
-    let currentPeriodIndex = periods.findIndex(p => p.month === 'Aug' && p.year === 2025);
+    let currentPeriodIndex = -1;
     
-    // If August 2025 not found, use the most recent period available
+    if (targetPeriodId) {
+      // Find by specific period ID
+      currentPeriodIndex = periods.findIndex(p => p.id === targetPeriodId);
+      console.log('🎯 Found target period at index:', currentPeriodIndex);
+    }
+    
+    // Fallback to August 2025 if target not found
+    if (currentPeriodIndex === -1) {
+      currentPeriodIndex = periods.findIndex(p => p.month === 'Aug' && p.year === 2025);
+    }
+    
+    // Final fallback to most recent period
     if (currentPeriodIndex === -1) {
       currentPeriodIndex = periods.length - 1; // Most recent period
-      console.log('⚠️ August 2025 not found, using most recent period:', currentPeriodIndex);
+      console.log('⚠️ Target period not found, using most recent period:', currentPeriodIndex);
     }
     
     const currentPeriod = currentPeriodIndex >= 0 ? periods[currentPeriodIndex] : periods[Math.min(0, periods.length - 1)]; // Safe fallback
-    const previousPeriod = currentPeriodIndex > 0 ? periods[currentPeriodIndex - 1] : (periods.length > 1 ? periods[periods.length - 2] : null);
+    const previousPeriod = currentPeriodIndex > 0 ? periods[currentPeriodIndex - 1] : (periods.length > 1 ? periods[periods.length - 2] : undefined);
     
     console.log(`✅ Selected current period: ${currentPeriod?.month} ${currentPeriod?.year} (index: ${currentPeriodIndex})`);
     console.log(`📅 Selected previous period: ${previousPeriod?.month} ${previousPeriod?.year}`);
@@ -587,7 +625,7 @@ export function CashFlowDashboard({
 
   const getCurrentPeriodDisplay = (): string => {
     if (!directData || !directData.periods.length) return '';
-    const current = transformDirectDataToCashFlowData(directData).currentPeriod;
+    const current = transformDirectDataToCashFlowData(directData, selectedPeriod).currentPeriod;
     return `${current.month} ${current.year}`;
   };
 
@@ -654,7 +692,7 @@ export function CashFlowDashboard({
 
   // Render comprehensive dashboard for direct mode
   if (isDirectMode && directData) {
-    const data = transformDirectDataToCashFlowData(directData);
+    const data = transformDirectDataToCashFlowData(directData, selectedPeriod);
     const current = data.currentPeriod;
     const previous = data.previousPeriod;
     const ytd = data.yearToDate;
@@ -1069,7 +1107,21 @@ export function CashFlowDashboard({
                   formatPercentage={formatPercentage}
                   locale={locale}
                   fullWidth={false}
-                  selectedPeriod={liveData?.data?.periods?.findIndex((period: string) => period.includes('Aug 2025')) || 7}
+                  selectedPeriod={(() => {
+                    if (!selectedPeriod || !isDirectMode || !directData) return 7; // Default to Aug 2025
+                    
+                    // Find the selected period in our transformed data
+                    const selectedPeriodData = data.periods.find(p => p.id === selectedPeriod);
+                    if (!selectedPeriodData) return 7;
+                    
+                    // Map the month/year to the live data periods array
+                    const targetPeriodLabel = `${selectedPeriodData.month} ${selectedPeriodData.year}`;
+                    const liveDataIndex = liveData?.data?.periods?.findIndex((period: string) => 
+                      period.includes(selectedPeriodData.month) && period.includes(selectedPeriodData.year.toString())
+                    );
+                    
+                    return liveDataIndex !== -1 ? liveDataIndex : 7;
+                  })()}
                 />
                 <CashFlowHeatmap
                   historicalData={data.periods}
