@@ -30,6 +30,9 @@ export interface CashFlowStructure {
   periodsRow: number; // Row containing period headers (e.g., Jan, Feb, Mar)
   periodsRange: string; // Excel range for periods (e.g., "B8:M8")
   
+  // NEW: Explicit period mapping
+  periodMapping?: PeriodMapping[]; // Optional for backward compatibility
+  
   // Core data rows - required fields
   dataRows: {
     initialBalance: number;
@@ -44,6 +47,21 @@ export interface CashFlowStructure {
     inflows: CashFlowCategoryGroup;
     outflows: CashFlowCategoryGroup;
   };
+}
+
+// Period mapping interfaces
+export interface PeriodMapping {
+  column: string;        // Excel column (B, C, D, etc.)
+  period: PeriodDefinition;
+}
+
+export interface PeriodDefinition {
+  type: 'month' | 'quarter' | 'year' | 'custom';
+  year: number;
+  month?: number;        // 1-12 for monthly
+  quarter?: number;      // 1-4 for quarterly  
+  label: string;         // Display name (e.g., "Aug 2025", "Q3 2025")
+  customValue?: string;  // For custom period types
 }
 
 export interface CashFlowCategoryGroup {
@@ -74,6 +92,9 @@ export interface PLStructure {
   periodsRow: number;
   periodsRange: string;
   categoriesColumn: string; // Column containing category names (e.g., "B")
+  
+  // NEW: Explicit period mapping (optional)
+  periodMapping?: PeriodMapping[]; // Optional for backward compatibility
   
   // Core P&L line items with Spanish/English labels
   dataRows: {

@@ -15,12 +15,68 @@ import { useRef } from 'react';
 // Import the global Chart.js setup to ensure components are registered
 import '@/lib/utils/chartSetup';
 
+// Helper functions for styling and display names
+function getInflowColor(key: string): string {
+  const colors: Record<string, string> = {
+    'Collections': '#10B981',
+    'Investment Income': '#34D399',
+  };
+  return colors[key] || '#6EE7B7'; // Default green color
+}
+
+function getOutflowColor(key: string): string {
+  const colors: Record<string, string> = {
+    'wages': '#F97316',      // Orange
+    'opex': '#EF4444',       // Red  
+    'taxes': '#DC2626',      // Dark red
+    'Bank Expenses and Taxes': '#B91C1C', // Darker red
+  };
+  return colors[key] || '#FB923C'; // Default orange color
+}
+
+function getSubcategoryColor(parentKey: string, subKey: string): string {
+  // Generate slightly different shades for subcategories
+  const baseColor = getOutflowColor(parentKey);
+  return baseColor + '80'; // Add transparency
+}
+
+function getOutflowDisplayName(key: string, locale?: string): string {
+  const names: Record<string, { es: string; en: string }> = {
+    'wages': { es: 'Salarios', en: 'Wages' },
+    'opex': { es: 'Gastos Operativos', en: 'Operating Expenses' },
+    'taxes': { es: 'Impuestos', en: 'Taxes' },
+    'Bank Expenses and Taxes': { es: 'Gastos Bancarios', en: 'Bank Expenses' },
+  };
+  
+  const nameObj = names[key];
+  if (!nameObj) return key;
+  
+  return locale?.startsWith('es') ? nameObj.es : nameObj.en;
+}
+
 interface CashFlowCompositionProps {
-  historicalData: any[];
+  data: {
+    periods: string[];
+    categories: {
+      inflows: Record<string, {
+        label: string;
+        values: (number | null)[];
+        total: number;
+        subcategories?: Record<string, any>;
+      }>;
+      outflows: Record<string, {
+        label: string;
+        values: (number | null)[];
+        total: number;
+        subcategories?: Record<string, any>;
+      }>;
+    };
+  } | null;
   formatValue: (value: number) => string;
   formatPercentage: (value: number) => string;
   locale?: string;
   fullWidth?: boolean;
+  selectedPeriod?: number;
 }
 
 interface CompositionItem {
@@ -39,11 +95,12 @@ interface CompositionItem {
 }
 
 export function CashFlowComposition({ 
-  historicalData,
+  data,
   formatValue,
   formatPercentage,
   locale = 'es-MX',
-  fullWidth = false
+  fullWidth = false,
+  selectedPeriod = 0
 }: CashFlowCompositionProps) {
   const [viewMode, setViewMode] = useState<'inflows' | 'outflows' | 'both'>('both');
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
@@ -65,151 +122,96 @@ export function CashFlowComposition({
     };
   }, [modalData]);
 
-  // Calculate composition data using CURRENT MONTH ONLY (August 2025, index 7)
+  // Calculate composition data using the live API data structure
   const compositionData = useMemo(() => {
-    if (!historicalData || historicalData.length === 0) {
+    if (!data || !data.categories) {
       return { inflowsData: [], outflowsData: [], combinedData: [] };
     }
 
-    // Use August 2025 data only (index 7)
-    const currentPeriod = historicalData[7];
-    if (!currentPeriod) {
-      return { inflowsData: [], outflowsData: [], combinedData: [] };
-    }
+    const { categories, periods } = data;
     
-    // Current month totals using specific CSV rows - NO AGGREGATION
-    const totals = {
-      // INFLOWS - Only actual money coming in (removed initialBalance)
-      totalCollections: currentPeriod.totalCollections || 0,
-      totalInvestmentIncome: currentPeriod.totalInvestmentIncome || 0,
-      
-      // OUTFLOWS - Individual expense rows (no double-counting with totals)
-      // OPEX Subcategories
-      totalRentExpense: Math.abs(currentPeriod.totalRentExpense || 0),
-      totalExternalProfessionalServices: Math.abs(currentPeriod.totalExternalProfessionalServices || 0),
-      totalUtilities: Math.abs(currentPeriod.totalUtilities || 0),
-      totalOtherExpenses: Math.abs(currentPeriod.totalOtherExpenses || 0),
-      
-      // WAGES Subcategories  
-      totalConsultingEducation: Math.abs(currentPeriod.totalConsultingEducation || 0),
-      totalBenefits: Math.abs(currentPeriod.totalBenefits || 0),
-      totalPrepaidHealthCoverage: Math.abs(currentPeriod.totalPrepaidHealthCoverage || 0),
-      totalContractors: Math.abs(currentPeriod.totalContractors || 0),
-      totalSalaries: Math.abs(currentPeriod.totalSalaries || 0),
-      
-      // OTHER Outflows
-      totalTaxes: Math.abs(currentPeriod.totalTaxes || 0),
-      totalBankExpensesAndTaxes: Math.abs(currentPeriod.totalBankExpensesAndTaxes || 0)
-    };
+    // Get the selected period index (default to latest period)
+    const periodIndex = selectedPeriod < periods.length ? selectedPeriod : periods.length - 1;
+    
+    console.log('🎯 CashFlowComposition: Processing period', periodIndex, 'of', periods.length);
+    console.log('📅 CashFlowComposition: Periods received:', periods);
+    console.log('📊 Categories available:', Object.keys(categories));
+    console.log('🔍 selectedPeriod:', selectedPeriod, 'selectedPeriodValue:', periods[selectedPeriod]);
+    console.log('🔍 Full data structure:', data);
 
-    // Create inflows breakdown - INDIVIDUAL CSV ROWS (Row 10, 20, 23)
-    const totalInflowsSum = (currentPeriod.initialBalance || 0) + totals.totalCollections + totals.totalInvestmentIncome;
-    
-    const inflowsData = [
-      {
-        name: locale?.startsWith('es') ? 'Balance Inicial' : 'Initial Balance',
-        value: currentPeriod.initialBalance || 0,
-        percentage: totalInflowsSum > 0 ? ((currentPeriod.initialBalance || 0) / totalInflowsSum) * 100 : 0,
-        color: '#10B981',
-        csvRow: 'Row 10'
-      },
-      {
-        name: locale?.startsWith('es') ? 'Cobranzas Totales' : 'Total Collections',
-        value: totals.totalCollections,
-        percentage: totalInflowsSum > 0 ? (totals.totalCollections / totalInflowsSum) * 100 : 0,
-        color: '#34D399',
-        csvRow: 'Row 20'
-      },
-      {
-        name: locale?.startsWith('es') ? 'Ingresos Inversión' : 'Investment Income',
-        value: totals.totalInvestmentIncome,
-        percentage: totalInflowsSum > 0 ? (totals.totalInvestmentIncome / totalInflowsSum) * 100 : 0,
-        color: '#6EE7B7',
-        csvRow: 'Row 23'
+    // Create inflows data from API categories
+    const inflowsData: CompositionItem[] = [];
+    let totalInflowsSum = 0;
+
+    Object.entries(categories.inflows || {}).forEach(([key, category]) => {
+      const value = category.values[periodIndex] || 0;
+      if (value > 0) {
+        inflowsData.push({
+          name: category.label || key,
+          value: value,
+          percentage: 0, // Will be calculated below
+          color: getInflowColor(key),
+        });
+        totalInflowsSum += value;
       }
-    ].sort((a, b) => b.value - a.value); // Sort by amount (largest to smallest)
+    });
 
-    // Create outflows breakdown - GROUPED CATEGORIES (compact view)
-    // Group OPEX subcategories
-    const opexTotal = totals.totalRentExpense + totals.totalExternalProfessionalServices + totals.totalUtilities + totals.totalOtherExpenses;
-    // Group small WAGES subcategories 
-    const smallWagesTotal = totals.totalConsultingEducation + totals.totalBenefits + totals.totalPrepaidHealthCoverage;
-    
-    const totalOutflowsSum = 
-      totals.totalSalaries + totals.totalContractors + opexTotal + smallWagesTotal +
-      totals.totalTaxes + totals.totalBankExpensesAndTaxes;
-    
-    const outflowsData = [
-      // Major individual items
-      {
-        name: locale?.startsWith('es') ? 'Salarios' : 'Salaries',
-        value: totals.totalSalaries,
-        percentage: totalOutflowsSum > 0 ? (totals.totalSalaries / totalOutflowsSum) * 100 : 0,
-        color: '#F97316'
-      },
-      {
-        name: locale?.startsWith('es') ? 'Contratistas' : 'Contractors',
-        value: totals.totalContractors,
-        percentage: totalOutflowsSum > 0 ? (totals.totalContractors / totalOutflowsSum) * 100 : 0,
-        color: '#FB923C'
-      },
-      // Grouped OPEX (all OPEX subcategories combined)
-      {
-        name: locale?.startsWith('es') ? 'Gastos Operativos (OPEX)' : 'Operating Expenses (OPEX)',
-        value: opexTotal,
-        percentage: totalOutflowsSum > 0 ? (opexTotal / totalOutflowsSum) * 100 : 0,
-        color: '#EF4444',
-        isGroup: true,
-        groupId: 'opex',
-        subcategories: [
-          { name: locale?.startsWith('es') ? 'Alquileres' : 'Rent', value: totals.totalRentExpense, color: '#EF4444' },
-          { name: locale?.startsWith('es') ? 'Servicios Profesionales' : 'Professional Services', value: totals.totalExternalProfessionalServices, color: '#F87171' },
-          { name: locale?.startsWith('es') ? 'Servicios Públicos' : 'Utilities', value: totals.totalUtilities, color: '#FCA5A5' },
-          { name: locale?.startsWith('es') ? 'Otros Gastos' : 'Other Expenses', value: totals.totalOtherExpenses, color: '#FECACA' }
-        ].filter(sub => sub.value > 0)
-      },
-      // Grouped small wages items
-      {
-        name: locale?.startsWith('es') ? 'Beneficios y Otros' : 'Benefits & Other',
-        value: smallWagesTotal,
-        percentage: totalOutflowsSum > 0 ? (smallWagesTotal / totalOutflowsSum) * 100 : 0,
-        color: '#FDBA74',
-        isGroup: true,
-        groupId: 'benefits',
-        subcategories: [
-          { name: locale?.startsWith('es') ? 'Consultoría/Educación' : 'Consulting/Education', value: totals.totalConsultingEducation, color: '#FDBA74' },
-          { name: locale?.startsWith('es') ? 'Beneficios' : 'Benefits', value: totals.totalBenefits, color: '#FED7AA' },
-          { name: locale?.startsWith('es') ? 'Cobertura Salud' : 'Health Coverage', value: totals.totalPrepaidHealthCoverage, color: '#FFEDD5' }
-        ].filter(sub => sub.value > 0)
-      },
-      // Individual other categories
-      {
-        name: locale?.startsWith('es') ? 'Impuestos' : 'Taxes',
-        value: totals.totalTaxes,
-        percentage: totalOutflowsSum > 0 ? (totals.totalTaxes / totalOutflowsSum) * 100 : 0,
-        color: '#DC2626'
-      },
-      {
-        name: locale?.startsWith('es') ? 'Gastos Bancarios' : 'Bank Expenses',
-        value: totals.totalBankExpensesAndTaxes,
-        percentage: totalOutflowsSum > 0 ? (totals.totalBankExpensesAndTaxes / totalOutflowsSum) * 100 : 0,
-        color: '#B91C1C'
+    // Calculate percentages for inflows
+    inflowsData.forEach(item => {
+      item.percentage = totalInflowsSum > 0 ? (item.value / totalInflowsSum) * 100 : 0;
+    });
+
+    // Sort by value (largest to smallest)
+    inflowsData.sort((a, b) => b.value - a.value);
+
+    // Create outflows data from API categories  
+    const outflowsData: CompositionItem[] = [];
+    let totalOutflowsSum = 0;
+
+    Object.entries(categories.outflows || {}).forEach(([key, category]) => {
+      const value = Math.abs(category.values[periodIndex] || 0); // Take absolute value for outflows
+      if (value > 0) {
+        outflowsData.push({
+          name: getOutflowDisplayName(key, locale),
+          value: value,
+          percentage: 0, // Will be calculated below
+          color: getOutflowColor(key),
+          // Add subcategories if they exist
+          ...(category.subcategories && Object.keys(category.subcategories).length > 0 && {
+            isGroup: true,
+            groupId: key,
+            subcategories: Object.entries(category.subcategories).map(([subKey, subCategory]: [string, any]) => ({
+              name: subCategory.label || subKey,
+              value: Math.abs(subCategory.values[periodIndex] || 0),
+              color: getSubcategoryColor(key, subKey),
+            })).filter(sub => sub.value > 0)
+          })
+        });
+        totalOutflowsSum += value;
       }
-    ].filter(item => item.value > 0).sort((a, b) => b.value - a.value); // Sort by amount (largest to smallest)
+    });
 
-    // Create combined data using calculated totals
+    // Calculate percentages for outflows
+    outflowsData.forEach(item => {
+      item.percentage = totalOutflowsSum > 0 ? (item.value / totalOutflowsSum) * 100 : 0;
+    });
+
+    // Sort by value (largest to smallest)
+    outflowsData.sort((a, b) => b.value - a.value);
+
+    // Create combined data
     const combinedData = [
       {
         name: locale?.startsWith('es') ? 'Entradas' : 'Inflows',
         value: totalInflowsSum,
-        percentage: 50, // Will be calculated properly below
+        percentage: 0, // Will be calculated below
         color: '#10B981',
         type: 'inflow'
       },
       {
         name: locale?.startsWith('es') ? 'Salidas' : 'Outflows',
         value: totalOutflowsSum,
-        percentage: 50, // Will be calculated properly below
+        percentage: 0, // Will be calculated below
         color: '#EF4444',
         type: 'outflow'
       }
@@ -222,8 +224,15 @@ export function CashFlowComposition({
       combinedData[1].percentage = (totalOutflowsSum / totalFlow) * 100;
     }
 
+    console.log('✅ CashFlowComposition: Processed data', {
+      inflows: inflowsData.length,
+      outflows: outflowsData.length,
+      totalInflows: totalInflowsSum,
+      totalOutflows: totalOutflowsSum
+    });
+
     return { inflowsData, outflowsData, combinedData };
-  }, [historicalData, locale]);
+  }, [data, selectedPeriod, locale]);
 
   // Get chart data based on view mode
   const getChartData = () => {
@@ -388,9 +397,13 @@ export function CashFlowComposition({
                 {locale?.startsWith('es') ? 'Composición Cash Flow' : 'Cash Flow Composition'}
               </h3>
               <p className="text-sm text-white/80">
-                {locale?.startsWith('es') 
-                  ? 'Mes actual (Agosto 2025)'
-                  : 'Current month (August 2025)'}
+                {data?.periods && data.periods.length > 0 ? (
+                  locale?.startsWith('es') 
+                    ? `Período: ${data.periods[selectedPeriod] || data.periods[data.periods.length - 1]}`
+                    : `Period: ${data.periods[selectedPeriod] || data.periods[data.periods.length - 1]}`
+                ) : (
+                  locale?.startsWith('es') ? 'Sin datos' : 'No data'
+                )}
               </p>
             </div>
           </div>
@@ -511,7 +524,7 @@ export function CashFlowComposition({
             {/* Summary Insights */}
             <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
               <h4 className="font-medium text-indigo-800 mb-2">
-                {locale?.startsWith('es') ? 'Resumen (Agosto 2025)' : 'Summary (August 2025)'}
+                {locale?.startsWith('es') ? 'Resumen' : 'Summary'}
               </h4>
               <div className="space-y-1 text-sm text-indigo-700">
                 {viewMode === 'both' && (

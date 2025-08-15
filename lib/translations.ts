@@ -614,6 +614,77 @@ export const translations = {
     'config.preview.test.title': 'Probar con Excel',
     'config.preview.test.subtitle': 'Prueba tu configuración con archivos Excel de muestra',
     'config.preview.test.description': 'Valida tu configuración probándola contra estructuras de archivos Excel.',
+
+    // Configuration Summary translations
+    'config.summary.title': 'Resumen de Configuración',
+    'config.summary.description': 'Vista general de la configuración y sus ajustes',
+    'config.summary.configurationType': 'Tipo de Configuración',
+    'config.summary.periodsRow': 'Fila de Períodos', 
+    'config.summary.periodsRange': 'Rango de Períodos',
+    'config.summary.categoriesColumn': 'Columna de Categorías',
+    'config.summary.categories': 'Categorías',
+    'config.summary.defined': 'definidas',
+    'config.summary.fieldMapping': 'Mapeo de Campos',
+    'config.summary.mapped': 'mapeados',
+    'config.summary.totalFields': 'Campos Totales',
+    'config.summary.mappedFields': 'Campos Mapeados',
+    'config.summary.requiredFields': 'Campos Requeridos',
+    'config.summary.column': 'Columna',
+
+    // Configuration actions
+    'config.actions.validate': 'Validar',
+    'config.actions.testing': 'Probando...',
+    'config.actions.testConfiguration': 'Probar Configuración',
+
+    // Configuration validation
+    'config.validation.title': 'Validación de Configuración',
+    'config.validation.passed': 'Aprobada',
+    'config.validation.failed': 'Falló',
+    'config.validation.errors': 'Errores',
+    'config.validation.warnings': 'Advertencias',
+    'config.validation.periodsRangeFormat': 'El rango de períodos debe estar en formato Excel válido (ej. B3:M3)',
+    'config.validation.categoriesColumnFormat': 'La columna de categorías debe ser una columna Excel válida (ej. A)',
+    'config.validation.noCategoriesWarning': 'No hay categorías definidas. Considera agregar categorías para mejor organización.',
+    'config.validation.lowMappingWarning': 'Menos del 50% de los campos están mapeados. Revisa el mapeo de campos.',
+
+    // Preview tab
+    'config.preview.description': 'Revisa y valida tu configuración antes de guardar',
+    'config.loading': 'Cargando...',
+
+    // More missing keys
+    'config.metadata.title': 'Metadatos',
+    'config.metadata.description': 'Configuraciones de moneda, idioma y unidades',
+
+    // Export and Test section translations
+    'config.export.title': 'Exportar Configuración',
+    'config.export.description': 'Descarga tu configuración como archivo JSON para respaldo o compartir',
+    'config.export.details': 'La configuración se guardará como archivo JSON que puede ser importado después o compartido con otros usuarios.',
+    'config.test.title': 'Probar Configuración',
+    'config.test.description': 'Valida tu configuración probándola contra estructuras de archivos Excel',
+    'config.test.details': 'Ejecuta una validación completa para asegurar que tu configuración funcione correctamente con archivos Excel.',
+    'config.test.testing': 'Probando configuración...',
+    'config.test.passed': 'La prueba pasó exitosamente',
+    'config.test.failed': 'La prueba falló',
+    'config.test.inProgress': 'Ejecutando validación completa de la configuración...',
+    'config.test.validating': 'Validando estructura, campos y categorías',
+
+    // Enhanced validation messages for modal
+    'config.validation.allGood': 'Tu configuración está perfecta y lista para usar.',
+    'config.validation.issuesFound': 'Se encontraron problemas que necesitan ser corregidos.',
+    'config.validation.perfect': '¡Configuración Perfecta!',
+    'config.validation.readyToUse': 'Tu configuración está lista para procesar archivos Excel.',
+
+    // Compact status indicators
+    'config.status.compact.errors': '{count} errores',
+    'config.status.compact.warnings': '{count} advertencias',
+    'config.status.compact.valid': 'Válida',
+    'config.status.compact.details': 'Ver detalles',
+
+    // JSON section
+    'config.json.title': 'Configuración JSON',
+    'config.json.description': 'Configuración generada que será utilizada para procesar archivos Excel',
+    'config.actions.copyJson': 'Copiar JSON',
+    'config.actions.downloadJson': 'Descargar JSON',
     
     // Cash Flow Fields
     'config.fields.initialBalance': 'Balance Inicial',
@@ -690,6 +761,20 @@ export const translations = {
     'config.categories.enterSubcategoryKey': 'Ingresa la clave de subcategoría:',
     'config.categories.enterRowNumber': 'Ingresa el número de fila de Excel:',
     'config.form.row': 'Fila',
+    'config.form.name': 'Nombre',
+    'config.form.namePlaceholder': 'Nombre de la configuración',
+    'config.form.type': 'Tipo',
+    'config.form.typePlaceholder': 'Seleccionar tipo',
+    'config.form.description': 'Descripción',
+    'config.form.descriptionPlaceholder': 'Descripción de la configuración',
+    'config.form.currency': 'Moneda',
+    'config.form.currencyPlaceholder': 'Seleccionar moneda',
+    'config.form.locale': 'Idioma',
+    'config.form.localePlaceholder': 'Seleccionar idioma',
+    'config.form.units': 'Unidades',
+    'config.form.unitsPlaceholder': 'Seleccionar unidades',
+    'config.form.isTemplate': 'Es plantilla',
+    'config.form.isActive': 'Está activa',
     'config.datarows.requiredLabel': 'Requerido',
 
     // New Configuration Page

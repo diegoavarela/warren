@@ -32,16 +32,65 @@ Warren Configuration-Based System is the clean, production-ready version of the 
 3. **Dashboard Components**: All existing UI components (unchanged visually)
 4. **Authentication & Authorization**: User management and RBAC system
 
+### CRITICAL - Configuration-Driven Data Flow
+The system must follow this EXACT flow with NO GUESSING OR AUTO-DETECTION:
+
+```
+1. CREATE CONFIGURATION:
+   User creates P&L or Cash Flow configuration
+   ↓
+   Maps Excel structure: periods, totals, categories  
+   ↓
+   Defines EXPLICIT period mapping (Column B = Jan 2025, Column I = Aug 2025, etc.)
+   ↓
+   Saves configuration to database
+
+2. PROCESS EXCEL FILE:
+   Upload Excel file
+   ↓
+   Select which configuration to use
+   ↓
+   Process using ONLY the configuration (no auto-detection, no guessing)
+   ↓
+   Store processed data with explicit column→period mapping
+
+3. DASHBOARD DISPLAY:
+   Dashboard requests data for specific period (e.g., "Aug 2025")
+   ↓
+   System looks up configuration: "Aug 2025" = "Column I" 
+   ↓
+   Reads Excel data from Column I for all categories/totals
+   ↓
+   Returns data for August 2025 (no guessing, no wrong columns)
+```
+
 ### Data Architecture
 ```
-Excel File → Configuration Processing → processedFinancialData → API → Dashboard
-                                                                 ↓
-                                    New Endpoints: /api/processed-data/*
+Excel File → Configuration (Explicit Mapping) → processedFinancialData → API → Dashboard
+                     ↓                                      ↓
+            Column B = Jan 2025                    Exact column reads only
+            Column I = Aug 2025
 ```
+
+### CONFIGURATION RULES - NEVER BREAK THESE:
+❌ **NEVER DO:**
+- Auto-detect periods from Excel headers
+- Guess which column contains which month  
+- Use hardcoded date calculations
+- Assume monthly progression (Jan, Feb, Mar...)
+- Fall back to auto-detection when configuration exists
+- Parse Excel date serial numbers for period detection
+
+✅ **ALWAYS DO:**
+- Use explicit configuration mapping ONLY
+- Read exact columns specified in configuration
+- Trust user's period definitions completely  
+- Configuration overrides everything else
+- Let user define any period format (monthly, quarterly, yearly, custom)
 
 ### New API Endpoints (Configuration-Based)
 - `GET /api/processed-data/pnl/[companyId]` - P&L dashboard data
-- `GET /api/processed-data/cashflow/[companyId]` - Cash Flow dashboard data
+- `GET /api/processed-data/cashflow/[companyId]` - Cash Flow dashboard data  
 - `GET /api/processed-data/companies/[companyId]/periods` - Available periods
 - `GET /api/processed-data/[companyId]/summary` - Data summary
 
@@ -204,9 +253,36 @@ interface WidgetProps {
 - Is performance optimized (<500ms API responses)?
 - Is it multilingual with help content?
 
+## 🚨 CRITICAL FINANCIAL DATA RULE 🚨
+**NEVER USE MOCK DATA IN THIS PROJECT - EVER**
+
+This is a financial dashboard where accuracy is paramount. Mock data can:
+- Lead to incorrect financial decisions
+- Hide bugs in calculations
+- Give false confidence in numbers
+- Create dangerous discrepancies between test and production
+
+**Always use real data from:**
+- Actual Excel files
+- Real database records  
+- Live API processing
+- Configured mappings
+
+**If data is not available:**
+- Show loading states
+- Display error messages
+- Return empty/null values
+- Never fabricate financial numbers
+
+**Mock data is only acceptable for:**
+- UI layout testing (with clear "DEMO" labels)
+- Unit test fixtures (in test files only)
+- Development scaffolding (removed before commit)
+
 ### Code Quality Standards:
 - **TypeScript**: Full type safety, no `any` types
 - **Error Handling**: Comprehensive error boundaries and API error handling
 - **Performance**: Optimized queries, caching, lazy loading
 - **Testing**: 90%+ coverage with data accuracy validation
 - **Documentation**: Clear comments and API documentation
+- **FINANCIAL DATA**: No mock data, ever - real data only

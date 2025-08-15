@@ -1,25 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { 
-  Eye, 
   Download, 
-  Upload, 
   CheckCircle, 
   AlertCircle, 
+  AlertTriangle,
   FileJson, 
   FileSpreadsheet,
   Copy,
-  Settings
+  ExternalLink
 } from 'lucide-react';
 import { CashFlowConfiguration, PLConfiguration } from '@/lib/types/configurations';
 import { useTranslation } from '@/lib/translations';
+import { ValidationResultsModal } from './ValidationResultsModal';
 
 interface ConfigurationPreviewProps {
   configuration: CashFlowConfiguration | PLConfiguration;
@@ -44,10 +43,17 @@ export function ConfigurationPreview({
   onExport, 
   onTest 
 }: ConfigurationPreviewProps) {
-  const [activeTab, setActiveTab] = useState('json');
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
-  const [testingStatus, setTestingStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalLoading, setIsModalLoading] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const { t } = useTranslation('es');
+
+  // Auto-validate on mount and configuration changes
+  useEffect(() => {
+    const result = validateConfiguration();
+    setValidationResult(result);
+  }, [configuration]);
 
   // Validate configuration
   const validateConfiguration = (): ValidationResult => {
@@ -122,7 +128,7 @@ export function ConfigurationPreview({
       allFields.forEach(field => {
         const value = dataRows[field as keyof typeof dataRows];
         if (value && value > 0) {
-          mappedFieldsCount++;
+          mappedFieldsCount = Math.max(mappedFieldsCount, Object.keys(dataRows).filter(k => (dataRows as any)[k] > 0).length);
         }
       });
     }
@@ -160,17 +166,29 @@ export function ConfigurationPreview({
     };
   };
 
-  // Run validation
-  const runValidation = () => {
-    const result = validateConfiguration();
-    setValidationResult(result);
-    return result;
+  // Test configuration with modal
+  const testConfiguration = async () => {
+    setIsModalOpen(true);
+    setIsModalLoading(true);
+    
+    // Mock test - in real app would call API
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const validation = validateConfiguration();
+    setValidationResult(validation);
+    setIsModalLoading(false);
   };
 
   // Copy JSON to clipboard
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     const jsonString = JSON.stringify(configuration, null, 2);
-    navigator.clipboard.writeText(jsonString);
+    try {
+      await navigator.clipboard.writeText(jsonString);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
   };
 
   // Export configuration
@@ -187,24 +205,9 @@ export function ConfigurationPreview({
     URL.revokeObjectURL(url);
   };
 
-  // Test configuration (mock)
-  const testConfiguration = async () => {
-    setTestingStatus('testing');
-    
-    // Mock test - in real app would call API
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const validation = runValidation();
-    if (validation.isValid) {
-      setTestingStatus('success');
-    } else {
-      setTestingStatus('error');
-    }
-  };
-
-  // Generate configuration summary
+  // Generate compact configuration summary
   const getConfigurationSummary = () => {
-    const validation = validationResult || runValidation();
+    const validation = validationResult || validateConfiguration();
     
     return [
       {
@@ -212,274 +215,157 @@ export function ConfigurationPreview({
         value: configuration.type === 'cashflow' ? t('config.type.cashflow') : t('config.type.pnl')
       },
       {
-        label: t('config.summary.periodsRow'),
-        value: `${t('config.form.row')} ${configuration.structure.periodsRow}`
-      },
-      {
         label: t('config.summary.periodsRange'),
         value: configuration.structure.periodsRange
       },
       ...(configuration.type === 'pnl' ? [{
         label: t('config.summary.categoriesColumn'),
-        value: `${t('config.summary.column')} ${(configuration as PLConfiguration).structure.categoriesColumn}`
+        value: (configuration as PLConfiguration).structure.categoriesColumn
       }] : []),
       {
         label: t('config.form.currency'),
         value: configuration.metadata.currency
       },
       {
-        label: t('config.form.units'),
-        value: configuration.metadata.units
-      },
-      {
-        label: t('config.form.locale'),
-        value: configuration.metadata.locale
-      },
-      {
         label: t('config.summary.categories'),
-        value: `${validation.summary.categoriesCount} ${t('config.summary.defined')}`
-      },
-      {
-        label: t('config.summary.fieldMapping'),
-        value: `${validation.summary.mappedFields}/${validation.summary.totalFields} ${t('config.summary.mapped')}`
+        value: `${validation.summary.categoriesCount}`
       }
     ];
   };
 
+  // Get validation status for compact display
+  const getValidationStatus = () => {
+    if (!validationResult) return { color: 'gray', text: 'Validando...', icon: null };
+    
+    if (validationResult.isValid) {
+      return { 
+        color: 'green', 
+        text: t('config.status.compact.valid'), 
+        icon: <CheckCircle className="h-4 w-4" />
+      };
+    } else {
+      const errorCount = validationResult.errors.length;
+      const warningCount = validationResult.warnings.length;
+      let text = '';
+      if (errorCount > 0) text += t('config.status.compact.errors').replace('{count}', errorCount.toString());
+      if (warningCount > 0) text += (text ? ', ' : '') + t('config.status.compact.warnings').replace('{count}', warningCount.toString());
+      
+      return { 
+        color: 'red', 
+        text, 
+        icon: <AlertCircle className="h-4 w-4" />
+      };
+    }
+  };
+
+  const validationStatus = getValidationStatus();
+
   return (
     <div className="space-y-6">
+      {/* Main Preview Card */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              <CardTitle>{t('config.preview.title')}</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                type="button"
-                variant="outline" 
-                onClick={runValidation}
-                leftIcon={<Settings className="h-4 w-4" />}
-              >
-                {t('config.actions.validate')}
-              </Button>
-              <Button 
-                type="button"
-                variant="outline" 
-                onClick={testConfiguration} 
-                disabled={testingStatus === 'testing'}
-                leftIcon={<FileSpreadsheet className="h-4 w-4" />}
-              >
-                {testingStatus === 'testing' ? t('config.actions.testing') : t('config.actions.testConfiguration')}
-              </Button>
-            </div>
-          </div>
+          <CardTitle>{t('config.preview.title')}</CardTitle>
           <CardDescription>
             {t('config.preview.description')}
           </CardDescription>
         </CardHeader>
-      </Card>
+        <CardContent className="space-y-4">
+          {/* Compact Configuration Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg">
+            {getConfigurationSummary().map((item, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-600">{item.label}:</span>
+                <Badge variant="outline" className="text-xs">{item.value}</Badge>
+              </div>
+            ))}
+          </div>
 
-      {/* Validation Results */}
-      {validationResult && (
-        <Card className={`${validationResult.isValid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-          <CardHeader>
-            <CardTitle className={`flex items-center gap-2 ${validationResult.isValid ? 'text-green-800' : 'text-red-800'}`}>
-              {validationResult.isValid ? (
-                <CheckCircle className="h-5 w-5" />
-              ) : (
-                <AlertCircle className="h-5 w-5" />
-              )}
-              {t('config.validation.title')} {validationResult.isValid ? t('config.validation.passed') : t('config.validation.failed')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Errors */}
-            {validationResult.errors.length > 0 && (
-              <div className="mb-4">
-                <Label className="font-medium text-red-800">{t('config.validation.errors')}:</Label>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  {validationResult.errors.map((error, index) => (
-                    <li key={index} className="text-red-700 text-sm">{error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Warnings */}
-            {validationResult.warnings.length > 0 && (
-              <div className="mb-4">
-                <Label className="font-medium text-orange-800">{t('config.validation.warnings')}:</Label>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  {validationResult.warnings.map((warning, index) => (
-                    <li key={index} className="text-orange-700 text-sm">{warning}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Summary Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <Label className="font-medium">{t('config.summary.totalFields')}</Label>
-                <p className="text-muted-foreground">{validationResult.summary.totalFields}</p>
-              </div>
-              <div>
-                <Label className="font-medium">{t('config.summary.mappedFields')}</Label>
-                <p className="text-muted-foreground">{validationResult.summary.mappedFields}</p>
-              </div>
-              <div>
-                <Label className="font-medium">{t('config.summary.requiredFields')}</Label>
-                <p className="text-muted-foreground">{validationResult.summary.requiredFields}</p>
-              </div>
-              <div>
-                <Label className="font-medium">{t('config.summary.categories')}</Label>
-                <p className="text-muted-foreground">{validationResult.summary.categoriesCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Test Status */}
-      {testingStatus !== 'idle' && (
-        <Card className={`
-          ${testingStatus === 'success' ? 'border-green-200 bg-green-50' : ''}
-          ${testingStatus === 'error' ? 'border-red-200 bg-red-50' : ''}
-          ${testingStatus === 'testing' ? 'border-blue-200 bg-blue-50' : ''}
-        `}>
-          <CardContent className="pt-6">
+          {/* Validation Status */}
+          <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
             <div className="flex items-center gap-2">
-              {testingStatus === 'testing' && <div className="animate-spin h-4 w-4 border-2 border-blue-600 rounded-full border-t-transparent" />}
-              {testingStatus === 'success' && <CheckCircle className="h-4 w-4 text-green-600" />}
-              {testingStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-600" />}
-              <span className="font-medium">
-                {testingStatus === 'testing' && t('config.test.testing')}
-                {testingStatus === 'success' && t('config.test.passed')}
-                {testingStatus === 'error' && t('config.test.failed')}
+              {validationStatus.icon}
+              <span className={`font-medium text-${validationStatus.color}-800`}>
+                Estado de Validación: {validationStatus.text}
               </span>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="json">{t('config.tabs.json')}</TabsTrigger>
-          <TabsTrigger value="summary">{t('config.tabs.summary')}</TabsTrigger>
-          <TabsTrigger value="export">{t('config.tabs.export')}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="json" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FileJson className="h-5 w-5" />
-                  {t('config.json.title')}
-                </CardTitle>
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={copyToClipboard}
-                  leftIcon={<Copy className="h-4 w-4" />}
-                >
-                  {t('config.actions.copyJson')}
-                </Button>
-              </div>
-              <CardDescription>
-                {t('config.json.description')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={JSON.stringify(configuration, null, 2)}
-                readOnly
-                rows={25}
-                className="font-mono text-sm"
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="summary" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('config.summary.title')}</CardTitle>
-              <CardDescription>
-                {t('config.summary.description')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {getConfigurationSummary().map((item, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <Label className="font-medium">{item.label}</Label>
-                    <Badge variant="outline">{item.value}</Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="export" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
-                  {t('config.export.title')}
-                </CardTitle>
-                <CardDescription>
-                  {t('config.export.description')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button 
-                  type="button"
-                  onClick={exportConfiguration} 
-                  className="w-full"
-                  leftIcon={<Download className="h-4 w-4" />}
-                >
-                  {t('config.actions.downloadJson')}
-                </Button>
-                <p className="text-sm text-muted-foreground">
-                  {t('config.export.details')}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  {t('config.test.title')}
-                </CardTitle>
-                <CardDescription>
-                  {t('config.test.description')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button 
-                  type="button"
-                  onClick={testConfiguration} 
-                  className="w-full"
-                  disabled={testingStatus === 'testing'}
-                  variant={testingStatus === 'success' ? 'primary' : 'outline'}
-                  leftIcon={<FileSpreadsheet className="h-4 w-4" />}
-                >
-                  {testingStatus === 'testing' ? t('config.actions.testing') : t('config.actions.testConfiguration')}
-                </Button>
-                <p className="text-sm text-muted-foreground">
-                  {t('config.test.details')}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (validationResult) {
+                    setIsModalOpen(true);
+                  }
+                }}
+                disabled={!validationResult}
+                leftIcon={<ExternalLink className="h-3 w-3" />}
+              >
+                {t('config.status.compact.details')}
+              </Button>
+              <Button
+                type="button"
+                onClick={testConfiguration}
+                leftIcon={<FileSpreadsheet className="h-4 w-4" />}
+              >
+                {t('config.test.title')}
+              </Button>
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* JSON Configuration Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileJson className="h-5 w-5" />
+              <CardTitle>{t('config.json.title')}</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                type="button"
+                variant="outline" 
+                size="sm"
+                onClick={copyToClipboard}
+                leftIcon={copySuccess ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                className={copySuccess ? 'text-green-600 border-green-300' : ''}
+              >
+                {copySuccess ? 'Copiado!' : t('config.actions.copyJson')}
+              </Button>
+              <Button 
+                type="button"
+                onClick={exportConfiguration}
+                size="sm"
+                leftIcon={<Download className="h-4 w-4" />}
+              >
+                {t('config.actions.downloadJson')}
+              </Button>
+            </div>
+          </div>
+          <CardDescription>
+            {t('config.json.description')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={JSON.stringify(configuration, null, 2)}
+            readOnly
+            rows={20}
+            className="font-mono text-sm"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Validation Results Modal */}
+      <ValidationResultsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        validationResult={validationResult}
+        isLoading={isModalLoading}
+      />
     </div>
   );
 }

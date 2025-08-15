@@ -151,7 +151,7 @@ window.devAuth = {
   async quickSetup() {
     console.log('🚀 Setting up development environment...');
     
-    const loginResult = await this.login();
+    const loginResult = await window.devAuth.login();
     if (loginResult.success) {
       console.log('✅ Development authentication configured');
       console.log('🔄 Refreshing page in 2 seconds...');
@@ -168,11 +168,11 @@ window.devAuth = {
 };
 
 // Add global shortcuts
-window.devLogin = window.devAuth.login;
-window.devLogout = window.devAuth.logout;
-window.devAuthStatus = window.devAuth.status;
-window.devTestChat = window.devAuth.testChat;
-window.devQuickSetup = window.devAuth.quickSetup;
+window.devLogin = window.devAuth.login.bind(window.devAuth);
+window.devLogout = window.devAuth.logout.bind(window.devAuth);
+window.devAuthStatus = window.devAuth.status.bind(window.devAuth);
+window.devTestChat = window.devAuth.testChat.bind(window.devAuth);
+window.devQuickSetup = window.devAuth.quickSetup.bind(window.devAuth);
 
 // Auto-display help when this script loads
 console.log(`

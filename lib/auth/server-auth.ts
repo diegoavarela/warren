@@ -26,7 +26,21 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
       return null;
     }
 
-    // Verify JWT
+    // Handle development mock token
+    if (process.env.NODE_ENV === 'development' && token === 'mock-session-token') {
+      return {
+        id: 'clz1234567890abcdef',
+        email: 'platform@warren.com',
+        firstName: 'Platform',
+        lastName: 'Admin',
+        organizationId: 'clz1234567890abcdef',
+        role: 'SUPER_ADMIN',
+        locale: 'en',
+        isActive: true,
+      };
+    }
+
+    // Verify JWT for production/real tokens
     const payload = await verifyJWT(token);
 
     // Get user details

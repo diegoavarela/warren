@@ -16,6 +16,7 @@ import {
   PlusIcon 
 } from "@heroicons/react/24/outline";
 import { ROLES } from "@/lib/auth/rbac";
+import { useToast, ToastContainer } from '@/components/ui/Toast';
 
 interface Configuration {
   id: string;
@@ -32,6 +33,7 @@ function UploadDataPage() {
   const router = useRouter();
   const { locale } = useLocale();
   const { user } = useAuth();
+  const toast = useToast();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>('');
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
@@ -104,17 +106,22 @@ function UploadDataPage() {
     return (
       <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
         <AppLayout>
+          <ToastContainer 
+            toasts={toast.toasts} 
+            onClose={toast.removeToast} 
+            position="top-right" 
+          />
           <div className="container mx-auto py-6">
             {/* Back Navigation */}
             <div className="mb-6">
-              <Button
-                variant="ghost"
+              <button
                 onClick={() => setStep('select-config')}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium whitespace-nowrap"
+                style={{ minWidth: 'max-content' }}
               >
-                <ArrowLeftIcon className="w-4 h-4" />
-                <span>{locale?.startsWith('es') ? 'Volver a Configuraciones' : 'Back to Configurations'}</span>
-              </Button>
+                <ArrowLeftIcon className="w-4 h-4 flex-shrink-0" />
+                {locale?.startsWith('es') ? 'Volver a Configuraciones' : 'Back to Configurations'}
+              </button>
             </div>
 
             <div className="max-w-2xl mx-auto">
@@ -132,22 +139,82 @@ function UploadDataPage() {
 
               <Card>
                 <CardBody className="p-8">
-                  <div className="text-center py-12">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
                     <DocumentArrowUpIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {locale?.startsWith('es') ? 'Funcionalidad en Desarrollo' : 'Feature in Development'}
+                      {locale?.startsWith('es') ? 'Arrastra tu archivo Excel aquí' : 'Drag your Excel file here'}
                     </h3>
-                    <p className="text-gray-600 mb-6">
-                      {locale?.startsWith('es') 
-                        ? 'La nueva carga basada en configuraciones estará disponible pronto.'
-                        : 'The new configuration-based upload will be available soon.'}
+                    <p className="text-gray-600 mb-4">
+                      {locale?.startsWith('es') ? 'o haz clic para seleccionar' : 'or click to select'}
                     </p>
-                    <Button
-                      variant="secondary"
-                      onClick={() => router.push('/upload')}
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                      id="file-upload"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          console.log('File selected:', file.name, 'Config:', selectedConfiguration.name);
+                          
+                          try {
+                            // Convert file to base64
+                            const reader = new FileReader();
+                            reader.onload = async (event) => {
+                              const base64Content = event.target?.result as string;
+                              const base64Data = base64Content.split(',')[1]; // Remove data:... prefix
+                              
+                              // Upload file to database
+                              const uploadResponse = await fetch('/api/financial-data-files', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  companyId: selectedCompanyId,
+                                  filename: file.name,
+                                  originalFilename: file.name,
+                                  fileContent: base64Data,
+                                  fileSize: file.size,
+                                  mimeType: file.type
+                                })
+                              });
+                              
+                              if (uploadResponse.ok) {
+                                const uploadResult = await uploadResponse.json();
+                                console.log('✅ File uploaded:', uploadResult);
+                                
+                                // Show success and navigate to dashboard
+                                toast.success(locale?.startsWith('es') 
+                                  ? `Archivo ${file.name} subido exitosamente. Redirigiendo al dashboard...`
+                                  : `File ${file.name} uploaded successfully. Redirecting to dashboard...`
+                                );
+                                
+                                // Navigate to appropriate dashboard
+                                const dashboardType = selectedConfiguration.type === 'cashflow' ? 'cashflow' : 'pnl';
+                                router.push(`/dashboard/company-admin/${dashboardType}`);
+                              } else {
+                                throw new Error('Upload failed');
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          } catch (error) {
+                            console.error('❌ Upload error:', error);
+                            toast.error(locale?.startsWith('es') 
+                              ? `Error al subir el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                              : `Upload error: ${error instanceof Error ? error.message : 'Unknown error'}`
+                            );
+                          }
+                        }
+                      }}
+                    />
+                    <label 
+                      htmlFor="file-upload" 
+                      className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
                     >
-                      {locale?.startsWith('es') ? 'Usar Carga Legacy' : 'Use Legacy Upload'}
-                    </Button>
+                      {locale?.startsWith('es') ? 'Seleccionar Archivo' : 'Select File'}
+                    </label>
+                    <p className="text-xs text-gray-500 mt-4">
+                      {locale?.startsWith('es') ? 'Formatos soportados: .xlsx, .xls' : 'Supported formats: .xlsx, .xls'}
+                    </p>
                   </div>
                 </CardBody>
               </Card>
@@ -161,17 +228,22 @@ function UploadDataPage() {
   return (
     <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
       <AppLayout>
+        <ToastContainer 
+          toasts={toast.toasts} 
+          onClose={toast.removeToast} 
+          position="top-right" 
+        />
         <div className="container mx-auto py-6">
           {/* Back Navigation */}
           <div className="mb-6">
-            <Button
-              variant="ghost"
+            <button
               onClick={() => router.push('/dashboard/company-admin')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium whitespace-nowrap"
+              style={{ minWidth: 'max-content' }}
             >
-              <ArrowLeftIcon className="w-4 h-4" />
-              <span>{locale?.startsWith('es') ? 'Volver a Administración' : 'Back to Administration'}</span>
-            </Button>
+              <ArrowLeftIcon className="w-4 h-4 flex-shrink-0" />
+              {locale?.startsWith('es') ? 'Volver a Administración' : 'Back to Administration'}
+            </button>
           </div>
 
           <div className="max-w-4xl mx-auto">

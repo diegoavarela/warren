@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useLiveCashFlowData, LiveCashFlowDataResponse } from '@/lib/hooks/useLiveCashFlowData';
 import { KPICard } from './KPICard';
 import { WarrenChart, CHART_CONFIGS } from '../charts/WarrenChart';
 import { MetricCard } from './MetricCard';
@@ -104,59 +103,97 @@ export function CashFlowDashboard({
   locale = 'es-MX',
   onPeriodChange 
 }: CashFlowDashboardProps) {
-  // Use the new processed Cash Flow data hook
-  const { 
-    data: processedData, 
-    loading, 
-    error 
-  } = useLiveCashFlowData({
-    companyId: companyId || ''
-  });
+  // State for live API data
+  const [liveData, setLiveData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  console.log('🔍 Cash Flow Dashboard: Live hook data:', { processedData, loading, error, companyId });
+  // Fetch live API data
+  useEffect(() => {
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchLiveData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔍 Fetching live Cash Flow data for company:', companyId);
+        
+        const response = await fetch(`/api/cashflow-live/${companyId}?limit=12`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'API returned failure');
+        }
+
+        console.log('✅ Live Cash Flow data fetched successfully:', result);
+        setLiveData(result);
+
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch live Cash Flow data';
+        console.error('❌ Error fetching live Cash Flow data:', err);
+        setError(errorMessage);
+        setLiveData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLiveData();
+  }, [companyId]);
+
+  console.log('🔍 Cash Flow Dashboard: Live data:', { liveData, loading, error, companyId });
   
-  // Debug: Check which configuration is being used for LIVE data
-  if (processedData) {
-    console.log('🔧 LIVE Configuration Debug - Dashboard is using:');
-    console.log('- Configuration Name:', processedData.data?.metadata?.configurationName);
-    console.log('- Configuration ID:', processedData.metadata?.configurationId);
-    console.log('- Data Source:', processedData.metadata?.source, '(should be live-configuration)');
-    console.log('- Processed At:', processedData.metadata?.requestedAt);
+  // Debug: Check which configuration is being used
+  if (liveData) {
+    console.log('🔧 Configuration Debug - Dashboard is using:');
+    console.log('- Configuration Name:', liveData.data?.metadata?.configurationName);
+    console.log('- Data Source:', 'live-api');
+    console.log('- Processed At:', new Date().toISOString());
     console.log('- Data Structure:', {
-      periodsCount: processedData.data?.periods?.length,
-      periodsFirstFew: processedData.data?.periods?.slice(0, 3),
-      hasDataRows: Object.keys(processedData.data?.data?.dataRows || {}).length > 0,
-      hasCategories: Object.keys(processedData.data?.data?.categories || {}).length > 0
+      periodsCount: liveData.data?.periods?.length,
+      periodsFirstFew: liveData.data?.periods?.slice(0, 3),
+      hasDataRows: Object.keys(liveData.data?.data?.dataRows || {}).length > 0,
+      hasCategories: Object.keys(liveData.data?.data?.categories || {}).length > 0
     });
   }
   
-  // Debug: Show the actual structure of LIVE processedData
-  if (processedData) {
-    console.log('📊 LIVE Cash Flow Debug - Full processed data structure:', JSON.stringify(processedData, null, 2));
-    console.log('📊 LIVE Cash Flow Debug - Data periods:', processedData.data?.periods);
-    console.log('📊 LIVE Cash Flow Debug - Data rows keys:', Object.keys(processedData.data?.data?.dataRows || {}));
+  // Debug: Show the actual structure of liveData
+  if (liveData) {
+    console.log('📊 Cash Flow Debug - Full live data structure:', JSON.stringify(liveData, null, 2));
+    console.log('📊 Cash Flow Debug - Data periods:', liveData.data?.periods);
+    console.log('📊 Cash Flow Debug - Data rows keys:', Object.keys(liveData.data?.data?.dataRows || {}));
     
-    // Look for Excel structure mapping
-    if (processedData.data?.data?.structure) {
-      console.log('📊 Cash Flow Debug - Structure mapping found:', processedData.data.data.structure);
-    }
-    if (processedData.data?.data?.periodsRow) {
-      console.log('📊 Cash Flow Debug - Periods row:', processedData.data.data.periodsRow);
-      console.log('📊 Cash Flow Debug - Periods range:', processedData.data.data.periodsRange);
-    }
+    // Configuration-based processing no longer exposes Excel structure
+    console.log('📊 Cash Flow Debug - Using configuration-based processing');
     
     // Show current values being used
     const febIndex = 1; // February should be index 1
     console.log('📊 Cash Flow Debug - February values (index 1):');
-    console.log('- totalInflows:', processedData.data?.data?.dataRows?.totalInflows?.values[febIndex]);
-    console.log('- totalOutflows:', processedData.data?.data?.dataRows?.totalOutflows?.values[febIndex]);
-    console.log('- finalBalance:', processedData.data?.data?.dataRows?.finalBalance?.values[febIndex]);
-    console.log('- monthlyGeneration:', processedData.data?.data?.dataRows?.monthlyGeneration?.values[febIndex]);
+    console.log('- totalInflows:', liveData.data?.data?.dataRows?.totalInflows?.values[febIndex]);
+    console.log('- totalOutflows:', liveData.data?.data?.dataRows?.totalOutflows?.values[febIndex]);
+    console.log('- finalBalance:', liveData.data?.data?.dataRows?.finalBalance?.values[febIndex]);
+    console.log('- monthlyGeneration:', liveData.data?.data?.dataRows?.monthlyGeneration?.values[febIndex]);
   }
 
-  // Transform processed data to the format expected by the dashboard
-  const directData = processedData ? {
-    periods: processedData.data.periods.map((period: string, index: number) => {
+  // Transform live data to the format expected by the dashboard
+  const directData = liveData ? {
+    periods: liveData.data.periods.map((period: string, index: number) => {
       // Generate proper dates - assuming monthly periods starting from Jan 2025
       const year = 2025;
       const month = index + 1; // 1-based month
@@ -170,27 +207,33 @@ export function CashFlowDashboard({
         periodEnd: periodEnd.toISOString().split('T')[0],
         periodType: 'monthly' as const,
         lineItems: [], // Empty array to prevent filter errors
-        totalInflows: processedData.data.data.dataRows?.totalInflows?.values[index] || 0,
-        totalOutflows: Math.abs(processedData.data.data.dataRows?.totalOutflows?.values[index] || 0),
-        netCashFlow: processedData.data.data.dataRows?.monthlyGeneration?.values[index] || 0,
-        currency: processedData.data.metadata.currency,
-        initialBalance: processedData.data.data.dataRows?.initialBalance?.values[index] || 0,
-        finalBalance: processedData.data.data.dataRows?.finalBalance?.values[index] || 0,
-        lowestBalance: processedData.data.data.dataRows?.finalBalance?.values[index] || 0, // Use finalBalance as fallback
-        monthlyGeneration: processedData.data.data.dataRows?.monthlyGeneration?.values[index] || 0
+        totalInflows: liveData.data.data.dataRows?.totalInflows?.values[index] || 0,
+        totalOutflows: Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0),
+        netCashFlow: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0,
+        currency: liveData.data.metadata.currency,
+        initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index] || 0,
+        finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0,
+        lowestBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0, // Use finalBalance as fallback
+        monthlyGeneration: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0
       };
     }),
     summary: {
-      totalPeriods: processedData.data.periods.length,
-      currency: processedData.data.metadata.currency,
-      periodRange: `${processedData.data.periods[0]} - ${processedData.data.periods[processedData.data.periods.length - 1]}`,
+      totalPeriods: liveData.data.periods.length,
+      currency: liveData.data.metadata.currency,
+      periodRange: `${liveData.data.periods[0]} - ${liveData.data.periods[liveData.data.periods.length - 1]}`,
       lastUpdated: new Date().toISOString()
+    },
+    // Add the nested data structure for CashFlowComposition
+    data: {
+      data: {
+        categories: liveData.data.data.categories
+      }
     }
   } : null;
 
-  const isDirectMode = !!processedData;
+  const isDirectMode = !!liveData;
   
-  console.log('🔍 Cash Flow Dashboard: isDirectMode =', isDirectMode, 'processedData exists =', !!processedData);
+  console.log('🔍 Cash Flow Dashboard: isDirectMode =', isDirectMode, 'liveData exists =', !!liveData);
   
   const [regularData, setRegularData] = useState<any>(null);
   
@@ -1018,11 +1061,15 @@ export function CashFlowDashboard({
               {/* Row 4: Composición Cash Flow | Mapa de Calor Cash Flow */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 <CashFlowComposition
-                  historicalData={directData?.periods || []}
+                  data={directData ? {
+                    periods: liveData.data.periods,
+                    categories: liveData.data.data.categories as any
+                  } : null}
                   formatValue={formatValue}
                   formatPercentage={formatPercentage}
                   locale={locale}
                   fullWidth={false}
+                  selectedPeriod={liveData?.data?.periods?.findIndex((period: string) => period.includes('Aug 2025')) || 7}
                 />
                 <CashFlowHeatmap
                   historicalData={data.periods}

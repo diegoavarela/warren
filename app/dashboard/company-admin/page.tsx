@@ -249,111 +249,70 @@ function CompanyAdminDashboard() {
     console.log('Fetching financial statements for company:', companyId);
     setLoadingStatements(true);
     try {
-      // Check for processed data via our new configuration-based API
-      const response = await fetch(`/api/processed-data/${companyId}/summary`);
+      // Check for active configurations (Live API approach)
+      const response = await fetch(`/api/configurations?companyId=${companyId}`);
       console.log('Response status:', response.status);
       console.log('Response URL:', response.url);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('Processed data summary:', data);
+        const result = await response.json();
+        console.log('Active configurations:', result);
         
-        if (data.success && data.data.summary && Array.isArray(data.data.summary)) {
-          // Transform processed data summary to match expected format
-          const pnlData = data.data.summary
-            .filter((summary: any) => summary.type === 'pnl')
-            .map((summary: any) => ({
-              id: `processed-pnl-${summary.companyId}`,
-              statementType: 'pnl',
-              periodEnd: summary.latestPeriod + '-01',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              processingMethod: 'configuration'
-            }));
+        if (result.success && Array.isArray(result.data)) {
+          const configurations = result.data;
+          // Find active configurations for each type
+          const activePnlConfigs = configurations.filter((config: any) => 
+            config.type === 'pnl' && config.isActive
+          );
+          const activeCashFlowConfigs = configurations.filter((config: any) => 
+            config.type === 'cashflow' && config.isActive
+          );
+          
+          // Transform configurations to match expected format
+          const pnlData = activePnlConfigs.map((config: any) => ({
+            id: `live-pnl-${config.id}`,
+            statementType: 'pnl',
+            periodEnd: new Date().toISOString().split('T')[0],
+            createdAt: config.createdAt,
+            updatedAt: config.updatedAt,
+            processingMethod: 'live-api'
+          }));
             
-          const cashFlowData = data.data.summary
-            .filter((summary: any) => summary.type === 'cashflow')
-            .map((summary: any) => ({
-              id: `processed-cashflow-${summary.companyId}`,
-              statementType: 'cashflow',
-              periodEnd: summary.latestPeriod + '-01',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              processingMethod: 'configuration'
-            }));
+          const cashFlowData = activeCashFlowConfigs.map((config: any) => ({
+            id: `live-cashflow-${config.id}`,
+            statementType: 'cashflow',
+            periodEnd: new Date().toISOString().split('T')[0],
+            createdAt: config.createdAt,
+            updatedAt: config.updatedAt,
+            processingMethod: 'live-api'
+          }));
           
           setPnlStatements(pnlData);
           setCashFlowStatements(cashFlowData);
-          console.log('Set P&L statements:', pnlData.length, 'records (from processed data)');
-          console.log('Set Cash Flow statements:', cashFlowData.length, 'records (from processed data)');
+          console.log('Set P&L statements:', pnlData.length, 'records (from live configurations)');
+          console.log('Set Cash Flow statements:', cashFlowData.length, 'records (from live configurations)');
           
           // Set template names for configuration-based data
           if (pnlData.length > 0) {
-            setPnlTemplateName('Configuration-based P&L');
+            setPnlTemplateName('Live P&L Configuration');
           }
           if (cashFlowData.length > 0) {
-            setCashFlowTemplateName('Configuration-based Cash Flow');
+            setCashFlowTemplateName('Live Cash Flow Configuration');
           }
         } else {
-          console.log('No processed data found, checking for direct cash flow access...');
-          // For backward compatibility, check if company has direct cash flow access
-          const selectedCompany = companies.find(c => c.id === companyId);
-          if (selectedCompany?.cashflowDirectMode) {
-            setCashFlowStatements([{
-              id: 'direct-cashflow',
-              statementType: 'cashflow',
-              periodEnd: new Date().toISOString(),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              processingMethod: 'direct'
-            }]);
-            setCashFlowTemplateName('Direct Integration');
-          } else {
-            setPnlStatements([]);
-            setCashFlowStatements([]);
-          }
-        }
-      } else if (response.status === 404) {
-        console.log('Processed data API not found, this is expected for companies without processed data');
-        // Check if company has direct cash flow access for backward compatibility
-        const selectedCompany = companies.find(c => c.id === companyId);
-        if (selectedCompany?.cashflowDirectMode) {
-          setCashFlowStatements([{
-            id: 'direct-cashflow',
-            statementType: 'cashflow',
-            periodEnd: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            processingMethod: 'direct'
-          }]);
-          setCashFlowTemplateName('Direct Integration');
-        } else {
+          console.log('No active configurations found for this company');
           setPnlStatements([]);
           setCashFlowStatements([]);
         }
       } else {
-        console.error('API response not OK. Status:', response.status, response.statusText);
+        console.log('Failed to fetch configurations:', response.status);
         setPnlStatements([]);
         setCashFlowStatements([]);
       }
     } catch (error) {
-      console.error('Error fetching financial statements:', error);
-      // Fallback for companies with direct access
-      const selectedCompany = companies.find(c => c.id === companyId);
-      if (selectedCompany?.cashflowDirectMode) {
-        setCashFlowStatements([{
-          id: 'direct-cashflow',
-          statementType: 'cashflow',
-          periodEnd: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          processingMethod: 'direct'
-        }]);
-        setCashFlowTemplateName('Direct Integration');
-      } else {
-        setPnlStatements([]);
-        setCashFlowStatements([]);
-      }
+      console.error('Error fetching configurations:', error);
+      setPnlStatements([]);
+      setCashFlowStatements([]);
     } finally {
       setLoadingStatements(false);
     }

@@ -94,6 +94,7 @@ export class ConfigurationService {
         type: companyConfigurations.type,
         name: companyConfigurations.name,
         description: companyConfigurations.description,
+        configJson: companyConfigurations.configJson,
         isActive: companyConfigurations.isActive,
         isTemplate: companyConfigurations.isTemplate,
         parentConfigId: companyConfigurations.parentConfigId,
@@ -107,8 +108,31 @@ export class ConfigurationService {
       .leftJoin(users, eq(companyConfigurations.createdBy, users.id))
       .where(and(...conditions))
       .orderBy(desc(companyConfigurations.createdAt));
+
+    // For each configuration, get the most recent processed file information
+    const configurationsWithFiles = await Promise.all(
+      configurations.map(async (config) => {
+        const recentFile = await db
+          .select({
+            fileName: financialDataFiles.originalFilename,
+            fileSize: financialDataFiles.fileSize,
+            processedAt: processedFinancialData.processedAt,
+            processingStatus: processedFinancialData.processingStatus,
+          })
+          .from(processedFinancialData)
+          .leftJoin(financialDataFiles, eq(processedFinancialData.fileId, financialDataFiles.id))
+          .where(eq(processedFinancialData.configId, config.id))
+          .orderBy(desc(processedFinancialData.processedAt))
+          .limit(1);
+
+        return {
+          ...config,
+          lastProcessedFile: recentFile.length > 0 ? recentFile[0] : null,
+        };
+      })
+    );
     
-    return configurations;
+    return configurationsWithFiles;
   }
   
   /**

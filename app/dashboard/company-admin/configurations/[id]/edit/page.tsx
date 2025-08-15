@@ -9,13 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Settings, Grid3x3, Database, Layers, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Settings, Database, Layers, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppLayout } from '@/components/AppLayout';
-import { ExcelGridHelper } from '@/components/configuration/ExcelGridHelper';
 import { DataRowsEditor } from '@/components/configuration/DataRowsEditor';
 import { CategoryBuilder } from '@/components/configuration/CategoryBuilder';
 import { ConfigurationPreview } from '@/components/configuration/ConfigurationPreview';
+import { PeriodMappingEditor } from '@/components/configuration/PeriodMappingEditor';
 import { CashFlowConfiguration, PLConfiguration } from '@/lib/types/configurations';
 import { useTranslation } from '@/lib/translations';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
@@ -197,6 +197,10 @@ export default function EditConfigurationPage() {
       parsedConfigJson.name = formData.name;
       parsedConfigJson.version = (configuration?.version || 0) + 1;
       
+      // Debug: Check if period mapping is included
+      console.log('🔍 Period mapping in configData:', parsedConfigJson.structure.periodMapping);
+      console.log('🔍 Full structure:', parsedConfigJson.structure);
+      
       const payload = {
         name: formData.name,
         description: formData.description || '',
@@ -208,6 +212,7 @@ export default function EditConfigurationPage() {
       };
       
       console.log('Updating configuration with payload:', payload);
+      console.log('🔍 Payload configJson periodMapping:', payload.configJson.structure.periodMapping);
       
       const response = await fetch(`/api/configurations/${configId}`, {
         method: 'PUT',
@@ -234,8 +239,8 @@ export default function EditConfigurationPage() {
       await fetch(`/api/processed-data/${selectedCompany.id}/invalidate`, { method: 'POST' })
         .catch(err => console.warn('⚠️ Could not invalidate cache:', err));
       
-      // Navigate back to the configuration detail page
-      router.push(`/dashboard/company-admin/configurations/${configId}`);
+      // Navigate back to the configurations list
+      router.push('/dashboard/company-admin/configurations');
       
     } catch (error) {
       console.error('❌ Error updating configuration:', error);
@@ -317,10 +322,10 @@ export default function EditConfigurationPage() {
         <div className="flex items-center gap-4 mb-8">
           <Button 
             variant="ghost" 
-            onClick={() => router.push(`/dashboard/company-admin/configurations/${configId}`)}
+            onClick={() => router.push('/dashboard/company-admin/configurations')}
             leftIcon={<ArrowLeft className="h-4 w-4" />}
           >
-            {t('common.back')}
+            {t('config.navigation.backToConfigurations')}
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{t('config.title.edit')}</h1>
@@ -336,9 +341,9 @@ export default function EditConfigurationPage() {
               <Settings className="h-4 w-4" />
               {t('config.tabs.basic')}
             </TabsTrigger>
-            <TabsTrigger value="structure" className="flex items-center gap-2">
-              <Grid3x3 className="h-4 w-4" />
-              {t('config.tabs.structure')}
+            <TabsTrigger value="periods" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Period Mapping
             </TabsTrigger>
             <TabsTrigger value="datarows" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -349,7 +354,6 @@ export default function EditConfigurationPage() {
               {t('config.tabs.categories')}
             </TabsTrigger>
             <TabsTrigger value="preview" className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
               {t('config.tabs.preview')}
             </TabsTrigger>
           </TabsList>
@@ -495,30 +499,24 @@ export default function EditConfigurationPage() {
               </Card>
             </TabsContent>
 
-            {/* Excel Structure Tab */}
-            <TabsContent value="structure" className="space-y-6">
+            {/* Period Mapping Tab */}
+            <TabsContent value="periods" className="space-y-6">
               {configData ? (
-                <ExcelGridHelper
-                  periodsRow={configData.structure.periodsRow}
+                <PeriodMappingEditor
                   periodsRange={configData.structure.periodsRange}
-                  categoriesColumn={configData.type === 'pnl' ? (configData as PLConfiguration).structure.categoriesColumn : undefined}
-                  onPeriodsRowChange={(row) => {
+                  currentMapping={configData.structure.periodMapping || []}
+                  onChange={(mapping) => {
+                    console.log('📝 Received period mapping onChange:', mapping);
                     const updatedConfig = { ...configData };
-                    updatedConfig.structure.periodsRow = row;
+                    updatedConfig.structure.periodMapping = mapping;
+                    console.log('📝 Updated config with period mapping:', updatedConfig.structure.periodMapping);
                     setConfigData(updatedConfig);
                   }}
-                  onPeriodsRangeChange={(range) => {
-                    const updatedConfig = { ...configData };
-                    updatedConfig.structure.periodsRange = range;
-                    setConfigData(updatedConfig);
+                  onValidate={(isValid, errors) => {
+                    if (!isValid) {
+                      console.warn('Period mapping validation failed:', errors);
+                    }
                   }}
-                  onCategoriesColumnChange={configData.type === 'pnl' ? (column) => {
-                    const updatedConfig = { ...configData } as PLConfiguration;
-                    updatedConfig.structure.categoriesColumn = column;
-                    setConfigData(updatedConfig);
-                  } : undefined}
-                  configurationType={configData.type}
-                  configurationId={configId}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
@@ -575,7 +573,7 @@ export default function EditConfigurationPage() {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => router.push(`/dashboard/company-admin/configurations/${configId}`)}
+                onClick={() => router.push('/dashboard/company-admin/configurations')}
               >
                 {t('common.cancel')}
               </Button>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, FileSpreadsheet, Settings, Eye, Trash2, Edit, TrendingUp, DollarSign, ArrowLeft } from 'lucide-react';
+import { PlusCircle, FileSpreadsheet, Trash2, Edit, TrendingUp, DollarSign, ArrowLeft } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
 
@@ -23,6 +23,12 @@ interface Configuration {
   createdBy: string;
   createdByName: string;
   createdByLastName: string;
+  lastProcessedFile?: {
+    fileName: string;
+    fileSize: number;
+    processedAt: string;
+    processingStatus: string;
+  } | null;
 }
 
 export default function ConfigurationsPage() {
@@ -224,17 +230,17 @@ export default function ConfigurationsPage() {
                       Versión {config.version} • Creada por {config.createdByName} {config.createdByLastName} 
                       • {new Date(config.createdAt).toLocaleDateString()}
                     </div>
+                    {config.lastProcessedFile && (
+                      <div className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-md inline-block mt-2">
+                        📄 Mapeado con: {config.lastProcessedFile.fileName}
+                        {config.lastProcessedFile.processingStatus === 'completed' && (
+                          <span className="ml-2 text-green-600">✓</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}`)}
-                      className="flex items-center justify-center"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -266,14 +272,19 @@ export default function ConfigurationsPage() {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}/validate`)}
-                      leftIcon={<Settings className="h-4 w-4" />}
-                    >
-                      Probar Configuración
-                    </Button>
+                    {config.lastProcessedFile && config.lastProcessedFile.processingStatus === 'completed' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const dashboardType = config.type === 'cashflow' ? 'cashflow' : 'pnl';
+                          router.push(`/dashboard/company-admin/${dashboardType}`);
+                        }}
+                        leftIcon={config.type === 'cashflow' ? <TrendingUp className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />}
+                      >
+                        Ver Dashboard
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}/process`)}

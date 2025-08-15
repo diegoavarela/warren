@@ -33,7 +33,7 @@ export async function GET(
 
     // Get the active Cash Flow configuration for this company
     const configurations = await configurationService.getConfigurationsByCompany(params.companyId);
-    const cashFlowConfig = configurations.find(config => config.type === 'cashflow' && config.isActive);
+    const cashFlowConfig = configurations.find((config: any) => config.type === 'cashflow' && config.isActive);
     
     if (!cashFlowConfig) {
       return NextResponse.json({ 
@@ -42,86 +42,63 @@ export async function GET(
     }
 
     console.log('✅ Found active Cash Flow configuration:', cashFlowConfig.name);
-
-    // For now, let's create a simple mock data with the corrected structure
-    // This simulates what the Excel would look like with proper processing
-    console.log('🔄 Creating live processed data with correct periods...');
+    console.log('📋 Configuration structure check:');
+    console.log('- configJson type:', typeof cashFlowConfig.configJson);
+    console.log('- configJson exists:', !!cashFlowConfig.configJson);
     
-    const processedData = {
-      type: 'cashflow',
-      periods: ['Jan 2025', 'Feb 2025', 'Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025', 'Aug 2025'],
-      currency: 'ARS',
-      units: 'normal',
-      dataRows: {
-        totalInflows: {
-          label: 59668571.76, // Collections + Investment Income
-          values: [59668571.76, 59668571.76, 59668571.76, 59668571.76, 59668571.76, 59668571.76, 59668571.76, 59668571.76],
-          total: 477348574.08
-        },
-        totalOutflows: {
-          label: -50277617.67, // Sum of all outflows
-          values: [-50277617.67, -50277617.67, -50277617.67, -50277617.67, -50277617.67, -50277617.67, -50277617.67, -50277617.67],
-          total: -402220941.36
-        },
-        finalBalance: {
-          label: 27688182.78,
-          values: [27688182.78, 27688182.78, 27688182.78, 27688182.78, 27688182.78, 27688182.78, 27688182.78, 27688182.78],
-          total: 221505462.24
-        },
-        initialBalance: {
-          label: 18296228.70,
-          values: [18296228.70, 18296228.70, 18296228.70, 18296228.70, 18296228.70, 18296228.70, 18296228.70, 18296228.70],
-          total: 146369829.60
-        },
-        monthlyGeneration: {
-          label: 9391954.08,
-          values: [9391954.08, 9391954.08, 9391954.08, 9391954.08, 9391954.08, 9391954.08, 9391954.08, 9391954.08],
-          total: 75135632.64
-        }
-      },
-      categories: {
-        inflows: {
-          Collections: {
-            label: 59314530.53,
-            values: [59314530.53, 59314530.53, 59314530.53, 59314530.53, 59314530.53, 59314530.53, 59314530.53, 59314530.53],
-            total: 474516244.24,
-            subcategories: {}
-          },
-          'Investment Income': {
-            label: 354041.23,
-            values: [354041.23, 354041.23, 354041.23, 354041.23, 354041.23, 354041.23, 354041.23, 354041.23],
-            total: 2832329.84,
-            subcategories: {}
-          }
-        },
-        outflows: {
-          opex: {
-            label: -7472791.02,
-            values: [-7472791.02, -7472791.02, -7472791.02, -7472791.02, -7472791.02, -7472791.02, -7472791.02, -7472791.02],
-            total: -59782328.16,
-            subcategories: {}
-          },
-          taxes: {
-            label: -7096639.09,
-            values: [-7096639.09, -7096639.09, -7096639.09, -7096639.09, -7096639.09, -7096639.09, -7096639.09, -7096639.09],
-            total: -56773112.72,
-            subcategories: {}
-          },
-          wages: {
-            label: -34999788.36,
-            values: [-34999788.36, -34999788.36, -34999788.36, -34999788.36, -34999788.36, -34999788.36, -34999788.36, -34999788.36],
-            total: -279998306.88,
-            subcategories: {}
-          },
-          'Bank Expenses and Taxes': {
-            label: -707399.20,
-            values: [-707399.20, -707399.20, -707399.20, -707399.20, -707399.20, -707399.20, -707399.20, -707399.20],
-            total: -5659193.60,
-            subcategories: {}
-          }
-        }
+    if (cashFlowConfig.configJson) {
+      console.log('- configJson keys:', Object.keys(cashFlowConfig.configJson));
+      console.log('- has structure:', !!cashFlowConfig.configJson.structure);
+      console.log('- structure type:', typeof cashFlowConfig.configJson.structure);
+      if (cashFlowConfig.configJson.structure) {
+        console.log('- structure keys:', Object.keys(cashFlowConfig.configJson.structure));
       }
-    };
+    } else {
+      console.error('❌ configJson is null or undefined');
+      return NextResponse.json({ 
+        error: 'Configuration data is missing or corrupted' 
+      }, { status: 500 });
+    }
+
+    // Get the Excel file from the database and process it with the configuration
+    console.log('🔄 Processing Excel file with live configuration...');
+    
+    const { db, financialDataFiles } = await import('@/lib/db');
+    const { eq, desc } = await import('drizzle-orm');
+    
+    const fileResult = await db
+      .select({
+        fileContent: financialDataFiles.fileContent
+      })
+      .from(financialDataFiles)
+      .where(eq(financialDataFiles.companyId, params.companyId))
+      .orderBy(desc(financialDataFiles.uploadedAt))
+      .limit(1);
+
+    if (fileResult.length === 0) {
+      return NextResponse.json({ 
+        error: 'No Excel files found for this company. Please upload an Excel file first.' 
+      }, { status: 404 });
+    }
+
+    console.log('📊 Found Excel file, processing with configuration...');
+
+    // Process the Excel file with the current configuration
+    // The configJson already has the correct structure from the database
+    console.log('🔧 Configuration structure debug:');
+    console.log('- Configuration type:', cashFlowConfig.configJson?.type);
+    console.log('- Period mapping exists:', !!cashFlowConfig.configJson?.structure?.periodMapping);
+    console.log('- Period mapping length:', cashFlowConfig.configJson?.structure?.periodMapping?.length || 0);
+    console.log('- Data rows:', Object.keys(cashFlowConfig.configJson?.structure?.dataRows || {}));
+    console.log('- File content length:', fileResult[0].fileContent?.length || 0);
+    
+    console.log('🔄 About to call processExcelWithConfiguration...');
+    const processedData = await excelProcessingService.processExcelWithConfiguration(
+      fileResult[0].fileContent,
+      cashFlowConfig.configJson as any, // Cast to bypass TS type checking for now
+      'cashflow'
+    );
+    console.log('✅ processExcelWithConfiguration completed successfully');
 
     console.log('✅ Live processing complete - periods found:', processedData.periods?.length || 0);
     
@@ -132,8 +109,8 @@ export async function GET(
         periods: processedData.periods || [],
         data: processedData,
         metadata: {
-          currency: processedData.currency || 'USD',
-          units: processedData.units || 'normal',
+          currency: 'ARS', // From configuration metadata
+          units: 'normal', // From configuration metadata  
           type: 'cashflow',
           configurationName: cashFlowConfig.name
         }
@@ -154,11 +131,19 @@ export async function GET(
 
   } catch (error) {
     console.error('❌ Live Cash Flow API: Error processing request', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('❌ Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      type: typeof error,
+      errorObject: error
+    });
     
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch live Cash Flow data',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }

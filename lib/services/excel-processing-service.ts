@@ -152,6 +152,36 @@ export class ExcelProcessingService {
   }
   
   /**
+   * Get proper label for data row fields
+   */
+  private getDataRowLabel(fieldName: string): string {
+    const labels: Record<string, string> = {
+      // Cash Flow labels
+      'initialBalance': 'Initial Balance',
+      'finalBalance': 'Final Balance', 
+      'totalInflows': 'Total Inflows',
+      'totalOutflows': 'Total Outflows',
+      'monthlyGeneration': 'Monthly Generation',
+      'netCashFlow': 'Net Cash Flow',
+      
+      // P&L labels
+      'totalRevenue': 'Total Revenue',
+      'cogs': 'Cost of Goods Sold',
+      'grossProfit': 'Gross Profit',
+      'totalOpex': 'Total Operating Expenses',
+      'ebitda': 'EBITDA',
+      'depreciation': 'Depreciation',
+      'ebit': 'EBIT', 
+      'interestExpense': 'Interest Expense',
+      'pretaxIncome': 'Pre-tax Income',
+      'taxes': 'Taxes',
+      'netIncome': 'Net Income'
+    };
+    
+    return labels[fieldName] || fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+  }
+
+  /**
    * Process cash flow data from Excel worksheet
    */
   private async processCashFlowData(
@@ -170,74 +200,82 @@ export class ExcelProcessingService {
       metadata: configuration.metadata
     };
     
-    // Extract periods from specified row
-    const periods = this.extractPeriods(worksheet, structure.periodsRow, structure.periodsRange);
+    // CONFIGURATION-DRIVEN: Use ONLY explicit mapping - NO AUTO-DETECTION
+    // Check for new format (periodMapping) or convert from legacy format (periodsRow + periodsRange)
+    let periodMapping = structure.periodMapping;
+    
+    if (!periodMapping || periodMapping.length === 0) {
+      // Try to convert from legacy format
+      if (structure.periodsRow && structure.periodsRange) {
+        console.log('🔄 Converting legacy configuration format to periodMapping...');
+        periodMapping = this.convertLegacyPeriodsToMapping(worksheet, structure.periodsRow, structure.periodsRange);
+        console.log('✅ Converted to periodMapping:', periodMapping.length, 'periods');
+      } else {
+        throw new Error('Configuration must have explicit period mapping. Auto-detection is disabled.');
+      }
+    }
+    
+    const periods = this.extractPeriodsFromMapping(periodMapping);
+    console.log('🎯 Configuration-based processing - using explicit period mapping:', periods.length, 'periods');
     processedData.periods = periods;
     
-    // Extract core data rows
+    // Extract core data rows using explicit column mapping
     for (const [fieldName, rowNumber] of Object.entries(structure.dataRows)) {
-      const rowData = this.extractRowData(worksheet, rowNumber, periods.length + 1); // +1 for label column
+      const rowData = this.extractRowDataFromMapping(worksheet, rowNumber, periodMapping);
       processedData.dataRows[fieldName] = {
-        label: this.getCellValue(worksheet, rowNumber, 1), // Column A for labels
+        label: this.getDataRowLabel(fieldName), // Use predefined labels instead of Excel cell values
         values: rowData,
         total: rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number
       };
     }
     
-    // Extract inflows categories
-    for (const [categoryKey, category] of Object.entries(structure.categories.inflows)) {
+    // Extract inflows categories using explicit column mapping
+    console.log('🔍 Categories structure debug:');
+    console.log('- structure.categories:', JSON.stringify(structure.categories, null, 2));
+    console.log('- inflows keys:', Object.keys(structure.categories?.inflows || {}));
+    console.log('- outflows keys:', Object.keys(structure.categories?.outflows || {}));
+    
+    for (const [categoryKey, category] of Object.entries(structure.categories.inflows || {})) {
+      const categoryValues = this.extractRowDataFromMapping(worksheet, category.row, periodMapping);
       processedData.categories.inflows[categoryKey] = {
-        label: this.getCellValue(worksheet, category.row, 1),
-        values: this.extractRowData(worksheet, category.row, periods.length + 1),
-        total: 0,
+        label: categoryKey, // Use category key as label
+        values: categoryValues,
+        total: categoryValues.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number,
         subcategories: {}
       };
-      
-      // Calculate total
-      processedData.categories.inflows[categoryKey].total = 
-        processedData.categories.inflows[categoryKey].values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
       
       // Process subcategories if they exist
       if (category.subcategories) {
         for (const [subKey, subcategory] of Object.entries(category.subcategories)) {
+          const subValues = this.extractRowDataFromMapping(worksheet, subcategory.row, periodMapping);
           processedData.categories.inflows[categoryKey].subcategories![subKey] = {
-            label: this.getCellValue(worksheet, subcategory.row, 1),
-            values: this.extractRowData(worksheet, subcategory.row, periods.length + 1),
-            total: 0
+            label: subKey, // Use subcategory key as label
+            values: subValues,
+            total: subValues.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number
           };
-          
-          // Calculate subcategory total
-          processedData.categories.inflows[categoryKey].subcategories![subKey].total = 
-            processedData.categories.inflows[categoryKey].subcategories![subKey].values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
         }
       }
     }
     
-    // Extract outflows categories (similar to inflows)
-    for (const [categoryKey, category] of Object.entries(structure.categories.outflows)) {
+    // Extract outflows categories using explicit column mapping
+    for (const [categoryKey, category] of Object.entries(structure.categories.outflows || {})) {
+      const categoryValues = this.extractRowDataFromMapping(worksheet, category.row, periodMapping);
       processedData.categories.outflows[categoryKey] = {
-        label: this.getCellValue(worksheet, category.row, 1),
-        values: this.extractRowData(worksheet, category.row, periods.length + 1),
-        total: 0,
+        label: categoryKey, // Use category key as label
+        values: categoryValues,
+        total: categoryValues.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number,
         subcategories: {}
       };
-      
-      // Calculate total
-      processedData.categories.outflows[categoryKey].total = 
-        processedData.categories.outflows[categoryKey].values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
       
       // Process subcategories if they exist
       if (category.subcategories) {
         for (const [subKey, subcategory] of Object.entries(category.subcategories)) {
+          const subValues = this.extractRowDataFromMapping(worksheet, subcategory.row, periodMapping);
           processedData.categories.outflows[categoryKey].subcategories![subKey] = {
-            label: this.getCellValue(worksheet, subcategory.row, 1),
-            values: this.extractRowData(worksheet, subcategory.row, periods.length + 1),
-            total: 0
+            label: subKey, // Use subcategory key as label
+            values: subValues,
+            total: subValues.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number
           };
-          
-          // Calculate subcategory total
-          processedData.categories.outflows[categoryKey].subcategories![subKey].total = 
-            processedData.categories.outflows[categoryKey].subcategories![subKey].values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
         }
       }
     }
@@ -264,13 +302,28 @@ export class ExcelProcessingService {
       metadata: configuration.metadata
     };
     
-    // Extract periods from specified row
-    const periods = this.extractPeriods(worksheet, structure.periodsRow, structure.periodsRange);
+    // CONFIGURATION-DRIVEN: Use ONLY explicit mapping - NO AUTO-DETECTION
+    // Check for new format (periodMapping) or convert from legacy format (periodsRow + periodsRange)
+    let periodMapping = structure.periodMapping;
+    
+    if (!periodMapping || periodMapping.length === 0) {
+      // Try to convert from legacy format
+      if (structure.periodsRow && structure.periodsRange) {
+        console.log('🔄 Converting legacy P&L configuration format to periodMapping...');
+        periodMapping = this.convertLegacyPeriodsToMapping(worksheet, structure.periodsRow, structure.periodsRange);
+        console.log('✅ Converted P&L to periodMapping:', periodMapping.length, 'periods');
+      } else {
+        throw new Error('Configuration must have explicit period mapping. Auto-detection is disabled.');
+      }
+    }
+    
+    const periods = this.extractPeriodsFromMapping(periodMapping);
+    console.log('🎯 Configuration-based processing - using explicit period mapping for P&L:', periods.length, 'periods');
     processedData.periods = periods;
     
-    // Extract core data rows
+    // Extract core data rows using explicit column mapping
     for (const [fieldName, rowNumber] of Object.entries(structure.dataRows)) {
-      const rowData = this.extractRowData(worksheet, rowNumber, periods.length + 2); // +2 for label and total columns
+      const rowData = this.extractRowDataFromMapping(worksheet, rowNumber, periodMapping);
       processedData.dataRows[fieldName] = {
         label: this.getCellValue(worksheet, rowNumber, structure.categoriesColumn.charCodeAt(0) - 65), // Convert letter to column index
         values: rowData,
@@ -278,12 +331,12 @@ export class ExcelProcessingService {
       };
     }
     
-    // Extract P&L categories
+    // Extract P&L categories using explicit column mapping
     for (const [groupKey, group] of Object.entries(structure.categories)) {
       processedData.categories[groupKey] = {};
       
       for (const [categoryKey, category] of Object.entries(group)) {
-        const rowData = this.extractRowData(worksheet, category.row, periods.length + 2);
+        const rowData = this.extractRowDataFromMapping(worksheet, category.row, periodMapping);
         processedData.categories[groupKey][categoryKey] = {
           label: category.label ? 
                  (category.label as any)[configuration.metadata.locale] || (category.label as any).en || 'Unknown' : 
@@ -400,65 +453,162 @@ export class ExcelProcessingService {
   
   // Private helper methods
   
-  private extractPeriods(worksheet: XLSX.WorkSheet, row: number, range: string): string[] {
-    const periods: string[] = [];
-    const rangeObj = XLSX.utils.decode_range(range);
+  /**
+   * Convert legacy configuration format (periodsRow + periodsRange) to new periodMapping format
+   * This provides backward compatibility for existing configurations
+   */
+  private convertLegacyPeriodsToMapping(worksheet: XLSX.WorkSheet, periodsRow: number, periodsRange: string): any[] {
+    const periodMapping: any[] = [];
     
-    console.log(`🔍 Excel Processing: Extracting periods from row ${row}, range ${range}`);
+    // Parse the periods range (e.g., "B3:N3")
+    const match = periodsRange.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    if (!match) {
+      throw new Error(`Invalid periods range format: ${periodsRange}. Expected format: A1:Z1`);
+    }
     
-    for (let col = rangeObj.s.c; col <= rangeObj.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: row - 1, c: col });
-      const cell = worksheet[cellAddress];
+    const [, startCol, startRow, endCol, endRow] = match;
+    const startColIndex = this.columnLetterToIndex(startCol);
+    const endColIndex = this.columnLetterToIndex(endCol);
+    
+    console.log(`🔄 Converting legacy range ${periodsRange} from row ${periodsRow}`);
+    
+    // Extract period labels from the specified row and range
+    for (let col = startColIndex; col <= endColIndex; col++) {
+      const columnLetter = this.getColumnLetter(col);
+      const cellValue = this.getCellValue(worksheet, periodsRow, col);
       
-      if (cell && cell.v) {
-        let periodValue = cell.v;
-        console.log(`📅 Raw cell value at ${cellAddress}:`, periodValue, typeof periodValue);
+      if (cellValue && cellValue.toString().trim()) {
+        // Check if the cell value is an Excel date serial number
+        const readableLabel = this.convertExcelDateToReadable(cellValue);
         
-        // Handle different date formats that might come from Excel
-        if (typeof periodValue === 'number' && periodValue > 40000) {
-          // Excel date serial number - convert to proper date
-          const excelDate = new Date((periodValue - 25569) * 86400 * 1000);
-          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          periodValue = `${monthNames[excelDate.getMonth()]} ${excelDate.getFullYear()}`;
-          console.log(`🔄 Converted Excel date serial to: ${periodValue}`);
-        } else if (typeof periodValue === 'string') {
-          // Try to parse and normalize string dates
-          const dateMatch = periodValue.match(/(\d{1,2})\/(\d{4})|(\w{3})\s*(\d{4})|(\d{4})[-\/](\d{1,2})/);
-          if (dateMatch) {
-            if (dateMatch[1] && dateMatch[2]) {
-              // MM/YYYY format
-              const month = parseInt(dateMatch[1]) - 1;
-              const year = parseInt(dateMatch[2]);
-              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              periodValue = `${monthNames[month]} ${year}`;
-            } else if (dateMatch[3] && dateMatch[4]) {
-              // Already in "MMM YYYY" format - keep as is
-              periodValue = `${dateMatch[3]} ${dateMatch[4]}`;
-            } else if (dateMatch[5] && dateMatch[6]) {
-              // YYYY-MM or YYYY/MM format
-              const year = parseInt(dateMatch[5]);
-              const month = parseInt(dateMatch[6]) - 1;
-              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              periodValue = `${monthNames[month]} ${year}`;
-            }
-            console.log(`🔄 Normalized string date to: ${periodValue}`);
+        periodMapping.push({
+          column: columnLetter,
+          period: {
+            label: readableLabel
           }
-        }
-        
-        periods.push(String(periodValue));
-      } else {
-        console.log(`⚠️ Empty cell at ${cellAddress}`);
+        });
+        console.log(`📅 Legacy mapping: ${columnLetter} → "${cellValue}" → "${readableLabel}"`);
       }
     }
     
-    console.log(`✅ Extracted periods:`, periods);
+    return periodMapping;
+  }
+
+  /**
+   * Convert Excel date serial number to readable date format
+   */
+  private convertExcelDateToReadable(cellValue: any): string {
+    // If it's already a string and doesn't look like a number, return as-is
+    if (typeof cellValue === 'string' && !cellValue.match(/^\d+(\.\d+)?$/)) {
+      return cellValue;
+    }
+    
+    // If it's a number that could be an Excel date serial number
+    const numValue = typeof cellValue === 'number' ? cellValue : parseFloat(cellValue);
+    
+    // Excel date serial numbers are typically between 1 (Jan 1, 1900) and ~50000 (around 2036)
+    // But we'll be more liberal and check for reasonable date ranges
+    if (numValue > 40000 && numValue < 60000) {
+      try {
+        // Excel date serial number: days since January 1, 1900
+        // Note: Excel incorrectly treats 1900 as a leap year, so we need to account for that
+        const excelEpoch = new Date(1900, 0, 1);
+        const millisecondsPerDay = 24 * 60 * 60 * 1000;
+        
+        // Subtract 1 because Excel counts from day 1, not day 0
+        // Subtract another 1 to account for Excel's leap year bug
+        const adjustedDays = numValue - 2;
+        const resultDate = new Date(excelEpoch.getTime() + (adjustedDays * millisecondsPerDay));
+        
+        // Format as "MMM YYYY" (e.g., "Jan 2025")
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = monthNames[resultDate.getMonth()];
+        const year = resultDate.getFullYear();
+        
+        return `${month} ${year}`;
+      } catch (error) {
+        console.warn(`⚠️ Failed to convert Excel date ${numValue}:`, error);
+        return cellValue.toString();
+      }
+    }
+    
+    // If it doesn't look like a date serial number, return as-is
+    return cellValue.toString();
+  }
+
+  /**
+   * Convert column letter (A, B, C, etc.) to index (0, 1, 2, etc.)
+   */
+  private columnLetterToIndex(columnLetter: string): number {
+    let result = 0;
+    for (let i = 0; i < columnLetter.length; i++) {
+      result = result * 26 + (columnLetter.charCodeAt(i) - 64);
+    }
+    return result - 1; // Convert to 0-based
+  }
+
+  /**
+   * Extract periods from explicit period mapping configuration
+   * This is the ONLY way periods should be determined - no auto-detection
+   */
+  private extractPeriodsFromMapping(periodMapping: any[]): string[] {
+    const periods: string[] = [];
+    
+    // Sort by column to ensure correct order (A, B, C, etc.)
+    const sortedMapping = [...periodMapping].sort((a, b) => {
+      const colA = a.column.charCodeAt(0);
+      const colB = b.column.charCodeAt(0);
+      return colA - colB;
+    });
+    
+    for (const mapping of sortedMapping) {
+      periods.push(mapping.period.label);
+      console.log(`📅 Period mapping: ${mapping.column} → "${mapping.period.label}"`);
+    }
+    
+    console.log(`📋 Configuration-based periods (${periods.length} total):`, periods);
     return periods;
   }
+
+  // REMOVED: Auto-detection methods are no longer used
+  // All period detection must be done through explicit configuration mapping
+  // This ensures exact column-to-period mapping with no guessing
   
+  /**
+   * Extract row data using explicit column mapping from configuration
+   * NO AUTO-DETECTION - uses exact columns specified in period mapping
+   */
+  private extractRowDataFromMapping(worksheet: XLSX.WorkSheet, row: number, periodMapping: any[]): (number | null)[] {
+    const data: (number | null)[] = [];
+    
+    // Sort mapping by column to ensure correct order
+    const sortedMapping = [...periodMapping].sort((a, b) => {
+      const colA = a.column.charCodeAt(0);
+      const colB = b.column.charCodeAt(0);
+      return colA - colB;
+    });
+    
+    // Extract data from exact columns specified in mapping
+    for (const mapping of sortedMapping) {
+      const columnIndex = mapping.column.charCodeAt(0) - 65; // Convert A, B, C to 0, 1, 2
+      const value = this.getCellValue(worksheet, row, columnIndex);
+      
+      console.log(`📊 Reading ${mapping.column}${row} (${mapping.period.label}): ${value}`);
+      
+      // Only accept numeric values, convert to null if not a number
+      data.push(typeof value === 'number' ? value : null);
+    }
+    
+    return data;
+  }
+
+  /**
+   * Legacy method - kept for backward compatibility but should not be used
+   * @deprecated Use extractRowDataFromMapping instead
+   */
   private extractRowData(worksheet: XLSX.WorkSheet, row: number, numColumns: number): (number | null)[] {
+    console.warn('⚠️ extractRowData is deprecated - use extractRowDataFromMapping instead');
     const data: (number | null)[] = [];
     
     // Start from column B (index 1) for data, skip label column
@@ -741,6 +891,47 @@ export class ExcelProcessingService {
     }
 
     return highlights;
+  }
+
+  /**
+   * Process Excel file with configuration (from base64 content)
+   */
+  async processExcelWithConfiguration(fileContent: string, configuration: any, type: 'pnl' | 'cashflow'): Promise<ProcessedData> {
+    console.log(`🔄 Processing Excel with live configuration for ${type}...`);
+    console.log('🔍 Configuration received:', !!configuration);
+    console.log('🔍 File content length:', fileContent?.length || 0);
+    
+    try {
+      console.log('📥 Decoding base64 Excel content...');
+      // Decode base64 Excel content
+      const buffer = Buffer.from(fileContent, 'base64');
+      console.log('📊 Buffer created, size:', buffer.length);
+      
+      console.log('📖 Reading Excel workbook...');
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      
+      console.log('📋 Excel sheets found:', workbook.SheetNames);
+      
+      // Use the first sheet
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      console.log('📄 Using worksheet:', workbook.SheetNames[0]);
+      
+      // Process using the configuration
+      console.log('🔄 Processing data with configuration type:', type);
+      if (type === 'cashflow') {
+        console.log('💰 Processing as Cash Flow...');
+        return this.processCashFlowData(worksheet, configuration);
+      } else if (type === 'pnl') {
+        console.log('📊 Processing as P&L...');
+        return this.processPLData(worksheet, configuration);
+      } else {
+        throw new Error(`Unsupported data type: ${type}`);
+      }
+    } catch (error) {
+      console.error('❌ Error processing Excel with configuration:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+      throw new Error(`Failed to process Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 
