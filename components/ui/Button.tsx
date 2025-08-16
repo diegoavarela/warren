@@ -1,5 +1,6 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
   'relative inline-flex items-center justify-center font-medium transition-all duration-300 ease-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] select-none overflow-hidden group whitespace-nowrap',
@@ -75,11 +76,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, rounded, loading, leftIcon, rightIcon, children, disabled, pulse, shimmer, ...props }, ref) => {
     return (
       <button
-        className={`${buttonVariants({ variant, size, rounded, className })} ${
-          pulse && !disabled && !loading ? 'animate-pulse' : ''
-        } ${
-          shimmer && !disabled && !loading ? 'animate-shimmer bg-[length:200%_100%]' : ''
-        }`}
+        className={cn(
+          buttonVariants({ variant, size, rounded }),
+          pulse && !disabled && !loading && 'animate-pulse',
+          shimmer && !disabled && !loading && 'animate-shimmer bg-[length:200%_100%]',
+          className
+        )}
         ref={ref}
         disabled={disabled || loading}
         {...props}
