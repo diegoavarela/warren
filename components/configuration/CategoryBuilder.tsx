@@ -17,6 +17,7 @@ import {
   AlertCircle,
   FileSpreadsheet
 } from 'lucide-react';
+import { HelpIcon } from '@/components/HelpIcon';
 import { CashFlowConfiguration, PLConfiguration } from '@/lib/types/configurations';
 import { useExcelPreview } from '@/hooks/useExcelPreview';
 import { ExcelGrid } from './ExcelGrid';
@@ -294,65 +295,94 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
       onClose();
     };
 
+    const currentSection = sections.find(s => s.key === sectionKey);
+    const getPlaceholder = () => {
+      switch (sectionKey) {
+        case 'revenue': return 'ej., ventas online, servicios de consultoría';
+        case 'cogs': return 'ej., materias primas, mano de obra directa';
+        case 'opex': return 'ej., salarios, alquiler, marketing';
+        case 'otherIncome': return 'ej., intereses bancarios, dividendos';
+        case 'otherExpenses': return 'ej., pérdidas cambiarias, multas';
+        case 'taxes': return 'ej., impuesto a la renta, IVA';
+        default: return 'ej., nueva categoría';
+      }
+    };
+
     return (
-      <div className="p-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50">
-        <h4 className="font-medium text-blue-900 mb-4">Agregar Categoría</h4>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="categoryKey">Nombre de Categoría *</Label>
-              <Input
-                id="categoryKey"
-                value={formData.key}
-                onChange={(e) => setFormData({...formData, key: e.target.value})}
-                placeholder="ej., salarios"
-                className="bg-white"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="categoryRow">Fila Excel</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="categoryRow"
-                  type="number"
-                  min="1"
-                  value={formData.row || ''}
-                  onChange={(e) => setFormData({...formData, row: parseInt(e.target.value) || 0})}
-                  placeholder="Número de fila"
-                  className="bg-white"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleMapExcelRow}
-                  leftIcon={<FileSpreadsheet className="h-4 w-4" />}
-                >
-                  Mapear
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="required"
-              checked={formData.required}
-              onChange={(e) => setFormData({...formData, required: e.target.checked})}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          {/* Category Name - Main Input */}
+          <div className="flex-1">
+            <Input
+              value={formData.key}
+              onChange={(e) => setFormData({...formData, key: e.target.value})}
+              placeholder={getPlaceholder()}
+              className="border-gray-300"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && formData.key.trim()) {
+                  handleSubmit();
+                }
+              }}
             />
-            <Label htmlFor="required">Campo requerido</Label>
           </div>
           
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="button" disabled={submitting} onClick={handleSubmit}>
-              {submitting ? 'Agregando...' : 'Agregar Categoría'}
-            </Button>
+          {/* Excel Row - Compact */}
+          <div className="w-20">
+            <Input
+              type="number"
+              min="1"
+              value={formData.row || ''}
+              onChange={(e) => setFormData({...formData, row: parseInt(e.target.value) || 0})}
+              placeholder="Fila"
+              className="border-gray-300 text-sm"
+            />
           </div>
+          
+          {/* Quick Actions */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleMapExcelRow}
+            disabled={!formData.key.trim()}
+            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            type="button" 
+            size="sm"
+            disabled={submitting || !formData.key.trim()} 
+            onClick={handleSubmit}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {submitting ? 'Agregando...' : 'Agregar'}
+          </Button>
+          
+          <Button 
+            type="button" 
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </Button>
+        </div>
+        
+        {/* Required checkbox - Compact */}
+        <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            id="required"
+            checked={formData.required}
+            onChange={(e) => setFormData({...formData, required: e.target.checked})}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3"
+          />
+          <Label htmlFor="required" className="text-xs">
+            Campo obligatorio
+          </Label>
         </div>
       </div>
     );
@@ -365,17 +395,56 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5" />
-            Categorías
+            Mapeo de Categorías P&L
+            <HelpIcon 
+              topic={{
+                id: 'category-mapping',
+                titleKey: 'help.categoryMapping.title',
+                contentKey: 'help.categoryMapping.content'
+              }}
+              size="md"
+            />
           </CardTitle>
           <CardDescription>
-            Define las categorías para tu configuración de {configuration.type === 'cashflow' ? 'Cash Flow' : 'P&L'}
+            Conecta las filas de tu Excel con las categorías estándar del Estado de Resultados
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          {/* Section Tabs (Inflow/Outflow) */}
+          {/* Current Status - Simplified */}
+          <div className="p-4 border-b bg-gray-50">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-900">Estado del Mapeo</h4>
+              <div className="flex flex-wrap gap-2">
+                {sections.map((section) => {
+                  const stats = calculateSectionStats(section.key);
+                  return (
+                    <div 
+                      key={section.key}
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        stats.categoryCount > 0 && stats.mappedCount === stats.categoryCount
+                          ? 'bg-green-100 text-green-700'
+                          : stats.categoryCount > 0
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {section.label}
+                      {stats.categoryCount > 0 && (
+                        <span className="ml-1">
+                          {stats.mappedCount === stats.categoryCount ? '✓' : `${stats.mappedCount}/${stats.categoryCount}`}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Section Tabs */}
           <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
             <div className="border-b">
-              <TabsList className="grid w-full grid-cols-2 h-auto p-0 bg-transparent rounded-none">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto p-0 bg-transparent rounded-none">
                 {sections.map((section) => {
                   const stats = calculateSectionStats(section.key);
                   return (
@@ -387,9 +456,20 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                       <div className="w-full">
                         <div className="font-medium">{section.label}</div>
                         <div className="text-xs mt-1 text-muted-foreground">
-                          {stats.mappedCount}/{stats.categoryCount}
-                          {stats.mappedCount === stats.categoryCount && stats.categoryCount > 0 && (
-                            <CheckCircle className="inline-block ml-1 h-3 w-3 text-green-600" />
+                          {stats.categoryCount === 0 ? (
+                            <span className="text-gray-400">Sin categorías</span>
+                          ) : (
+                            <span>
+                              <span className={stats.mappedCount === stats.categoryCount ? "text-green-600 font-medium" : "text-amber-600"}>
+                                {stats.mappedCount}
+                              </span>
+                              <span className="text-gray-500"> de </span>
+                              <span className="text-gray-700">{stats.categoryCount}</span>
+                              <span className="text-gray-500"> mapeadas</span>
+                              {stats.mappedCount === stats.categoryCount && stats.categoryCount > 0 && (
+                                <CheckCircle className="inline-block ml-1 h-3 w-3 text-green-600" />
+                              )}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -406,51 +486,65 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
               return (
                 <TabsContent key={section.key} value={section.key} className="p-6">
                   <div className="space-y-4">
-                    {/* Action Buttons - Context Dependent */}
+                    {/* Section Header - Simplified */}
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium">
-                        {stats.categoryCount > 0 
-                          ? `${stats.categoryCount} categorías (${stats.mappedCount} mapeadas)`
-                          : 'Sin categorías'}
-                      </h3>
-                      <div className="flex items-center gap-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {section.label}
+                        </h3>
+                        {stats.categoryCount > 0 && (
+                          <p className="text-sm text-gray-600">
+                            {stats.mappedCount}/{stats.categoryCount} categorías mapeadas
+                            {stats.mappedCount === stats.categoryCount && <span className="ml-2 text-green-600">✓</span>}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
                         <Button 
                           type="button" 
                           variant="outline"
+                          size="sm"
                           onClick={() => setShowExcelPreview(true)}
-                          leftIcon={<Eye className="h-4 w-4" />}
                         >
+                          <Eye className="h-4 w-4 mr-1" />
                           Ver Excel
                         </Button>
                         <Button 
                           type="button"
+                          size="sm"
                           onClick={() => setEditingCategory('new')}
-                          leftIcon={<Plus className="h-4 w-4" />}
                         >
-                          Agregar Categoría
+                          <Plus className="h-4 w-4 mr-1" />
+                          Agregar
                         </Button>
                       </div>
                     </div>
-                {/* Categories List */}
+                {/* Categories List - Compact */}
                 {stats.categoryCount > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {Object.entries(categories).map(([categoryKey, categoryData]: [string, any]) => (
-                      <div key={categoryKey} className="flex items-center justify-between p-4 bg-white border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <span className="font-medium">{categoryKey}</span>
+                      <div key={categoryKey} className="flex items-center justify-between p-2 bg-gray-50 border rounded hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center gap-3 flex-1">
                           {categoryData.row > 0 ? (
-                            <Badge variant="outline" className="text-green-600">Fila {categoryData.row}</Badge>
+                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
                           ) : (
-                            <span className="text-gray-400 text-sm">Sin mapear</span>
+                            <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
                           )}
+                          <span className="font-medium text-gray-900 flex-1">{categoryKey}</span>
+                          
                           {categoryData.row > 0 ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+                              Fila {categoryData.row}
+                            </span>
                           ) : (
-                            <AlertCircle className="h-4 w-4 text-amber-500" />
+                            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                              Sin mapear
+                            </span>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <Button
                             type="button"
                             variant="ghost"
@@ -459,16 +553,18 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                               setSelectedCategoryForMapping(categoryKey);
                               setShowExcelPreview(true);
                             }}
+                            className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
                           >
-                            <FileSpreadsheet className="h-4 w-4" />
+                            <FileSpreadsheet className="h-3 w-3" />
                           </Button>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => deleteCategory(section.key, categoryKey)}
+                            className="h-7 w-7 p-0 text-red-600 hover:bg-red-100"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -487,10 +583,17 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
 
                     {/* Empty State */}
                     {stats.categoryCount === 0 && !editingCategory && (
-                      <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-                        <Layers className="h-10 w-10 mx-auto mb-4 text-gray-400" />
-                        <p className="font-medium text-gray-700 mb-1">No hay categorías definidas</p>
-                        <p className="text-sm text-gray-500">Agrega categorías para organizar tu {section.label.toLowerCase()}</p>
+                      <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                        <Layers className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+                        <p className="font-medium text-gray-700 mb-1">No hay categorías en {section.label}</p>
+                        <p className="text-sm text-gray-500 mb-4">Agrega categorías para organizar esta sección del P&L</p>
+                        <Button 
+                          type="button"
+                          onClick={() => setEditingCategory('new')}
+                          leftIcon={<Plus className="h-4 w-4" />}
+                        >
+                          Agregar Primera Categoría
+                        </Button>
                       </div>
                     )}
                   </div>
