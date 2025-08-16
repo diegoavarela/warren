@@ -167,15 +167,41 @@ export class ConfigurationService {
     
     if (data.name) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.configJson) updateData.configJson = data.configJson;
-    if (data.metadata) updateData.metadata = data.metadata;
+    if (data.configJson) {
+      console.log('🔍 [SERVICE] Setting configJson in updateData:', data.configJson);
+      console.log('🔍 [SERVICE] Period mappings in configJson:', data.configJson?.structure?.periodMapping);
+      console.log('🔍 [SERVICE] Full structure before save:', JSON.stringify(data.configJson.structure, null, 2));
+      updateData.configJson = data.configJson;
+    }
+    if (data.metadata) {
+      // Merge existing metadata with new metadata and add lastModifiedMethod if provided
+      const existingMetadata = existing.metadata || {};
+      updateData.metadata = {
+        ...existingMetadata,
+        ...data.metadata,
+        ...(data.lastModifiedMethod && { lastModifiedMethod: data.lastModifiedMethod, lastModifiedAt: new Date().toISOString() })
+      };
+    } else if (data.lastModifiedMethod) {
+      // Just update the modification tracking in metadata
+      const existingMetadata = existing.metadata || {};
+      updateData.metadata = {
+        ...existingMetadata,
+        lastModifiedMethod: data.lastModifiedMethod,
+        lastModifiedAt: new Date().toISOString()
+      };
+    }
     if (data.isTemplate !== undefined) updateData.isTemplate = data.isTemplate;
+    
+    console.log('🔧 [SERVICE] About to save updateData:', JSON.stringify(updateData, null, 2));
     
     const result = await db
       .update(companyConfigurations)
       .set(updateData)
       .where(eq(companyConfigurations.id, configId))
       .returning();
+    
+    console.log('✅ [SERVICE] Database save result:', result[0]);
+    console.log('✅ [SERVICE] Period mappings in saved result:', result[0]?.configJson?.structure?.periodMapping);
     
     return result[0];
   }

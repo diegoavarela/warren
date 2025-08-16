@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Wand2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { PeriodMapping, PeriodDefinition } from '@/lib/types/configurations';
+import { useTranslation } from '@/lib/translations';
 
 interface PeriodMappingEditorProps {
   periodsRange: string; // e.g., "B3:M3"
@@ -23,15 +24,14 @@ export function PeriodMappingEditor({
   onChange,
   onValidate
 }: PeriodMappingEditorProps) {
-  const [mapping, setMapping] = useState<PeriodMapping[]>(currentMapping);
+  const { t } = useTranslation('es');
+  // SINGLE SOURCE OF TRUTH: Use currentMapping directly, no internal state
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [voidedColumns, setVoidedColumns] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
 
-  // Update mapping when currentMapping prop changes
-  useEffect(() => {
-    console.log('📥 PeriodMappingEditor received currentMapping:', currentMapping);
-    setMapping(currentMapping);
-  }, [currentMapping]);
+  console.log('📥 [PERIOD EDITOR] Received currentMapping:', currentMapping);
+  console.log('📥 [PERIOD EDITOR] Initialized state:', initialized);
 
   // Parse the periods range to get columns
   const getColumnsFromRange = (range: string): string[] => {
@@ -61,51 +61,49 @@ export function PeriodMappingEditor({
     if (newVoidedColumns.has(column)) {
       newVoidedColumns.delete(column);
       // Re-add to mapping if it was voided
-      const existingIndex = mapping.findIndex(m => m.column === column);
+      const existingIndex = currentMapping.findIndex(m => m.column === column);
       if (existingIndex === -1) {
-        const newMapping = [...mapping, {
+        const newMapping = [...currentMapping, {
           column,
           period: {
             type: 'month' as const,
             year: new Date().getFullYear(),
             month: 1,
-            label: 'Jan ' + new Date().getFullYear()
+            label: t('periodMapping.months.short.jan') + ' ' + new Date().getFullYear()
           }
         }];
-        setMapping(newMapping);
         onChange(newMapping);
       }
     } else {
       newVoidedColumns.add(column);
       // Remove from mapping if it was included
-      const newMapping = mapping.filter(m => m.column !== column);
-      setMapping(newMapping);
+      const newMapping = currentMapping.filter(m => m.column !== column);
       onChange(newMapping);
     }
     setVoidedColumns(newVoidedColumns);
   };
 
-  // Initialize mapping if empty
+  // SINGLE SOURCE OF TRUTH: Initialize default mapping only once if empty
   useEffect(() => {
-    if (mapping.length === 0 && columns.length > 0) {
+    if (!initialized && currentMapping.length === 0 && columns.length > 0) {
       const defaultMapping = columns.map((column, index) => ({
         column,
         period: {
           type: 'month' as const,
           year: 2025,
           month: (index % 12) + 1,
-          label: `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][index % 12]} 2025`
+          label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][index % 12]} 2025`
         }
       }));
-      console.log('🔧 Initializing default period mapping:', defaultMapping);
-      setMapping(defaultMapping);
-      onChange(defaultMapping);
+      console.log('🔧 [PERIOD EDITOR] Initializing default period mapping:', defaultMapping);
+      setInitialized(true);
+      onChange(defaultMapping); // This will update the parent's configData
     }
-  }, [columns, mapping.length, onChange]);
+  }, [initialized, currentMapping.length, columns, onChange]);
 
-  // Update period definition
+  // SINGLE SOURCE OF TRUTH: Update period definition using currentMapping
   const updatePeriod = (columnIndex: number, updates: Partial<PeriodDefinition>) => {
-    const newMapping = [...mapping];
+    const newMapping = [...currentMapping];
     if (newMapping[columnIndex]) {
       newMapping[columnIndex] = {
         ...newMapping[columnIndex],
@@ -118,9 +116,8 @@ export function PeriodMappingEditor({
         newMapping[columnIndex].period.label = generateLabel(period);
       }
       
-      setMapping(newMapping);
-      console.log('🔄 Period mapping updated:', newMapping);
-      onChange(newMapping);
+      console.log('🔄 [PERIOD EDITOR] Period mapping updated:', newMapping);
+      onChange(newMapping); // This will update parent's configData
       validateMapping(newMapping);
     }
   };
@@ -130,7 +127,7 @@ export function PeriodMappingEditor({
     switch (period.type) {
       case 'month':
         if (period.month && period.year) {
-          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthNames = [t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')];
           return `${monthNames[period.month - 1]} ${period.year}`;
         }
         break;
@@ -142,9 +139,9 @@ export function PeriodMappingEditor({
       case 'year':
         return `${period.year}`;
       case 'custom':
-        return period.customValue || 'Custom Period';
+        return period.customValue || t('periodMapping.customPeriod');
     }
-    return 'Invalid Period';
+    return t('periodMapping.invalidPeriod');
   };
 
   // Auto-detect periods from common patterns
@@ -165,7 +162,7 @@ export function PeriodMappingEditor({
           type: 'month' as const,
           year: currentYear,
           month: (index % 12) + 1,
-          label: `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][index % 12]} ${currentYear}`
+          label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][index % 12]} ${currentYear}`
         }
       }));
     } else if (activeColumns.length === 4) {
@@ -200,13 +197,12 @@ export function PeriodMappingEditor({
             type: 'month' as const,
             year: currentYear + yearOffset,
             month: monthIndex + 1,
-            label: `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][monthIndex]} ${currentYear + yearOffset}`
+            label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][monthIndex]} ${currentYear + yearOffset}`
           }
         };
       });
     }
     
-    setMapping(autoMapping);
     console.log('🎯 Auto-detected period mapping:', autoMapping);
     onChange(autoMapping);
     validateMapping(autoMapping);
@@ -220,26 +216,26 @@ export function PeriodMappingEditor({
     const labels = mappingToValidate.map(m => m.period.label);
     const duplicates = labels.filter((label, index) => labels.indexOf(label) !== index);
     if (duplicates.length > 0) {
-      errors.push(`Duplicate periods detected: ${duplicates.join(', ')}`);
+      errors.push(`${t('periodMapping.validation.duplicatePeriods')}: ${duplicates.join(', ')}`);
     }
     
     // Check for missing required fields
     mappingToValidate.forEach((mapping, index) => {
       const { period } = mapping;
       if (!period.year) {
-        errors.push(`Column ${mapping.column}: Year is required`);
+        errors.push(`Columna ${mapping.column}: ${t('periodMapping.validation.yearRequired')}`);
       }
       
       if (period.type === 'month' && (!period.month || period.month < 1 || period.month > 12)) {
-        errors.push(`Column ${mapping.column}: Valid month (1-12) is required for monthly periods`);
+        errors.push(`Columna ${mapping.column}: ${t('periodMapping.validation.monthRequired')}`);
       }
       
       if (period.type === 'quarter' && (!period.quarter || period.quarter < 1 || period.quarter > 4)) {
-        errors.push(`Column ${mapping.column}: Valid quarter (1-4) is required for quarterly periods`);
+        errors.push(`Columna ${mapping.column}: ${t('periodMapping.validation.quarterRequired')}`);
       }
       
       if (period.type === 'custom' && !period.customValue?.trim()) {
-        errors.push(`Column ${mapping.column}: Custom value is required for custom periods`);
+        errors.push(`Columna ${mapping.column}: ${t('periodMapping.validation.customRequired')}`);
       }
     });
     
@@ -247,10 +243,12 @@ export function PeriodMappingEditor({
     onValidate?.(errors.length === 0, errors);
   };
 
-  // Run validation when mapping changes
+  // Run validation when currentMapping changes
   useEffect(() => {
-    validateMapping(mapping);
-  }, [mapping]);
+    if (currentMapping.length > 0) {
+      validateMapping(currentMapping);
+    }
+  }, [currentMapping]);
 
   return (
     <Card>
@@ -259,20 +257,19 @@ export function PeriodMappingEditor({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Period Mapping Configuration
+              {t('periodMapping.title')}
             </CardTitle>
             <CardDescription>
-              Define exactly what each Excel column represents. No more guessing!
+              {t('periodMapping.description')}
             </CardDescription>
           </div>
-          <Button
-            variant="outline"
+          <button
             onClick={autoDetectPeriods}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg"
+            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg whitespace-nowrap rounded-lg font-medium transition-colors"
           >
             <Wand2 className="h-4 w-4" />
-            Smart Auto-detect
-          </Button>
+            {t('periodMapping.autoDetect')}
+          </button>
         </div>
       </CardHeader>
       
@@ -292,19 +289,19 @@ export function PeriodMappingEditor({
 
         <div className="space-y-4">
           <div className="grid grid-cols-6 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
-            <div>Excel Column</div>
-            <div>Period Type</div>
-            <div>Year</div>
-            <div>Month/Quarter</div>
-            <div>Display Label</div>
-            <div>Preview</div>
+            <div>{t('periodMapping.table.excelColumn')}</div>
+            <div>{t('periodMapping.table.periodType')}</div>
+            <div>{t('periodMapping.table.year')}</div>
+            <div>{t('periodMapping.table.monthQuarter')}</div>
+            <div>{t('periodMapping.table.displayLabel')}</div>
+            <div>{t('periodMapping.table.preview')}</div>
           </div>
 
           {/* Show all columns (active and voided) */}
           {columns.map((column) => {
-            const columnMapping = mapping.find(m => m.column === column);
+            const columnMapping = currentMapping.find(m => m.column === column);
             const isVoided = voidedColumns.has(column);
-            const index = mapping.findIndex(m => m.column === column);
+            const index = currentMapping.findIndex(m => m.column === column);
             
             return (
               <div key={column} className={`grid grid-cols-6 gap-4 items-center ${isVoided ? 'opacity-50' : ''}`}>
@@ -316,7 +313,7 @@ export function PeriodMappingEditor({
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                   onClick={() => toggleVoidedColumn(column)}
-                  title={isVoided ? 'Click to include this column' : 'Click to exclude this column (for percentages, totals, etc.)'}
+                  title={isVoided ? t('periodMapping.includeColumn') : t('periodMapping.excludeColumn')}
                 >
                   {column}
                   {isVoided && <X className="inline-block ml-1 h-3 w-3" />}
@@ -336,10 +333,10 @@ export function PeriodMappingEditor({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="month">Monthly</SelectItem>
-                        <SelectItem value="quarter">Quarterly</SelectItem>
-                        <SelectItem value="year">Yearly</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        <SelectItem value="month">{t('periodMapping.type.monthly')}</SelectItem>
+                        <SelectItem value="quarter">{t('periodMapping.type.quarterly')}</SelectItem>
+                        <SelectItem value="year">{t('periodMapping.type.yearly')}</SelectItem>
+                        <SelectItem value="custom">{t('periodMapping.type.custom')}</SelectItem>
                       </SelectContent>
                     </Select>
                     
@@ -377,8 +374,8 @@ export function PeriodMappingEditor({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {['January', 'February', 'March', 'April', 'May', 'June', 
-                            'July', 'August', 'September', 'October', 'November', 'December']
+                          {[t('periodMapping.months.january'), t('periodMapping.months.february'), t('periodMapping.months.march'), t('periodMapping.months.april'), t('periodMapping.months.may'), t('periodMapping.months.june'), 
+                            t('periodMapping.months.july'), t('periodMapping.months.august'), t('periodMapping.months.september'), t('periodMapping.months.october'), t('periodMapping.months.november'), t('periodMapping.months.december')]
                             .map((month, i) => (
                               <SelectItem key={i + 1} value={(i + 1).toString()}>
                                 {month}
@@ -412,7 +409,7 @@ export function PeriodMappingEditor({
                         type="text"
                         value={columnMapping.period.customValue || ''}
                         onChange={(e) => updatePeriod(index, { customValue: e.target.value })}
-                        placeholder="Custom period name"
+                        placeholder={t('periodMapping.customPlaceholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                       />
                     )}
@@ -434,11 +431,11 @@ export function PeriodMappingEditor({
                 ) : (
                   /* Show placeholder for voided columns */
                   <>
-                    <div className="text-sm text-gray-400 italic">Excluded</div>
+                    <div className="text-sm text-gray-400 italic">{t('periodMapping.excluded')}</div>
                     <div className="text-sm text-gray-400 italic">—</div>
                     <div className="text-sm text-gray-400 italic">—</div>
                     <div className="text-sm text-gray-400 italic">—</div>
-                    <div className="text-sm text-gray-400 italic">Not mapped</div>
+                    <div className="text-sm text-gray-400 italic">{t('periodMapping.notMapped')}</div>
                   </>
                 )}
               </div>
@@ -446,23 +443,23 @@ export function PeriodMappingEditor({
           })}
         </div>
 
-        {validationErrors.length === 0 && mapping.length > 0 && (
+        {validationErrors.length === 0 && currentMapping.length > 0 && (
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              Period mapping is valid! {mapping.length} columns mapped successfully.
+              {t('periodMapping.validation.success').replace('columnas', `${currentMapping.length} columnas`)}
             </AlertDescription>
           </Alert>
         )}
 
         <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">How Period Mapping Works</h4>
+          <h4 className="font-medium text-blue-900 mb-2">{t('periodMapping.help.title')}</h4>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Each Excel column is explicitly mapped to a specific period</li>
-            <li>• No more guessing or interpreting Excel date formats</li>
-            <li>• Dashboard will show exactly what you configure here</li>
-            <li>• Supports monthly, quarterly, yearly, or custom periods</li>
-            <li>• Click on column headers to exclude non-data columns (percentages, totals, etc.)</li>
+            <li>• {t('periodMapping.help.point1')}</li>
+            <li>• {t('periodMapping.help.point2')}</li>
+            <li>• {t('periodMapping.help.point3')}</li>
+            <li>• {t('periodMapping.help.point4')}</li>
+            <li>• {t('periodMapping.help.point5')}</li>
           </ul>
         </div>
       </CardContent>

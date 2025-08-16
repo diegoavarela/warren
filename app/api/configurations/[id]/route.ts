@@ -79,6 +79,11 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     // Parse request body
     const body = await req.json();
     
+    // DEBUG: Log what the API is receiving
+    console.log('🔍 [API] Received configuration update:', body);
+    console.log('🔍 [API] configJson in body:', body.configJson);
+    console.log('🔍 [API] Period mappings in configJson:', body.configJson?.structure?.periodMapping);
+    
     // Validate request data
     const validation = CompanyConfigurationUpdateSchema.safeParse(body);
     if (!validation.success) {

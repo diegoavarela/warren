@@ -7,13 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { 
-  Download, 
   CheckCircle, 
   AlertCircle, 
   AlertTriangle,
-  FileJson, 
   FileSpreadsheet,
-  Copy,
   ExternalLink
 } from 'lucide-react';
 import { CashFlowConfiguration, PLConfiguration } from '@/lib/types/configurations';
@@ -46,7 +43,6 @@ export function ConfigurationPreview({
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
   const { t } = useTranslation('es');
 
   // Auto-validate on mount and configuration changes
@@ -179,31 +175,6 @@ export function ConfigurationPreview({
     setIsModalLoading(false);
   };
 
-  // Copy JSON to clipboard
-  const copyToClipboard = async () => {
-    const jsonString = JSON.stringify(configuration, null, 2);
-    try {
-      await navigator.clipboard.writeText(jsonString);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
-    }
-  };
-
-  // Export configuration
-  const exportConfiguration = () => {
-    const jsonString = JSON.stringify(configuration, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${configuration.name || 'configuration'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   // Generate compact configuration summary
   const getConfigurationSummary = () => {
@@ -316,48 +287,6 @@ export function ConfigurationPreview({
         </CardContent>
       </Card>
 
-      {/* JSON Configuration Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileJson className="h-5 w-5" />
-              <CardTitle>{t('config.json.title')}</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                type="button"
-                variant="outline" 
-                size="sm"
-                onClick={copyToClipboard}
-                leftIcon={copySuccess ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                className={copySuccess ? 'text-green-600 border-green-300' : ''}
-              >
-                {copySuccess ? 'Copiado!' : t('config.actions.copyJson')}
-              </Button>
-              <Button 
-                type="button"
-                onClick={exportConfiguration}
-                size="sm"
-                leftIcon={<Download className="h-4 w-4" />}
-              >
-                {t('config.actions.downloadJson')}
-              </Button>
-            </div>
-          </div>
-          <CardDescription>
-            {t('config.json.description')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={JSON.stringify(configuration, null, 2)}
-            readOnly
-            rows={20}
-            className="font-mono text-sm"
-          />
-        </CardContent>
-      </Card>
 
       {/* Validation Results Modal */}
       <ValidationResultsModal
