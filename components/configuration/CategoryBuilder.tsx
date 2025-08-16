@@ -45,7 +45,18 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [showExcelPreview, setShowExcelPreview] = useState(false);
   const [selectedCategoryForMapping, setSelectedCategoryForMapping] = useState<string | null>(null);
-  const { excelData, loading, error } = useExcelPreview(configurationId);
+  const { excelData, loading, error, fetchExcelPreview } = useExcelPreview(configurationId);
+  
+  // Get selected sheet from configuration metadata
+  const selectedSheet = configuration?.metadata?.selectedSheet;
+
+  // Fetch Excel preview with correct sheet when selected sheet changes
+  useEffect(() => {
+    if (configurationId && selectedSheet) {
+      console.log('🔄 [CategoryBuilder] Fetching Excel preview for sheet:', selectedSheet);
+      fetchExcelPreview(selectedSheet);
+    }
+  }, [configurationId, selectedSheet, fetchExcelPreview]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
