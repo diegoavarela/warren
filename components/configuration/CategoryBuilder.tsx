@@ -352,11 +352,10 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
           {/* Quick Actions */}
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleMapExcelRow}
             disabled={!formData.key.trim()}
-            className="text-blue-600 border-blue-300 hover:bg-blue-50"
           >
             <FileSpreadsheet className="h-4 w-4" />
           </Button>
@@ -366,7 +365,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
             size="sm"
             disabled={submitting || !formData.key.trim()} 
             onClick={handleSubmit}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {submitting ? 'Agregando...' : 'Agregar'}
           </Button>
@@ -376,7 +374,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
           >
             ✕
           </Button>
@@ -513,8 +510,7 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                       
                       <div className="flex items-center gap-2">
                         <Button 
-                          type="button" 
-                          variant="outline"
+                          type="button"
                           size="sm"
                           onClick={() => setShowExcelPreview(true)}
                         >
@@ -564,7 +560,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                               setSelectedCategoryForMapping(categoryKey);
                               setShowExcelPreview(true);
                             }}
-                            className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
                           >
                             <FileSpreadsheet className="h-3 w-3" />
                           </Button>
@@ -573,7 +568,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                             variant="ghost"
                             size="sm"
                             onClick={() => deleteCategory(section.key, categoryKey)}
-                            className="h-7 w-7 p-0 text-red-600 hover:bg-red-100"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
