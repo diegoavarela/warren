@@ -17,6 +17,8 @@ export interface ConfigurationMetadata {
   units: 'normal' | 'thousands' | 'millions';
   fiscalYearStart?: number;
   dateFormat?: string;
+  selectedSheet?: string; // For Excel sheet persistence
+  lastSheetUpdate?: string; // Timestamp of last sheet change
 }
 
 // Cash Flow Configuration Structure
@@ -313,7 +315,7 @@ export const STANDARD_PL_TEMPLATES: Record<string, PLTemplate> = {
       },
       structure: {
         periodsRow: 4,
-        periodsRange: 'C4:N4',
+        periodsRange: 'B4:M4',
         categoriesColumn: 'B',
         dataRows: {
           totalRevenue: 10,
@@ -374,7 +376,7 @@ export const STANDARD_PL_TEMPLATES: Record<string, PLTemplate> = {
       },
       structure: {
         periodsRow: 4,
-        periodsRange: 'C4:N4',
+        periodsRange: 'B4:M4',
         categoriesColumn: 'B',
         dataRows: {
           totalRevenue: 10,

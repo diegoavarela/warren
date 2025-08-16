@@ -7,6 +7,8 @@ export const ConfigurationMetadataSchema = z.object({
   units: z.enum(['normal', 'thousands', 'millions']),
   fiscalYearStart: z.number().min(1).max(12).optional(),
   dateFormat: z.string().optional(),
+  selectedSheet: z.string().optional(), // For Excel sheet persistence
+  lastSheetUpdate: z.string().optional(), // Timestamp of last sheet change
 });
 
 export const BaseConfigurationSchema = z.object({
@@ -113,6 +115,17 @@ export const PLStructureSchema = z.object({
     otherExpenses: PLCategoryGroupSchema,
     taxes: PLCategoryGroupSchema,
   }),
+  periodMapping: z.array(z.object({
+    column: z.string(),
+    period: z.object({
+      type: z.enum(['month', 'quarter', 'year', 'custom']),
+      year: z.number().min(1900).max(2100),
+      month: z.number().min(1).max(12).optional(),
+      quarter: z.number().min(1).max(4).optional(),
+      customValue: z.string().optional(),
+      label: z.string(),
+    }),
+  })).optional(),
 });
 
 export const PLConfigurationSchema = BaseConfigurationSchema.extend({

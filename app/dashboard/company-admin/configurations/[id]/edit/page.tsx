@@ -9,13 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Settings, Database, Layers, Calendar, Code, Copy, Download, Eye, HelpCircle, ChevronDown, ChevronRight, Code2, Check, X, Edit } from 'lucide-react';
+import { ArrowLeft, Save, Settings, Database, Layers, Calendar, Code, Copy, Download, Eye, HelpCircle, ChevronDown, ChevronRight, Code2, Check, X, Edit, FileSpreadsheet } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppLayout } from '@/components/AppLayout';
 import { DataRowsEditor } from '@/components/configuration/DataRowsEditor';
 import { CategoryBuilder } from '@/components/configuration/CategoryBuilder';
 import { ConfigurationPreview } from '@/components/configuration/ConfigurationPreview';
 import { PeriodMappingEditor } from '@/components/configuration/PeriodMappingEditor';
+import { ExcelSheetSelector } from '@/components/configuration/ExcelSheetSelector';
+import { useExcelPreview } from '@/hooks/useExcelPreview';
 import { CashFlowConfiguration, PLConfiguration } from '@/lib/types/configurations';
 import { useTranslation } from '@/lib/translations';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
@@ -87,6 +89,99 @@ export default function EditConfigurationPage() {
   });
 
   const configId = params.id as string;
+  
+  // Excel Preview and Sheet Selection State
+  const { excelData, loading: excelLoading, error: excelError, refreshExcelPreview, fetchExcelPreview } = useExcelPreview(configId);
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
+
+  // Handle sheet selection change
+  const handleSheetChange = async (newSheet: string) => {
+    // Prevent empty/invalid sheet changes
+    if (!newSheet || !newSheet.trim()) {
+      console.warn('⚠️ [SHEET CHANGE] Ignoring empty sheet selection:', newSheet);
+      return;
+    }
+    
+    console.log('🔄 [SHEET CHANGE] Changing sheet from', selectedSheet, 'to', newSheet);
+    console.log('🔄 [SHEET CHANGE] Current configData metadata:', configData?.metadata);
+    
+    setSelectedSheet(newSheet);
+    setSheetInitialized(true); // Mark as manually initialized to prevent auto-reset
+    await fetchExcelPreview(newSheet);
+    
+    // Update configuration to persist the selected sheet
+    if (configData) {
+      const updatedConfig = {
+        ...configData,
+        metadata: {
+          ...configData.metadata,
+          selectedSheet: newSheet,
+          lastSheetUpdate: new Date().toISOString()
+        }
+      };
+      console.log('📄 [SHEET CHANGE] Updated config metadata:', updatedConfig.metadata);
+      setConfigData(updatedConfig);
+      setHasUnsavedChanges(true);
+      console.log('📄 [SHEET CHANGE] Sheet selection saved to configuration. hasUnsavedChanges:', true);
+    } else {
+      console.error('❌ [SHEET CHANGE] No configData available to save sheet selection!');
+    }
+    
+    toast.success(`Cambiada a hoja: ${newSheet}`);
+  };
+
+  // Track if we've already initialized the sheet to prevent re-initialization
+  const [sheetInitialized, setSheetInitialized] = useState(false);
+
+  // Initialize selected sheet when excel data loads (only once)
+  useEffect(() => {
+    console.log('📄 [SHEET INIT] Effect triggered. Conditions:', {
+      hasExcelSheet: !!excelData?.preview?.sheetName,
+      selectedSheet: selectedSheet,
+      sheetInitialized: sheetInitialized,
+      savedSheet: configData?.metadata?.selectedSheet
+    });
+    
+    if (excelData?.preview?.sheetName && !selectedSheet && !sheetInitialized && configData) {
+      // First priority: Use saved sheet from configuration metadata
+      const savedSheet = configData?.metadata?.selectedSheet;
+      console.log('📄 [SHEET INIT] Saved sheet in metadata:', savedSheet);
+      console.log('📄 [SHEET INIT] Available sheets:', excelData.preview.availableSheets);
+      console.log('📄 [SHEET INIT] Detected sheet:', excelData.preview.sheetName);
+      
+      if (savedSheet && excelData.preview.availableSheets?.includes(savedSheet)) {
+        setSelectedSheet(savedSheet);
+        setSheetInitialized(true);
+        console.log('✅ [SHEET INIT] Restored saved sheet selection:', savedSheet);
+      } else {
+        // Fallback: Use detected sheet
+        setSelectedSheet(excelData.preview.sheetName);
+        setSheetInitialized(true);
+        console.log('🔄 [SHEET INIT] Using auto-detected sheet (no valid saved sheet):', excelData.preview.sheetName);
+        console.log('🔄 [SHEET INIT] Reason: savedSheet not found in available sheets or not set');
+      }
+    } else {
+      console.log('📄 [SHEET INIT] Skipping initialization - conditions not met');
+      console.log('📄 [SHEET INIT] Missing conditions:', {
+        hasExcelData: !!excelData?.preview?.sheetName,
+        noSelectedSheet: !selectedSheet,
+        notInitialized: !sheetInitialized,
+        hasConfigData: !!configData
+      });
+    }
+  }, [excelData?.preview?.sheetName, excelData?.preview?.availableSheets, selectedSheet, sheetInitialized, configData]);
+
+  // PHASE 4: UX Enhancements State
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalConfigData, setOriginalConfigData] = useState<CashFlowConfiguration | PLConfiguration | null>(null);
+  const [originalFormData, setOriginalFormData] = useState<ConfigurationFormData | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  
+  // Autosave functionality
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [lastAutoSaveAt, setLastAutoSaveAt] = useState<Date | null>(null);
+  const AUTOSAVE_INTERVAL = 30000; // 30 seconds
 
   useEffect(() => {
     if (configId) {
@@ -106,6 +201,73 @@ export default function EditConfigurationPage() {
     }
   }, [configData]);
 
+  // PHASE 3: Bidirectional sync - Update formData when configData changes (from JSON edits)
+  useEffect(() => {
+    if (configData) {
+      console.log('🔄 [BIDIRECTIONAL SYNC] Syncing formData with configData changes');
+      setFormData(prev => ({
+        ...prev,
+        name: configData.name || prev.name,
+        description: (configData as any).description || prev.description,
+        type: configData.type || prev.type,
+        metadata: {
+          currency: configData.metadata?.currency || prev.metadata.currency,
+          locale: configData.metadata?.locale || prev.metadata.locale,
+          units: configData.metadata?.units || prev.metadata.units,
+        }
+      }));
+    }
+  }, [configData]);
+
+  // PHASE 4: Track unsaved changes
+  useEffect(() => {
+    if (!originalConfigData || !originalFormData || !configData) return;
+
+    const hasConfigChanges = JSON.stringify(configData) !== JSON.stringify(originalConfigData);
+    const hasFormChanges = JSON.stringify(formData) !== JSON.stringify(originalFormData);
+    
+    setHasUnsavedChanges(hasConfigChanges || hasFormChanges);
+  }, [configData, formData, originalConfigData, originalFormData]);
+
+  // PHASE 4: Browser navigation warning for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // PHASE 4: Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S / Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (!saving && !isAutoSaving && hasUnsavedChanges) {
+          // Use manual save instead of redirect save
+          performAutoSave();
+        }
+      }
+      
+      // Escape to go back (with unsaved changes warning)
+      if (e.key === 'Escape') {
+        if (hasUnsavedChanges) {
+          toast.warning('Presiona Escape nuevamente para salir sin guardar los cambios');
+        } else {
+          router.push('/dashboard/company-admin/configurations');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasUnsavedChanges, saving, isAutoSaving, router]);
+
   const fetchConfiguration = async () => {
     try {
       setLoading(true);
@@ -120,7 +282,7 @@ export default function EditConfigurationPage() {
       setConfiguration(config);
       
       // Populate form with existing data
-      setFormData({
+      const initialFormData = {
         name: config.name,
         description: config.description || '',
         type: config.type,
@@ -131,7 +293,8 @@ export default function EditConfigurationPage() {
           locale: config.metadata?.locale || 'en',
           units: config.metadata?.units || 'normal'
         }
-      });
+      };
+      setFormData(initialFormData);
       
       // SINGLE SOURCE OF TRUTH: Set the configuration data for editing
       console.log('📁 [SINGLE SOURCE] Loaded configuration from API:', config.configJson);
@@ -144,6 +307,11 @@ export default function EditConfigurationPage() {
       const formattedJson = JSON.stringify(config.configJson, null, 2);
       setRawJson(formattedJson);
       setEditedJsonText(formattedJson);
+
+      // PHASE 4: Store original data for change detection
+      setOriginalConfigData(JSON.parse(JSON.stringify(loadedConfig)));
+      setOriginalFormData(JSON.parse(JSON.stringify(initialFormData)));
+      setHasUnsavedChanges(false);
       
     } catch (error) {
       console.error('Error fetching configuration:', error);
@@ -363,11 +531,123 @@ export default function EditConfigurationPage() {
     }
   };
 
+  // Autosave function - saves without redirecting
+  const performAutoSave = async () => {
+    if (!hasUnsavedChanges || !configData || isAutoSaving || saving) {
+      console.log('💾 [AUTOSAVE] Skipping autosave:', { 
+        hasUnsavedChanges, 
+        hasConfigData: !!configData, 
+        isAutoSaving, 
+        saving 
+      });
+      return;
+    }
+
+    try {
+      setIsAutoSaving(true);
+      console.log('💾 [AUTOSAVE] Starting autosave...');
+      
+      const finalConfigJson = {
+        ...configData,
+        name: formData.name,
+        version: (configuration?.version || 0) + 1,
+      };
+      
+      // Ensure we have all required fields
+      if (!formData.name || !formData.type) {
+        console.error('❌ [AUTOSAVE] Missing required fields:', { name: formData.name, type: formData.type });
+        throw new Error('Missing required fields for autosave');
+      }
+
+      const payload = {
+        name: formData.name,
+        description: formData.description || '',
+        type: formData.type,
+        isTemplate: formData.isTemplate,
+        isActive: formData.isActive,
+        configJson: finalConfigJson,
+        metadata: {
+          ...formData.metadata,
+          lastModifiedAt: new Date().toISOString(),
+          lastModifiedMethod: 'manual' // Use 'manual' instead of 'autosave' 
+        },
+        lastModifiedMethod: 'manual' // Schema only allows 'wizard' or 'manual'
+      };
+      
+      console.log('💾 [AUTOSAVE] Payload being sent:');
+      console.log(JSON.stringify(payload, null, 2));
+      
+      const response = await fetch(`/api/configurations/${configId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [AUTOSAVE] Response status:', response.status);
+        console.error('❌ [AUTOSAVE] Response text:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+          console.error('❌ [AUTOSAVE] Parsed error data:', errorData);
+        } catch {
+          console.error('❌ [AUTOSAVE] Could not parse error as JSON');
+          errorData = { message: errorText };
+        }
+        
+        throw new Error(`Autosave failed: ${response.status} - ${errorData.message || errorData.error || errorText || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [AUTOSAVE] Configuration autosaved successfully');
+      
+      setLastAutoSaveAt(new Date());
+      setHasUnsavedChanges(false);
+      
+      toast.success('Autoguardado completado');
+      
+    } catch (error) {
+      console.error('❌ [AUTOSAVE] Autosave failed:', error);
+      toast.error('Error en autoguardado - tus cambios no se perdieron');
+    } finally {
+      setIsAutoSaving(false);
+    }
+  };
+
+  // Autosave effect - runs every 30 seconds when there are unsaved changes
+  useEffect(() => {
+    if (!autoSaveEnabled || !hasUnsavedChanges) return;
+
+    const autoSaveTimer = setInterval(() => {
+      performAutoSave();
+    }, AUTOSAVE_INTERVAL);
+
+    return () => clearInterval(autoSaveTimer);
+  }, [hasUnsavedChanges, autoSaveEnabled, configData, formData]);
+
+  // Warn before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?';
+        return 'Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Prevent double submission
-    if (saving) {
+    if (saving || isAutoSaving) {
       console.log('⚠️ Save already in progress, ignoring duplicate submission');
       return;
     }
@@ -413,7 +693,12 @@ export default function EditConfigurationPage() {
         isTemplate: formData.isTemplate,
         isActive: formData.isActive,
         configJson: finalConfigJson,
-        metadata: formData.metadata,
+        metadata: {
+          ...formData.metadata,
+          // PHASE 4: Simple audit trail
+          lastModifiedAt: new Date().toISOString(),
+          lastModifiedMethod: 'wizard'
+        },
         lastModifiedMethod: 'wizard'
       };
       
@@ -440,6 +725,16 @@ export default function EditConfigurationPage() {
       console.log('✅ Configuration saved successfully:', result);
       
       toast.success(t('config.success.updated'));
+      
+      // PHASE 4: Reset unsaved changes tracking after successful save
+      setLastSavedAt(new Date());
+      setOriginalConfigData(JSON.parse(JSON.stringify(configData)));
+      setOriginalFormData(JSON.parse(JSON.stringify(formData)));
+      setHasUnsavedChanges(false);
+      
+      // Reset autosave status
+      setLastAutoSaveAt(new Date());
+      setIsAutoSaving(false);
       
       // Force refresh of processed data cache after configuration changes
       await fetch(`/api/processed-data/${selectedCompany.id}/invalidate`, { method: 'POST' })
@@ -534,9 +829,22 @@ export default function EditConfigurationPage() {
             {t('config.navigation.backToConfigurations')}
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">{t('config.title.edit')}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold">{t('config.title.edit')}</h1>
+              {hasUnsavedChanges && (
+                <div className="flex items-center gap-2 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <div className="h-2 w-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  Cambios sin guardar
+                </div>
+              )}
+            </div>
             <p className="text-muted-foreground mt-2">
               {t('config.subtitle.edit')}: {configuration.name}
+              {lastSavedAt && (
+                <span className="text-xs ml-4 text-gray-500">
+                  Guardado: {lastSavedAt.toLocaleTimeString()}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -568,7 +876,7 @@ export default function EditConfigurationPage() {
             </TabsTrigger>
           </TabsList>
 
-          <form onSubmit={handleSubmit}>
+          <form id="configuration-form" onSubmit={handleSubmit}>
             {/* Basic Information Tab */}
             <TabsContent value="basic" className="space-y-6">
               <Card>
@@ -705,6 +1013,81 @@ export default function EditConfigurationPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Excel Sheet Selection */}
+                  <div className="border-t pt-6">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-medium flex items-center gap-2">
+                        <FileSpreadsheet className="h-5 w-5" />
+                        Selección de Hoja de Excel
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Selecciona qué hoja del archivo Excel usar para esta configuración. El sistema detecta automáticamente la mejor hoja, pero puedes cambiarlo manualmente.
+                      </p>
+                    </div>
+                    
+                    {/* Loading State */}
+                    {excelLoading && (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span className="ml-2 text-sm text-gray-600">Cargando hojas de Excel...</span>
+                      </div>
+                    )}
+
+                    {/* Error State */}
+                    {excelError && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-red-800">
+                          <X className="h-4 w-4" />
+                          <span className="font-medium">Error al cargar Excel</span>
+                        </div>
+                        <p className="text-red-700 text-sm mt-1">{excelError}</p>
+                        <p className="text-red-600 text-xs mt-2">
+                          Asegúrate de que el archivo Excel esté subido correctamente.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Sheet Selector */}
+                    {!excelLoading && !excelError && excelData?.preview?.availableSheets && excelData.preview.availableSheets.length > 1 && (
+                      <ExcelSheetSelector
+                        availableSheets={excelData.preview.availableSheets}
+                        currentSheet={selectedSheet || excelData.preview.sheetName}
+                        detectedSheet={excelData.preview.detectedSheetName || excelData.preview.sheetName}
+                        isManualSelection={sheetInitialized && selectedSheet !== (excelData.preview.detectedSheetName || excelData.preview.sheetName)}
+                        onSheetChange={handleSheetChange}
+                        loading={excelLoading}
+                      />
+                    )}
+
+                    {/* Single Sheet Info */}
+                    {!excelLoading && !excelError && excelData?.preview?.availableSheets && excelData.preview.availableSheets.length === 1 && (
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-blue-800">
+                          <FileSpreadsheet className="h-4 w-4" />
+                          <span className="font-medium">Archivo de una sola hoja</span>
+                        </div>
+                        <p className="text-blue-700 text-sm mt-1">
+                          Tu archivo Excel tiene solo una hoja: <strong>{excelData.preview.sheetName}</strong>
+                        </p>
+                        <p className="text-blue-600 text-xs mt-2">
+                          No se necesita selección manual de hoja.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* DEBUG: Show sheet info */}
+                    {!excelLoading && !excelError && excelData?.preview?.availableSheets && (
+                      <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                        <p><strong>🔍 Debug - Hojas Disponibles ({excelData.preview.availableSheets.length}):</strong></p>
+                        <p className="text-gray-600 mt-1">{excelData.preview.availableSheets.join(', ')}</p>
+                        <p className="mt-1">
+                          <strong>Actual:</strong> {excelData.preview.sheetName} | 
+                          <strong> Selector Visible:</strong> {excelData.preview.availableSheets.length > 1 ? 'SÍ' : 'NO'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -715,6 +1098,7 @@ export default function EditConfigurationPage() {
                 <PeriodMappingEditor
                   periodsRange={configData.structure.periodsRange}
                   currentMapping={configData.structure.periodMapping || []}
+                  configurationId={configId}
                   onChange={(mapping) => {
                     console.log('📝 [SINGLE SOURCE] Received period mapping onChange:', mapping);
                     if (configData) {
@@ -964,21 +1348,76 @@ export default function EditConfigurationPage() {
             </TabsContent>
 
             {/* Actions - Fixed at Bottom */}
-            <div className="flex justify-end space-x-4 pt-6 border-t">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => router.push('/dashboard/company-admin/configurations')}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={saving}
-                leftIcon={!saving ? <Save className="h-4 w-4" /> : undefined}
-              >
-                {saving ? t('common.saving') : t('config.actions.saveChanges')}
-              </Button>
+            <div className="flex items-center justify-between pt-6 border-t">
+              <div className="text-xs text-gray-500">
+                <div className="flex items-center gap-4">
+                  <span><kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Ctrl+S</kbd> Guardar</span>
+                  <span><kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Esc</kbd> Salir</span>
+                  
+                  {/* Autosave Status */}
+                  <div className="flex items-center gap-2 text-xs">
+                    {isAutoSaving && (
+                      <div className="flex items-center gap-1 text-blue-600">
+                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                        <span>Autoguardando...</span>
+                      </div>
+                    )}
+                    {lastAutoSaveAt && !isAutoSaving && (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                        <span>Último autoguardado: {lastAutoSaveAt.toLocaleTimeString()}</span>
+                      </div>
+                    )}
+                    {autoSaveEnabled && hasUnsavedChanges && !isAutoSaving && (
+                      <div className="flex items-center gap-1 text-amber-600">
+                        <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
+                        <span>Autoguardado en {Math.ceil((AUTOSAVE_INTERVAL - (Date.now() - (lastAutoSaveAt?.getTime() || Date.now()))) / 1000)}s</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-4">
+                {/* Autosave Toggle */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                  className={`text-xs ${autoSaveEnabled ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  {autoSaveEnabled ? '✓ Autoguardado ON' : '✗ Autoguardado OFF'}
+                </Button>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => router.push('/dashboard/company-admin/configurations')}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button 
+                  type="button" 
+                  disabled={saving || isAutoSaving}
+                  onClick={async () => {
+                    await performAutoSave();
+                    // Don't redirect - just save and stay
+                  }}
+                  leftIcon={!saving && !isAutoSaving ? <Save className="h-4 w-4" /> : undefined}
+                  className={hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'}
+                >
+                  {saving || isAutoSaving ? 'Guardando...' : hasUnsavedChanges ? 'Guardar Cambios *' : 'Guardado'}
+                </Button>
+                
+                <Button 
+                  type="submit" 
+                  disabled={saving || isAutoSaving}
+                  leftIcon={!saving && !isAutoSaving ? <Save className="h-4 w-4" /> : undefined}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {saving || isAutoSaving ? 'Guardando...' : 'Guardar y Salir'}
+                </Button>
+              </div>
             </div>
           </form>
         </Tabs>
