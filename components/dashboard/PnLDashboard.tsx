@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { KPICard } from './KPICard';
 import { WarrenChart, CHART_CONFIGS } from '../charts/WarrenChart';
 import { MetricCard } from './MetricCard';
@@ -15,7 +15,7 @@ import { RevenueForecastTrendsChartJS } from './RevenueForecastTrendsChartJS';
 import { NetIncomeForecastTrendsChartJS } from './NetIncomeForecastTrendsChartJS';
 import { ComparisonPeriodSelector } from './ComparisonPeriodSelector';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
-import { useProcessedPnLDataLegacy } from '@/lib/hooks/useProcessedPnLData';
+// Removed legacy processed data hook - using Live API instead
 import { transformToPnLData } from '@/lib/utils/financial-transformers';
 import { filterValidPeriods, sortPeriods } from '@/lib/utils/period-utils';
 import { PnLData as PnLDataType } from '@/types/financial';
@@ -150,20 +150,94 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   const [isOpexSectionCollapsed, setIsOpexSectionCollapsed] = useState(false);
   const [isCogsSectionCollapsed, setIsCogsSectionCollapsed] = useState(false);
   
-  // Fetch real data using the new processed data hook
-  const { data: apiData, loading: apiLoading, error, refetch } = useProcessedPnLDataLegacy(
-    useMockData ? '' : companyId || '',
-    12 // limit to 12 periods
-  );
+  // State for Live API data fetching
+  const [apiData, setApiData] = useState<any>(null);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch Live P&L data - wrapped in useCallback to prevent unnecessary re-renders
+  const fetchLivePnLData = useCallback(async () => {
+    if (!companyId || useMockData) return;
+    
+    try {
+      setApiLoading(true);
+      setError(null);
+      
+      console.log('🔍 Fetching live P&L data for company:', companyId);
+      
+      const response = await fetch(`/api/pnl-live/${companyId}?limit=12`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        if (response.status === 404) {
+          // No P&L configuration found
+          setError(errorData.error || 'No P&L configuration found for this company');
+        } else {
+          throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch P&L data`);
+        }
+        return;
+      }
+      
+      const result = await response.json();
+      console.log('✅ Live P&L API response received:', result);
+      
+      if (result.success && result.data) {
+        // Validate data structure before setting
+        console.log('🔍 P&L Dashboard: Validating API data structure:', result.data);
+        
+        if (!result.data.data || !result.data.periods) {
+          throw new Error('Invalid data structure received from P&L API');
+        }
+        
+        // Check if periods contain valid data (not just "23" values)
+        const validPeriods = result.data.periods.filter(period => 
+          period && 
+          typeof period === 'string' && 
+          period !== '23' && 
+          period.length > 0 &&
+          !period.match(/^\d+$/) // Not just numbers
+        );
+        
+        if (validPeriods.length === 0) {
+          throw new Error('Invalid period data detected. The P&L configuration may have incorrect row mappings. Please check your configuration.');
+        }
+        
+        console.log('✅ P&L Dashboard: Data validation passed, valid periods:', validPeriods.length);
+        setApiData(result.data);
+        setError(null);
+      } else {
+        throw new Error(result.error || 'No data received from P&L API');
+      }
+      
+    } catch (err) {
+      console.error('❌ Error fetching live P&L data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load P&L data');
+      setApiData(null);
+    } finally {
+      setApiLoading(false);
+    }
+  }, [companyId, useMockData]);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchLivePnLData();
+  }, [fetchLivePnLData]);
   
   // Refetch data when selected period or comparison period changes
   useEffect(() => {
     if ((selectedPeriod && selectedPeriod !== 'current') || comparisonPeriod) {
       if (companyId) {
-        refetch();
+        fetchLivePnLData();
       }
     }
-  }, [selectedPeriod, comparisonPeriod, companyId, refetch]);
+  }, [selectedPeriod, comparisonPeriod, companyId, fetchLivePnLData]);
   
   // Update currency and units from API response
   useEffect(() => {
@@ -202,7 +276,37 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
 
   // Transform API data to dashboard format or use mock data
   const [mockData, setMockData] = useState<PnLData | null>(null);
-  const data = useMockData || !companyId ? mockData : transformToPnLData(apiData);
+  
+  // Transform API data to dashboard format
+  const transformedData = apiData ? transformToPnLData(apiData) : null;
+  console.log('🔧 [DASHBOARD] useMockData:', useMockData);
+  console.log('🔧 [DASHBOARD] companyId:', companyId);
+  console.log('🔧 [DASHBOARD] hasApiData:', !!apiData);
+  console.log('🔧 [DASHBOARD] hasTransformedData:', !!transformedData);
+  if (apiData) {
+    console.log('🔧 [DASHBOARD] Raw API data structure:', {
+      hasData: !!apiData.data,
+      hasPeriods: !!apiData.data?.periods,
+      periodsArray: apiData.data?.periods,
+      hasProcessedData: !!apiData.data?.data,
+      processedDataKeys: apiData.data?.data ? Object.keys(apiData.data.data) : null,
+      currency: apiData.data?.currency,
+      displayUnits: apiData.data?.displayUnits
+    });
+  }
+  if (transformedData) {
+    console.log('🔧 [DASHBOARD] transformedData structure:', {
+      hasPeriods: !!transformedData.periods,
+      periodsCount: transformedData.periods?.length,
+      hasCurrentPeriod: !!transformedData.currentPeriod,
+      hasCategories: !!transformedData.categories,
+      hasYearToDate: !!transformedData.yearToDate
+    });
+  } else {
+    console.log('❌ [DASHBOARD] transformedData is null/undefined - transformer expects different format');
+  }
+  
+  const data = useMockData || !companyId ? mockData : transformedData;
   const loading = useMockData || !companyId ? !mockData : apiLoading;
   
   const [expandedExpenseCategory, setExpandedExpenseCategory] = useState<string | null>(null);
@@ -758,6 +862,127 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         });
       }
     }
+  }
+
+  // Handle invalid configuration case
+  if (error && error.includes('Invalid period data detected')) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="mb-6">
+            <InformationCircleIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              P&L Configuration Issue
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+          </div>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.href = '/dashboard/company-admin/configurations'}
+              className="w-full px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+            >
+              Fix Configuration
+            </button>
+            <button
+              onClick={() => window.location.href = '/dashboard/company-admin/configurations/new'}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Create New Configuration
+            </button>
+          </div>
+          
+          <div className="mt-6 text-sm text-gray-500">
+            <p>
+              This usually happens when the period headers (row mapping) in your configuration 
+              don't match the actual Excel structure. Check your configuration's row and column mappings.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle the case when no P&L configuration exists
+  if (error && error.includes('No active P&L configuration found')) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="mb-6">
+            <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              No P&L Configuration Found
+            </h2>
+            <p className="text-gray-600 mb-6">
+              To view the P&L dashboard, you need to create a P&L configuration first. 
+              This will define how your Excel data should be mapped and processed.
+            </p>
+          </div>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.href = '/dashboard/company-admin/configurations/new'}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Create P&L Configuration
+            </button>
+            <button
+              onClick={() => window.location.href = '/dashboard/company-admin/configurations'}
+              className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              View All Configurations
+            </button>
+          </div>
+          
+          <div className="mt-6 text-sm text-gray-500">
+            <p>
+              Need help? P&L configurations map your Excel columns to financial metrics 
+              like revenue, costs, and profitability calculations.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle other errors
+  if (error && !apiLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="mb-6">
+            <InformationCircleIcon className="h-16 w-16 text-red-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Unable to Load P&L Data
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+          </div>
+          
+          <button
+            onClick={fetchLivePnLData}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle loading state
+  if (apiLoading && !apiData) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading P&L data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FloatingAddButton, useFloatingButtonVisibility } from '@/components/ui/FloatingAddButton';
+import { KeyboardShortcutsPanel, DEFAULT_CATEGORY_SHORTCUTS } from '@/components/ui/KeyboardShortcutsPanel';
 import { 
   Layers, 
   Plus, 
@@ -15,11 +17,14 @@ import {
   Eye,
   CheckCircle,
   AlertCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Keyboard,
+  HelpCircle
 } from 'lucide-react';
 import { HelpIcon } from '@/components/HelpIcon';
 import { CashFlowConfiguration, PLConfiguration } from '@/lib/types/configurations';
 import { useExcelPreview } from '@/hooks/useExcelPreview';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { ExcelGrid } from './ExcelGrid';
 
 interface CategoryBuilderProps {
@@ -45,6 +50,13 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [showExcelPreview, setShowExcelPreview] = useState(false);
   const [selectedCategoryForMapping, setSelectedCategoryForMapping] = useState<string | null>(null);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(null);
+  
+  // Refs for floating button visibility
+  const headerAddButtonRef = useRef<HTMLButtonElement>(null);
+  const isFloatingButtonVisible = useFloatingButtonVisibility(headerAddButtonRef);
+  
   const { excelData, loading, error, fetchExcelPreview } = useExcelPreview(configurationId);
   
   // Get selected sheet from configuration metadata
@@ -70,11 +82,24 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
     }
   }, [showExcelPreview]);
 
-  // Initialize structure if it doesn't exist
+  // Initialize structure if it doesn't exist and fix existing categories missing labels
   useEffect(() => {
+    // Only run this effect if configuration actually needs fixing
+    const needsStructure = !configuration.structure;
+    const needsCategories = configuration.structure && !configuration.structure.categories;
+    const needsLabelFix = configuration.type === 'pnl' && configuration.structure?.categories;
+    
+    if (!needsStructure && !needsCategories && !needsLabelFix) {
+      return; // No fixes needed
+    }
+
+    let needsUpdate = false;
+    let updatedConfig = { ...configuration };
+
     if (!configuration.structure) {
+      needsUpdate = true;
       if (configuration.type === 'cashflow') {
-        const updatedConfig: CashFlowConfiguration = { 
+        updatedConfig = { 
           ...configuration,
           type: 'cashflow',
           structure: { 
@@ -89,10 +114,9 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
             },
             categories: { inflows: {}, outflows: {} }
           } 
-        };
-        onChange(updatedConfig);
+        } as CashFlowConfiguration;
       } else {
-        const updatedConfig: PLConfiguration = { 
+        updatedConfig = { 
           ...configuration,
           type: 'pnl',
           structure: { 
@@ -117,33 +141,80 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
             },
             categories: { revenue: {}, cogs: {}, opex: {}, otherIncome: {}, otherExpenses: {}, taxes: {} }
           } 
-        };
-        onChange(updatedConfig);
+        } as PLConfiguration;
       }
     } else if (!configuration.structure.categories) {
+      needsUpdate = true;
       if (configuration.type === 'cashflow') {
-        const updatedConfig: CashFlowConfiguration = { 
+        updatedConfig = { 
           ...configuration,
           type: 'cashflow',
           structure: { 
             ...configuration.structure,
             categories: { inflows: {}, outflows: {} }
           } 
-        };
-        onChange(updatedConfig);
+        } as CashFlowConfiguration;
       } else {
-        const updatedConfig: PLConfiguration = { 
+        updatedConfig = { 
           ...configuration,
           type: 'pnl',
           structure: { 
             ...configuration.structure,
             categories: { revenue: {}, cogs: {}, opex: {}, otherIncome: {}, otherExpenses: {}, taxes: {} }
           } 
-        };
-        onChange(updatedConfig);
+        } as PLConfiguration;
       }
     }
-  }, [configuration.structure, configuration.type, onChange]);
+
+    // Fix P&L categories that are missing labels
+    if (configuration.type === 'pnl' && configuration.structure?.categories) {
+      console.log('🔧 [CategoryBuilder] Checking P&L categories for missing labels...');
+      const sectionKeys = ['revenue', 'cogs', 'opex', 'otherIncome', 'otherExpenses', 'taxes'];
+      
+      // Ensure we have a deep copy for categories
+      if (!updatedConfig.structure.categories) {
+        updatedConfig.structure = JSON.parse(JSON.stringify(configuration.structure));
+      } else {
+        updatedConfig.structure.categories = JSON.parse(JSON.stringify(configuration.structure.categories));
+      }
+      
+      sectionKeys.forEach(sectionKey => {
+        const categories = (updatedConfig.structure.categories as any)[sectionKey] || {};
+        Object.entries(categories).forEach(([categoryKey, categoryData]: [string, any]) => {
+          if (!categoryData.label) {
+            console.log('🔧 [CategoryBuilder] Fixing missing label for category:', categoryKey, 'in section:', sectionKey);
+            needsUpdate = true;
+            
+            // Fix the category with proper label
+            (updatedConfig.structure.categories as any)[sectionKey][categoryKey] = {
+              ...categoryData,
+              label: {
+                en: categoryKey,
+                es: categoryKey
+              }
+            };
+            
+            console.log('🔧 [CategoryBuilder] Fixed category:', categoryKey, 'with label:', {
+              en: categoryKey,
+              es: categoryKey
+            });
+          }
+        });
+      });
+      
+      if (needsUpdate) {
+        console.log('🔧 [CategoryBuilder] Categories after label fixes:', updatedConfig.structure.categories);
+      }
+    }
+
+    if (needsUpdate) {
+      console.log('🔧 [CategoryBuilder] Updating configuration with fixed structure/labels');
+      // Use setTimeout to defer the state update until after the render phase
+      setTimeout(() => {
+        onChange(updatedConfig);
+      }, 0);
+    }
+  }, [configuration.type, configuration.structure, onChange]);
 
   // Get available sections based on configuration type - memoized to prevent re-renders
   const sections = useMemo(() => {
@@ -163,6 +234,148 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
       ];
     }
   }, [configuration.type]);
+
+  // Delete category - memoized to prevent re-renders (needed for keyboard shortcuts)
+  const deleteCategory = useCallback((sectionKey: string, categoryKey: string) => {
+    const updatedConfig = { ...configuration };
+    
+    if (!updatedConfig.structure?.categories) return;
+    
+    const categories = (updatedConfig.structure.categories as any)[sectionKey] || {};
+    
+    delete categories[categoryKey];
+    (updatedConfig.structure.categories as any)[sectionKey] = categories;
+    onChange(updatedConfig);
+  }, [configuration, onChange]);
+
+  // Keyboard shortcut handlers (must be defined after sections and deleteCategory)
+  const handleAddCategory = useCallback(() => {
+    if (editingCategory !== 'new') {
+      setEditingCategory('new');
+    }
+  }, [editingCategory]);
+
+  const handleExcelPreview = useCallback(() => {
+    setShowExcelPreview(true);
+  }, []);
+
+  const handleSaveConfiguration = useCallback(() => {
+    // Trigger autosave or manual save
+    // This would typically call a parent component save function
+    console.log('💾 Save triggered via keyboard shortcut');
+  }, []);
+
+  const handleSectionNavigation = useCallback((sectionIndex: number) => {
+    const sectionKeys = sections.map(s => s.key);
+    if (sectionIndex >= 0 && sectionIndex < sectionKeys.length) {
+      setActiveSection(sectionKeys[sectionIndex]);
+    }
+  }, [sections]);
+
+  const handleDeleteSelectedCategory = useCallback(() => {
+    if (selectedCategoryKey) {
+      deleteCategory(activeSection, selectedCategoryKey);
+      setSelectedCategoryKey(null);
+    }
+  }, [selectedCategoryKey, activeSection, deleteCategory]);
+
+  const handleMapSelectedCategory = useCallback(() => {
+    if (selectedCategoryKey) {
+      setSelectedCategoryForMapping(selectedCategoryKey);
+      setShowExcelPreview(true);
+    }
+  }, [selectedCategoryKey]);
+
+  const keyboardShortcuts = useMemo(() => ({
+    'add-new': {
+      key: 'n',
+      ctrlKey: true,
+      handler: handleAddCategory,
+      description: 'Agregar nueva categoría'
+    },
+    'add-quick': {
+      key: 'a',
+      handler: handleAddCategory,
+      description: 'Modo agregar rápido'
+    },
+    'plus-add': {
+      key: '+',
+      handler: handleAddCategory,
+      description: 'Agregar categoría'
+    },
+    'excel-preview': {
+      key: 'e',
+      ctrlKey: true,
+      handler: handleExcelPreview,
+      description: 'Ver vista previa Excel'
+    },
+    'save': {
+      key: 's',
+      ctrlKey: true,
+      handler: handleSaveConfiguration,
+      description: 'Guardar configuración'
+    },
+    'help': {
+      key: '?',
+      handler: () => setShowShortcutsHelp(true),
+      description: 'Mostrar ayuda'
+    },
+    'section-1': {
+      key: '1',
+      ctrlKey: true,
+      handler: () => handleSectionNavigation(0),
+      description: 'Ir a primera sección'
+    },
+    'section-2': {
+      key: '2',
+      ctrlKey: true,
+      handler: () => handleSectionNavigation(1),
+      description: 'Ir a segunda sección'
+    },
+    'section-3': {
+      key: '3',
+      ctrlKey: true,
+      handler: () => handleSectionNavigation(2),
+      description: 'Ir a tercera sección'
+    },
+    'section-4': {
+      key: '4',
+      ctrlKey: true,
+      handler: () => handleSectionNavigation(3),
+      description: 'Ir a cuarta sección'
+    },
+    'section-5': {
+      key: '5',
+      ctrlKey: true,
+      handler: () => handleSectionNavigation(4),
+      description: 'Ir a quinta sección'
+    },
+    'section-6': {
+      key: '6',
+      ctrlKey: true,
+      handler: () => handleSectionNavigation(5),
+      description: 'Ir a sexta sección'
+    },
+    'delete-category': {
+      key: 'Delete',
+      handler: handleDeleteSelectedCategory,
+      description: 'Eliminar categoría seleccionada'
+    },
+    'map-category': {
+      key: 'm',
+      handler: handleMapSelectedCategory,
+      description: 'Mapear categoría a Excel'
+    }
+  }), [
+    handleAddCategory,
+    handleExcelPreview,
+    handleSaveConfiguration,
+    handleSectionNavigation,
+    handleDeleteSelectedCategory,
+    handleMapSelectedCategory
+  ]);
+
+  useKeyboardShortcuts(keyboardShortcuts, { enabled: !showExcelPreview && !showShortcutsHelp });
 
   // Get categories for a specific section
   const getCategories = (sectionKey: string) => {
@@ -200,6 +413,10 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
     updatedConfig.structure.categories[sectionKey][categoryData.key] = {
       row: categoryData.row,
       required: categoryData.required,
+      label: categoryData.label || {
+        en: categoryData.key,
+        es: categoryData.key
+      },
       subcategories: {}
     };
 
@@ -228,18 +445,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
     onChange(updatedConfig);
   }, [configuration, onChange]);
 
-  // Delete category - memoized to prevent re-renders
-  const deleteCategory = useCallback((sectionKey: string, categoryKey: string) => {
-    const updatedConfig = { ...configuration };
-    
-    if (!updatedConfig.structure?.categories) return;
-    
-    const categories = (updatedConfig.structure.categories as any)[sectionKey] || {};
-    
-    delete categories[categoryKey];
-    (updatedConfig.structure.categories as any)[sectionKey] = categories;
-    onChange(updatedConfig);
-  }, [configuration, onChange]);
 
   // Calculate section stats
   const calculateSectionStats = (sectionKey: string) => {
@@ -294,6 +499,18 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
       }
     };
 
+    // Handle keyboard shortcuts in form
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (formData.key.trim()) {
+          handleSubmit();
+        }
+      }
+    };
+
     const handleMapExcelRow = () => {
       if (!formData.key.trim()) {
         console.error('Please enter a category name first');
@@ -320,7 +537,7 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
     };
 
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4" onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-3">
           {/* Category Name - Main Input */}
           <div className="flex-1">
@@ -329,8 +546,10 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
               onChange={(e) => setFormData({...formData, key: e.target.value})}
               placeholder={getPlaceholder()}
               className="border-gray-300"
+              autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && formData.key.trim()) {
+                  e.preventDefault();
                   handleSubmit();
                 }
               }}
@@ -379,18 +598,25 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
           </Button>
         </div>
         
-        {/* Required checkbox - Compact */}
-        <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-          <input
-            type="checkbox"
-            id="required"
-            checked={formData.required}
-            onChange={(e) => setFormData({...formData, required: e.target.checked})}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3"
-          />
-          <Label htmlFor="required" className="text-xs">
-            Campo obligatorio
-          </Label>
+        {/* Required checkbox and shortcuts hint */}
+        <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="required"
+              checked={formData.required}
+              onChange={(e) => setFormData({...formData, required: e.target.checked})}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3"
+            />
+            <Label htmlFor="required" className="text-xs">
+              Campo obligatorio
+            </Label>
+          </div>
+          <div className="text-xs text-gray-500 flex items-center gap-2">
+            <span>Ctrl+Enter: Guardar</span>
+            <span>•</span>
+            <span>Esc: Cancelar</span>
+          </div>
         </div>
       </div>
     );
@@ -403,18 +629,44 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5" />
-            Mapeo de Categorías P&L
-            <HelpIcon 
-              topic={{
-                id: 'category-mapping',
-                titleKey: 'help.categoryMapping.title',
-                contentKey: 'help.categoryMapping.content'
-              }}
-              size="md"
-            />
+            {configuration.type === 'cashflow' ? 'Mapeo de Categorías Cash Flow' : 'Mapeo de Categorías P&L'}
+            <div className="flex items-center gap-2 ml-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowShortcutsHelp(true)}
+                className="text-gray-500 hover:text-gray-700"
+                title="Atajos de teclado (?)"
+              >
+                <Keyboard className="h-4 w-4" />
+              </Button>
+              <HelpIcon 
+                topic={{
+                  id: 'category-mapping',
+                  titleKey: 'help.categoryMapping.title',
+                  contentKey: 'help.categoryMapping.content'
+                }}
+                size="md"
+              />
+            </div>
           </CardTitle>
-          <CardDescription>
-            Conecta las filas de tu Excel con las categorías estándar del Estado de Resultados
+          <CardDescription className="flex items-center justify-between">
+            <span>
+              {configuration.type === 'cashflow' 
+                ? 'Conecta las filas de tu Excel con las categorías de entradas y salidas de efectivo'
+                : 'Conecta las filas de tu Excel con las categorías estándar del Estado de Resultados'
+              }
+            </span>
+            <div className="hidden md:flex items-center gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl+N</kbd>
+                <span>Agregar</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">?</kbd>
+                <span>Ayuda</span>
+              </span>
+            </div>
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -509,29 +761,60 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Button 
+                        <button
                           type="button"
-                          size="sm"
                           onClick={() => setShowExcelPreview(true)}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Ver Excel
-                        </Button>
-                        <Button 
+                        </button>
+                        <button
+                          ref={headerAddButtonRef}
                           type="button"
-                          size="sm"
                           onClick={() => setEditingCategory('new')}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           Agregar
-                        </Button>
+                        </button>
                       </div>
                     </div>
                 {/* Categories List - Compact */}
                 {stats.categoryCount > 0 ? (
                   <div className="space-y-1">
-                    {Object.entries(categories).map(([categoryKey, categoryData]: [string, any]) => (
-                      <div key={categoryKey} className="flex items-center justify-between p-2 bg-gray-50 border rounded hover:bg-gray-100 transition-colors">
+                    {Object.entries(categories)
+                      .sort(([, a]: [string, any], [, b]: [string, any]) => {
+                        // Sort by row number - unmapped categories (row 0) go to the end
+                        if (a.row === 0 && b.row === 0) return 0;
+                        if (a.row === 0) return 1;
+                        if (b.row === 0) return -1;
+                        return a.row - b.row;
+                      })
+                      .map(([categoryKey, categoryData]: [string, any]) => (
+                      <div 
+                        key={categoryKey} 
+                        className={`flex items-center justify-between p-2 border rounded transition-colors cursor-pointer ${
+                          selectedCategoryKey === categoryKey 
+                            ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200' 
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        }`}
+                        onClick={() => setSelectedCategoryKey(selectedCategoryKey === categoryKey ? null : categoryKey)}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            setSelectedCategoryKey(selectedCategoryKey === categoryKey ? null : categoryKey);
+                          } else if (e.key === 'Delete' && selectedCategoryKey === categoryKey) {
+                            deleteCategory(section.key, categoryKey);
+                            setSelectedCategoryKey(null);
+                          } else if (e.key === 'm' && selectedCategoryKey === categoryKey) {
+                            setSelectedCategoryForMapping(categoryKey);
+                            setShowExcelPreview(true);
+                          }
+                        }}
+                        role="button"
+                        aria-selected={selectedCategoryKey === categoryKey}
+                      >
                         <div className="flex items-center gap-3 flex-1">
                           {categoryData.row > 0 ? (
                             <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
@@ -545,13 +828,19 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                               Fila {categoryData.row}
                             </span>
                           ) : (
-                            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded cursor-pointer hover:bg-amber-200"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedCategoryForMapping(categoryKey);
+                                    setShowExcelPreview(true);
+                                  }}
+                                  title="Click para mapear a Excel (M)">
                               Sin mapear
                             </span>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <Button
                             type="button"
                             variant="ghost"
@@ -560,6 +849,7 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                               setSelectedCategoryForMapping(categoryKey);
                               setShowExcelPreview(true);
                             }}
+                            title="Mapear a Excel (M)"
                           >
                             <FileSpreadsheet className="h-3 w-3" />
                           </Button>
@@ -568,6 +858,7 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                             variant="ghost"
                             size="sm"
                             onClick={() => deleteCategory(section.key, categoryKey)}
+                            title="Eliminar categoría (Delete)"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -688,6 +979,22 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
           </div>
         </div>
       )}
+
+      {/* Floating Add Button */}
+      <FloatingAddButton
+        onAdd={handleAddCategory}
+        sectionName={sections.find(s => s.key === activeSection)?.label || 'categoría'}
+        isVisible={isFloatingButtonVisible && editingCategory !== 'new'}
+        disabled={editingCategory === 'new'}
+      />
+
+      {/* Keyboard Shortcuts Help Panel */}
+      <KeyboardShortcutsPanel
+        isOpen={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
+        shortcuts={DEFAULT_CATEGORY_SHORTCUTS}
+        currentSection={sections.find(s => s.key === activeSection)?.label}
+      />
     </div>
   );
 }

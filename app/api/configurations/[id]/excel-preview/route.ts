@@ -24,7 +24,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     const configId = params.id;
-    console.log(`User ${user.id} requesting Excel preview for config ${configId}`);
+    // Get optional selectedSheet parameter from query string
+    const url = new URL(req.url);
+    const selectedSheet = url.searchParams.get('sheet') || undefined;
+    
+    console.log(`User ${user.id} requesting Excel preview for config ${configId}${selectedSheet ? ` with selected sheet: ${selectedSheet}` : ''}`);
+    console.log(`📋 Sheet selection parameter:`, selectedSheet);
 
     // Get the configuration
     const configResult = await db
@@ -95,7 +100,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       const previewData = await excelProcessingService.getExcelPreview(
         fileRecord.fileContent,
         fileRecord.originalFilename,
-        config.configJson
+        config.configJson,
+        selectedSheet
       );
 
       if (!previewData.success || !previewData.data) {

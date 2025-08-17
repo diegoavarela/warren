@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ import { Grid, MousePointer, Info, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/lib/translations';
 import { useExcelPreview } from '@/hooks/useExcelPreview';
 import { ExcelGrid } from './ExcelGrid';
+import { ExcelSheetSelector } from './ExcelSheetSelector';
 
 interface ExcelGridHelperProps {
   periodsRow: number;
@@ -35,8 +36,23 @@ export function ExcelGridHelper({
 }: ExcelGridHelperProps) {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [showGrid, setShowGrid] = useState(true);
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
   const { t } = useTranslation('es');
-  const { excelData, loading, error, refreshExcelPreview } = useExcelPreview(configurationId);
+  const { excelData, loading, error, refreshExcelPreview, fetchExcelPreview } = useExcelPreview(configurationId);
+
+  // Handle sheet selection change
+  const handleSheetChange = async (newSheet: string) => {
+    console.log('🔄 Changing sheet from', selectedSheet, 'to', newSheet);
+    setSelectedSheet(newSheet);
+    await fetchExcelPreview(newSheet);
+  };
+
+  // Initialize selected sheet when excel data loads
+  useEffect(() => {
+    if (excelData?.preview?.sheetName && !selectedSheet) {
+      setSelectedSheet(excelData.preview.sheetName);
+    }
+  }, [excelData, selectedSheet]);
 
 
   // Generate Excel column letters (A, B, C, ..., Z, AA, AB, etc.)
@@ -401,6 +417,7 @@ export function ExcelGridHelper({
                   </div>
                 </div>
               )}
+
 
               {/* Legend */}
               <div className="flex flex-wrap gap-4 text-xs">

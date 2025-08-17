@@ -10,50 +10,96 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Wand2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { PeriodMapping, PeriodDefinition } from '@/lib/types/configurations';
 import { useTranslation } from '@/lib/translations';
+import { useExcelPreview } from '@/hooks/useExcelPreview';
 
 interface PeriodMappingEditorProps {
-  periodsRange: string; // e.g., "B3:M3"
+  periodsRange: string; // Legacy - will be deprecated
   currentMapping?: PeriodMapping[];
   onChange: (mapping: PeriodMapping[]) => void;
   onValidate?: (isValid: boolean, errors: string[]) => void;
+  configurationId?: string; // For getting Excel preview data
+  availableColumns?: string[]; // Override from Excel sheet data
 }
 
 export function PeriodMappingEditor({
   periodsRange,
   currentMapping = [],
   onChange,
-  onValidate
+  onValidate,
+  configurationId,
+  availableColumns
 }: PeriodMappingEditorProps) {
   const { t } = useTranslation('es');
   // SINGLE SOURCE OF TRUTH: Use currentMapping directly, no internal state
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [voidedColumns, setVoidedColumns] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
+  
+  // Get Excel preview data to determine available columns
+  const { excelData, loading: excelLoading } = useExcelPreview(configurationId);
 
   console.log('📥 [PERIOD EDITOR] Received currentMapping:', currentMapping);
   console.log('📥 [PERIOD EDITOR] Initialized state:', initialized);
 
-  // Parse the periods range to get columns
-  const getColumnsFromRange = (range: string): string[] => {
-    const match = range.match(/^([A-Z]+)\d+:([A-Z]+)\d+$/);
-    if (!match) return [];
-    
-    const startCol = match[1];
-    const endCol = match[2];
-    
-    const columns: string[] = [];
-    let current = startCol.charCodeAt(0);
-    const end = endCol.charCodeAt(0);
-    
-    while (current <= end) {
-      columns.push(String.fromCharCode(current));
-      current++;
+  // Generate Excel column letters (A, B, C, ..., Z, AA, AB, etc.)
+  const getColumnLetter = (index: number): string => {
+    let result = '';
+    while (index >= 0) {
+      result = String.fromCharCode((index % 26) + 65) + result;
+      index = Math.floor(index / 26) - 1;
     }
-    
-    return columns;
+    return result;
   };
 
-  const columns = getColumnsFromRange(periodsRange);
+  // Get available columns from Excel data or fallback to range-based approach
+  const getAvailableColumns = (): string[] => {
+    // Priority 1: Use provided availableColumns override
+    if (availableColumns && availableColumns.length > 0) {
+      return availableColumns;
+    }
+    
+    // Priority 2: Use Excel preview data to get actual column count
+    if (excelData?.preview?.columnHeaders && excelData.preview.columnHeaders.length > 0) {
+      return excelData.preview.columnHeaders;
+    }
+    
+    // Priority 3: Use Excel data total columns
+    if (excelData?.preview?.totalCols) {
+      const columns: string[] = [];
+      for (let i = 0; i < excelData.preview.totalCols; i++) {
+        columns.push(getColumnLetter(i));
+      }
+      return columns;
+    }
+    
+    // Fallback: Parse the legacy periodsRange (backward compatibility)
+    const match = periodsRange.match(/^([A-Z]+)\d+:([A-Z]+)\d+$/);
+    if (match) {
+      const startCol = match[1];
+      const endCol = match[2];
+      
+      const columns: string[] = [];
+      let current = startCol.charCodeAt(0);
+      const end = endCol.charCodeAt(0);
+      
+      while (current <= end) {
+        columns.push(String.fromCharCode(current));
+        current++;
+      }
+      return columns;
+    }
+    
+    // Ultimate fallback: A reasonable default set of columns
+    return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
+  };
+
+  const columns = getAvailableColumns();
+  
+  console.log('📊 [PERIOD MAPPER] Excel data available:', !!excelData);
+  console.log('📊 [PERIOD MAPPER] Column headers from Excel:', excelData?.preview?.columnHeaders);
+  console.log('📊 [PERIOD MAPPER] Total cols from Excel:', excelData?.preview?.totalCols);
+  console.log('📊 [PERIOD MAPPER] Available columns determined:', columns);
+  console.log('📊 [PERIOD MAPPER] Column count:', columns.length);
 
   // Toggle voided columns
   const toggleVoidedColumn = (column: string) => {

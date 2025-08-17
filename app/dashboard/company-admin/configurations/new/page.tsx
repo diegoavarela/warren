@@ -77,12 +77,12 @@ export default function NewConfigurationPage() {
     fetchCompanyData();
   }, []);
 
-  // Fetch templates when type changes
+  // Fetch templates when type changes or when company data loads (to get proper locale)
   useEffect(() => {
-    if (formData.type) {
+    if (formData.type && selectedCompany && formData.metadata.locale) {
       fetchTemplates(formData.type);
     }
-  }, [formData.type]);
+  }, [formData.type, selectedCompany, formData.metadata.locale]);
 
   // Update currency when company data loads
   useEffect(() => {
@@ -94,7 +94,11 @@ export default function NewConfigurationPage() {
       });
       
       const inheritedCurrency = selectedCompany.baseCurrency || 'USD';
-      const inheritedLocale = selectedCompany.locale || 'en';
+      // Ensure locale is valid (2-10 characters as per schema)
+      let inheritedLocale = selectedCompany.locale || 'en';
+      if (inheritedLocale.length < 2 || inheritedLocale.length > 10) {
+        inheritedLocale = 'en';
+      }
       
       console.log('💰 Inheriting currency:', inheritedCurrency, 'and locale:', inheritedLocale);
       
@@ -178,6 +182,7 @@ export default function NewConfigurationPage() {
   const fetchTemplates = async (type: 'cashflow' | 'pnl') => {
     try {
       setTemplatesLoading(true);
+      console.log('🌐 Fetching templates with locale:', formData.metadata.locale, 'for type:', type);
       const response = await fetch(`/api/configurations/templates?type=${type}&locale=${formData.metadata.locale}`);
       
       if (!response.ok) {
@@ -304,10 +309,11 @@ export default function NewConfigurationPage() {
       let uploadedFileId = null;
       if (selectedFile) {
         try {
+          const uploadSession = Date.now().toString();
           const formData = new FormData();
           formData.append('file', selectedFile);
           formData.append('companyId', selectedCompany.id);
-          formData.append('uploadSession', Date.now().toString());
+          formData.append('uploadSession', uploadSession);
 
           const uploadResponse = await fetch('/api/files/upload', {
             method: 'POST',
@@ -321,7 +327,14 @@ export default function NewConfigurationPage() {
 
           const uploadResult = await uploadResponse.json();
           uploadedFileId = uploadResult.data.fileId;
+          
+          // Store upload session and filename for auto-processing
+          sessionStorage.setItem('excel_upload_session', uploadSession);
+          sessionStorage.setItem('excel_uploaded_filename', selectedFile.name);
+          
           console.log('File uploaded successfully with ID:', uploadedFileId);
+          console.log('📊 Stored upload session for auto-processing:', uploadSession);
+          console.log('📁 Stored filename for auto-processing:', selectedFile.name);
         } catch (uploadError) {
           console.error('File upload failed:', uploadError);
           toast.error(`File upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
@@ -371,18 +384,31 @@ export default function NewConfigurationPage() {
             metadata: formData.metadata,
             structure: {
               periodsRow: 4,
-              periodsRange: 'C4:N4',
+              periodsRange: 'B4:M4',
               categoriesColumn: 'B',
               dataRows: {
                 totalRevenue: 10,
+                grossIncome: 24,
                 cogs: 12,
                 totalOpex: 45,
-                netIncome: 90
+                totalOutcome: 78,
+                grossProfit: 25,
+                grossMargin: 26,
+                ebitda: 80,
+                ebitdaMargin: 82,
+                earningsBeforeTaxes: 85,
+                netIncome: 90,
+                otherIncome: 50,
+                otherExpenses: 70,
+                taxes: 88
               },
               categories: {
                 revenue: {},
                 cogs: {},
-                opex: {}
+                opex: {},
+                otherIncome: {},
+                otherExpenses: {},
+                taxes: {}
               }
             }
           };
@@ -392,6 +418,13 @@ export default function NewConfigurationPage() {
       // Add missing fields to configJson
       configJson.name = formData.name;
       configJson.version = 1;
+      
+      // Ensure locale is valid before sending
+      if (!formData.metadata.locale || formData.metadata.locale.length < 2) {
+        console.warn('⚠️ Invalid locale detected, falling back to default');
+        formData.metadata.locale = 'en';
+        configJson.metadata.locale = 'en';
+      }
 
       const payload = {
         companyId: selectedCompany.id,
@@ -405,6 +438,8 @@ export default function NewConfigurationPage() {
       };
       
       console.log('Creating configuration with payload:', payload);
+      console.log('🔍 Payload metadata locale:', payload.metadata.locale);
+      console.log('🔍 ConfigJson metadata locale:', payload.configJson.metadata.locale);
       
       const response = await fetch('/api/configurations', {
         method: 'POST',

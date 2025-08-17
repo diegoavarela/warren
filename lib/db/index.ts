@@ -96,7 +96,11 @@ if (!isServer) {
     throw new Error("DATABASE_URL environment variable is required");
   }
   
-  const neonSql = neon(process.env.DATABASE_URL);
+  // Configure Neon connection with timeout settings
+  const neonSql = neon(process.env.DATABASE_URL, {
+    fetchConnectionCache: true,
+    fullResults: false
+  });
   db = drizzle(neonSql, { schema });
   
   // Use real schema tables

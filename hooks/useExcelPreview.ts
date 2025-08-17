@@ -3,20 +3,22 @@ import { useState, useEffect } from 'react';
 interface ExcelPreviewData {
   filename: string;
   sheetName: string;
+  detectedSheetName: string;
   availableSheets: string[];
   columnHeaders: string[];
   rowData: any[][];
   highlights: any;
   totalRows: number;
   totalCols: number;
+  isManualSelection: boolean;
 }
 
 interface UseExcelPreviewReturn {
   excelData: { preview: ExcelPreviewData } | null;
   loading: boolean;
   error: string | null;
-  fetchExcelPreview: () => Promise<void>;
-  refreshExcelPreview: () => Promise<void>;
+  fetchExcelPreview: (selectedSheet?: string) => Promise<void>;
+  refreshExcelPreview: (selectedSheet?: string) => Promise<void>;
 }
 
 // Global cache for Excel preview data
@@ -32,12 +34,15 @@ export function useExcelPreview(configurationId?: string): UseExcelPreviewReturn
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchExcelPreview = async (forceRefresh = false) => {
+  const fetchExcelPreview = async (selectedSheet?: string, forceRefresh = false) => {
     if (!configurationId) return;
     
+    // Create cache key including selected sheet
+    const cacheKey = selectedSheet ? `${configurationId}:${selectedSheet}` : configurationId;
+    
     // Check cache first unless forcing refresh
-    if (!forceRefresh && excelPreviewCache.has(configurationId)) {
-      const cachedData = excelPreviewCache.get(configurationId);
+    if (!forceRefresh && excelPreviewCache.has(cacheKey)) {
+      const cachedData = excelPreviewCache.get(cacheKey);
       setExcelData(cachedData || null);
       return;
     }
@@ -46,7 +51,13 @@ export function useExcelPreview(configurationId?: string): UseExcelPreviewReturn
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/configurations/${configurationId}/excel-preview`);
+      // Build URL with optional sheet parameter
+      const url = new URL(`/api/configurations/${configurationId}/excel-preview`, window.location.origin);
+      if (selectedSheet) {
+        url.searchParams.set('sheet', selectedSheet);
+      }
+      
+      const response = await fetch(url.toString());
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -61,8 +72,8 @@ export function useExcelPreview(configurationId?: string): UseExcelPreviewReturn
       
       const result = await response.json();
       
-      // Cache the result
-      excelPreviewCache.set(configurationId, result.data);
+      // Cache the result with sheet-specific key
+      excelPreviewCache.set(cacheKey, result.data);
       setExcelData(result.data);
       
     } catch (err) {
@@ -80,7 +91,7 @@ export function useExcelPreview(configurationId?: string): UseExcelPreviewReturn
     }
   };
 
-  const refreshExcelPreview = () => fetchExcelPreview(true);
+  const refreshExcelPreview = (selectedSheet?: string) => fetchExcelPreview(selectedSheet, true);
 
   useEffect(() => {
     if (configurationId) {

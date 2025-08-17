@@ -1,9 +1,378 @@
 import { Period, PnLData, YTDMetrics } from '@/types/financial';
 
+// Transform configuration-based API data to P&L Dashboard format
+function transformConfigurationBasedData(apiData: any): PnLData | null {
+  console.log('🔍 [TRANSFORMER] Raw apiData structure:', apiData);
+  console.log('🔍 [TRANSFORMER] apiData.data:', apiData?.data);
+  
+  if (!apiData?.data) {
+    console.log('❌ [TRANSFORMER] No apiData.data found');
+    return null;
+  }
+  
+  const { periods, dataRows, categories } = apiData.data;
+  
+  console.log('🔍 [TRANSFORMER] Extracted from apiData.data:');
+  console.log('- periods:', periods);
+  console.log('- dataRows:', dataRows);
+  console.log('- categories:', categories);
+  
+  // Debug dataRows structure in detail
+  console.log('🔍 [TRANSFORMER] DataRows detailed structure:');
+  if (dataRows) {
+    Object.keys(dataRows).forEach(key => {
+      console.log(`- ${key}:`, dataRows[key]);
+    });
+  }
+  
+  // Helper function to ensure numeric values (define early)
+  const toNumber = (value: any): number => {
+    // Handle configuration-based format: {label, values, total}
+    if (value && typeof value === 'object' && 'total' in value) {
+      console.log('🔍 [TRANSFORMER] Extracting from object with total:', value.total);
+      return typeof value.total === 'number' ? value.total : 0;
+    }
+    
+    if (typeof value === 'number') return isNaN(value) ? 0 : value;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+  
+  // Helper function to get value for a period (define early)
+  const getValueForPeriod = (fieldData: any, periodIndex: number): number => {
+    if (fieldData && fieldData.values && Array.isArray(fieldData.values)) {
+      console.log(`🔍 [TRANSFORMER] getValueForPeriod: period ${periodIndex}, values array:`, fieldData.values);
+      const periodValue = fieldData.values[periodIndex];
+      console.log(`🔍 [TRANSFORMER] getValueForPeriod: period ${periodIndex}, extracted value:`, periodValue, 'from index:', periodIndex);
+      return toNumber(periodValue);
+    }
+    console.log(`🔍 [TRANSFORMER] getValueForPeriod: period ${periodIndex}, no values array, fieldData structure:`, fieldData);
+    return toNumber(fieldData);
+  };
+
+  // Extract and transform categories into expected array format
+  const transformCategories = (categoryObj: any): any[] => {
+    if (!categoryObj) return [];
+    
+    return Object.entries(categoryObj).map(([categoryName, categoryData]: [string, any]) => {
+      // For now, return basic structure - actual values will be handled by dashboard
+      return {
+        category: categoryName,
+        label: categoryData.label?.en || categoryName,
+        amount: 0, // Dashboard will calculate from period data
+        percentage: 0, // Dashboard will calculate
+        color: "bg-purple-600"
+      };
+    });
+  };
+
+  // Enhanced function to transform COGS categories with real Excel data
+  const transformCOGSCategories = (categoryObj: any, currentPeriodIndex: number): any[] => {
+    if (!categoryObj) return [];
+    
+    console.log('🏭 [COGS] Transforming COGS categories for period index:', currentPeriodIndex);
+    console.log('🏭 [COGS] Available categories:', Object.keys(categoryObj));
+    console.log('🏭 [COGS] Available dataRows keys:', Object.keys(dataRows || {}));
+    
+    // Get total COGS for percentage calculation
+    const totalCOGS = dataRows?.cogs ? getValueForPeriod(dataRows.cogs, currentPeriodIndex) : 0;
+    console.log('🏭 [COGS] Total COGS amount:', totalCOGS);
+    
+    const cogsCategories = Object.entries(categoryObj).map(([categoryName, categoryData]: [string, any]) => {
+      console.log(`🏭 [COGS] Processing category: ${categoryName}`, categoryData);
+      
+      // Get the row number for this category
+      const categoryRow = categoryData.row;
+      if (!categoryRow) {
+        console.log(`🏭 [COGS] No row configured for category: ${categoryName}`);
+        return {
+          category: categoryName,
+          label: categoryData.label?.en || categoryName,
+          amount: 0,
+          percentage: 0,
+          color: "bg-orange-500"
+        };
+      }
+      
+      // Read the actual amount from Excel data for this category and period
+      let categoryAmount = 0;
+      
+      // Try to get the actual data from Excel using the configured row
+      // The dataRows should contain the processed Excel data for each row
+      
+      if (categoryData.subcategories) {
+        console.log(`🏭 [COGS] Category ${categoryName} has subcategories:`, Object.keys(categoryData.subcategories));
+        
+        // For categories with subcategories, sum up all subcategory values
+        let subcategoryTotal = 0;
+        Object.entries(categoryData.subcategories).forEach(([subName, subData]: [string, any]) => {
+          if (subData.row && dataRows && dataRows[subName]) {
+            const subAmount = Math.abs(getValueForPeriod(dataRows[subName], currentPeriodIndex));
+            subcategoryTotal += subAmount;
+            console.log(`🏭 [COGS] Subcategory ${subName} amount: ${subAmount}`);
+          }
+        });
+        
+        // If we got subcategory data, use that; otherwise try main category
+        if (subcategoryTotal > 0) {
+          categoryAmount = subcategoryTotal;
+        } else if (dataRows && dataRows[categoryName]) {
+          categoryAmount = Math.abs(getValueForPeriod(dataRows[categoryName], currentPeriodIndex));
+        }
+      } else {
+        // Simple category - try to read from dataRows
+        if (dataRows && dataRows[categoryName]) {
+          categoryAmount = Math.abs(getValueForPeriod(dataRows[categoryName], currentPeriodIndex));
+          console.log(`🏭 [COGS] Found direct data for ${categoryName}: ${categoryAmount}`);
+        } else {
+          console.log(`🏭 [COGS] No data found for ${categoryName} in dataRows`);
+          // If no specific data, use equal distribution of total COGS as fallback
+          const numCategories = Object.keys(categoryObj).length;
+          categoryAmount = totalCOGS / numCategories;
+        }
+      }
+      
+      console.log(`🏭 [COGS] Category ${categoryName} amount: ${categoryAmount}`);
+      
+      // Calculate percentage of total COGS
+      const percentage = totalCOGS > 0 ? (categoryAmount / totalCOGS) * 100 : 0;
+      
+      return {
+        category: categoryName,
+        label: categoryData.label?.en || categoryName,
+        amount: categoryAmount,
+        percentage: Math.round(percentage * 100) / 100, // Round to 2 decimals
+        color: "bg-orange-500" // Orange color for COGS categories
+      };
+    });
+    
+    console.log('🏭 [COGS] Final COGS categories:', cogsCategories);
+    return cogsCategories;
+  };
+
+  const revenueCategories = transformCategories(categories?.revenue);
+  const opexCategories = transformCategories(categories?.opex);
+  const taxCategories = transformCategories(categories?.taxes);
+  
+  console.log('🔍 [TRANSFORMER] Transformed categories:');
+  console.log('- Revenue categories:', revenueCategories.length);
+  console.log('- COGS categories:', cogsCategories.length);
+  console.log('- OpEx categories:', opexCategories.length);
+  console.log('- Tax categories:', taxCategories.length);
+  
+  if (!periods || !Array.isArray(periods) || periods.length === 0) {
+    console.log('❌ [TRANSFORMER] No valid periods found');
+    return null;
+  }
+
+  // Helper function to translate Spanish month names to English
+  const translateMonth = (spanishMonth: string): string => {
+    const monthMap: Record<string, string> = {
+      'Ene': 'Jan',
+      'Feb': 'Feb', 
+      'Mar': 'Mar',
+      'Abr': 'Apr',
+      'May': 'May',
+      'Jun': 'Jun',
+      'Jul': 'Jul',
+      'Ago': 'Aug',
+      'Sep': 'Sep',
+      'Oct': 'Oct',
+      'Nov': 'Nov',
+      'Dic': 'Dec'
+    };
+    
+    // Extract Spanish month name from "Ene 2025" format
+    const parts = spanishMonth.trim().split(' ');
+    const spanishMonthName = parts[0];
+    
+    // Only return the English month name, not the full date
+    const englishMonth = monthMap[spanishMonthName] || spanishMonthName;
+    return englishMonth;
+  };
+
+  // Create periods array with proper structure
+  const transformedPeriods: Period[] = periods.map((periodName: string, index: number) => {
+    console.log(`🔍 [TRANSFORMER] Processing period ${index}: "${periodName}"`);
+    console.log(`🔍 [TRANSFORMER] Available dataRows keys:`, Object.keys(dataRows || {}));
+    console.log(`🔍 [TRANSFORMER] DETAILED totalRevenue structure:`, dataRows?.totalRevenue);
+    console.log(`🔍 [TRANSFORMER] Sample dataRows values:`, {
+      totalRevenue: dataRows?.totalRevenue,
+      cogs: dataRows?.cogs,
+      grossProfit: dataRows?.grossProfit,
+      totalOpex: dataRows?.totalOpex,
+      netIncome: dataRows?.netIncome
+    });
+    
+    // getValueForPeriod is now defined at the top of the function
+    
+    const revenue = getValueForPeriod(dataRows?.totalRevenue, index);
+    const cogs = getValueForPeriod(dataRows?.cogs, index);
+    const grossProfit = getValueForPeriod(dataRows?.grossProfit, index);
+    const operatingExpenses = getValueForPeriod(dataRows?.totalOpex, index);
+    const netIncome = getValueForPeriod(dataRows?.netIncome, index);
+    const taxes = getValueForPeriod(dataRows?.taxes, index);
+    const ebitda = getValueForPeriod(dataRows?.ebitda, index);
+    const earningsBeforeTaxes = getValueForPeriod(dataRows?.earningsBeforeTaxes, index);
+    const grossMarginFromData = getValueForPeriod(dataRows?.grossMargin, index);
+    const ebitdaMarginFromData = getValueForPeriod(dataRows?.ebitdaMargin, index);
+    
+    // Calculate missing values per mapping document
+    const operatingIncome = grossProfit - operatingExpenses; // UTILIDAD OPERACIONAL = gross profit - opex
+    const cogsPercentage = revenue > 0 ? ((cogs / revenue) * 100) : 0; // % COGS OF REVENUE
+    const opexPercentage = revenue > 0 ? ((operatingExpenses / revenue) * 100) : 0; // % OPEX OF REVENUE
+    const netMargin = revenue > 0 ? ((netIncome / revenue) * 100) : 0; // Monthly Net Margin Performance
+    
+    // Use data margins if available, otherwise calculate
+    const grossMargin = grossMarginFromData > 0 ? grossMarginFromData : (revenue > 0 ? ((grossProfit / revenue) * 100) : 0);
+    const ebitdaMargin = ebitdaMarginFromData > 0 ? ebitdaMarginFromData : (revenue > 0 ? ((ebitda / revenue) * 100) : 0);
+    const operatingMargin = revenue > 0 ? ((operatingIncome / revenue) * 100) : 0;
+    const earningsBeforeTax = earningsBeforeTaxes > 0 ? earningsBeforeTaxes : (netIncome + taxes);
+    const earningsBeforeTaxMargin = revenue > 0 ? ((earningsBeforeTax / revenue) * 100) : 0;
+    
+    console.log(`🔍 [TRANSFORMER] Period ${index} final values:`, {
+      revenue, cogs, grossProfit, operatingExpenses, netIncome, grossMargin,
+      operatingIncome, cogsPercentage, opexPercentage, netMargin
+    });
+    
+    // Extract year from period name "Ene 2025" -> 2025
+    const parts = periodName.trim().split(' ');
+    const year = parts[1] ? parseInt(parts[1], 10) : 2025;
+    
+    return {
+      id: `period-${index}`,
+      month: translateMonth(periodName),
+      year: year,
+      revenue,
+      cogs,
+      grossProfit,
+      grossMargin,
+      operatingExpenses,
+      operatingIncome,
+      operatingMargin,
+      earningsBeforeTax,
+      earningsBeforeTaxMargin,
+      taxes,
+      netIncome,
+      netMargin,
+      ebitda,
+      ebitdaMargin,
+      // Additional calculated fields per mapping
+      cogsPercentage,
+      opexPercentage
+    };
+  });
+  
+  // Find the last period with actual data (revenue > 0) as current period
+  let currentPeriod = transformedPeriods[0]; // fallback to first
+  let previousPeriod: Period | undefined = undefined;
+  
+  console.log('🔍 [TRANSFORMER] Searching for current period with data:');
+  transformedPeriods.forEach((period, i) => {
+    const hasData = period.revenue > 0 || period.cogs > 0 || period.operatingExpenses > 0;
+    console.log(`- Period ${i}: ${period.month} ${period.year}, hasData: ${hasData}, revenue: ${period.revenue}, cogs: ${period.cogs}, opex: ${period.operatingExpenses}`);
+  });
+  
+  // Find last period with data
+  for (let i = transformedPeriods.length - 1; i >= 0; i--) {
+    if (transformedPeriods[i].revenue > 0 || transformedPeriods[i].cogs > 0 || transformedPeriods[i].operatingExpenses > 0) {
+      currentPeriod = transformedPeriods[i];
+      // Previous period is the one before current (if exists)
+      if (i > 0) {
+        previousPeriod = transformedPeriods[i - 1];
+      }
+      console.log(`🔍 [TRANSFORMER] Selected period ${i} as current: ${currentPeriod.month} ${currentPeriod.year}`);
+      break;
+    }
+  }
+  
+  console.log('🔍 [TRANSFORMER] Selected current period:', currentPeriod.month, currentPeriod.year);
+  console.log('🔍 [TRANSFORMER] Selected previous period:', previousPeriod?.month, previousPeriod?.year);
+  
+  // Create YTD metrics - Sum all periods from beginning to current period
+  // For YTD, we sum up values from all periods up to current period index
+  const currentPeriodIndex = transformedPeriods.findIndex(p => p === currentPeriod);
+  console.log('🏭 [COGS] Current period index for COGS calculation:', currentPeriodIndex);
+  
+  // Transform COGS categories with real Excel data using current period
+  const cogsCategories = transformCOGSCategories(categories?.cogs, currentPeriodIndex);
+  
+  const ytdPeriods = transformedPeriods.slice(0, currentPeriodIndex + 1);
+  
+  const ytdRevenue = ytdPeriods.reduce((sum, p) => sum + p.revenue, 0);
+  const ytdCogs = ytdPeriods.reduce((sum, p) => sum + p.cogs, 0);
+  const ytdGrossProfit = ytdPeriods.reduce((sum, p) => sum + p.grossProfit, 0);
+  const ytdOperatingExpenses = ytdPeriods.reduce((sum, p) => sum + p.operatingExpenses, 0);
+  const ytdNetIncome = ytdPeriods.reduce((sum, p) => sum + p.netIncome, 0);
+  const ytdTaxes = ytdPeriods.reduce((sum, p) => sum + p.taxes, 0);
+  const ytdEbitda = ytdPeriods.reduce((sum, p) => sum + p.ebitda, 0);
+  const ytdOperatingIncome = ytdGrossProfit - ytdOperatingExpenses;
+  
+  // For totalOutcome (YTD EXPENSES), sum all periods from beginning to current
+  const ytdExpenses = ytdPeriods.reduce((sum, p) => {
+    // totalOutcome = cogs + operatingExpenses + taxes
+    const periodTotalOutcome = p.cogs + p.operatingExpenses + p.taxes;
+    return sum + periodTotalOutcome;
+  }, 0);
+  
+  console.log('🔍 [TRANSFORMER] YTD values:', {
+    ytdRevenue, ytdCogs, ytdGrossProfit, ytdOperatingExpenses, ytdNetIncome, ytdExpenses
+  });
+  
+  const yearToDate: YTDMetrics = {
+    revenue: ytdRevenue,
+    cogs: ytdCogs,
+    grossProfit: ytdGrossProfit,
+    grossMargin: ytdRevenue > 0 ? ((ytdGrossProfit / ytdRevenue) * 100) : 0,
+    operatingExpenses: ytdOperatingExpenses,
+    operatingIncome: ytdOperatingIncome,
+    operatingMargin: ytdRevenue > 0 ? ((ytdOperatingIncome / ytdRevenue) * 100) : 0,
+    earningsBeforeTax: ytdNetIncome + ytdTaxes,
+    earningsBeforeTaxMargin: ytdRevenue > 0 ? (((ytdNetIncome + ytdTaxes) / ytdRevenue) * 100) : 0,
+    taxes: ytdTaxes,
+    netIncome: ytdNetIncome,
+    netMargin: ytdRevenue > 0 ? ((ytdNetIncome / ytdRevenue) * 100) : 0,
+    ebitda: ytdEbitda,
+    ebitdaMargin: ytdRevenue > 0 ? ((ytdEbitda / ytdRevenue) * 100) : 0,
+    totalPersonnelCost: 0,
+    personnelSalariesCoR: 0,
+    personnelSalariesOpex: 0,
+    personnelBenefitsOpex: 0,
+    personnelPayrollTaxesOpex: 0,
+    // Additional YTD field per mapping
+    totalOutcome: ytdExpenses, // YTD EXPENSES
+    monthsIncluded: ytdPeriods.length
+  };
+  
+  return {
+    periods: transformedPeriods,
+    currentPeriod,
+    previousPeriod,
+    yearToDate,
+    categories: {
+      revenue: revenueCategories,
+      cogs: cogsCategories,
+      operatingExpenses: opexCategories,
+      taxes: taxCategories
+    },
+    // Additional data for dashboard components
+    taxSummary: taxCategories
+  };
+}
+
 // Transform API response to P&L Dashboard format
 export function transformToPnLData(apiData: any): PnLData | null {
   if (!apiData) return null;
 
+  // Handle new configuration-based API format
+  if (apiData.data && apiData.data.periods && apiData.data.dataRows) {
+    return transformConfigurationBasedData(apiData);
+  }
+
+  // Handle legacy format
   const { currentMonth, previousMonth, yearToDate, categories, trends, chartData, comparisonData, comparisonPeriod } = apiData;
 
   if (!currentMonth) return null;

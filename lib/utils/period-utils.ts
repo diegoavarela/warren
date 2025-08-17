@@ -116,14 +116,43 @@ export function sortPeriods(periods: PeriodData[]): PeriodData[] {
 function getMonthIndex(monthName: string): number {
   const monthsEs = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const monthsEn = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const monthsEnFull = ['january', 'february', 'march', 'april', 'may', 'june', 
+                        'july', 'august', 'september', 'october', 'november', 'december'];
+  const monthsEsFull = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   
-  const lowerMonth = monthName.toLowerCase();
+  const lowerMonth = monthName.toLowerCase().trim();
+  
+  // Try Spanish short
   let index = monthsEs.indexOf(lowerMonth);
-  if (index === -1) {
-    index = monthsEn.indexOf(lowerMonth);
+  if (index !== -1) return index;
+  
+  // Try English short
+  index = monthsEn.indexOf(lowerMonth);
+  if (index !== -1) return index;
+  
+  // Try English full
+  index = monthsEnFull.indexOf(lowerMonth);
+  if (index !== -1) return index;
+  
+  // Try Spanish full
+  index = monthsEsFull.indexOf(lowerMonth);
+  if (index !== -1) return index;
+  
+  // Try partial matches for truncated names
+  for (let i = 0; i < monthsEn.length; i++) {
+    if (monthsEn[i].startsWith(lowerMonth) || lowerMonth.startsWith(monthsEn[i])) {
+      return i;
+    }
   }
   
-  return index;
+  for (let i = 0; i < monthsEs.length; i++) {
+    if (monthsEs[i].startsWith(lowerMonth) || lowerMonth.startsWith(monthsEs[i])) {
+      return i;
+    }
+  }
+  
+  return -1;
 }
 
 /**

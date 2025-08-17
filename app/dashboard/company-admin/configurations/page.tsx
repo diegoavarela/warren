@@ -576,13 +576,6 @@ export default function ConfigurationsPage() {
                         Ver Dashboard
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      onClick={() => router.push(`/dashboard/company-admin/configurations/${config.id}/process`)}
-                      leftIcon={<FileSpreadsheet className="h-4 w-4" />}
-                    >
-                      Procesar Archivos
-                    </Button>
                   </div>
                 </div>
               </CardBody>

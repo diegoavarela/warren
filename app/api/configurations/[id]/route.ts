@@ -82,11 +82,15 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     // DEBUG: Log what the API is receiving
     console.log('🔍 [API] Received configuration update:', body);
     console.log('🔍 [API] configJson in body:', body.configJson);
+    console.log('🔍 [API] configJson metadata:', body.configJson?.metadata);
+    console.log('🔍 [API] selectedSheet in configJson metadata:', body.configJson?.metadata?.selectedSheet);
+    console.log('🔍 [API] body metadata:', body.metadata);
     console.log('🔍 [API] Period mappings in configJson:', body.configJson?.structure?.periodMapping);
     
     // Validate request data
     const validation = CompanyConfigurationUpdateSchema.safeParse(body);
     if (!validation.success) {
+      console.error('❌ [API] Validation failed:', validation.error.errors);
       return NextResponse.json(
         { 
           error: 'Validation failed',
@@ -97,9 +101,13 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     const data = validation.data;
+    console.log('✅ [API] Validation passed. Data to save:', data);
+    console.log('🔍 [API] configJson metadata after validation:', data.configJson?.metadata);
+    console.log('🔍 [API] selectedSheet after validation:', data.configJson?.metadata?.selectedSheet);
 
     // Update the configuration
     const updatedConfiguration = await configurationService.updateConfiguration(configId, data);
+    console.log('💾 [API] Configuration updated. Result metadata:', updatedConfiguration.configJson?.metadata);
 
     return NextResponse.json({
       success: true,
