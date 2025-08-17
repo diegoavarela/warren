@@ -157,12 +157,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   const opexCategories = transformCategories(categories?.opex);
   const taxCategories = transformCategories(categories?.taxes);
   
-  console.log('🔍 [TRANSFORMER] Transformed categories:');
-  console.log('- Revenue categories:', revenueCategories.length);
-  console.log('- COGS categories:', cogsCategories.length);
-  console.log('- OpEx categories:', opexCategories.length);
-  console.log('- Tax categories:', taxCategories.length);
-  
   if (!periods || !Array.isArray(periods) || periods.length === 0) {
     console.log('❌ [TRANSFORMER] No valid periods found');
     return null;
@@ -299,6 +293,13 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   
   // Transform COGS categories with real Excel data using current period
   const cogsCategories = transformCOGSCategories(categories?.cogs, currentPeriodIndex);
+  
+  // Log all transformed categories now that cogsCategories is available
+  console.log('🔍 [TRANSFORMER] Transformed categories:');
+  console.log('- Revenue categories:', revenueCategories.length);
+  console.log('- COGS categories:', cogsCategories.length);
+  console.log('- OpEx categories:', opexCategories.length);
+  console.log('- Tax categories:', taxCategories.length);
   
   const ytdPeriods = transformedPeriods.slice(0, currentPeriodIndex + 1);
   
