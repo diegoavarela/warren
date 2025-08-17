@@ -164,7 +164,7 @@ export function HorizontalStackedChart({
               onMouseLeave={() => setHoveredCategory(null)}
             >
               {/* Category Label */}
-              <div className="w-40 text-right text-sm font-medium text-gray-700 flex-shrink-0">
+              <div className="w-64 text-right text-sm font-medium text-gray-700 flex-shrink-0">
                 <div className="truncate" title={categoryName}>
                   {categoryName}
                 </div>
@@ -176,13 +176,13 @@ export function HorizontalStackedChart({
               {/* Stacked Bar */}
               <div className="flex-1 relative">
                 <div 
-                  className={`bg-gray-200 rounded-lg h-10 relative overflow-hidden transition-all duration-200 ${
+                  className={`bg-gray-200 rounded-lg h-10 relative overflow-visible transition-all duration-200 ${
                     isHovered ? 'shadow-md' : ''
                   }`}
                 >
                   {/* Render stacked segments */}
                   {item.items && item.items.length > 0 ? (
-                    <div className="flex h-full">
+                    <div className="flex h-full relative">
                       {item.items.map((subItem, subIndex) => {
                         const width = (subItem.amount / maxValue) * 100;
                         const colorClass = SUBCATEGORY_COLORS[subIndex % SUBCATEGORY_COLORS.length];
@@ -196,8 +196,13 @@ export function HorizontalStackedChart({
                             onClick={() => onCategoryClick && onCategoryClick(item)}
                           >
                             {/* Show value if segment is wide enough */}
-                            {width > 8 && (
+                            {width > 15 ? (
                               <span className="text-xs font-semibold truncate px-1">
+                                {valueFormatter(subItem.amount)}
+                              </span>
+                            ) : (
+                              /* Show value at the right edge for narrow segments */
+                              <span className="absolute left-full ml-1 text-xs font-medium text-gray-700 whitespace-nowrap">
                                 {valueFormatter(subItem.amount)}
                               </span>
                             )}
@@ -216,9 +221,9 @@ export function HorizontalStackedChart({
                     </div>
                   ) : (
                     /* Single segment for the entire category if no subcategories */
-                    <>
+                    <div className="flex h-full items-center">
                       <div 
-                        className={`bg-blue-500 h-full flex items-center justify-start text-white text-sm font-medium cursor-pointer hover:bg-blue-600 transition-colors duration-200 relative`}
+                        className={`bg-blue-500 h-full flex items-center justify-start text-white text-sm font-medium cursor-pointer hover:bg-blue-600 transition-colors duration-200 relative rounded-lg`}
                         style={{ width: `${(item.amount / maxValue) * 100}%` }}
                         onClick={() => onCategoryClick && onCategoryClick(item)}
                       >
@@ -229,13 +234,13 @@ export function HorizontalStackedChart({
                           </span>
                         )}
                       </div>
-                      {/* Show value outside bar if bar is too narrow */}
+                      {/* Show value at right edge if bar is too narrow */}
                       {(item.amount / maxValue) <= 0.15 && (
-                        <span className="ml-2 text-sm font-medium text-gray-700">
+                        <span className="ml-2 text-sm font-medium text-gray-700 whitespace-nowrap">
                           {valueFormatter(item.amount)}
                         </span>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
