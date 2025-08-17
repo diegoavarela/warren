@@ -43,7 +43,24 @@ export class ExcelProcessingService {
       // Convert base64 to buffer and read Excel file
       const buffer = Buffer.from(fileContentBase64, 'base64');
       const workbook = XLSX.read(buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
+      
+      // Use smart detection for sheet selection (same logic as other methods)
+      let sheetName = workbook.SheetNames[0]; // Default to first sheet
+      
+      // Check if there are sheets with names that suggest cash flow data
+      const dataSheetNames = workbook.SheetNames.filter(name => 
+        name.toLowerCase().includes('cash') || 
+        name.toLowerCase().includes('flow') ||
+        name.toLowerCase().includes('flujo') ||
+        name.toLowerCase().includes('data') ||
+        name.toLowerCase().includes('main') ||
+        name.toLowerCase().includes('principal')
+      );
+      
+      if (dataSheetNames.length > 0) {
+        sheetName = dataSheetNames[0];
+      }
+      
       const worksheet = workbook.Sheets[sheetName];
       
       // Process based on configuration type
@@ -109,7 +126,24 @@ export class ExcelProcessingService {
       
       // Read Excel file
       const workbook = XLSX.readFile(filePath);
-      const sheetName = workbook.SheetNames[0];
+      
+      // Use smart detection for sheet selection (same logic as other methods)
+      let sheetName = workbook.SheetNames[0]; // Default to first sheet
+      
+      // Check if there are sheets with names that suggest cash flow data
+      const dataSheetNames = workbook.SheetNames.filter(name => 
+        name.toLowerCase().includes('cash') || 
+        name.toLowerCase().includes('flow') ||
+        name.toLowerCase().includes('flujo') ||
+        name.toLowerCase().includes('data') ||
+        name.toLowerCase().includes('main') ||
+        name.toLowerCase().includes('principal')
+      );
+      
+      if (dataSheetNames.length > 0) {
+        sheetName = dataSheetNames[0];
+      }
+      
       const worksheet = workbook.Sheets[sheetName];
       
       // Process based on configuration type
@@ -230,10 +264,7 @@ export class ExcelProcessingService {
     }
     
     // Extract inflows categories using explicit column mapping
-    console.log('🔍 Categories structure debug:');
-    console.log('- structure.categories:', JSON.stringify(structure.categories, null, 2));
-    console.log('- inflows keys:', Object.keys(structure.categories?.inflows || {}));
-    console.log('- outflows keys:', Object.keys(structure.categories?.outflows || {}));
+    // Categories structure debug: inflows and outflows processing
     
     for (const [categoryKey, category] of Object.entries(structure.categories.inflows || {})) {
       const categoryValues = this.extractRowDataFromMapping(worksheet, category.row, periodMapping);
@@ -324,6 +355,7 @@ export class ExcelProcessingService {
     // Extract core data rows using explicit column mapping
     for (const [fieldName, rowNumber] of Object.entries(structure.dataRows)) {
       const rowData = this.extractRowDataFromMapping(worksheet, rowNumber, periodMapping);
+      console.log(`🔍 P&L Data Row [${fieldName}] from row ${rowNumber}:`, rowData);
       processedData.dataRows[fieldName] = {
         label: this.getCellValue(worksheet, rowNumber, structure.categoriesColumn.charCodeAt(0) - 65), // Convert letter to column index
         values: rowData,
@@ -487,7 +519,7 @@ export class ExcelProcessingService {
             label: readableLabel
           }
         });
-        console.log(`📅 Legacy mapping: ${columnLetter} → "${cellValue}" → "${readableLabel}"`);
+        // Legacy mapping: ${columnLetter} → ${cellValue} → ${readableLabel}
       }
     }
     
@@ -564,10 +596,10 @@ export class ExcelProcessingService {
     
     for (const mapping of sortedMapping) {
       periods.push(mapping.period.label);
-      console.log(`📅 Period mapping: ${mapping.column} → "${mapping.period.label}"`);
+      // Period mapping: ${mapping.column} → ${mapping.period.label}
     }
     
-    console.log(`📋 Configuration-based periods (${periods.length} total):`, periods);
+    // Configuration-based periods: ${periods.length} total
     return periods;
   }
 
@@ -594,7 +626,7 @@ export class ExcelProcessingService {
       const columnIndex = mapping.column.charCodeAt(0) - 65; // Convert A, B, C to 0, 1, 2
       const value = this.getCellValue(worksheet, row, columnIndex);
       
-      console.log(`📊 Reading ${mapping.column}${row} (${mapping.period.label}): ${value}`);
+      // Debug logging removed to prevent console flooding
       
       // Only accept numeric values, convert to null if not a number
       data.push(typeof value === 'number' ? value : null);
@@ -700,7 +732,14 @@ export class ExcelProcessingService {
   private getCellValue(worksheet: XLSX.WorkSheet, row: number, col: number): any {
     const cellAddress = XLSX.utils.encode_cell({ r: row - 1, c: col });
     const cell = worksheet[cellAddress];
-    return cell ? cell.v : null;
+    const value = cell ? cell.v : null;
+    
+    // Debug logging for first few reads to see what's happening
+    if (Math.random() < 0.1) { // Only log 10% of reads to avoid spam
+      console.log(`🔍 Cell ${cellAddress} (R${row}C${col+1}): ${value} (type: ${typeof value})`);
+    }
+    
+    return value;
   }
   
   /**
@@ -753,28 +792,43 @@ export class ExcelProcessingService {
   async getExcelPreview(
     fileContentBase64: string,
     originalFilename: string,
-    configuration: any
+    configuration: any,
+    selectedSheet?: string
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       // Convert base64 content back to buffer and read as Excel
       const buffer = Buffer.from(fileContentBase64, 'base64');
       const workbook = XLSX.read(buffer, { type: 'buffer' });
       
-      // Look for the main data sheet - try to find one with cash flow or financial data
-      let sheetName = workbook.SheetNames[0]; // Default to first sheet
+      // Smart sheet selection with manual override capability
+      let sheetName: string;
+      let detectedSheetName: string;
       
-      // Check if there are sheets with names that suggest cash flow data
-      const dataSheetNames = workbook.SheetNames.filter(name => 
-        name.toLowerCase().includes('cash') || 
-        name.toLowerCase().includes('flow') ||
-        name.toLowerCase().includes('flujo') ||
-        name.toLowerCase().includes('data') ||
-        name.toLowerCase().includes('main') ||
-        name.toLowerCase().includes('principal')
-      );
-      
-      if (dataSheetNames.length > 0) {
-        sheetName = dataSheetNames[0];
+      // If a specific sheet is requested, use it (manual override)
+      if (selectedSheet && workbook.SheetNames.includes(selectedSheet)) {
+        sheetName = selectedSheet;
+        detectedSheetName = selectedSheet;
+        console.log(`📋 Using manually selected sheet: "${selectedSheet}"`);
+      } else {
+        // Smart detection: Look for the main data sheet - try to find one with cash flow or financial data
+        detectedSheetName = workbook.SheetNames[0]; // Default to first sheet
+        
+        // Check if there are sheets with names that suggest cash flow data
+        const dataSheetNames = workbook.SheetNames.filter(name => 
+          name.toLowerCase().includes('cash') || 
+          name.toLowerCase().includes('flow') ||
+          name.toLowerCase().includes('flujo') ||
+          name.toLowerCase().includes('data') ||
+          name.toLowerCase().includes('main') ||
+          name.toLowerCase().includes('principal')
+        );
+        
+        if (dataSheetNames.length > 0) {
+          detectedSheetName = dataSheetNames[0];
+        }
+        
+        sheetName = detectedSheetName;
+        // Smart detection selected sheet: ${detectedSheetName}
       }
       
       const worksheet = workbook.Sheets[sheetName];
@@ -811,12 +865,14 @@ export class ExcelProcessingService {
         data: {
           filename: originalFilename,
           sheetName,
+          detectedSheetName: selectedSheet ? detectedSheetName : sheetName, // Show what was detected when manual selection is used
           availableSheets: workbook.SheetNames,
           columnHeaders,
           rowData: previewData,
           highlights,
           totalRows: range.e.r - range.s.r + 1,
-          totalCols: range.e.c - range.s.c + 1
+          totalCols: range.e.c - range.s.c + 1,
+          isManualSelection: !!selectedSheet && workbook.SheetNames.includes(selectedSheet)
         }
       };
     } catch (error) {
@@ -896,7 +952,7 @@ export class ExcelProcessingService {
   /**
    * Process Excel file with configuration (from base64 content)
    */
-  async processExcelWithConfiguration(fileContent: string, configuration: any, type: 'pnl' | 'cashflow'): Promise<ProcessedData> {
+  async processExcelWithConfiguration(fileContent: string, configuration: any, type: 'pnl' | 'cashflow', selectedSheet?: string): Promise<ProcessedData> {
     console.log(`🔄 Processing Excel with live configuration for ${type}...`);
     console.log('🔍 Configuration received:', !!configuration);
     console.log('🔍 File content length:', fileContent?.length || 0);
@@ -912,9 +968,43 @@ export class ExcelProcessingService {
       
       console.log('📋 Excel sheets found:', workbook.SheetNames);
       
-      // Use the first sheet
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      console.log('📄 Using worksheet:', workbook.SheetNames[0]);
+      // Smart sheet selection with manual override capability (same logic as getExcelPreview)
+      let sheetName: string;
+      let detectedSheetName: string;
+      
+      console.log('🔍 Sheet selection debug:');
+      console.log('- selectedSheet parameter:', selectedSheet);
+      console.log('- available sheets:', workbook.SheetNames);
+      console.log('- selectedSheet exists in workbook:', selectedSheet ? workbook.SheetNames.includes(selectedSheet) : false);
+      
+      if (selectedSheet && workbook.SheetNames.includes(selectedSheet)) {
+        sheetName = selectedSheet;
+        detectedSheetName = selectedSheet;
+        console.log(`📋 Using manually selected sheet: "${selectedSheet}"`);
+      } else {
+        // Smart detection: Look for the main data sheet - try to find one with cash flow or financial data
+        detectedSheetName = workbook.SheetNames[0]; // Default to first sheet
+        
+        // Check if there are sheets with names that suggest cash flow data
+        const dataSheetNames = workbook.SheetNames.filter(name => 
+          name.toLowerCase().includes('cash') || 
+          name.toLowerCase().includes('flow') ||
+          name.toLowerCase().includes('flujo') ||
+          name.toLowerCase().includes('data') ||
+          name.toLowerCase().includes('main') ||
+          name.toLowerCase().includes('principal')
+        );
+        
+        if (dataSheetNames.length > 0) {
+          detectedSheetName = dataSheetNames[0];
+        }
+        
+        sheetName = detectedSheetName;
+        // Smart detection selected sheet: ${detectedSheetName}
+      }
+      
+      const worksheet = workbook.Sheets[sheetName];
+      console.log('📄 Using worksheet:', sheetName);
       
       // Process using the configuration
       console.log('🔄 Processing data with configuration type:', type);

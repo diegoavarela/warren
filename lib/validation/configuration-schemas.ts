@@ -92,20 +92,26 @@ export const PLStructureSchema = z.object({
   periodsRange: z.string().regex(/^[A-Z]+\d+:[A-Z]+\d+$/),
   categoriesColumn: z.string().regex(/^[A-Z]+$/), // Single column like "B"
   dataRows: z.object({
+    // Core required fields
     totalRevenue: z.number().min(1),
-    grossIncome: z.number().min(1),
-    cogs: z.number().min(1),
-    totalOpex: z.number().min(1),
-    totalOutcome: z.number().min(1),
     grossProfit: z.number().min(1),
-    grossMargin: z.number().min(1),
-    ebitda: z.number().min(1),
-    ebitdaMargin: z.number().min(1),
-    earningsBeforeTaxes: z.number().min(1),
     netIncome: z.number().min(1),
-    otherIncome: z.number().min(1),
-    otherExpenses: z.number().min(1),
-    taxes: z.number().min(1),
+    ebitda: z.number().min(1),
+    
+    // Optional fields (can be omitted if not available in Excel)
+    grossIncome: z.number().min(1).optional(),
+    cogs: z.number().min(1).optional(), 
+    totalOpex: z.number().min(1).optional(),
+    totalOutcome: z.number().min(1).optional(),
+    grossMargin: z.number().min(1).optional(),
+    ebitdaMargin: z.number().min(1).optional(),
+    earningsBeforeTaxes: z.number().min(1).optional(),
+    otherIncome: z.number().min(1).optional(),
+    otherExpenses: z.number().min(1).optional(),
+    taxes: z.number().min(1).optional(),
+  }).refine((data) => {
+    // Allow undefined for optional fields, but if provided must be >= 1
+    return true;
   }),
   categories: z.object({
     revenue: PLCategoryGroupSchema,

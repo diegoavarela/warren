@@ -17,8 +17,6 @@ export async function GET(
   { params }: { params: { companyId: string } }
 ) {
   try {
-    console.log('🔍 Live P&L API: Processing request for company', params.companyId);
-
     // Authentication
     const user = await getCurrentUser();
     if (!user) {
@@ -42,26 +40,9 @@ export async function GET(
       }, { status: 404 });
     }
 
-    console.log('✅ Found active P&L configuration:', pnlConfig.name);
-    console.log('🔍 Configuration details:', {
-      id: pnlConfig.id,
-      name: pnlConfig.name,
-      createdAt: pnlConfig.createdAt,
-      createdBy: pnlConfig.createdBy,
-      isActive: pnlConfig.isActive
-    });
-    console.log('📋 Configuration structure check:');
-    console.log('- configJson type:', typeof pnlConfig.configJson);
-    console.log('- configJson exists:', !!pnlConfig.configJson);
+    // Found active P&L configuration: ${pnlConfig.name}
     
-    if (pnlConfig.configJson) {
-      console.log('- configJson keys:', Object.keys(pnlConfig.configJson));
-      console.log('- has structure:', !!pnlConfig.configJson.structure);
-      console.log('- structure type:', typeof pnlConfig.configJson.structure);
-      if (pnlConfig.configJson.structure) {
-        console.log('- structure keys:', Object.keys(pnlConfig.configJson.structure));
-      }
-    } else {
+    if (!pnlConfig.configJson) {
       console.error('❌ configJson is null or undefined');
       return NextResponse.json({ 
         error: 'Configuration data is missing or corrupted' 
@@ -69,7 +50,6 @@ export async function GET(
     }
 
     // Get the Excel file from the database and process it with the configuration
-    console.log('🔄 Processing Excel file with live P&L configuration...');
     
     const { db, financialDataFiles } = await import('@/lib/db');
     const { eq, desc } = await import('drizzle-orm');
@@ -89,26 +69,15 @@ export async function GET(
       }, { status: 404 });
     }
 
-    console.log('📊 Found Excel file, processing with P&L configuration...');
-
     // Process the Excel file with the current configuration
-    // The configJson already has the correct structure from the database
-    console.log('🔧 P&L Configuration structure debug:');
-    console.log('- Configuration type:', pnlConfig.configJson?.type);
-    console.log('- Period mapping exists:', !!pnlConfig.configJson?.structure?.periodMapping);
-    console.log('- Period mapping length:', pnlConfig.configJson?.structure?.periodMapping?.length || 0);
-    console.log('- Data rows:', Object.keys(pnlConfig.configJson?.structure?.dataRows || {}));
-    console.log('- File content length:', fileResult[0].fileContent?.length || 0);
-    
-    console.log('🔄 About to call processExcelWithConfiguration for P&L...');
+    const selectedSheet = pnlConfig.configJson?.metadata?.selectedSheet;
     const processedData = await excelProcessingService.processExcelWithConfiguration(
       fileResult[0].fileContent,
       pnlConfig.configJson as any, // Cast to bypass TS type checking for now
-      'pnl'
+      'pnl',
+      selectedSheet // Pass the selected sheet from configuration
     );
-    console.log('✅ processExcelWithConfiguration completed successfully for P&L');
-
-    console.log('✅ Live P&L processing complete - periods found:', processedData.periods?.length || 0);
+    // P&L processing completed successfully
     
     // Transform to dashboard format
     const response = {
@@ -116,9 +85,14 @@ export async function GET(
       data: {
         periods: processedData.periods || [],
         data: processedData,
+        currency: pnlConfig.configJson?.metadata?.currency || 'USD',
+        displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
+        // Also include the processed data structure directly for easier access
+        ...processedData,
         metadata: {
           currency: pnlConfig.configJson?.metadata?.currency || 'USD',
           units: pnlConfig.configJson?.metadata?.units || 'normal',
+          displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
           type: 'pnl',
           configurationName: pnlConfig.name
         }
@@ -134,7 +108,7 @@ export async function GET(
       }
     };
 
-    console.log('✅ Live P&L API: Returning data with', response.data.periods.length, 'periods');
+    // Returning P&L data with ${response.data.periods.length} periods
     return NextResponse.json(response);
 
   } catch (error) {

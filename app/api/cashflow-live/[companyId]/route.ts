@@ -93,10 +93,12 @@ export async function GET(
     console.log('- File content length:', fileResult[0].fileContent?.length || 0);
     
     console.log('🔄 About to call processExcelWithConfiguration...');
+    const selectedSheet = cashFlowConfig.configJson?.metadata?.selectedSheet;
     const processedData = await excelProcessingService.processExcelWithConfiguration(
       fileResult[0].fileContent,
       cashFlowConfig.configJson as any, // Cast to bypass TS type checking for now
-      'cashflow'
+      'cashflow',
+      selectedSheet // Pass the selected sheet from configuration
     );
     console.log('✅ processExcelWithConfiguration completed successfully');
 

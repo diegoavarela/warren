@@ -39,6 +39,8 @@ export const translations = {
     'common.hide': 'Ocultar',
     'common.show': 'Mostrar',
     'common.refresh': 'Actualizar',
+    'common.optional': 'Opcional',
+    'common.clear': 'Limpiar',
 
     // Growth and comparison translations
     'growth.vs': 'vs',
@@ -821,6 +823,7 @@ export const translations = {
     'config.categories.enterSubcategoryKey': 'Ingresa la clave de subcategoría:',
     'config.categories.enterRowNumber': 'Ingresa el número de fila de Excel:',
     'config.form.row': 'Fila',
+    'config.form.rowPlaceholder': 'Número de fila',
     'config.form.name': 'Nombre',
     'config.form.namePlaceholder': 'Nombre de la configuración',
     'config.form.type': 'Tipo',
@@ -1116,6 +1119,8 @@ export const translations = {
     'common.hide': 'Hide',
     'common.show': 'Show',
     'common.refresh': 'Refresh',
+    'common.optional': 'Optional',
+    'common.clear': 'Clear',
 
     // Growth and comparison translations
     'growth.vs': 'vs',
@@ -1240,6 +1245,7 @@ export const translations = {
     'config.categories.enterSubcategoryKey': 'Enter subcategory key:',
     'config.categories.enterRowNumber': 'Enter Excel row number:',
     'config.form.row': 'Row',
+    'config.form.rowPlaceholder': 'Row number',
     'config.datarows.requiredLabel': 'Required',
 
     // New Configuration Page

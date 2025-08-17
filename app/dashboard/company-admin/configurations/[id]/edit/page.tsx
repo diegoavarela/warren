@@ -531,6 +531,45 @@ export default function EditConfigurationPage() {
     }
   };
 
+  // Function to clean optional fields with zero values from P&L configuration
+  const cleanOptionalFields = (config: CashFlowConfiguration | PLConfiguration): CashFlowConfiguration | PLConfiguration => {
+    console.log('🧹 [CLEAN] Starting clean for config type:', config.type);
+    if (config.type !== 'pnl') {
+      console.log('🧹 [CLEAN] Not P&L, skipping clean');
+      return config; // Only clean P&L configurations
+    }
+
+    const cleanedConfig = { ...config };
+    const dataRows = { ...config.structure.dataRows };
+
+    console.log('🧹 [CLEAN] Original dataRows:', dataRows);
+
+    // Optional fields that should be removed if they have value 0
+    const optionalFields = [
+      'grossIncome', 'cogs', 'totalOpex', 'totalOutcome', 
+      'grossMargin', 'ebitdaMargin', 'earningsBeforeTaxes', 
+      'otherIncome', 'otherExpenses', 'taxes'
+    ];
+
+    optionalFields.forEach(field => {
+      const value = (dataRows as any)[field];
+      console.log(`🧹 [CLEAN] Field ${field}: ${value} (${typeof value})`);
+      if (value === 0) {
+        console.log(`🧹 [CLEAN] Deleting field ${field} with value 0`);
+        delete (dataRows as any)[field];
+      }
+    });
+
+    console.log('🧹 [CLEAN] Cleaned dataRows:', dataRows);
+
+    cleanedConfig.structure = {
+      ...cleanedConfig.structure,
+      dataRows
+    };
+
+    return cleanedConfig;
+  };
+
   // Autosave function - saves without redirecting
   const performAutoSave = async () => {
     if (!hasUnsavedChanges || !configData || isAutoSaving || saving) {
@@ -547,8 +586,13 @@ export default function EditConfigurationPage() {
       setIsAutoSaving(true);
       console.log('💾 [AUTOSAVE] Starting autosave...');
       
+      // Clean optional fields with zero values before saving
+      console.log('💾 [AUTOSAVE] Original dataRows:', configData.structure?.dataRows);
+      const cleanedConfigData = cleanOptionalFields(configData);
+      console.log('💾 [AUTOSAVE] Cleaned dataRows:', cleanedConfigData.structure?.dataRows);
+      
       const finalConfigJson = {
-        ...configData,
+        ...cleanedConfigData,
         name: formData.name,
         version: (configuration?.version || 0) + 1,
       };
@@ -676,8 +720,11 @@ export default function EditConfigurationPage() {
       console.log('💾 [SINGLE SOURCE] Period mappings to save:', configData.structure?.periodMapping);
       
       // Use configData directly (it's already up to date from all editors)
+      // Clean optional fields with zero values before saving
+      const cleanedConfigData = cleanOptionalFields(configData);
+      
       const finalConfigJson = {
-        ...configData,
+        ...cleanedConfigData,
         name: formData.name, // Ensure form name takes precedence
         version: (configuration?.version || 0) + 1, // Increment version
       };
@@ -735,6 +782,95 @@ export default function EditConfigurationPage() {
       // Reset autosave status
       setLastAutoSaveAt(new Date());
       setIsAutoSaving(false);
+      
+      // 🚀 AUTO-PROCESS EXCEL FILE: Auto-process if configuration has mappings and Excel was uploaded in this session
+      const uploadSession = sessionStorage.getItem('excel_upload_session');
+      const uploadedFilename = sessionStorage.getItem('excel_uploaded_filename');
+      
+      if (uploadSession && uploadedFilename && configData?.structure?.categories) {
+        console.log('🔄 [AUTO-PROCESS] Configuration has Excel data and mappings, attempting auto-process...');
+        console.log('📊 [AUTO-PROCESS] Upload session:', uploadSession);
+        console.log('📁 [AUTO-PROCESS] Uploaded filename:', uploadedFilename);
+        
+        try {
+          // Get files from the current upload session
+          const filesResponse = await fetch(`/api/files?companyId=${selectedCompany.id}&limit=10`);
+          if (filesResponse.ok) {
+            const filesData = await filesResponse.json();
+            console.log('📁 [AUTO-PROCESS] Available files:', filesData.data?.map((f: any) => ({
+              id: f.fileId,
+              originalFilename: f.originalFilename,
+              uploadSession: f.uploadSession,
+              uploadedAt: f.uploadedAt
+            })));
+            
+            // Find file by upload session (most reliable) or filename match
+            const matchingFile = filesData.data?.find((file: any) => {
+              const sessionMatch = file.uploadSession === uploadSession;
+              const filenameMatch = file.originalFilename === uploadedFilename;
+              
+              console.log('🔍 [AUTO-PROCESS] Checking file:', {
+                fileId: file.fileId,
+                originalFilename: file.originalFilename,
+                uploadSession: file.uploadSession,
+                sessionMatch,
+                filenameMatch
+              });
+              
+              return sessionMatch || filenameMatch;
+            });
+            
+            if (matchingFile) {
+              console.log('✅ [AUTO-PROCESS] Found matching file:', matchingFile.fileId);
+              
+              // Process the file with the newly saved configuration
+              const processResponse = await fetch('/api/files/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fileId: matchingFile.fileId,
+                  configId: configId,
+                  companyId: selectedCompany.id
+                })
+              });
+              
+              if (processResponse.ok) {
+                const processResult = await processResponse.json();
+                console.log('🎉 [AUTO-PROCESS] Processing completed successfully!', processResult);
+                
+                // Clear the upload session data since we've processed it
+                sessionStorage.removeItem('excel_upload_session');
+                sessionStorage.removeItem('excel_uploaded_filename');
+                
+                // Show success notification
+                toast.success('Configuration saved and Excel file processed automatically!');
+                
+                // Force refresh the configuration to show processed status
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1000);
+              } else {
+                const errorData = await processResponse.json();
+                console.error('❌ [AUTO-PROCESS] Processing failed:', errorData);
+                toast.warning(`Configuration saved, but auto-processing failed: ${errorData.message || 'Unknown error'}`);
+              }
+            } else {
+              console.warn('⚠️ [AUTO-PROCESS] No matching file found for session:', uploadSession);
+              toast.info('Configuration saved. Upload the Excel file through "Procesar Archivos" to see the dashboard.');
+            }
+          } else {
+            console.error('❌ [AUTO-PROCESS] Failed to fetch files:', filesResponse.status);
+          }
+        } catch (autoProcessError) {
+          console.warn('⚠️ [AUTO-PROCESS] Auto-processing failed:', autoProcessError);
+          toast.warning('Configuration saved, but auto-processing encountered an error.');
+        }
+      } else {
+        console.log('ℹ️ [AUTO-PROCESS] Skipping auto-process - no upload session or missing categories');
+        console.log('  - Upload session:', !!uploadSession);
+        console.log('  - Uploaded filename:', !!uploadedFilename);
+        console.log('  - Has categories:', !!configData?.structure?.categories);
+      }
       
       // Force refresh of processed data cache after configuration changes
       await fetch(`/api/processed-data/${selectedCompany.id}/invalidate`, { method: 'POST' })

@@ -93,14 +93,14 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
       key: 'cogs',
       label: t('config.fields.cogs'),
       description: t('config.fields.cogsDesc'),
-      required: true,
+      required: false,
       category: 'costs'
     },
     {
       key: 'totalOpex',
       label: t('config.fields.totalOpex'),
       description: t('config.fields.totalOpexDesc'),
-      required: true,
+      required: false,
       category: 'costs'
     },
     {
@@ -115,7 +115,7 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
       key: 'grossProfit',
       label: t('config.fields.grossProfit'),
       description: t('config.fields.grossProfitDesc'),
-      required: false,
+      required: true,
       category: 'profitability'
     },
     {
@@ -129,7 +129,7 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
       key: 'ebitda',
       label: t('config.fields.ebitda'),
       description: t('config.fields.ebitdaDesc'),
-      required: false,
+      required: true,
       category: 'profitability'
     },
     {
@@ -195,7 +195,15 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
 
   const updateDataRow = (fieldKey: string, rowNumber: number) => {
     const updatedConfig = { ...configuration };
-    (updatedConfig.structure.dataRows as any)[fieldKey] = rowNumber;
+    const field = fields.find(f => f.key === fieldKey);
+    
+    // For optional fields, allow clearing the value (completely remove from object)
+    if (!field?.required && (rowNumber === 0 || isNaN(rowNumber) || rowNumber === null || rowNumber === undefined)) {
+      delete (updatedConfig.structure.dataRows as any)[fieldKey];
+    } else if (rowNumber > 0) {
+      // Only set if the value is valid (> 0)
+      (updatedConfig.structure.dataRows as any)[fieldKey] = rowNumber;
+    }
     onChange(updatedConfig);
   };
 
@@ -468,13 +476,37 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
-                            min="1"
+                            min={field.required ? "1" : "0"}
                             max="10000"
                             value={value || ''}
-                            onChange={(e) => updateDataRow(field.key, parseInt(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const inputValue = e.target.value;
+                              if (inputValue === '' && !field.required) {
+                                updateDataRow(field.key, 0); // This will trigger deletion for optional fields
+                              } else {
+                                const numValue = parseInt(inputValue);
+                                if (!isNaN(numValue) && numValue > 0) {
+                                  updateDataRow(field.key, numValue);
+                                } else if (field.required) {
+                                  // For required fields, don't allow invalid values
+                                  updateDataRow(field.key, 0);
+                                }
+                              }
+                            }}
                             className="w-20"
-                            placeholder={t('config.form.rowPlaceholder')}
+                            placeholder={field.required ? t('config.form.rowPlaceholder') : t('common.optional')}
                           />
+                          {!field.required && value > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateDataRow(field.key, 0)}
+                              className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 hover:border-red-300"
+                            >
+                              ✕
+                            </Button>
+                          )}
                           {value > 0 && (
                             <span className="text-xs text-gray-500">{t('config.form.row')} {value}</span>
                           )}
