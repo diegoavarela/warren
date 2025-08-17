@@ -165,12 +165,15 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       
       console.log('🔍 Fetching live P&L data for company:', companyId);
       
-      const response = await fetch(`/api/pnl-live/${companyId}?limit=12`, {
+      // Add timestamp to prevent caching and ensure fresh data
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/pnl-live/${companyId}?limit=12&t=${timestamp}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        cache: 'no-store', // Disable caching to always get fresh configuration-based data
       });
       
       if (!response.ok) {

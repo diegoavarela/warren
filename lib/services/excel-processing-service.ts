@@ -356,6 +356,14 @@ export class ExcelProcessingService {
     for (const [fieldName, rowNumber] of Object.entries(structure.dataRows)) {
       const rowData = this.extractRowDataFromMapping(worksheet, rowNumber, periodMapping);
       console.log(`🔍 P&L Data Row [${fieldName}] from row ${rowNumber}:`, rowData);
+      
+      // Special logging for taxes to debug YTD calculation
+      if (fieldName === 'taxes') {
+        console.log('🏛️ [TAXES] Reading taxes from row', rowNumber);
+        console.log('🏛️ [TAXES] Tax values extracted:', rowData);
+        console.log('🏛️ [TAXES] Total taxes:', rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0));
+      }
+      
       processedData.dataRows[fieldName] = {
         label: this.getCellValue(worksheet, rowNumber, structure.categoriesColumn.charCodeAt(0) - 65), // Convert letter to column index
         values: rowData,

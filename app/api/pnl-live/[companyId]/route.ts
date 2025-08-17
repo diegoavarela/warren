@@ -109,6 +109,8 @@ export async function GET(
     };
 
     // Returning P&L data with ${response.data.periods.length} periods
+    console.log('📊 [LIVE P&L] Processing complete at', new Date().toISOString());
+    console.log('📊 [LIVE P&L] Configuration includes taxes row:', pnlConfig.configJson?.structure?.dataRows?.taxes);
     return NextResponse.json(response);
 
   } catch (error) {
