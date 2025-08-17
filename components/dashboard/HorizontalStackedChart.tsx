@@ -216,13 +216,26 @@ export function HorizontalStackedChart({
                     </div>
                   ) : (
                     /* Single segment for the entire category if no subcategories */
-                    <div 
-                      className={`bg-blue-500 h-full flex items-center justify-center text-white text-sm font-medium cursor-pointer hover:bg-blue-600 transition-colors duration-200`}
-                      style={{ width: `${(item.amount / maxValue) * 100}%` }}
-                      onClick={() => onCategoryClick && onCategoryClick(item)}
-                    >
-                      {valueFormatter(item.amount)}
-                    </div>
+                    <>
+                      <div 
+                        className={`bg-blue-500 h-full flex items-center justify-start text-white text-sm font-medium cursor-pointer hover:bg-blue-600 transition-colors duration-200 relative`}
+                        style={{ width: `${(item.amount / maxValue) * 100}%` }}
+                        onClick={() => onCategoryClick && onCategoryClick(item)}
+                      >
+                        {/* Only show value inside bar if there's enough space (>15% width) */}
+                        {(item.amount / maxValue) > 0.15 && (
+                          <span className="px-2 truncate">
+                            {valueFormatter(item.amount)}
+                          </span>
+                        )}
+                      </div>
+                      {/* Show value outside bar if bar is too narrow */}
+                      {(item.amount / maxValue) <= 0.15 && (
+                        <span className="ml-2 text-sm font-medium text-gray-700">
+                          {valueFormatter(item.amount)}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
