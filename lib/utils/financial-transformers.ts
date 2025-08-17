@@ -99,45 +99,68 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const totalCOGS = dataRows?.cogs ? Math.abs(getValueForPeriod(dataRows.cogs, currentPeriodIndex)) : 0;
     console.log('🏭 [COGS] Total COGS amount:', totalCOGS);
     
-    const cogsCategories = Object.entries(processedCogsData).map(([categoryName, categoryData]: [string, any]) => {
-      console.log(`🏭 [COGS] Processing category: ${categoryName}`, {
-        hasValues: !!categoryData.values,
-        valuesLength: categoryData.values?.length,
-        label: categoryData.label
-      });
-      
-      let categoryAmount = 0;
-      
-      // The Excel service has already processed this category and provided the values array
-      if (categoryData.values && Array.isArray(categoryData.values)) {
-        if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
-          const rawValue = categoryData.values[currentPeriodIndex];
-          categoryAmount = Math.abs(Number(rawValue) || 0);
-          console.log(`🏭 [COGS] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
+    const cogsCategories = Object.entries(processedCogsData)
+      .map(([categoryName, categoryData]: [string, any]) => {
+        console.log(`🏭 [COGS] Processing category: ${categoryName}`, {
+          hasValues: !!categoryData.values,
+          valuesLength: categoryData.values?.length,
+          label: categoryData.label
+        });
+        
+        let categoryAmount = 0;
+        let rawValue: any = null;
+        
+        // The Excel service has already processed this category and provided the values array
+        if (categoryData.values && Array.isArray(categoryData.values)) {
+          if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
+            rawValue = categoryData.values[currentPeriodIndex];
+            categoryAmount = Math.abs(Number(rawValue) || 0);
+            console.log(`🏭 [COGS] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
+          } else {
+            console.log(`🏭 [COGS] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
+          }
         } else {
-          console.log(`🏭 [COGS] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
+          console.log(`🏭 [COGS] No values array found for ${categoryName}`);
         }
-      } else {
-        console.log(`🏭 [COGS] No values array found for ${categoryName}`);
-      }
-      
-      // Calculate percentage of total COGS
-      const percentage = totalCOGS > 0 ? (categoryAmount / totalCOGS) * 100 : 0;
-      
-      return {
-        category: categoryName,
-        label: categoryData.label || categoryName,
-        amount: categoryAmount,
-        percentage: Math.round(percentage * 100) / 100,
-        color: "bg-orange-500"
-      };
-    });
+        
+        // Calculate percentage of total COGS
+        const percentage = totalCOGS > 0 ? (categoryAmount / totalCOGS) * 100 : 0;
+        
+        return {
+          category: categoryName,
+          label: categoryData.label || categoryName,
+          amount: categoryAmount,
+          percentage: Math.round(percentage * 100) / 100,
+          color: "bg-orange-500",
+          rawValue: rawValue // Keep raw value for filtering decision
+        };
+      })
+      .filter(category => {
+        // Filter out invalid/zero categories
+        const isValid = category.amount > 0 && 
+                       !isNaN(category.amount) && 
+                       isFinite(category.amount) &&
+                       category.rawValue !== null &&
+                       category.rawValue !== undefined &&
+                       category.rawValue !== '';
+        
+        if (!isValid) {
+          console.log(`🏭 [COGS] Filtering out category: ${category.category} (amount: ${category.amount}, raw: ${category.rawValue})`);
+        }
+        return isValid;
+      })
+      .map(category => {
+        // Remove rawValue from final output
+        const { rawValue, ...cleanCategory } = category;
+        return cleanCategory;
+      });
     
-    console.log('🏭 [COGS] Final COGS categories with amounts:', cogsCategories.map(c => ({
+    console.log('🏭 [COGS] Final COGS categories after filtering:', cogsCategories.map(c => ({
       name: c.category,
       amount: c.amount,
       percentage: c.percentage
     })));
+    console.log(`🏭 [COGS] Filtered result: ${cogsCategories.length} valid categories out of ${Object.keys(processedCogsData).length} total`);
     return cogsCategories;
   };
 
@@ -152,45 +175,68 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const totalOpex = dataRows?.totalOpex ? Math.abs(getValueForPeriod(dataRows.totalOpex, currentPeriodIndex)) : 0;
     console.log('💼 [OPEX] Total Operating Expenses:', totalOpex);
     
-    const opexCategories = Object.entries(processedOpexData).map(([categoryName, categoryData]: [string, any]) => {
-      console.log(`💼 [OPEX] Processing category: ${categoryName}`, {
-        hasValues: !!categoryData.values,
-        valuesLength: categoryData.values?.length,
-        label: categoryData.label
-      });
-      
-      let categoryAmount = 0;
-      
-      // The Excel service has already processed this category and provided the values array
-      if (categoryData.values && Array.isArray(categoryData.values)) {
-        if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
-          const rawValue = categoryData.values[currentPeriodIndex];
-          categoryAmount = Math.abs(Number(rawValue) || 0);
-          console.log(`💼 [OPEX] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
+    const opexCategories = Object.entries(processedOpexData)
+      .map(([categoryName, categoryData]: [string, any]) => {
+        console.log(`💼 [OPEX] Processing category: ${categoryName}`, {
+          hasValues: !!categoryData.values,
+          valuesLength: categoryData.values?.length,
+          label: categoryData.label
+        });
+        
+        let categoryAmount = 0;
+        let rawValue: any = null;
+        
+        // The Excel service has already processed this category and provided the values array
+        if (categoryData.values && Array.isArray(categoryData.values)) {
+          if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
+            rawValue = categoryData.values[currentPeriodIndex];
+            categoryAmount = Math.abs(Number(rawValue) || 0);
+            console.log(`💼 [OPEX] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
+          } else {
+            console.log(`💼 [OPEX] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
+          }
         } else {
-          console.log(`💼 [OPEX] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
+          console.log(`💼 [OPEX] No values array found for ${categoryName}`);
         }
-      } else {
-        console.log(`💼 [OPEX] No values array found for ${categoryName}`);
-      }
-      
-      // Calculate percentage of total OPEX
-      const percentage = totalOpex > 0 ? (categoryAmount / totalOpex) * 100 : 0;
-      
-      return {
-        category: categoryName,
-        label: categoryData.label || categoryName,
-        amount: categoryAmount,
-        percentage: Math.round(percentage * 100) / 100,
-        color: "bg-purple-600"
-      };
-    });
+        
+        // Calculate percentage of total OPEX
+        const percentage = totalOpex > 0 ? (categoryAmount / totalOpex) * 100 : 0;
+        
+        return {
+          category: categoryName,
+          label: categoryData.label || categoryName,
+          amount: categoryAmount,
+          percentage: Math.round(percentage * 100) / 100,
+          color: "bg-purple-600",
+          rawValue: rawValue // Keep raw value for filtering decision
+        };
+      })
+      .filter(category => {
+        // Filter out invalid/zero categories
+        const isValid = category.amount > 0 && 
+                       !isNaN(category.amount) && 
+                       isFinite(category.amount) &&
+                       category.rawValue !== null &&
+                       category.rawValue !== undefined &&
+                       category.rawValue !== '';
+        
+        if (!isValid) {
+          console.log(`💼 [OPEX] Filtering out category: ${category.category} (amount: ${category.amount}, raw: ${category.rawValue})`);
+        }
+        return isValid;
+      })
+      .map(category => {
+        // Remove rawValue from final output
+        const { rawValue, ...cleanCategory } = category;
+        return cleanCategory;
+      });
     
-    console.log('💼 [OPEX] Final OPEX categories with amounts:', opexCategories.map(c => ({
+    console.log('💼 [OPEX] Final OPEX categories after filtering:', opexCategories.map(c => ({
       name: c.category,
       amount: c.amount,
       percentage: c.percentage
     })));
+    console.log(`💼 [OPEX] Filtered result: ${opexCategories.length} valid categories out of ${Object.keys(processedOpexData).length} total`);
     return opexCategories;
   };
 
