@@ -391,7 +391,7 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const earningsBeforeTaxMargin = revenue > 0 ? ((earningsBeforeTax / revenue) * 100) : 0;
     
     console.log(`🔍 [TRANSFORMER] Period ${index} final values:`, {
-      revenue, cogs, grossProfit, operatingExpenses, netIncome, grossMargin,
+      revenue, cogs, grossProfit, operatingExpenses, netIncome, taxes, grossMargin,
       operatingIncome, cogsPercentage, opexPercentage, netMargin
     });
     
@@ -506,7 +506,7 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   }, 0);
   
   console.log('🔍 [TRANSFORMER] YTD values:', {
-    ytdRevenue, ytdCogs, ytdGrossProfit, ytdOperatingExpenses, ytdNetIncome, ytdExpenses
+    ytdRevenue, ytdCogs, ytdGrossProfit, ytdOperatingExpenses, ytdNetIncome, ytdTaxes, ytdExpenses
   });
   
   const yearToDate: YTDMetrics = {

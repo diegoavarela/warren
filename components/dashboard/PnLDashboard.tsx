@@ -1734,7 +1734,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                   <div className="flex-1">
                     <div className="text-sm font-medium text-gray-600">{t('tax.ytdTaxes', 'YTD Taxes')}</div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {ytd.revenue > 0 ? `${formatPercentage((ytd.taxes / ytd.revenue) * 100)} of YTD revenue` : ''}
+                      {(() => {
+                        console.log('🏛️ [TAX SUMMARY] YTD Debug:', {
+                          ytdRevenue: ytd.revenue,
+                          ytdTaxes: ytd.taxes,
+                          percentage: ytd.revenue > 0 ? (ytd.taxes / ytd.revenue) * 100 : 0
+                        });
+                        return ytd.revenue > 0 ? `${formatPercentage((ytd.taxes / ytd.revenue) * 100)} of YTD revenue` : '';
+                      })()}
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-amber-700">
