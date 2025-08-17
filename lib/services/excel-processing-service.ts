@@ -367,8 +367,35 @@ export class ExcelProcessingService {
     for (const [groupKey, group] of Object.entries(structure.categories)) {
       processedData.categories[groupKey] = {};
       
+      // Special logging for COGS and OPEX categories
+      if (groupKey === 'cogs') {
+        console.log(`📊 [EXCEL] Processing COGS categories:`, Object.keys(group));
+      }
+      if (groupKey === 'opex') {
+        console.log(`💼 [EXCEL] Processing OPEX categories:`, Object.keys(group));
+      }
+      
       for (const [categoryKey, category] of Object.entries(group)) {
         const rowData = this.extractRowDataFromMapping(worksheet, category.row, periodMapping);
+        
+        // Special logging for COGS categories
+        if (groupKey === 'cogs') {
+          console.log(`📊 [EXCEL] COGS category ${categoryKey} (row ${category.row}):`, {
+            rowData: rowData,
+            firstThreeValues: rowData.slice(0, 3),
+            total: rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0)
+          });
+        }
+        
+        // Special logging for OPEX categories
+        if (groupKey === 'opex') {
+          console.log(`💼 [EXCEL] OPEX category ${categoryKey} (row ${category.row}):`, {
+            rowData: rowData,
+            firstThreeValues: rowData.slice(0, 3),
+            total: rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0)
+          });
+        }
+        
         processedData.categories[groupKey][categoryKey] = {
           label: category.label ? 
                  (category.label as any)[configuration.metadata.locale] || (category.label as any).en || 'Unknown' : 

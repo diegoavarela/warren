@@ -2,6 +2,7 @@ import { Period, PnLData, YTDMetrics } from '@/types/financial';
 
 // Transform configuration-based API data to P&L Dashboard format
 function transformConfigurationBasedData(apiData: any): PnLData | null {
+  console.log('🎯 [TRANSFORMER] transformConfigurationBasedData CALLED - THIS IS OUR ENHANCED TRANSFORMER!');
   console.log('🔍 [TRANSFORMER] Raw apiData structure:', apiData);
   console.log('🔍 [TRANSFORMER] apiData.data:', apiData?.data);
   
@@ -10,12 +11,30 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     return null;
   }
   
-  const { periods, dataRows, categories } = apiData.data;
+  const { periods, dataRows, categories, rawExcelData, processedData, worksheet, periodMapping } = apiData.data;
   
   console.log('🔍 [TRANSFORMER] Extracted from apiData.data:');
   console.log('- periods:', periods);
   console.log('- dataRows:', dataRows);
   console.log('- categories:', categories);
+  console.log('- rawExcelData:', rawExcelData ? 'Present' : 'Not present');
+  console.log('- processedData:', processedData ? 'Present' : 'Not present');
+  console.log('🔍 [TRANSFORMER] Full apiData.data keys:', Object.keys(apiData.data));
+  
+  // DEBUG: Check COGS categories specifically
+  console.log('🔍 [COGS DEBUG] categories.cogs exists:', !!categories?.cogs);
+  if (categories?.cogs) {
+    console.log('🔍 [COGS DEBUG] COGS category keys:', Object.keys(categories.cogs));
+    Object.entries(categories.cogs).forEach(([categoryName, categoryData]: [string, any]) => {
+      console.log(`🔍 [COGS DEBUG] ${categoryName}:`, {
+        hasValues: !!categoryData.values,
+        valuesLength: categoryData.values?.length,
+        firstThreeValues: categoryData.values?.slice(0, 3),
+        label: categoryData.label
+      });
+    });
+  }
+  console.log('🔍 [COGS DEBUG] categories.cogs keys:', categories?.cogs ? Object.keys(categories.cogs) : 'N/A');
   
   // Debug dataRows structure in detail
   console.log('🔍 [TRANSFORMER] DataRows detailed structure:');
@@ -69,88 +88,110 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     });
   };
 
-  // Enhanced function to transform COGS categories with real Excel data
-  const transformCOGSCategories = (categoryObj: any, currentPeriodIndex: number): any[] => {
-    if (!categoryObj) return [];
+  // Read COGS categories directly from Excel processed data
+  const transformCOGSCategories = (processedCogsData: any, currentPeriodIndex: number): any[] => {
+    if (!processedCogsData) return [];
     
     console.log('🏭 [COGS] Transforming COGS categories for period index:', currentPeriodIndex);
-    console.log('🏭 [COGS] Available categories:', Object.keys(categoryObj));
-    console.log('🏭 [COGS] Available dataRows keys:', Object.keys(dataRows || {}));
+    console.log('🏭 [COGS] COGS categories to process:', Object.keys(processedCogsData));
     
     // Get total COGS for percentage calculation
-    const totalCOGS = dataRows?.cogs ? getValueForPeriod(dataRows.cogs, currentPeriodIndex) : 0;
+    const totalCOGS = dataRows?.cogs ? Math.abs(getValueForPeriod(dataRows.cogs, currentPeriodIndex)) : 0;
     console.log('🏭 [COGS] Total COGS amount:', totalCOGS);
     
-    const cogsCategories = Object.entries(categoryObj).map(([categoryName, categoryData]: [string, any]) => {
-      console.log(`🏭 [COGS] Processing category: ${categoryName}`, categoryData);
+    const cogsCategories = Object.entries(processedCogsData).map(([categoryName, categoryData]: [string, any]) => {
+      console.log(`🏭 [COGS] Processing category: ${categoryName}`, {
+        hasValues: !!categoryData.values,
+        valuesLength: categoryData.values?.length,
+        label: categoryData.label
+      });
       
-      // Get the row number for this category
-      const categoryRow = categoryData.row;
-      if (!categoryRow) {
-        console.log(`🏭 [COGS] No row configured for category: ${categoryName}`);
-        return {
-          category: categoryName,
-          label: categoryData.label?.en || categoryName,
-          amount: 0,
-          percentage: 0,
-          color: "bg-orange-500"
-        };
-      }
-      
-      // Read the actual amount from Excel data for this category and period
       let categoryAmount = 0;
       
-      // Try to get the actual data from Excel using the configured row
-      // The dataRows should contain the processed Excel data for each row
-      
-      if (categoryData.subcategories) {
-        console.log(`🏭 [COGS] Category ${categoryName} has subcategories:`, Object.keys(categoryData.subcategories));
-        
-        // For categories with subcategories, sum up all subcategory values
-        let subcategoryTotal = 0;
-        Object.entries(categoryData.subcategories).forEach(([subName, subData]: [string, any]) => {
-          if (subData.row && dataRows && dataRows[subName]) {
-            const subAmount = Math.abs(getValueForPeriod(dataRows[subName], currentPeriodIndex));
-            subcategoryTotal += subAmount;
-            console.log(`🏭 [COGS] Subcategory ${subName} amount: ${subAmount}`);
-          }
-        });
-        
-        // If we got subcategory data, use that; otherwise try main category
-        if (subcategoryTotal > 0) {
-          categoryAmount = subcategoryTotal;
-        } else if (dataRows && dataRows[categoryName]) {
-          categoryAmount = Math.abs(getValueForPeriod(dataRows[categoryName], currentPeriodIndex));
+      // The Excel service has already processed this category and provided the values array
+      if (categoryData.values && Array.isArray(categoryData.values)) {
+        if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
+          const rawValue = categoryData.values[currentPeriodIndex];
+          categoryAmount = Math.abs(Number(rawValue) || 0);
+          console.log(`🏭 [COGS] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
+        } else {
+          console.log(`🏭 [COGS] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
         }
       } else {
-        // Simple category - try to read from dataRows
-        if (dataRows && dataRows[categoryName]) {
-          categoryAmount = Math.abs(getValueForPeriod(dataRows[categoryName], currentPeriodIndex));
-          console.log(`🏭 [COGS] Found direct data for ${categoryName}: ${categoryAmount}`);
-        } else {
-          console.log(`🏭 [COGS] No data found for ${categoryName} in dataRows`);
-          // If no specific data, use equal distribution of total COGS as fallback
-          const numCategories = Object.keys(categoryObj).length;
-          categoryAmount = totalCOGS / numCategories;
-        }
+        console.log(`🏭 [COGS] No values array found for ${categoryName}`);
       }
-      
-      console.log(`🏭 [COGS] Category ${categoryName} amount: ${categoryAmount}`);
       
       // Calculate percentage of total COGS
       const percentage = totalCOGS > 0 ? (categoryAmount / totalCOGS) * 100 : 0;
       
       return {
         category: categoryName,
-        label: categoryData.label?.en || categoryName,
+        label: categoryData.label || categoryName,
         amount: categoryAmount,
-        percentage: Math.round(percentage * 100) / 100, // Round to 2 decimals
-        color: "bg-orange-500" // Orange color for COGS categories
+        percentage: Math.round(percentage * 100) / 100,
+        color: "bg-orange-500"
       };
     });
     
-    console.log('🏭 [COGS] Final COGS categories:', cogsCategories);
+    console.log('🏭 [COGS] Final COGS categories with amounts:', cogsCategories.map(c => ({
+      name: c.category,
+      amount: c.amount,
+      percentage: c.percentage
+    })));
     return cogsCategories;
+  };
+
+  // Transform Operating Expenses with real Excel data
+  const transformOpexCategories = (processedOpexData: any, currentPeriodIndex: number): any[] => {
+    if (!processedOpexData) return [];
+    
+    console.log('💼 [OPEX] Transforming Operating Expenses for period index:', currentPeriodIndex);
+    console.log('💼 [OPEX] OPEX categories to process:', Object.keys(processedOpexData));
+    
+    // Get total OPEX for percentage calculation
+    const totalOpex = dataRows?.totalOpex ? Math.abs(getValueForPeriod(dataRows.totalOpex, currentPeriodIndex)) : 0;
+    console.log('💼 [OPEX] Total Operating Expenses:', totalOpex);
+    
+    const opexCategories = Object.entries(processedOpexData).map(([categoryName, categoryData]: [string, any]) => {
+      console.log(`💼 [OPEX] Processing category: ${categoryName}`, {
+        hasValues: !!categoryData.values,
+        valuesLength: categoryData.values?.length,
+        label: categoryData.label
+      });
+      
+      let categoryAmount = 0;
+      
+      // The Excel service has already processed this category and provided the values array
+      if (categoryData.values && Array.isArray(categoryData.values)) {
+        if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
+          const rawValue = categoryData.values[currentPeriodIndex];
+          categoryAmount = Math.abs(Number(rawValue) || 0);
+          console.log(`💼 [OPEX] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
+        } else {
+          console.log(`💼 [OPEX] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
+        }
+      } else {
+        console.log(`💼 [OPEX] No values array found for ${categoryName}`);
+      }
+      
+      // Calculate percentage of total OPEX
+      const percentage = totalOpex > 0 ? (categoryAmount / totalOpex) * 100 : 0;
+      
+      return {
+        category: categoryName,
+        label: categoryData.label || categoryName,
+        amount: categoryAmount,
+        percentage: Math.round(percentage * 100) / 100,
+        color: "bg-purple-600"
+      };
+    });
+    
+    console.log('💼 [OPEX] Final OPEX categories with amounts:', opexCategories.map(c => ({
+      name: c.category,
+      amount: c.amount,
+      percentage: c.percentage
+    })));
+    return opexCategories;
   };
 
   const revenueCategories = transformCategories(categories?.revenue);
@@ -292,13 +333,33 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   console.log('🏭 [COGS] Current period index for COGS calculation:', currentPeriodIndex);
   
   // Transform COGS categories with real Excel data using current period
-  const cogsCategories = transformCOGSCategories(categories?.cogs, currentPeriodIndex);
+  // If no COGS categories are configured, create a default one from total COGS
+  let cogsCategories = transformCOGSCategories(categories?.cogs, currentPeriodIndex);
+  
+  // Transform Operating Expenses with real Excel data using current period
+  let operatingExpenses = transformOpexCategories(categories?.opex, currentPeriodIndex);
+  
+  // Fallback: If no configured COGS categories and we have COGS data, create a default category
+  if ((!categories?.cogs || Object.keys(categories.cogs).length === 0) && dataRows?.cogs) {
+    const totalCOGS = Math.abs(getValueForPeriod(dataRows.cogs, currentPeriodIndex));
+    console.log('🏭 [COGS] No configured COGS categories, creating fallback with total COGS:', totalCOGS);
+    
+    if (totalCOGS > 0) {
+      cogsCategories = [{
+        category: 'totalCogs',
+        label: 'Total Cost of Goods Sold',
+        amount: totalCOGS,
+        percentage: 100,
+        color: "bg-orange-500"
+      }];
+    }
+  }
   
   // Log all transformed categories now that cogsCategories is available
   console.log('🔍 [TRANSFORMER] Transformed categories:');
   console.log('- Revenue categories:', revenueCategories.length);
   console.log('- COGS categories:', cogsCategories.length);
-  console.log('- OpEx categories:', opexCategories.length);
+  console.log('- OpEx categories:', operatingExpenses.length);
   console.log('- Tax categories:', taxCategories.length);
   
   const ytdPeriods = transformedPeriods.slice(0, currentPeriodIndex + 1);
@@ -356,7 +417,7 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     categories: {
       revenue: revenueCategories,
       cogs: cogsCategories,
-      operatingExpenses: opexCategories,
+      operatingExpenses: operatingExpenses,
       taxes: taxCategories
     },
     // Additional data for dashboard components
@@ -366,12 +427,17 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
 
 // Transform API response to P&L Dashboard format
 export function transformToPnLData(apiData: any): PnLData | null {
+  console.log('🎯 [TRANSFORMER] transformToPnLData CALLED with data:', { hasData: !!apiData });
+  
   if (!apiData) return null;
 
   // Handle new configuration-based API format
   if (apiData.data && apiData.data.periods && apiData.data.dataRows) {
+    console.log('🎯 [TRANSFORMER] Taking configuration-based path');
     return transformConfigurationBasedData(apiData);
   }
+  
+  console.log('🎯 [TRANSFORMER] Taking legacy format path');
 
   // Handle legacy format
   const { currentMonth, previousMonth, yearToDate, categories, trends, chartData, comparisonData, comparisonPeriod } = apiData;
@@ -508,9 +574,9 @@ export function transformToPnLData(apiData: any): PnLData | null {
 
   // Transform categories
   const transformedCategories = {
-    revenue: categories?.revenue || [],
-    cogs: categories?.cogs || [],
-    operatingExpenses: categories?.operatingExpenses || []
+    revenue: revenueCategories || [],
+    cogs: cogsCategories || [],
+    operatingExpenses: operatingExpenses || []
   };
 
   // Transform historical periods from chartData or trends
