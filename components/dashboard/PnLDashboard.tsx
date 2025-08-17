@@ -1694,97 +1694,52 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           <div className="p-6">
             
             <div className="space-y-6">
-              {/* Tax Breakdown by Category from Configuration */}
-              {data.categories.taxes && data.categories.taxes.length > 0 ? (
-                <div className="space-y-3">
-                  {data.categories.taxes.map((taxCategory: any, index: number) => (
-                    <div key={index} className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-600">
-                          {cleanCategoryName(taxCategory.label || taxCategory.category)}
-                        </span>
-                        <span className="font-bold text-lg text-amber-700">{formatValue(taxCategory.amount)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 mb-2">
-                        <span>{formatPercentage(taxCategory.percentage)} of total taxes</span>
-                        <span className="text-amber-600">
-                          {current.revenue > 0 ? `${formatPercentage((taxCategory.amount / current.revenue) * 100)} of revenue` : ''}
-                        </span>
-                      </div>
-                      <div className="w-full bg-amber-200 rounded-full h-2">
-                        <div 
-                          className="bg-amber-500 h-2 rounded-full transition-all duration-500" 
-                          style={{ width: `${Math.min(taxCategory.percentage, 100)}%` }} 
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  {/* Total Line */}
-                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-semibold text-gray-700">{t('tax.totalTaxes', 'Total Taxes')}</span>
-                      <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Show simple total if no individual tax categories */
-                current.taxes > 0 ? (
-                  <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-600">{t('tax.periodTaxes')}</span>
-                      <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
-                    </div>
-                    <div className="w-full bg-amber-200 rounded-full h-2">
-                      <div className="bg-amber-500 h-2 rounded-full" style={{ width: '70%' }} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
-                    <div className="text-sm text-gray-500 text-center">{t('tax.noTaxes', 'No taxes for this period')}</div>
-                  </div>
-                )
-              )}
-              
-              {/* Tax Burden (as % of Revenue) */}
-              <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
+              {/* Simple Tax Amount Card */}
+              <div className="bg-white/70 rounded-xl p-5 backdrop-blur-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600">{t('tax.taxBurden')}</span>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-12 h-12 relative">
-                      <svg className="w-12 h-12 transform -rotate-90">
-                        <circle cx="24" cy="24" r="18" stroke="#FEF3C7" strokeWidth="4" fill="none" />
-                        <circle 
-                          cx="24" cy="24" r="18" 
-                          stroke="#F59E0B" 
-                          strokeWidth="4" 
-                          fill="none" 
-                          strokeDasharray={`${2 * Math.PI * 18}`}
-                          strokeDashoffset={`${2 * Math.PI * 18 * (1 - (current.revenue > 0 ? Math.min(current.taxes / current.revenue, 1) : 0))}`}
-                          className="transition-all duration-1000"
-                        />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-amber-700">
-                        {current.revenue > 0 ? formatPercentage((current.taxes / current.revenue) * 100) : '0%'}
-                      </span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-600 mb-1">{t('tax.periodTaxes', 'Period Taxes')}</div>
+                    {/* Show tax categories if available */}
+                    {data.categories.taxes && data.categories.taxes.length > 0 && (
+                      <div className="text-xs text-gray-500 mb-2">
+                        {data.categories.taxes.map((tax: any) => cleanCategoryName(tax.label || tax.category)).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-amber-700">
+                      {(() => {
+                        // Calculate total from tax categories if available
+                        const taxTotal = data.categories.taxes && data.categories.taxes.length > 0
+                          ? data.categories.taxes.reduce((sum: number, tax: any) => sum + (tax.amount || 0), 0)
+                          : current.taxes;
+                        return formatValue(taxTotal);
+                      })()}
+                    </div>
+                    <div className="text-xs text-amber-600 mt-1">
+                      {(() => {
+                        const taxTotal = data.categories.taxes && data.categories.taxes.length > 0
+                          ? data.categories.taxes.reduce((sum: number, tax: any) => sum + (tax.amount || 0), 0)
+                          : current.taxes;
+                        return current.revenue > 0 ? `${formatPercentage((taxTotal / current.revenue) * 100)} of revenue` : '';
+                      })()}
                     </div>
                   </div>
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Taxes as % of revenue
                 </div>
               </div>
               
               {/* YTD Tax Summary */}
-              <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">{t('tax.ytdTaxes')}</span>
-                  <span className="font-bold text-lg text-amber-700">{formatValue(ytd.taxes)}</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {ytd.revenue > 0 && (
-                    <span>Tax burden: {formatPercentage((ytd.taxes / ytd.revenue) * 100)} of revenue</span>
-                  )}
+              <div className="bg-white/70 rounded-xl p-5 backdrop-blur-sm">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-600">{t('tax.ytdTaxes', 'YTD Taxes')}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {ytd.revenue > 0 ? `${formatPercentage((ytd.taxes / ytd.revenue) * 100)} of YTD revenue` : ''}
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-amber-700">
+                    {formatValue(ytd.taxes)}
+                  </div>
                 </div>
               </div>
               
