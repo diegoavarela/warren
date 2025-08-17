@@ -1694,17 +1694,22 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           <div className="p-6">
             
             <div className="space-y-6">
-              {/* Tax Breakdown by Category */}
-              {(data.categories as any).taxes?.length ? (
+              {/* Tax Breakdown by Category from Configuration */}
+              {data.categories.taxes && data.categories.taxes.length > 0 ? (
                 <div className="space-y-3">
-                  {(data.categories as any).taxes?.map((taxCategory: TaxCategory, index: number) => (
+                  {data.categories.taxes.map((taxCategory: any, index: number) => (
                     <div key={index} className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-600">{taxCategory.subcategory}</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          {cleanCategoryName(taxCategory.label || taxCategory.category)}
+                        </span>
                         <span className="font-bold text-lg text-amber-700">{formatValue(taxCategory.amount)}</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-500 mb-2">
                         <span>{formatPercentage(taxCategory.percentage)} of total taxes</span>
+                        <span className="text-amber-600">
+                          {current.revenue > 0 ? `${formatPercentage((taxCategory.amount / current.revenue) * 100)} of revenue` : ''}
+                        </span>
                       </div>
                       <div className="w-full bg-amber-200 rounded-full h-2">
                         <div 
@@ -1714,17 +1719,31 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                       </div>
                     </div>
                   ))}
+                  {/* Total Line */}
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-gray-700">{t('tax.totalTaxes', 'Total Taxes')}</span>
+                      <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-600">{t('tax.periodTaxes')}</span>
-                    <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
+                /* Show simple total if no individual tax categories */
+                current.taxes > 0 ? (
+                  <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-600">{t('tax.periodTaxes')}</span>
+                      <span className="font-bold text-lg text-amber-700">{formatValue(current.taxes)}</span>
+                    </div>
+                    <div className="w-full bg-amber-200 rounded-full h-2">
+                      <div className="bg-amber-500 h-2 rounded-full" style={{ width: '70%' }} />
+                    </div>
                   </div>
-                  <div className="w-full bg-amber-200 rounded-full h-2">
-                    <div className="bg-amber-500 h-2 rounded-full" style={{ width: '70%' }} />
+                ) : (
+                  <div className="bg-white/70 rounded-xl p-4 backdrop-blur-sm">
+                    <div className="text-sm text-gray-500 text-center">{t('tax.noTaxes', 'No taxes for this period')}</div>
                   </div>
-                </div>
+                )
               )}
               
               {/* Tax Burden (as % of Revenue) */}

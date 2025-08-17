@@ -240,9 +240,85 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     return opexCategories;
   };
 
+  // Transform Tax categories with real Excel data
+  const transformTaxCategories = (processedTaxData: any, currentPeriodIndex: number): any[] => {
+    if (!processedTaxData) return [];
+    
+    console.log('🏛️ [TAX] Transforming Tax categories for period index:', currentPeriodIndex);
+    console.log('🏛️ [TAX] Tax categories to process:', Object.keys(processedTaxData));
+    
+    // Get total taxes for percentage calculation  
+    const totalTaxes = dataRows?.taxes ? Math.abs(getValueForPeriod(dataRows.taxes, currentPeriodIndex)) : 0;
+    console.log('🏛️ [TAX] Total Taxes:', totalTaxes);
+    
+    const taxCategories = Object.entries(processedTaxData)
+      .map(([categoryName, categoryData]: [string, any]) => {
+        console.log(`🏛️ [TAX] Processing category: ${categoryName}`, {
+          hasValues: !!categoryData.values,
+          valuesLength: categoryData.values?.length,
+          label: categoryData.label
+        });
+        
+        let categoryAmount = 0;
+        let rawValue: any = null;
+        
+        // The Excel service has already processed this category and provided the values array
+        if (categoryData.values && Array.isArray(categoryData.values)) {
+          if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
+            rawValue = categoryData.values[currentPeriodIndex];
+            categoryAmount = Math.abs(Number(rawValue) || 0);
+            console.log(`🏛️ [TAX] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
+          } else {
+            console.log(`🏛️ [TAX] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
+          }
+        } else {
+          console.log(`🏛️ [TAX] No values array found for ${categoryName}`);
+        }
+        
+        // Calculate percentage of total taxes
+        const percentage = totalTaxes > 0 ? (categoryAmount / totalTaxes) * 100 : 0;
+        
+        return {
+          category: categoryName,
+          label: categoryData.label || categoryName,
+          amount: categoryAmount,
+          percentage: Math.round(percentage * 100) / 100,
+          color: "bg-amber-500",
+          rawValue: rawValue // Keep raw value for filtering decision
+        };
+      })
+      .filter(category => {
+        // Filter out invalid/zero categories
+        const isValid = category.amount > 0 && 
+                       !isNaN(category.amount) && 
+                       isFinite(category.amount) &&
+                       category.rawValue !== null &&
+                       category.rawValue !== undefined &&
+                       category.rawValue !== '';
+        
+        if (!isValid) {
+          console.log(`🏛️ [TAX] Filtering out category: ${category.category} (amount: ${category.amount}, raw: ${category.rawValue})`);
+        }
+        return isValid;
+      })
+      .map(category => {
+        // Remove rawValue from final output
+        const { rawValue, ...cleanCategory } = category;
+        return cleanCategory;
+      });
+    
+    console.log('🏛️ [TAX] Final Tax categories after filtering:', taxCategories.map(c => ({
+      name: c.category,
+      amount: c.amount,
+      percentage: c.percentage
+    })));
+    console.log(`🏛️ [TAX] Filtered result: ${taxCategories.length} valid categories out of ${Object.keys(processedTaxData).length} total`);
+    return taxCategories;
+  };
+
   const revenueCategories = transformCategories(categories?.revenue);
   const opexCategories = transformCategories(categories?.opex);
-  const taxCategories = transformCategories(categories?.taxes);
+  const taxCategories = transformTaxCategories(categories?.taxes, currentPeriodIndex);
   
   if (!periods || !Array.isArray(periods) || periods.length === 0) {
     console.log('❌ [TRANSFORMER] No valid periods found');
