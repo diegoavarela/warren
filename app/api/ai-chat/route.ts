@@ -247,6 +247,14 @@ export async function POST(request: NextRequest) {
 
     console.log('🤖 [AI Chat] Processing message:', message);
 
+    // Helper to extract period indices for quarters
+    const quarterMapping: Record<string, number[]> = {
+      'Q1': [0, 1, 2], // Jan, Feb, Mar
+      'Q2': [3, 4, 5], // Apr, May, Jun
+      'Q3': [6, 7, 8], // Jul, Aug, Sep
+      'Q4': [9, 10, 11] // Oct, Nov, Dec
+    };
+    
     // Create system prompt with context
     const systemPrompt = `You are a financial analyst AI assistant with access to real financial data.
     
@@ -265,15 +273,33 @@ Available Data:
 - Cash Flow Available: ${context.cashflow.available}
 - Cash Flow Periods: ${context.cashflow.periods.join(', ')}
 
-IMPORTANT INSTRUCTIONS FOR COMPARISONS:
-When asked to compare periods or metrics:
-1. Use the create_chart function with type 'bar' or 'line' to show the comparison visually
-2. Include all relevant data points from the context
-3. For period comparisons, show key metrics like revenue, gross profit, expenses, net income
-4. Always use actual values from the Financial Data Context provided
-5. If data is not available for a requested period, state this clearly
+IMPORTANT INSTRUCTIONS:
+1. The Financial Data Context contains ALL available data. Look for:
+   - P&L data: in context.pnl.data (includes dataRows with revenue, cogs, expenses, taxes)
+   - Cash Flow data: in context.cashflow.data (includes opening/closing balances, inflows, outflows)
+   - Periods are in context.pnl.periods or context.cashflow.periods
 
-Example: For "Compare May 2025 vs Apr 2025", create a bar chart with both periods showing revenue, expenses, and net income
+2. For P&L metrics, common fields include:
+   - Revenue (dataRows.revenue)
+   - COGS (dataRows.cogs)
+   - Operating Expenses (dataRows.opex)
+   - Net Income (calculated from revenue - cogs - opex - taxes)
+   - Gross Profit (revenue - cogs)
+
+3. For Cash Flow metrics, common fields include:
+   - Opening Balance
+   - Total Inflows
+   - Total Outflows  
+   - Closing/Final Balance
+   - Net Cash Flow
+
+4. When creating charts:
+   - Extract actual numeric values from the context
+   - For Q1, sum Jan+Feb+Mar values
+   - For comparisons, use grouped bar charts
+   - Always show the actual numbers, never say "data not available" if it exists in context
+
+5. NEVER say data is null without thoroughly checking the context structure
 
 Financial Data Context:
 ${JSON.stringify(context, null, 2)}
