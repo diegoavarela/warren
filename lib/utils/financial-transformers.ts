@@ -250,7 +250,7 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     // Calculate total taxes by summing all tax categories for this period
     let totalTaxes = 0;
     
-    const taxCategories = Object.entries(processedTaxData)
+    let taxCategories = Object.entries(processedTaxData)
       .map(([categoryName, categoryData]: [string, any]) => {
         console.log(`🏛️ [TAX] Processing category: ${categoryName}`, {
           hasValues: !!categoryData.values,
@@ -550,13 +550,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     netMargin: ytdRevenue > 0 ? ((ytdNetIncome / ytdRevenue) * 100) : 0,
     ebitda: ytdEbitda,
     ebitdaMargin: ytdRevenue > 0 ? ((ytdEbitda / ytdRevenue) * 100) : 0,
-    totalPersonnelCost: 0,
-    personnelSalariesCoR: 0,
-    personnelSalariesOpex: 0,
-    personnelBenefitsOpex: 0,
-    personnelPayrollTaxesOpex: 0,
-    // Additional YTD field per mapping
-    totalOutcome: ytdExpenses, // YTD EXPENSES
     monthsIncluded: ytdPeriods.length
   };
   
@@ -570,9 +563,7 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
       cogs: cogsCategories,
       operatingExpenses: operatingExpenses,
       taxes: taxCategories
-    },
-    // Additional data for dashboard components
-    taxSummary: taxCategories
+    }
   };
 }
 
@@ -725,9 +716,9 @@ export function transformToPnLData(apiData: any): PnLData | null {
 
   // Transform categories
   const transformedCategories = {
-    revenue: revenueCategories || [],
-    cogs: cogsCategories || [],
-    operatingExpenses: operatingExpenses || []
+    revenue: categories?.revenue || [],
+    cogs: categories?.cogs || [],
+    operatingExpenses: categories?.operatingExpenses || []
   };
 
   // Transform historical periods from chartData or trends

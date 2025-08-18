@@ -358,7 +358,7 @@ export function ExcelGridHelper({
                   type="button"
                   variant="outline" 
                   size="sm" 
-                  onClick={refreshExcelPreview}
+                  onClick={() => refreshExcelPreview()}
                   disabled={loading}
                   leftIcon={loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 >

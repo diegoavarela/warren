@@ -200,7 +200,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         }
         
         // Check if periods contain valid data (not just "23" values)
-        const validPeriods = result.data.periods.filter(period => 
+        const validPeriods = result.data.periods.filter((period: any) => 
           period && 
           typeof period === 'string' && 
           period !== '23' && 
@@ -1701,9 +1701,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <div className="bg-white/70 rounded-xl p-5 backdrop-blur-sm">
                 <div className="flex justify-between items-center">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-600 mb-1">{t('tax.periodTaxes', 'Period Taxes')}</div>
+                    <div className="text-sm font-medium text-gray-600 mb-1">{t('tax.periodTaxes')}</div>
                     {/* Show tax categories if available */}
-                    {data.categories.taxes && data.categories.taxes.length > 0 && (
+                    {'taxes' in data.categories && data.categories.taxes && data.categories.taxes.length > 0 && (
                       <div className="text-xs text-gray-500 mb-2">
                         {data.categories.taxes.map((tax: any) => cleanCategoryName(tax.label || tax.category)).join(', ')}
                       </div>
@@ -1713,10 +1713,10 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     <div className="text-2xl font-bold text-amber-700">
                       {(() => {
                         // Calculate total from tax categories if available
-                        const taxTotal = data.categories.taxes && data.categories.taxes.length > 0
+                        const taxTotal = 'taxes' in data.categories && data.categories.taxes && data.categories.taxes.length > 0
                           ? data.categories.taxes.reduce((sum: number, tax: any) => sum + (tax.amount || 0), 0)
                           : current.taxes;
-                        console.log('🏛️ [PERIOD TAX] Tax categories:', data.categories.taxes);
+                        console.log('🏛️ [PERIOD TAX] Tax categories:', 'taxes' in data.categories ? data.categories.taxes : 'none');
                         console.log('🏛️ [PERIOD TAX] Calculated total:', taxTotal);
                         console.log('🏛️ [PERIOD TAX] current.taxes fallback:', current.taxes);
                         return formatValue(taxTotal);
@@ -1724,7 +1724,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     </div>
                     <div className="text-xs text-amber-600 mt-1">
                       {(() => {
-                        const taxTotal = data.categories.taxes && data.categories.taxes.length > 0
+                        const taxTotal = 'taxes' in data.categories && data.categories.taxes && data.categories.taxes.length > 0
                           ? data.categories.taxes.reduce((sum: number, tax: any) => sum + (tax.amount || 0), 0)
                           : current.taxes;
                         return current.revenue > 0 ? `${formatPercentage((taxTotal / current.revenue) * 100)} of revenue` : '';
@@ -1738,7 +1738,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <div className="bg-white/70 rounded-xl p-5 backdrop-blur-sm">
                 <div className="flex justify-between items-center">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-600">{t('tax.ytdTaxes', 'YTD Taxes')}</div>
+                    <div className="text-sm font-medium text-gray-600">{t('tax.ytdTaxes')}</div>
                     <div className="text-xs text-gray-500 mt-1">
                       {(() => {
                         // Use the actual YTD taxes from the transformer

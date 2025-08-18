@@ -69,6 +69,12 @@ export interface ExpenseCategory {
   subcategories?: { name: string; amount: number }[];
 }
 
+export interface TaxCategory {
+  category: string;
+  amount: number;
+  percentage: number;
+}
+
 export interface ForecastData {
   trend: number[];
   optimistic: number[];
@@ -87,6 +93,7 @@ export interface PnLData {
     revenue: RevenueCategory[];
     cogs: COGSCategory[];
     operatingExpenses: ExpenseCategory[];
+    taxes?: TaxCategory[];
   };
   forecasts?: {
     revenue: ForecastData;

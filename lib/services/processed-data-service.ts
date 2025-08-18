@@ -271,13 +271,13 @@ export class ProcessedDataService {
       }
 
       const data = result[0];
-      const periodStart = new Date(data.periodStart!);
-      const periodEnd = new Date(data.periodEnd!);
+      const dataPeriodStart = new Date(data.periodStart!);
+      const dataPeriodEnd = new Date(data.periodEnd!);
       
       return {
-        period: this.formatPeriod(periodStart, periodEnd),
-        periodStart: periodStart,
-        periodEnd: periodEnd,
+        period: this.formatPeriod(dataPeriodStart, dataPeriodEnd),
+        periodStart: dataPeriodStart,
+        periodEnd: dataPeriodEnd,
         data: data.dataJson as ProcessedData,
         configurationName: data.configurationName,
         currency: data.currency || 'USD',

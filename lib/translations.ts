@@ -856,8 +856,6 @@ export const translations = {
     'config.template.selectTemplate': 'Seleccionar Plantilla',
     'config.template.loading': 'Cargando plantillas...',
     'config.template.choose': 'Elegir una plantilla',
-    'config.metadata.title': 'Metadatos de Configuración',
-    'config.metadata.description': 'Define configuraciones de moneda, idioma y unidades',
     'config.form.selectCurrency': 'Seleccionar moneda',
     'config.form.currencyInheritedFromCompany': 'Heredado de la empresa',
     'config.form.selectLocale': 'Seleccionar idioma',
@@ -937,34 +935,17 @@ export const translations = {
     'config.table.actions': 'Acciones',
 
     // Summary and Validation
-    'config.summary.totalFields': 'Total de Campos',
-    'config.summary.required': 'Requeridos',
-    'config.summary.mapped': 'Mapeados',
-    'config.summary.mappedFields': 'Campos Mapeados',
-    'config.summary.requiredFields': 'Campos Requeridos',
-    'config.summary.categories': 'Categorías',
-    'config.summary.status': 'Estado',
     'config.summary.valid': 'Válido',
 
     // Preview Configuration
-    'config.preview.description': 'Previsualiza tu configuración, valídala y pruébala con archivos Excel de muestra',
     'config.preview.excelTitle': 'Vista Previa de Excel',
     'config.preview.clickToMap': 'Haz clic para mapear',
     'config.preview.toRow': 'a la fila',
     'config.preview.search': 'Buscar en descripción...',
     'config.preview.searchResults': 'resultados encontrados',
     'config.preview.noResults': 'No se encontraron resultados',
-    'config.validation.title': 'Validación',
-    'config.validation.passed': 'Validación Pasada',
-    'config.validation.warnings': 'Advertencias',
-    'config.validation.noCategoriesWarning': 'No hay categorías definidas. Se recomienda agregar categorías para mejor organización de datos.',
     'config.validation.requiredField': 'Este campo es requerido',
     'config.validation.rowRange': 'El número de fila debe estar entre 1 y 10000',
-    'config.validation.periodsRangeFormat': 'El rango de períodos debe estar en formato Excel (ej. B8:M8)',
-    'config.validation.categoriesColumnFormat': 'La columna de categorías debe ser una columna Excel válida (ej. B)',
-    'config.validation.lowMappingWarning': 'Pocos campos están mapeados. Se recomienda mapear más campos para mejores resultados.',
-    'config.validation.failed': 'Falló',
-    'config.validation.errors': 'Errores',
 
     // Tabs
     'config.tabs.json': 'JSON',
@@ -972,8 +953,6 @@ export const translations = {
     'config.tabs.export': 'Exportar',
 
     // JSON Configuration
-    'config.json.title': 'Configuración JSON Generada',
-    'config.json.description': 'Esta es la configuración JSON que se guardará y usará para análisis de Excel',
     
     // Matrix Mapper Translations
     'mapper.aiAnalysis.title': 'Análisis IA',
@@ -1369,19 +1348,10 @@ export const translations = {
     'config.preview.search': 'Search in description...',
     'config.preview.searchResults': 'results found',
     'config.preview.noResults': 'No results found',
-    'config.validation.title': 'Validation',
-    'config.validation.passed': 'Validation Passed',
-    'config.validation.warnings': 'Warnings',
-    'config.validation.noCategoriesWarning': 'No categories defined. It is recommended to add categories for better data organization.',
     'config.validation.requiredField': 'This field is required',
     'config.validation.rowRange': 'Row number must be between 1 and 10000',
     'config.validation.nameRequired': 'Configuration name is required',
     'config.validation.periodsRowRequired': 'Periods row must be a valid row number',
-    'config.validation.periodsRangeFormat': 'Periods range must be in Excel format (e.g., B8:M8)',
-    'config.validation.categoriesColumnFormat': 'Categories column must be a valid Excel column (e.g., B)',
-    'config.validation.lowMappingWarning': 'Few fields are mapped. It is recommended to map more fields for better results.',
-    'config.validation.failed': 'Failed',
-    'config.validation.errors': 'Errors',
 
     // Tabs
     'config.tabs.json': 'JSON',
@@ -1389,8 +1359,6 @@ export const translations = {
     'config.tabs.export': 'Export',
 
     // JSON Configuration
-    'config.json.title': 'Generated JSON Configuration',
-    'config.json.description': 'This is the JSON configuration that will be saved and used for Excel analysis',
 
     // Financial Data
     'financial.saveData': 'Save Financial Data',

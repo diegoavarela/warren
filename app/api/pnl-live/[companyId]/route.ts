@@ -83,11 +83,10 @@ export async function GET(
     const response = {
       success: true,
       data: {
-        periods: processedData.periods || [],
         data: processedData,
         currency: pnlConfig.configJson?.metadata?.currency || 'USD',
         displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
-        // Also include the processed data structure directly for easier access
+        // Include the processed data structure directly for easier access
         ...processedData,
         metadata: {
           currency: pnlConfig.configJson?.metadata?.currency || 'USD',

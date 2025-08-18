@@ -111,7 +111,7 @@ export class ConfigurationService {
 
     // For each configuration, get the most recent processed file information
     const configurationsWithFiles = await Promise.all(
-      configurations.map(async (config) => {
+      configurations.map(async (config: any) => {
         const recentFile = await db
           .select({
             fileName: financialDataFiles.originalFilename,
