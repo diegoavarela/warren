@@ -58,18 +58,20 @@ export function PeriodMappingEditor({
       return availableColumns;
     }
     
-    // Priority 2: Use Excel preview data to get actual column count
-    if (excelData?.preview?.columnHeaders && excelData.preview.columnHeaders.length > 0) {
-      return excelData.preview.columnHeaders;
-    }
-    
-    // Priority 3: Use Excel data total columns
+    // Priority 2: ALWAYS use totalCols if available (this is the actual column count)
     if (excelData?.preview?.totalCols) {
+      console.log('📊 [PERIOD MAPPER] Generating columns from totalCols:', excelData.preview.totalCols);
       const columns: string[] = [];
       for (let i = 0; i < excelData.preview.totalCols; i++) {
         columns.push(getColumnLetter(i));
       }
       return columns;
+    }
+    
+    // Priority 3: Fallback to columnHeaders (might be capped)
+    if (excelData?.preview?.columnHeaders && excelData.preview.columnHeaders.length > 0) {
+      console.log('⚠️ [PERIOD MAPPER] Using columnHeaders (might be capped):', excelData.preview.columnHeaders.length);
+      return excelData.preview.columnHeaders;
     }
     
     // Fallback: Parse the legacy periodsRange (backward compatibility)
@@ -190,63 +192,201 @@ export function PeriodMappingEditor({
     return t('periodMapping.invalidPeriod');
   };
 
-  // Auto-detect periods from common patterns
+  // Auto-detect periods from Excel headers and patterns
   const autoDetectPeriods = () => {
     const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
     
     // Filter out voided columns
     const activeColumns = columns.filter(col => !voidedColumns.has(col));
     
-    // Try different detection strategies based on active column count
-    let autoMapping: PeriodMapping[];
+    // Try to get actual header values from Excel data
+    let autoMapping: PeriodMapping[] = [];
     
-    if (activeColumns.length === 12) {
-      // Most likely monthly data
-      autoMapping = activeColumns.map((column, index) => ({
-        column,
-        period: {
-          type: 'month' as const,
-          year: currentYear,
-          month: (index % 12) + 1,
-          label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][index % 12]} ${currentYear}`
+    // Check if we have Excel data with headers
+    if (excelData?.preview?.rowData && excelData.preview.rowData.length > 0) {
+      // Look at first few rows for potential date headers
+      const headerRows = excelData.preview.rowData.slice(0, 5);
+      console.log('🔍 [AUTO-DETECT] Analyzing header rows:', headerRows);
+      
+      // Try to find a row with date-like values
+      for (const row of headerRows) {
+        const detectedPeriods: PeriodMapping[] = [];
+        let hasValidDates = false;
+        
+        activeColumns.forEach((column) => {
+          // Get the actual column index from the column letter
+          const actualColIndex = columns.indexOf(column);
+          if (actualColIndex === -1) return;
+          
+          const cellValue = row[actualColIndex];
+          if (!cellValue) return;
+          
+          const cellStr = String(cellValue).trim();
+          
+          // Try to parse as Excel date serial number (days since 1900)
+          if (typeof cellValue === 'number' && cellValue > 25000 && cellValue < 50000) {
+            // This is likely an Excel date serial
+            const excelDate = new Date((cellValue - 25569) * 86400 * 1000);
+            if (!isNaN(excelDate.getTime())) {
+              hasValidDates = true;
+              detectedPeriods.push({
+                column,
+                period: {
+                  type: 'month' as const,
+                  year: excelDate.getFullYear(),
+                  month: excelDate.getMonth() + 1,
+                  label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][excelDate.getMonth()]} ${excelDate.getFullYear()}`
+                }
+              });
+              return;
+            }
+          }
+          
+          // Try to parse month names (Jan, Feb, January, February, etc.)
+          const monthPatterns = [
+            { regex: /^(jan|enero|ene)/i, month: 1 },
+            { regex: /^(feb|febrero)/i, month: 2 },
+            { regex: /^(mar|marzo)/i, month: 3 },
+            { regex: /^(apr|april|abril|abr)/i, month: 4 },
+            { regex: /^(may|mayo)/i, month: 5 },
+            { regex: /^(jun|june|junio)/i, month: 6 },
+            { regex: /^(jul|july|julio)/i, month: 7 },
+            { regex: /^(aug|august|agosto|ago)/i, month: 8 },
+            { regex: /^(sep|sept|september|septiembre)/i, month: 9 },
+            { regex: /^(oct|october|octubre)/i, month: 10 },
+            { regex: /^(nov|november|noviembre)/i, month: 11 },
+            { regex: /^(dec|december|diciembre|dic)/i, month: 12 }
+          ];
+          
+          for (const pattern of monthPatterns) {
+            if (pattern.regex.test(cellStr)) {
+              hasValidDates = true;
+              // Try to extract year from the string
+              const yearMatch = cellStr.match(/\d{4}/);
+              const year = yearMatch ? parseInt(yearMatch[0]) : currentYear;
+              
+              detectedPeriods.push({
+                column,
+                period: {
+                  type: 'month' as const,
+                  year,
+                  month: pattern.month,
+                  label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][pattern.month - 1]} ${year}`
+                }
+              });
+              return;
+            }
+          }
+          
+          // Try to parse quarter patterns (Q1, Q2, etc.)
+          const quarterMatch = cellStr.match(/Q(\d)\s*(\d{4})?/i);
+          if (quarterMatch) {
+            hasValidDates = true;
+            const quarter = parseInt(quarterMatch[1]);
+            const year = quarterMatch[2] ? parseInt(quarterMatch[2]) : currentYear;
+            
+            detectedPeriods.push({
+              column,
+              period: {
+                type: 'quarter' as const,
+                year,
+                quarter,
+                label: `Q${quarter} ${year}`
+              }
+            });
+            return;
+          }
+          
+          // Try to parse year-only patterns (2024, 2025, etc.)
+          if (/^\d{4}$/.test(cellStr)) {
+            const year = parseInt(cellStr);
+            if (year >= 2000 && year <= 2050) {
+              hasValidDates = true;
+              detectedPeriods.push({
+                column,
+                period: {
+                  type: 'year' as const,
+                  year,
+                  label: `${year}`
+                }
+              });
+              return;
+            }
+          }
+        });
+        
+        // If we found valid dates in this row, use them
+        if (hasValidDates && detectedPeriods.length >= activeColumns.length * 0.5) {
+          autoMapping = detectedPeriods;
+          console.log('✅ [AUTO-DETECT] Found date patterns in row:', detectedPeriods);
+          break;
         }
-      }));
-    } else if (activeColumns.length === 4) {
-      // Likely quarterly data
-      autoMapping = activeColumns.map((column, index) => ({
-        column,
-        period: {
-          type: 'quarter' as const,
-          year: currentYear,
-          quarter: (index % 4) + 1,
-          label: `Q${(index % 4) + 1} ${currentYear}`
-        }
-      }));
-    } else if (activeColumns.length <= 3) {
-      // Likely yearly or custom periods
-      autoMapping = activeColumns.map((column, index) => ({
-        column,
-        period: {
-          type: 'year' as const,
-          year: currentYear + index,
-          label: `${currentYear + index}`
-        }
-      }));
-    } else {
-      // Default to monthly, wrapping to next year if needed
-      autoMapping = activeColumns.map((column, index) => {
-        const monthIndex = index % 12;
-        const yearOffset = Math.floor(index / 12);
-        return {
+      }
+    }
+    
+    // If we couldn't detect from headers, fall back to intelligent defaults
+    if (autoMapping.length === 0) {
+      console.log('⚠️ [AUTO-DETECT] No date patterns found, using intelligent defaults');
+      
+      if (activeColumns.length === 12) {
+        // Most likely monthly data for current year
+        autoMapping = activeColumns.map((column, index) => ({
           column,
           period: {
             type: 'month' as const,
-            year: currentYear + yearOffset,
-            month: monthIndex + 1,
-            label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][monthIndex]} ${currentYear + yearOffset}`
+            year: currentYear,
+            month: (index % 12) + 1,
+            label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][index % 12]} ${currentYear}`
           }
-        };
-      });
+        }));
+      } else if (activeColumns.length === 24) {
+        // Likely 2 years of monthly data
+        autoMapping = activeColumns.map((column, index) => {
+          const monthIndex = index % 12;
+          const yearOffset = Math.floor(index / 12);
+          return {
+            column,
+            period: {
+              type: 'month' as const,
+              year: currentYear - 1 + yearOffset,
+              month: monthIndex + 1,
+              label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][monthIndex]} ${currentYear - 1 + yearOffset}`
+            }
+          };
+        });
+      } else if (activeColumns.length === 4 || activeColumns.length === 8) {
+        // Likely quarterly data
+        autoMapping = activeColumns.map((column, index) => {
+          const quarterIndex = index % 4;
+          const yearOffset = Math.floor(index / 4);
+          return {
+            column,
+            period: {
+              type: 'quarter' as const,
+              year: currentYear + yearOffset,
+              quarter: quarterIndex + 1,
+              label: `Q${quarterIndex + 1} ${currentYear + yearOffset}`
+            }
+          };
+        });
+      } else {
+        // Default to monthly starting from current month
+        autoMapping = activeColumns.map((column, index) => {
+          const totalMonths = currentMonth - 1 + index;
+          const yearOffset = Math.floor(totalMonths / 12);
+          const monthIndex = totalMonths % 12;
+          return {
+            column,
+            period: {
+              type: 'month' as const,
+              year: currentYear + yearOffset,
+              month: monthIndex + 1,
+              label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][monthIndex]} ${currentYear + yearOffset}`
+            }
+          };
+        });
+      }
     }
     
     console.log('🎯 Auto-detected period mapping:', autoMapping);
