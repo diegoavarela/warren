@@ -571,13 +571,14 @@ function CompanyAdminDashboard() {
                           variant="primary"
                           onClick={() => {
                             sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                            sessionStorage.setItem('selectedCompanyName', getSelectedCompany()?.name || '');
                             router.push('/dashboard/company-admin/financial-chat');
                           }}
                           leftIcon={<ChatBubbleBottomCenterTextIcon className="w-4 h-4" />}
-                          disabled={pnlStatements.length === 0 && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode}
+                          disabled={!selectedCompanyId}
                           className="bg-purple-600 hover:bg-purple-700"
                         >
-                          ✨ {locale?.startsWith('es') ? 'AI Chat' : 'AI Chat'}
+                          ✨ {locale?.startsWith('es') ? 'Chat IA Financiero' : 'AI Financial Chat'}
                         </Button>
                       </div>
                     </div>
