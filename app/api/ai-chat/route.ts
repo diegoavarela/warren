@@ -298,31 +298,35 @@ When creating charts, use the actual data values from the context.
 When making comparisons, calculate the exact differences.
 When providing insights, base them solely on the available data.`;
 
-    // Call OpenAI with function calling
+    // Call OpenAI with function calling - using tools instead of deprecated functions
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-0613', // Using stable model with function calling support
+      model: 'gpt-4o-mini', // Using current model with tools support
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      functions: functions,
-      function_call: 'auto',
+      tools: functions.map(fn => ({
+        type: 'function',
+        function: fn
+      })),
+      tool_choice: 'auto',
       temperature: 0.1, // Low temperature for accuracy
       max_tokens: 2000
     });
 
     const responseMessage = completion.choices[0].message;
     
-    // Process function calls if any
+    // Process tool calls if any (new format)
     let chartConfig = null;
     let comparison = null;
     let insight = null;
     
-    if (responseMessage.function_call) {
-      const functionName = responseMessage.function_call.name;
-      const functionArgs = JSON.parse(responseMessage.function_call.arguments);
+    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+      const toolCall = responseMessage.tool_calls[0];
+      const functionName = toolCall.function.name;
+      const functionArgs = JSON.parse(toolCall.function.arguments);
       
-      console.log('🤖 [AI Chat] Function called:', functionName, functionArgs);
+      console.log('🤖 [AI Chat] Tool called:', functionName, functionArgs);
       
       switch (functionName) {
         case 'create_chart':
@@ -369,7 +373,7 @@ When providing insights, base them solely on the available data.`;
     const suggestions = generateSmartQuestions(context);
 
     const response = {
-      message: responseMessage.content,
+      message: responseMessage.content || 'Here is your analysis:', // Tool calls may not have content
       chart: chartConfig,
       comparison: comparison,
       insight: insight,
