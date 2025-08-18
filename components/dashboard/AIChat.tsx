@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
-import { useCompany } from '@/contexts/CompanyContext';
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters';
 
 ChartJS.register(...registerables);
@@ -52,7 +51,6 @@ interface FinancialContext {
 }
 
 export function AIChat() {
-  const { currentCompany } = useCompany();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,28 +58,34 @@ export function AIChat() {
   const [contextLoading, setContextLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load financial context when component mounts or company changes
+  // Get company from sessionStorage on mount
   useEffect(() => {
-    if (currentCompany?.id) {
-      loadFinancialContext();
+    const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
+    if (storedCompanyId) {
+      setCompanyId(storedCompanyId);
+      loadFinancialContext(storedCompanyId);
+    } else {
+      setError('No company selected. Please select a company first.');
+      setContextLoading(false);
     }
-  }, [currentCompany]);
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const loadFinancialContext = async () => {
-    if (!currentCompany?.id) return;
+  const loadFinancialContext = async (companyId: string) => {
+    if (!companyId) return;
     
     setContextLoading(true);
     setError(null);
     
     try {
-      const response = await fetch(`/api/ai-chat/context/${currentCompany.id}`, {
+      const response = await fetch(`/api/ai-chat/context/${companyId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
@@ -167,7 +171,7 @@ How can I help you analyze your financial performance today?`,
         credentials: 'include',
         body: JSON.stringify({
           message: textToSend,
-          companyId: currentCompany?.id,
+          companyId: companyId,
           context: context
         })
       });
@@ -259,7 +263,7 @@ How can I help you analyze your financial performance today?`,
                   {context.metadata.currency}
                 </Badge>
                 <Badge 
-                  variant={context.metadata.dataQuality.completeness > 80 ? "success" : "warning"}
+                  variant={context.metadata.dataQuality.completeness > 80 ? "default" : "secondary"}
                   className="flex items-center gap-1"
                 >
                   {context.metadata.dataQuality.completeness.toFixed(0)}% complete
