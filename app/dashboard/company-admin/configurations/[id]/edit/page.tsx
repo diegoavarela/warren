@@ -1302,6 +1302,7 @@ export default function EditConfigurationPage() {
                   {/* Center - View Toggle */}
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
+                      type="button"
                       onClick={() => setShowJsonTree(false)}
                       className={`px-4 py-2 text-sm rounded-md transition-colors ${
                         !showJsonTree 
@@ -1312,6 +1313,7 @@ export default function EditConfigurationPage() {
                       Raw JSON
                     </button>
                     <button
+                      type="button"
                       onClick={() => setShowJsonTree(true)}
                       className={`px-4 py-2 text-sm rounded-md transition-colors ${
                         showJsonTree 
@@ -1326,6 +1328,7 @@ export default function EditConfigurationPage() {
                   {/* Right side - Copy Button */}
                   <div className="flex items-center">
                     <button
+                      type="button"
                       onClick={handleCopyJson}
                       className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors ${
                         jsonCopied 
@@ -1365,6 +1368,7 @@ export default function EditConfigurationPage() {
                         
                         {/* Floating Helper Button */}
                         <button
+                          type="button"
                           onClick={() => setShowHelperOverlay(!showHelperOverlay)}
                           className="absolute bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-10"
                           title="JSON Structure Helper"
@@ -1406,12 +1410,14 @@ export default function EditConfigurationPage() {
                           <h3 className="text-sm font-medium text-gray-800">JSON Structure Tree</h3>
                           <div className="flex gap-2">
                             <button
+                              type="button"
                               onClick={() => setCollapsedNodes(new Set())}
                               className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
                             >
                               Expand All
                             </button>
                             <button
+                              type="button"
                               onClick={() => {
                                 // Collapse all first-level objects
                                 try {

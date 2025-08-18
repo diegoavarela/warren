@@ -310,6 +310,7 @@ export function PeriodMappingEditor({
             </CardDescription>
           </div>
           <button
+            type="button"
             onClick={autoDetectPeriods}
             className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg whitespace-nowrap rounded-lg font-medium transition-colors"
           >
