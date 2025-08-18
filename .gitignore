@@ -88,3 +88,21 @@ logs
 # Generated files
 /public/sw.js
 /public/workbox-*.js
+
+# Debug and test scripts
+debug-*.js
+test-*.js
+fix-*.js
+*.test.js
+*.spec.js
+
+# Data export files
+excel_mapping_*.json
+real_financial_data_*.json
+*_export_*.json
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.copy

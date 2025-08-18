@@ -72,6 +72,11 @@ docker-compose.dev.yml
 # Scripts that shouldn't be deployed
 /scripts/dev-*
 /scripts/test-*
+debug-*.js
+test-*.js
+fix-*.js
+*.test.js
+*.spec.js
 
 # Database files
 /drizzle
@@ -81,7 +86,14 @@ docker-compose.dev.yml
 # Backup files
 *.backup
 *.bak
+*.old
+*.copy
 *~
+
+# Data export files
+excel_mapping_*.json
+real_financial_data_*.json
+*_export_*.json
 
 # Python files
 __pycache__/
