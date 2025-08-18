@@ -59,15 +59,33 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Get the most recent Excel file for this company
-    console.log(`Looking for Excel files for company: ${config.companyId}`);
+    // Get the most recent Excel file for this company based on configuration type
+    console.log(`Looking for Excel files for company: ${config.companyId}, type: ${config.type}`);
     
-    const fileResult = await db
+    // Filter by filename pattern based on configuration type
+    // For cashflow configs, look for files with "cashflow" or "cash" in the name
+    // For P&L configs, look for files with "pnl", "p&l", or none of the cashflow keywords
+    const allFiles = await db
       .select()
       .from(financialDataFiles)
       .where(eq(financialDataFiles.companyId, config.companyId))
-      .orderBy(desc(financialDataFiles.uploadedAt))
-      .limit(1);
+      .orderBy(desc(financialDataFiles.uploadedAt));
+    
+    console.log(`Found ${allFiles.length} total Excel files for company ${config.companyId}`);
+    
+    // Filter files based on configuration type
+    const fileResult = allFiles.filter(file => {
+      const filename = file.originalFilename.toLowerCase();
+      if (config.type === 'cashflow') {
+        // For cashflow, prioritize files with cashflow-related keywords
+        return filename.includes('cashflow') || filename.includes('cash') || filename.includes('flujo');
+      } else if (config.type === 'pnl') {
+        // For P&L, prioritize files with P&L-related keywords or files without cashflow keywords
+        return filename.includes('pnl') || filename.includes('p&l') || filename.includes('estado') || 
+               (!filename.includes('cashflow') && !filename.includes('cash') && !filename.includes('flujo'));
+      }
+      return true;
+    }).slice(0, 1);
 
     console.log(`Found ${fileResult.length} Excel files for company ${config.companyId}`);
 

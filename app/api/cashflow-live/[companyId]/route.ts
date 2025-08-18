@@ -66,14 +66,21 @@ export async function GET(
     const { db, financialDataFiles } = await import('@/lib/db');
     const { eq, desc } = await import('drizzle-orm');
     
-    const fileResult = await db
+    // Get the appropriate Excel file based on cashflow filename pattern
+    const allFiles = await db
       .select({
-        fileContent: financialDataFiles.fileContent
+        fileContent: financialDataFiles.fileContent,
+        originalFilename: financialDataFiles.originalFilename
       })
       .from(financialDataFiles)
       .where(eq(financialDataFiles.companyId, params.companyId))
-      .orderBy(desc(financialDataFiles.uploadedAt))
-      .limit(1);
+      .orderBy(desc(financialDataFiles.uploadedAt));
+    
+    // Filter for cash flow files
+    const fileResult = allFiles.filter(file => {
+      const filename = file.originalFilename.toLowerCase();
+      return filename.includes('cashflow') || filename.includes('cash') || filename.includes('flujo');
+    }).slice(0, 1);
 
     if (fileResult.length === 0) {
       return NextResponse.json({ 
