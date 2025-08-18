@@ -33,8 +33,7 @@ interface Configuration {
 
 export default function ConfigurationsPage() {
   const router = useRouter();
-  // For now, use a mock selected company until we integrate with the context
-  const selectedCompany = { id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8', name: 'VTEX Solutions SRL' };
+  const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -50,6 +49,21 @@ export default function ConfigurationsPage() {
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [showHelperOverlay, setShowHelperOverlay] = useState(false);
   const toast = useToast();
+
+  // Load selected company from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
+      const storedCompanyName = sessionStorage.getItem('selectedCompanyName');
+      
+      if (storedCompanyId) {
+        setSelectedCompany({
+          id: storedCompanyId,
+          name: storedCompanyName || 'Company'
+        });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedCompany?.id) {

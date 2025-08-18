@@ -54,8 +54,7 @@ interface ConfigurationFormData {
 export default function EditConfigurationPage() {
   const router = useRouter();
   const params = useParams();
-  // For now, use a mock selected company until we integrate with the context
-  const selectedCompany = { id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8', name: 'VTEX Solutions SRL' };
+  const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
   const { t } = useTranslation('es');
   const toast = useToast();
   
@@ -132,6 +131,21 @@ export default function EditConfigurationPage() {
 
   // Track if we've already initialized the sheet to prevent re-initialization
   const [sheetInitialized, setSheetInitialized] = useState(false);
+
+  // Load selected company from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
+      const storedCompanyName = sessionStorage.getItem('selectedCompanyName');
+      
+      if (storedCompanyId) {
+        setSelectedCompany({
+          id: storedCompanyId,
+          name: storedCompanyName || 'Company'
+        });
+      }
+    }
+  }, []);
 
   // Initialize selected sheet when excel data loads (only once)
   useEffect(() => {
