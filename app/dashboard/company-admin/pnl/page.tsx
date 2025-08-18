@@ -16,7 +16,7 @@ export default function PnLDashboardPage() {
   const { user } = useAuth();
   const { locale } = useLocale();
   const { t } = useTranslation(locale);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('b1dea3ff-cac4-45cc-be78-5488e612c2a8');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [currentPeriod, setCurrentPeriod] = useState<string>('');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [hybridParserData, setHybridParserData] = useState<any>(null);
@@ -25,11 +25,9 @@ export default function PnLDashboardPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Get company ID
-      if (!selectedCompanyId) {
-        const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
-        if (storedCompanyId) {
-          setSelectedCompanyId(storedCompanyId);
-        }
+      const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
+      if (storedCompanyId && storedCompanyId !== selectedCompanyId) {
+        setSelectedCompanyId(storedCompanyId);
       }
       
       // Check for hybrid parser result data

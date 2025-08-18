@@ -42,8 +42,7 @@ export default function ProcessFilePage() {
   const router = useRouter();
   const params = useParams();
   const toast = useToast();
-  // For now, use a mock selected company until we integrate with the context
-  const selectedCompany = { id: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8', name: 'VTEX Solutions SRL' };
+  const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [configuration, setConfiguration] = useState<Configuration | null>(null);
@@ -55,6 +54,21 @@ export default function ProcessFilePage() {
   const [error, setError] = useState<string | null>(null);
 
   const configId = params.id as string;
+
+  // Load selected company from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
+      const storedCompanyName = sessionStorage.getItem('selectedCompanyName');
+      
+      if (storedCompanyId) {
+        setSelectedCompany({
+          id: storedCompanyId,
+          name: storedCompanyName || 'Company'
+        });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (configId) {
