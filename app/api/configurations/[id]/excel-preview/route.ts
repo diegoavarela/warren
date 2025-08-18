@@ -74,7 +74,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     console.log(`Found ${allFiles.length} total Excel files for company ${config.companyId}`);
     
     // Filter files based on configuration type
-    const fileResult = allFiles.filter(file => {
+    const fileResult = allFiles.filter((file: any) => {
       const filename = file.originalFilename.toLowerCase();
       if (config.type === 'cashflow') {
         // For cashflow, prioritize files with cashflow-related keywords

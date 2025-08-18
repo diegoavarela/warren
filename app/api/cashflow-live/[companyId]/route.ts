@@ -77,7 +77,7 @@ export async function GET(
       .orderBy(desc(financialDataFiles.uploadedAt));
     
     // Filter for cash flow files
-    const fileResult = allFiles.filter(file => {
+    const fileResult = allFiles.filter((file: any) => {
       const filename = file.originalFilename.toLowerCase();
       return filename.includes('cashflow') || filename.includes('cash') || filename.includes('flujo');
     }).slice(0, 1);

@@ -65,7 +65,7 @@ export async function GET(
       .orderBy(desc(financialDataFiles.uploadedAt));
     
     // Filter for P&L files (exclude cashflow files)
-    const fileResult = allFiles.filter(file => {
+    const fileResult = allFiles.filter((file: any) => {
       const filename = file.originalFilename.toLowerCase();
       // Include files with P&L keywords or exclude files with cashflow keywords
       return filename.includes('pnl') || filename.includes('p&l') || filename.includes('estado') || 
