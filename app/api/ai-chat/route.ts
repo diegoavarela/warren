@@ -291,6 +291,11 @@ Available Data:
 - Cash Flow Available: ${context.cashflow.available}
 - Cash Flow Periods: ${context.cashflow.periods.join(', ')}
 
+When using the show_comparison function:
+- Always populate the 'data' field with actual comparison values
+- Include specific metric values for each period being compared
+- Calculate percentage changes where appropriate
+
 Financial Data Context:
 ${JSON.stringify(context, null, 2)}
 

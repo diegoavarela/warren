@@ -305,11 +305,63 @@ How can I help you analyze your financial performance today?`,
                 
                 {/* Render comparison if present */}
                 {message.comparison && (
-                  <div className="mt-4 bg-white rounded-lg p-4">
-                    <h4 className="font-semibold mb-2">Comparison: {message.comparison.type}</h4>
-                    <pre className="text-xs overflow-x-auto">
-                      {JSON.stringify(message.comparison.data, null, 2)}
-                    </pre>
+                  <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold mb-3 text-gray-900 flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                      Comparison: {message.comparison.type === 'period' ? 'Period over Period' : message.comparison.type}
+                    </h4>
+                    {message.comparison.items && (
+                      <div className="text-sm text-gray-700 mb-2">
+                        Comparing: {message.comparison.items.join(' vs ')}
+                      </div>
+                    )}
+                    {message.comparison.data ? (
+                      typeof message.comparison.data === 'object' ? (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Metric
+                                </th>
+                                {message.comparison.items?.map((item: string) => (
+                                  <th key={item} className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {item}
+                                  </th>
+                                ))}
+                                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Change
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {Object.entries(message.comparison.data).map(([key, values]: [string, any]) => (
+                                <tr key={key}>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                                  </td>
+                                  {Array.isArray(values) ? values.map((val: any, i: number) => (
+                                    <td key={i} className="px-3 py-2 whitespace-nowrap text-sm text-right text-gray-600">
+                                      {typeof val === 'number' ? formatNumber(val) : val}
+                                    </td>
+                                  )) : (
+                                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600" colSpan={2}>
+                                      {JSON.stringify(values)}
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <pre className="text-xs overflow-x-auto bg-gray-50 p-3 rounded">
+                          {JSON.stringify(message.comparison.data, null, 2)}
+                        </pre>
+                      )
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">Comparison data is being processed...</p>
+                    )}
                   </div>
                 )}
                 
