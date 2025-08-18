@@ -247,9 +247,8 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     console.log('🏛️ [TAX] Transforming Tax categories for period index:', currentPeriodIndex);
     console.log('🏛️ [TAX] Tax categories to process:', Object.keys(processedTaxData));
     
-    // Get total taxes for percentage calculation  
-    const totalTaxes = dataRows?.taxes ? Math.abs(getValueForPeriod(dataRows.taxes, currentPeriodIndex)) : 0;
-    console.log('🏛️ [TAX] Total Taxes:', totalTaxes);
+    // Calculate total taxes by summing all tax categories for this period
+    let totalTaxes = 0;
     
     const taxCategories = Object.entries(processedTaxData)
       .map(([categoryName, categoryData]: [string, any]) => {
@@ -275,8 +274,11 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
           console.log(`🏛️ [TAX] No values array found for ${categoryName}`);
         }
         
-        // Calculate percentage of total taxes
-        const percentage = totalTaxes > 0 ? (categoryAmount / totalTaxes) * 100 : 0;
+        // Add to total taxes
+        totalTaxes += categoryAmount;
+        
+        // Percentage will be calculated after we have the total
+        const percentage = 0; // Will be recalculated later
         
         return {
           category: categoryName,
@@ -307,12 +309,20 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
         return cleanCategory;
       });
     
+    // Recalculate percentages based on filtered total
+    const filteredTotal = taxCategories.reduce((sum, cat) => sum + cat.amount, 0);
+    taxCategories = taxCategories.map(cat => ({
+      ...cat,
+      percentage: filteredTotal > 0 ? Math.round((cat.amount / filteredTotal) * 10000) / 100 : 0
+    }));
+    
     console.log('🏛️ [TAX] Final Tax categories after filtering:', taxCategories.map(c => ({
       name: c.category,
       amount: c.amount,
       percentage: c.percentage
     })));
     console.log(`🏛️ [TAX] Filtered result: ${taxCategories.length} valid categories out of ${Object.keys(processedTaxData).length} total`);
+    console.log(`🏛️ [TAX] Total taxes for period ${currentPeriodIndex}: ${filteredTotal}`);
     return taxCategories;
   };
 
@@ -371,10 +381,20 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const grossProfit = getValueForPeriod(dataRows?.grossProfit, index);
     const operatingExpenses = getValueForPeriod(dataRows?.totalOpex, index);
     const netIncome = getValueForPeriod(dataRows?.netIncome, index);
-    const taxes = getValueForPeriod(dataRows?.taxes, index);
+    // Calculate taxes as sum of ALL tax categories for this period
+    let taxes = 0;
+    if (categories?.taxes) {
+      Object.values(categories.taxes).forEach((taxCategory: any) => {
+        if (taxCategory.values && Array.isArray(taxCategory.values) && taxCategory.values[index] !== undefined) {
+          const taxValue = Math.abs(Number(taxCategory.values[index]) || 0);
+          taxes += taxValue;
+        }
+      });
+    }
+    
     if (index === 0) {
-      console.log('🏛️ [TAXES DEBUG] dataRows.taxes:', dataRows?.taxes);
-      console.log('🏛️ [TAXES DEBUG] Period 0 taxes value:', taxes);
+      console.log('🏛️ [TAXES DEBUG] Tax categories:', categories?.taxes);
+      console.log('🏛️ [TAXES DEBUG] Period 0 total taxes (sum of all categories):', taxes);
     }
     const ebitda = getValueForPeriod(dataRows?.ebitda, index);
     const earningsBeforeTaxes = getValueForPeriod(dataRows?.earningsBeforeTaxes, index);
