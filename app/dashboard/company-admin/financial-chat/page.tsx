@@ -8,7 +8,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle } from '@/components/ui/Card';
-import { FinancialDataChatV2 } from '@/components/dashboard/FinancialDataChatV2';
+import { AIChat } from '@/components/dashboard/AIChat';
 import { ArrowLeftIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
 
@@ -193,10 +193,7 @@ function FinancialChatPage() {
 
         {/* Full-Width Chat Interface */}
         <div className="flex-1 overflow-hidden">
-          <FinancialDataChatV2 
-            companyId={selectedCompanyId}
-            className="h-full"
-          />
+          <AIChat />
         </div>
       </div>
     </AppLayout>
