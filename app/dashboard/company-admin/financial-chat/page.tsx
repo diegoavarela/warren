@@ -191,8 +191,8 @@ function FinancialChatPage() {
           </div>
         </div>
 
-        {/* Full-Width Chat Interface */}
-        <div className="flex-1 overflow-hidden">
+        {/* Full-Height Chat Interface */}
+        <div className="flex-1 min-h-0">
           <AIChat />
         </div>
       </div>
