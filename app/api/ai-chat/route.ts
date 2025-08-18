@@ -23,15 +23,55 @@ const chartFunctions = {
         data: data.map(d => d.value),
         backgroundColor: [
           '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-          '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-        ]
+          '#9966FF', '#FF9F40', '#FFB6C1', '#C9CBCF'
+        ],
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverBorderWidth: 3
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        title: { display: true, text: title },
-        legend: { position: 'right' as const }
+        title: { 
+          display: true, 
+          text: title,
+          font: { size: 16, weight: 'bold' as const },
+          padding: 20
+        },
+        legend: { 
+          position: 'right' as const,
+          labels: {
+            padding: 15,
+            font: { size: 12 },
+            generateLabels: function(chart: any) {
+              const data = chart.data;
+              const total = data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
+              return data.labels.map((label: string, i: number) => {
+                const value = data.datasets[0].data[i];
+                const percentage = ((value / total) * 100).toFixed(1);
+                return {
+                  text: `${label} (${percentage}%)`,
+                  fillStyle: data.datasets[0].backgroundColor[i],
+                  hidden: false,
+                  index: i
+                };
+              });
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context: any) {
+              const label = context.label || '';
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+              const percentage = ((value / total) * 100).toFixed(1);
+              return `${label}: $${value.toLocaleString()} (${percentage}%)`;
+            }
+          }
+        }
       }
     }
   }),
@@ -43,17 +83,41 @@ const chartFunctions = {
       datasets: [{
         label: yLabel,
         data: data.map(d => d.value),
-        backgroundColor: '#36A2EB'
+        backgroundColor: '#36A2EB',
+        borderColor: '#2196F3',
+        borderWidth: 1
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        title: { display: true, text: title }
+        title: { 
+          display: true, 
+          text: title,
+          font: { size: 16, weight: 'bold' as const },
+          padding: 20
+        },
+        legend: {
+          display: true,
+          position: 'top' as const,
+          labels: { padding: 15, font: { size: 12 } }
+        }
       },
       scales: {
-        x: { title: { display: true, text: xLabel } },
-        y: { title: { display: true, text: yLabel } }
+        x: { 
+          title: { display: true, text: xLabel },
+          grid: { display: false }
+        },
+        y: { 
+          title: { display: true, text: yLabel },
+          beginAtZero: true,
+          ticks: {
+            callback: function(value: any) {
+              return typeof value === 'number' ? value.toLocaleString() : value;
+            }
+          }
+        }
       }
     }
   }),
@@ -66,17 +130,49 @@ const chartFunctions = {
         label: yLabel,
         data: data.map(d => d.value),
         borderColor: '#36A2EB',
-        tension: 0.1
+        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+        tension: 0.1,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: '#36A2EB',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 6
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        title: { display: true, text: title }
+        title: { 
+          display: true, 
+          text: title,
+          font: { size: 16, weight: 'bold' as const },
+          padding: 20
+        },
+        legend: {
+          display: true,
+          position: 'top' as const,
+          labels: { padding: 15, font: { size: 12 } }
+        }
       },
       scales: {
-        x: { title: { display: true, text: xLabel } },
-        y: { title: { display: true, text: yLabel } }
+        x: { 
+          title: { display: true, text: xLabel },
+          grid: { display: false },
+          ticks: { font: { size: 11 } }
+        },
+        y: { 
+          title: { display: true, text: yLabel },
+          beginAtZero: true,
+          ticks: {
+            callback: function(value: any) {
+              return typeof value === 'number' ? value.toLocaleString() : value;
+            },
+            font: { size: 11 }
+          },
+          grid: { display: true, drawBorder: false }
+        }
       }
     }
   }),
@@ -91,17 +187,55 @@ const chartFunctions = {
         backgroundColor: [
           '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
           '#9966FF', '#FF9F40'
-        ][i % 6]
+        ][i % 6],
+        borderColor: [
+          '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+          '#9966FF', '#FF9F40'
+        ][i % 6],
+        borderWidth: 1,
+        stack: 'stack0' // Add stack identifier for proper stacking
       }))
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index' as const,
+        intersect: false
+      },
       plugins: {
-        title: { display: true, text: title }
+        title: { 
+          display: true, 
+          text: title,
+          font: { size: 16, weight: 'bold' as const },
+          padding: 20
+        },
+        legend: {
+          display: true,
+          position: 'top' as const,
+          labels: { padding: 15, font: { size: 12 } }
+        },
+        tooltip: {
+          mode: 'index' as const,
+          intersect: false
+        }
       },
       scales: {
-        x: { stacked: true },
-        y: { stacked: true }
+        x: { 
+          grid: { display: false },
+          ticks: { font: { size: 11 } }
+        },
+        y: { 
+          beginAtZero: true,
+          stacked: true,
+          ticks: {
+            callback: function(value: any) {
+              return '$' + value.toLocaleString();
+            },
+            font: { size: 11 }
+          },
+          grid: { display: true, drawBorder: false }
+        }
       }
     }
   })
@@ -165,8 +299,8 @@ const functions = [
       properties: {
         chartType: {
           type: 'string',
-          enum: ['pie', 'bar', 'line', 'stacked', 'grouped'],
-          description: 'Type of chart to create. Use grouped bar for period comparisons.'
+          enum: ['pie', 'bar', 'line'],
+          description: 'Type of chart to create. Use bar with multiple datasets for comparisons and stacking.'
         },
         title: {
           type: 'string',
@@ -296,8 +430,10 @@ IMPORTANT INSTRUCTIONS:
 4. When creating charts:
    - Extract actual numeric values from the context
    - For Q1, sum Jan+Feb+Mar values
-   - For comparisons, use grouped bar charts
+   - For comparisons, use 'bar' type with multiple datasets (they will stack automatically)
    - Always show the actual numbers, never say "data not available" if it exists in context
+   - Use 'pie' for breakdown/composition, 'line' for trends, 'bar' for comparisons
+   - For pie charts, use a single dataset with one value per category in the data array
 
 5. NEVER say data is null without thoroughly checking the context structure
 
@@ -342,41 +478,86 @@ When providing insights, base them solely on the available data.`;
           // Handle new chart format with datasets
           if (functionArgs.datasets && functionArgs.labels) {
             // Multi-dataset chart (for comparisons)
+            // Determine if this should be stacked based on datasets length and context
+            const isStacked = functionArgs.datasets.length > 1 && functionArgs.stacked !== false;
+            
+            // Color palette for charts
+            const colorPalette = [
+              '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+              '#9966FF', '#FF9F40', '#FF6B9D', '#C44E52',
+              '#8DD3C7', '#FFFFB3', '#BEBADA', '#FB8072'
+            ];
+            
             chartConfig = {
-              type: functionArgs.chartType === 'grouped' ? 'bar' : functionArgs.chartType,
+              type: functionArgs.chartType === 'bar' || functionArgs.chartType === 'stacked' ? 'bar' : functionArgs.chartType,
               data: {
                 labels: functionArgs.labels,
-                datasets: functionArgs.datasets.map((ds: any, i: number) => ({
+                datasets: functionArgs.chartType === 'pie' ? [{
+                  // For pie charts, use a single dataset with colors for each data point
+                  data: functionArgs.datasets[0].data,
+                  backgroundColor: colorPalette.slice(0, functionArgs.datasets[0].data.length),
+                  borderColor: '#fff',
+                  borderWidth: 2
+                }] : functionArgs.datasets.map((ds: any, i: number) => ({
+                  // For other charts, each dataset gets one color
                   label: ds.label,
                   data: ds.data,
-                  backgroundColor: ds.backgroundColor || [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
-                  ][i % 5],
-                  borderColor: ds.borderColor || ds.backgroundColor || [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
-                  ][i % 5],
-                  borderWidth: 1
+                  backgroundColor: ds.backgroundColor || colorPalette[i % colorPalette.length],
+                  borderColor: ds.borderColor || ds.backgroundColor || colorPalette[i % colorPalette.length],
+                  borderWidth: 1,
+                  ...(isStacked && functionArgs.chartType === 'bar' ? { stack: 'stack0' } : {})
                 }))
               },
               options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                   title: { 
                     display: true, 
-                    text: functionArgs.title 
+                    text: functionArgs.title,
+                    font: {
+                      size: 16,
+                      weight: 'bold' as const
+                    },
+                    padding: 20
                   },
                   legend: { 
                     display: true,
-                    position: 'top' as const
+                    position: 'top' as const,
+                    labels: {
+                      padding: 15,
+                      font: {
+                        size: 12
+                      }
+                    }
                   }
                 },
                 scales: functionArgs.chartType !== 'pie' ? {
                   y: {
                     beginAtZero: true,
+                    stacked: isStacked && functionArgs.chartType === 'bar',
                     ticks: {
                       callback: function(value: any) {
                         return '$' + value.toLocaleString();
+                      },
+                      font: {
+                        size: 11
                       }
+                    },
+                    grid: {
+                      display: true,
+                      drawBorder: false
+                    }
+                  },
+                  x: {
+                    stacked: isStacked && functionArgs.chartType === 'bar',
+                    ticks: {
+                      font: {
+                        size: 11
+                      }
+                    },
+                    grid: {
+                      display: false
                     }
                   }
                 } : undefined

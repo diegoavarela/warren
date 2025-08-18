@@ -281,7 +281,9 @@ How can I help you analyze your financial performance today?`,
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-lg p-4 ${
+                className={`${
+                  message.chart ? 'w-full max-w-4xl' : 'max-w-[80%]'
+                } rounded-lg p-4 ${
                   message.role === 'user'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-900'
@@ -291,13 +293,19 @@ How can I help you analyze your financial performance today?`,
                 
                 {/* Render chart if present */}
                 {message.chart && (
-                  <div className="mt-4 bg-white rounded-lg p-4">
-                    <Chart
-                      type={message.chart.type}
-                      data={message.chart.data}
-                      options={message.chart.options}
-                      height={300}
-                    />
+                  <div className="mt-4 bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+                    <div className="w-full" style={{ minHeight: '400px' }}>
+                      <Chart
+                        type={message.chart.type}
+                        data={message.chart.data}
+                        options={{
+                          ...message.chart.options,
+                          maintainAspectRatio: false,
+                          responsive: true
+                        }}
+                        height={400}
+                      />
+                    </div>
                   </div>
                 )}
                 
