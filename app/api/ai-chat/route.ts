@@ -185,6 +185,16 @@ const functions = [
         },
         series: {
           type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              data: {
+                type: 'array',
+                items: { type: 'number' }
+              }
+            }
+          },
           description: 'For stacked charts, multiple data series'
         }
       },
@@ -290,7 +300,7 @@ When providing insights, base them solely on the available data.`;
 
     // Call OpenAI with function calling
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-4-0613', // Using stable model with function calling support
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
@@ -376,6 +386,23 @@ When providing insights, base them solely on the available data.`;
 
   } catch (error) {
     console.error('❌ [AI Chat] Error:', error);
+    
+    // Check if it's an OpenAI API error
+    if (error instanceof Error && error.message.includes('API key')) {
+      return NextResponse.json({
+        error: 'OpenAI API key issue. Please check your API key configuration.',
+        details: error.message
+      }, { status: 500 });
+    }
+    
+    // Check if it's a rate limit error
+    if (error instanceof Error && error.message.includes('rate limit')) {
+      return NextResponse.json({
+        error: 'OpenAI rate limit exceeded. Please try again in a moment.',
+        details: error.message
+      }, { status: 429 });
+    }
+    
     return NextResponse.json({
       error: 'Failed to process chat message',
       details: error instanceof Error ? error.message : 'Unknown error'
