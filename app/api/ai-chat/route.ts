@@ -159,95 +159,69 @@ function generateSmartQuestions(context: any): string[] {
 const functions = [
   {
     name: 'create_chart',
-    description: 'Create a chart visualization from financial data',
+    description: 'Create a chart visualization from financial data. Use this for comparisons, trends, and breakdowns.',
     parameters: {
       type: 'object',
       properties: {
         chartType: {
           type: 'string',
-          enum: ['pie', 'bar', 'line', 'stacked'],
-          description: 'Type of chart to create'
+          enum: ['pie', 'bar', 'line', 'stacked', 'grouped'],
+          description: 'Type of chart to create. Use grouped bar for period comparisons.'
         },
         title: {
           type: 'string',
           description: 'Chart title'
         },
-        data: {
+        labels: {
           type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              label: { type: 'string' },
-              value: { type: 'number' }
-            }
-          },
-          description: 'Data points for the chart'
+          items: { type: 'string' },
+          description: 'X-axis labels (e.g., periods or categories)'
         },
-        series: {
+        datasets: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              name: { type: 'string' },
+              label: { type: 'string', description: 'Dataset name (e.g., Revenue, Expenses)' },
               data: {
                 type: 'array',
-                items: { type: 'number' }
-              }
-            }
+                items: { type: 'number' },
+                description: 'Numeric values for each label'
+              },
+              backgroundColor: { type: 'string', description: 'Color for this dataset' }
+            },
+            required: ['label', 'data']
           },
-          description: 'For stacked charts, multiple data series'
+          description: 'One or more datasets to display'
         }
       },
-      required: ['chartType', 'title', 'data']
-    }
-  },
-  {
-    name: 'show_comparison',
-    description: 'Show a comparison between periods or metrics',
-    parameters: {
-      type: 'object',
-      properties: {
-        type: {
-          type: 'string',
-          enum: ['period', 'metric', 'category'],
-          description: 'Type of comparison'
-        },
-        items: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Items to compare'
-        },
-        metrics: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Metrics to compare'
-        },
-        data: {
-          type: 'object',
-          description: 'Comparison data'
-        }
-      },
-      required: ['type', 'items', 'data']
+      required: ['chartType', 'title', 'labels', 'datasets']
     }
   },
   {
     name: 'provide_insight',
-    description: 'Provide a financial insight or analysis',
+    description: 'Provide a financial insight or analysis with specific numbers',
     parameters: {
       type: 'object',
       properties: {
         insight: {
           type: 'string',
-          description: 'The financial insight'
+          description: 'The financial insight with specific values and percentages'
         },
         supporting_data: {
           type: 'object',
-          description: 'Supporting data for the insight'
+          description: 'Supporting data for the insight',
+          properties: {
+            current_period: { type: 'object' },
+            previous_period: { type: 'object' },
+            change_percentage: { type: 'number' },
+            key_metrics: { type: 'object' }
+          }
         },
         recommendations: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Actionable recommendations'
+          description: 'Actionable recommendations based on the data'
         }
       },
       required: ['insight', 'supporting_data']
@@ -291,10 +265,15 @@ Available Data:
 - Cash Flow Available: ${context.cashflow.available}
 - Cash Flow Periods: ${context.cashflow.periods.join(', ')}
 
-When using the show_comparison function:
-- Always populate the 'data' field with actual comparison values
-- Include specific metric values for each period being compared
-- Calculate percentage changes where appropriate
+IMPORTANT INSTRUCTIONS FOR COMPARISONS:
+When asked to compare periods or metrics:
+1. Use the create_chart function with type 'bar' or 'line' to show the comparison visually
+2. Include all relevant data points from the context
+3. For period comparisons, show key metrics like revenue, gross profit, expenses, net income
+4. Always use actual values from the Financial Data Context provided
+5. If data is not available for a requested period, state this clearly
+
+Example: For "Compare May 2025 vs Apr 2025", create a bar chart with both periods showing revenue, expenses, and net income
 
 Financial Data Context:
 ${JSON.stringify(context, null, 2)}
@@ -323,7 +302,6 @@ When providing insights, base them solely on the available data.`;
     
     // Process tool calls if any (new format)
     let chartConfig = null;
-    let comparison = null;
     let insight = null;
     
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
@@ -335,37 +313,72 @@ When providing insights, base them solely on the available data.`;
       
       switch (functionName) {
         case 'create_chart':
-          // Generate appropriate chart configuration
-          if (functionArgs.chartType === 'pie') {
-            chartConfig = chartFunctions.generatePieChart(
-              functionArgs.data,
-              functionArgs.title
-            );
-          } else if (functionArgs.chartType === 'bar') {
-            chartConfig = chartFunctions.generateBarChart(
-              functionArgs.data,
-              functionArgs.title,
-              'Period',
-              'Amount'
-            );
-          } else if (functionArgs.chartType === 'line') {
-            chartConfig = chartFunctions.generateLineChart(
-              functionArgs.data,
-              functionArgs.title,
-              'Period',
-              'Value'
-            );
-          } else if (functionArgs.chartType === 'stacked' && functionArgs.series) {
-            chartConfig = chartFunctions.generateStackedChart(
-              functionArgs.data.map((d: any) => d.label),
-              functionArgs.series,
-              functionArgs.title
-            );
+          // Handle new chart format with datasets
+          if (functionArgs.datasets && functionArgs.labels) {
+            // Multi-dataset chart (for comparisons)
+            chartConfig = {
+              type: functionArgs.chartType === 'grouped' ? 'bar' : functionArgs.chartType,
+              data: {
+                labels: functionArgs.labels,
+                datasets: functionArgs.datasets.map((ds: any, i: number) => ({
+                  label: ds.label,
+                  data: ds.data,
+                  backgroundColor: ds.backgroundColor || [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
+                  ][i % 5],
+                  borderColor: ds.borderColor || ds.backgroundColor || [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
+                  ][i % 5],
+                  borderWidth: 1
+                }))
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  title: { 
+                    display: true, 
+                    text: functionArgs.title 
+                  },
+                  legend: { 
+                    display: true,
+                    position: 'top' as const
+                  }
+                },
+                scales: functionArgs.chartType !== 'pie' ? {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: function(value: any) {
+                        return '$' + value.toLocaleString();
+                      }
+                    }
+                  }
+                } : undefined
+              }
+            };
+          } else if (functionArgs.data) {
+            // Legacy single dataset format
+            if (functionArgs.chartType === 'pie') {
+              chartConfig = chartFunctions.generatePieChart(
+                functionArgs.data,
+                functionArgs.title
+              );
+            } else if (functionArgs.chartType === 'bar') {
+              chartConfig = chartFunctions.generateBarChart(
+                functionArgs.data,
+                functionArgs.title,
+                'Period',
+                'Amount'
+              );
+            } else if (functionArgs.chartType === 'line') {
+              chartConfig = chartFunctions.generateLineChart(
+                functionArgs.data,
+                functionArgs.title,
+                'Period',
+                'Value'
+              );
+            }
           }
-          break;
-          
-        case 'show_comparison':
-          comparison = functionArgs;
           break;
           
         case 'provide_insight':
@@ -378,9 +391,8 @@ When providing insights, base them solely on the available data.`;
     const suggestions = generateSmartQuestions(context);
 
     const response = {
-      message: responseMessage.content || 'Here is your analysis:', // Tool calls may not have content
+      message: responseMessage.content || (chartConfig ? 'Here is your chart:' : 'Here is your analysis:'),
       chart: chartConfig,
-      comparison: comparison,
       insight: insight,
       suggestions: suggestions,
       metadata: {
