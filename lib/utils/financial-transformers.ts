@@ -372,6 +372,10 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const operatingExpenses = getValueForPeriod(dataRows?.totalOpex, index);
     const netIncome = getValueForPeriod(dataRows?.netIncome, index);
     const taxes = getValueForPeriod(dataRows?.taxes, index);
+    if (index === 0) {
+      console.log('🏛️ [TAXES DEBUG] dataRows.taxes:', dataRows?.taxes);
+      console.log('🏛️ [TAXES DEBUG] Period 0 taxes value:', taxes);
+    }
     const ebitda = getValueForPeriod(dataRows?.ebitda, index);
     const earningsBeforeTaxes = getValueForPeriod(dataRows?.earningsBeforeTaxes, index);
     const grossMarginFromData = getValueForPeriod(dataRows?.grossMargin, index);
@@ -495,6 +499,8 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   const ytdOperatingExpenses = ytdPeriods.reduce((sum, p) => sum + p.operatingExpenses, 0);
   const ytdNetIncome = ytdPeriods.reduce((sum, p) => sum + p.netIncome, 0);
   const ytdTaxes = ytdPeriods.reduce((sum, p) => sum + p.taxes, 0);
+  console.log('🏛️ [YTD TAXES] Individual period taxes:', ytdPeriods.map(p => ({ period: p.month, taxes: p.taxes })));
+  console.log('🏛️ [YTD TAXES] Total YTD taxes:', ytdTaxes);
   const ytdEbitda = ytdPeriods.reduce((sum, p) => sum + p.ebitda, 0);
   const ytdOperatingIncome = ytdGrossProfit - ytdOperatingExpenses;
   
