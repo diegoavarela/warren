@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Settings, Database, Layers, Calendar, Code, Copy, Download, Eye, HelpCircle, ChevronDown, ChevronRight, Code2, Check, X, Edit, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Save, Settings, Database, Layers, Calendar, Code, Copy, Download, Eye, HelpCircle, ChevronDown, ChevronRight, Code2, Check, X, Edit, FileSpreadsheet, TrendingUp, DollarSign } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppLayout } from '@/components/AppLayout';
 import { DataRowsEditor } from '@/components/configuration/DataRowsEditor';
@@ -786,6 +786,13 @@ export default function EditConfigurationPage() {
       console.log('✅ Configuration saved successfully:', result);
       
       toast.success(t('config.success.updated'));
+      
+      // Show dashboard link suggestion
+      const dashboardType = formData.type === 'cashflow' ? 'cashflow' : 'pnl';
+      const dashboardName = formData.type === 'cashflow' ? 'Cash Flow' : 'P&L';
+      setTimeout(() => {
+        toast.info(`Configuration ready! You can now view the ${dashboardName} Dashboard`, 'Dashboard Available');
+      }, 500);
       
       // PHASE 4: Reset unsaved changes tracking after successful save
       setLastSavedAt(new Date());
@@ -1573,6 +1580,21 @@ export default function EditConfigurationPage() {
                 >
                   {saving || isAutoSaving ? 'Guardando...' : 'Guardar y Salir'}
                 </Button>
+                
+                {/* Show View Dashboard button if configuration is saved and has a type */}
+                {!hasUnsavedChanges && configuration && formData.type && (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const dashboardType = formData.type === 'cashflow' ? 'cashflow' : 'pnl';
+                      router.push(`/dashboard/company-admin/${dashboardType}`);
+                    }}
+                    leftIcon={formData.type === 'cashflow' ? <TrendingUp className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Ver Dashboard {formData.type === 'cashflow' ? 'Cash Flow' : 'P&L'}
+                  </Button>
+                )}
               </div>
             </div>
           </form>
