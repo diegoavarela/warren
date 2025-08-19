@@ -197,11 +197,16 @@ export function PeriodMappingEditor({
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
     
-    // Filter out voided columns
-    const activeColumns = columns.filter(col => !voidedColumns.has(col));
+    // IMPORTANT: For auto-detect, we should analyze ALL columns, not just active ones
+    // We'll determine which to void based on the data
+    const allColumns = columns;
+    
+    // Clear voided columns for fresh detection
+    setVoidedColumns(new Set());
     
     // Try to get actual header values from Excel data
     let autoMapping: PeriodMapping[] = [];
+    let columnsToVoid = new Set<string>();
     
     // Check if we have Excel data with headers
     if (excelData?.preview?.rowData && excelData.preview.rowData.length > 0) {
@@ -214,13 +219,18 @@ export function PeriodMappingEditor({
         const detectedPeriods: PeriodMapping[] = [];
         let hasValidDates = false;
         
-        activeColumns.forEach((column) => {
+        allColumns.forEach((column) => {
           // Get the actual column index from the column letter
           const actualColIndex = columns.indexOf(column);
           if (actualColIndex === -1) return;
           
           const cellValue = row[actualColIndex];
-          if (!cellValue) return;
+          
+          // If no value, mark for potential exclusion (but we'll check data rows later)
+          if (!cellValue) {
+            columnsToVoid.add(column);
+            return;
+          }
           
           const cellStr = String(cellValue).trim();
           
@@ -317,7 +327,7 @@ export function PeriodMappingEditor({
         });
         
         // If we found valid dates in this row, use them
-        if (hasValidDates && detectedPeriods.length >= activeColumns.length * 0.5) {
+        if (hasValidDates && detectedPeriods.length > 0) {
           autoMapping = detectedPeriods;
           console.log('✅ [AUTO-DETECT] Found date patterns in row:', detectedPeriods);
           break;
@@ -325,13 +335,45 @@ export function PeriodMappingEditor({
       }
     }
     
+    // Now let's check which columns actually have data
+    // Look at more rows to determine which columns have financial data
+    if (excelData?.preview?.rowData && excelData.preview.rowData.length > 5) {
+      const dataRows = excelData.preview.rowData.slice(5, Math.min(20, excelData.preview.rowData.length));
+      
+      // Check each column for numeric data
+      const columnsWithData = new Set<string>();
+      allColumns.forEach((column) => {
+        const colIndex = columns.indexOf(column);
+        let hasNumericData = false;
+        
+        for (const row of dataRows) {
+          const value = row[colIndex];
+          if (value && (typeof value === 'number' || !isNaN(Number(String(value).replace(/[,$]/g, ''))))) {
+            hasNumericData = true;
+            break;
+          }
+        }
+        
+        if (hasNumericData) {
+          columnsWithData.add(column);
+          // Remove from void list if it has data
+          columnsToVoid.delete(column);
+        }
+      });
+      
+      console.log('📊 [AUTO-DETECT] Columns with numeric data:', Array.from(columnsWithData));
+    }
+    
     // If we couldn't detect from headers, fall back to intelligent defaults
     if (autoMapping.length === 0) {
       console.log('⚠️ [AUTO-DETECT] No date patterns found, using intelligent defaults');
       
-      if (activeColumns.length === 12) {
+      // Only map columns that aren't marked for voiding
+      const columnsToMap = allColumns.filter(col => !columnsToVoid.has(col));
+      
+      if (columnsToMap.length === 12) {
         // Most likely monthly data for current year
-        autoMapping = activeColumns.map((column, index) => ({
+        autoMapping = columnsToMap.map((column, index) => ({
           column,
           period: {
             type: 'month' as const,
@@ -340,9 +382,9 @@ export function PeriodMappingEditor({
             label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][index % 12]} ${currentYear}`
           }
         }));
-      } else if (activeColumns.length === 24) {
+      } else if (columnsToMap.length === 24) {
         // Likely 2 years of monthly data
-        autoMapping = activeColumns.map((column, index) => {
+        autoMapping = columnsToMap.map((column, index) => {
           const monthIndex = index % 12;
           const yearOffset = Math.floor(index / 12);
           return {
@@ -355,9 +397,9 @@ export function PeriodMappingEditor({
             }
           };
         });
-      } else if (activeColumns.length === 4 || activeColumns.length === 8) {
+      } else if (columnsToMap.length === 4 || columnsToMap.length === 8) {
         // Likely quarterly data
-        autoMapping = activeColumns.map((column, index) => {
+        autoMapping = columnsToMap.map((column, index) => {
           const quarterIndex = index % 4;
           const yearOffset = Math.floor(index / 4);
           return {
@@ -372,7 +414,7 @@ export function PeriodMappingEditor({
         });
       } else {
         // Default to monthly starting from current month
-        autoMapping = activeColumns.map((column, index) => {
+        autoMapping = columnsToMap.map((column, index) => {
           const totalMonths = currentMonth - 1 + index;
           const yearOffset = Math.floor(totalMonths / 12);
           const monthIndex = totalMonths % 12;
@@ -389,7 +431,21 @@ export function PeriodMappingEditor({
       }
     }
     
+    // For columns that weren't mapped, add them to voided set
+    const mappedColumns = new Set(autoMapping.map(m => m.column));
+    allColumns.forEach(col => {
+      if (!mappedColumns.has(col)) {
+        columnsToVoid.add(col);
+      }
+    });
+    
     console.log('🎯 Auto-detected period mapping:', autoMapping);
+    console.log('❌ Columns to void:', Array.from(columnsToVoid));
+    
+    // Set the voided columns
+    setVoidedColumns(columnsToVoid);
+    
+    // Set the mapping
     onChange(autoMapping);
     validateMapping(autoMapping);
   };
@@ -436,6 +492,31 @@ export function PeriodMappingEditor({
     }
   }, [currentMapping]);
 
+  // Helper functions for bulk operations
+  const selectAllColumns = () => {
+    setVoidedColumns(new Set());
+    // Create mapping for all columns
+    const allMapping = columns.map((column, index) => {
+      const monthIndex = index % 12;
+      const yearOffset = Math.floor(index / 12);
+      return {
+        column,
+        period: {
+          type: 'month' as const,
+          year: new Date().getFullYear() + yearOffset,
+          month: monthIndex + 1,
+          label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][monthIndex]} ${new Date().getFullYear() + yearOffset}`
+        }
+      };
+    });
+    onChange(allMapping);
+  };
+
+  const deselectAllColumns = () => {
+    setVoidedColumns(new Set(columns));
+    onChange([]);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -449,14 +530,32 @@ export function PeriodMappingEditor({
               {t('periodMapping.description')}
             </CardDescription>
           </div>
-          <button
-            type="button"
-            onClick={autoDetectPeriods}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg whitespace-nowrap rounded-lg font-medium transition-colors"
-          >
-            <Wand2 className="h-4 w-4" />
-            {t('periodMapping.autoDetect')}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={selectAllColumns}
+              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+              title="Include all columns"
+            >
+              Select All
+            </button>
+            <button
+              type="button"
+              onClick={deselectAllColumns}
+              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+              title="Exclude all columns"
+            >
+              Deselect All
+            </button>
+            <button
+              type="button"
+              onClick={autoDetectPeriods}
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg whitespace-nowrap rounded-lg font-medium transition-colors"
+            >
+              <Wand2 className="h-4 w-4" />
+              {t('periodMapping.autoDetect')}
+            </button>
+          </div>
         </div>
       </CardHeader>
       
