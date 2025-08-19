@@ -149,19 +149,19 @@ export function HeatmapChart({
       convertedValue = currencyService.convertValue(value, originalCurrency, currency);
     }
     
+    // Note: The value passed here should already be in the correct units
+    // This is just for display formatting with suffixes
     let suffix = '';
     
-    // Data is stored in thousands in the file
+    // Apply display units suffix based on displayUnits setting
     if (displayUnits === 'K') {
-      // Show as-is with K suffix (data already in thousands)
       suffix = 'K';
     } else if (displayUnits === 'M') {
-      // Convert thousands to millions: divide by 1000
-      convertedValue = convertedValue / 1000;
       suffix = 'M';
-    } else if (displayUnits === 'normal') {
-      // Convert thousands to normal: multiply by 1000
-      convertedValue = convertedValue * 1000;
+    } else if (displayUnits === 'normal' && Math.abs(convertedValue) >= 1000000) {
+      // Auto-scale to millions for readability
+      convertedValue = convertedValue / 1000000;
+      suffix = 'M';
     }
     
     const formatted = new Intl.NumberFormat('es-MX', {
@@ -206,7 +206,7 @@ export function HeatmapChart({
             >
               <div className={`text-center ${textClass}`}>
                 <div className="text-xs font-medium mb-2">{item.month}</div>
-                <div className="text-xs font-bold leading-tight break-words">{formatValue(item.value)}</div>
+                <div className="text-xs font-bold leading-tight break-words">{item.label || formatValue(item.value)}</div>
               </div>
               {isExcluded && (
                 <div className="absolute inset-0 flex items-center justify-center">

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle } from '@/components/ui/Card';
 import { AIChat } from '@/components/dashboard/AIChat';
 import { ArrowLeftIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
+import { GlobalHelpButton } from '@/components/SuperCoolHelpIcon';
 import { ROLES } from '@/lib/auth/rbac';
 
 interface Company {
@@ -113,7 +114,7 @@ function FinancialChatPage() {
 
   return (
     <AppLayout showFooter={false}>
-      <div className="h-screen flex flex-col">
+      <div className="h-[calc(100vh-4rem)] flex flex-col">
         {/* Compact Header */}
         <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
@@ -130,7 +131,7 @@ function FinancialChatPage() {
                 <ChatBubbleBottomCenterTextIcon className="w-6 h-6 text-purple-600 mr-2" />
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">
-                    {locale?.startsWith('es') ? 'Chat Financiero con IA' : 'AI Financial Chat'}
+                    {locale?.startsWith('es') ? 'Analista Financiero IA' : 'AI Financial Analyst'}
                   </h1>
                   <p className="text-sm text-gray-600">
                     {selectedCompany.name} • {locale?.startsWith('es') ? 'Chat inteligente para análisis financiero' : 'Intelligent chat for financial analysis'}
@@ -161,8 +162,11 @@ function FinancialChatPage() {
                     router.push('/dashboard/company-admin/pnl');
                   }}
                   className="text-xs"
+                  title={locale?.startsWith('es') 
+                    ? 'Ver análisis de ingresos, gastos y rentabilidad' 
+                    : 'View revenue, expenses, and profitability analysis'}
                 >
-                  {locale?.startsWith('es') ? 'P&L' : 'P&L'}
+                  {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
                 </Button>
                 <Button
                   variant="outline"
@@ -172,8 +176,11 @@ function FinancialChatPage() {
                     router.push('/dashboard/company-admin/cashflow');
                   }}
                   className="text-xs"
+                  title={locale?.startsWith('es') 
+                    ? 'Ver análisis de flujo de efectivo y proyecciones' 
+                    : 'View cash flow analysis and projections'}
                 >
-                  {locale?.startsWith('es') ? 'Cash Flow' : 'Cash Flow'}
+                  {locale?.startsWith('es') ? 'Ver Flujo de Caja' : 'View Cash Flow'}
                 </Button>
                 <Button
                   variant="outline"
@@ -183,9 +190,17 @@ function FinancialChatPage() {
                     router.push('/upload');
                   }}
                   className="text-xs"
+                  title={locale?.startsWith('es') 
+                    ? 'Subir nuevos datos financieros' 
+                    : 'Upload new financial data'}
                 >
-                  {locale?.startsWith('es') ? 'Subir' : 'Upload'}
+                  {locale?.startsWith('es') ? 'Subir Datos' : 'Upload Data'}
                 </Button>
+                
+                {/* Super Cool Help Button */}
+                <div className="ml-2">
+                  <GlobalHelpButton />
+                </div>
               </div>
             </div>
           </div>

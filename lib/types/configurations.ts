@@ -35,6 +35,9 @@ export interface CashFlowStructure {
   // NEW: Explicit period mapping
   periodMapping?: PeriodMapping[]; // Optional for backward compatibility
   
+  // NEW: Actual vs Projected period distinction
+  lastActualPeriod?: PeriodDefinition; // Which period is the last "actual" one (all subsequent are projected)
+  
   // Core data rows - required fields
   dataRows: {
     initialBalance: number;
@@ -447,6 +450,13 @@ export interface ProcessedData {
   dataRows: Record<string, ProcessedDataRow>;
   categories: Record<string, Record<string, ProcessedDataCategory>>;
   metadata: ConfigurationMetadata;
+  // NEW: Period metadata for actual vs projected distinction
+  periodMetadata?: {
+    [periodLabel: string]: {
+      isActual: boolean;
+      isProjected: boolean;
+    };
+  };
 }
 
 export interface ExcelProcessingResult {

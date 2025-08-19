@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/badge';
 import {
   UserGroupIcon,
   DocumentDuplicateIcon,
@@ -585,109 +586,172 @@ function CompanyAdminDashboard() {
                   </div>
 
 
-                  {/* Primary Action Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* P&L Dashboard */}
-                    <Button
-                      variant={pnlStatements.length > 0 ? "primary" : "secondary"}
-                      onClick={() => {
-                        sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                        router.push('/dashboard/company-admin/pnl');
-                      }}
-                      disabled={pnlStatements.length === 0}
-                      className={`h-20 flex flex-col justify-center ${
-                        pnlStatements.length > 0 
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                          : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <ChartBarIcon className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">
-                        {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
-                      </span>
-                    </Button>
-
-                    {/* Cash Flow Dashboard */}
-                    <Button
-                      variant={(cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? "primary" : "secondary"}
-                      onClick={() => {
-                        sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                        router.push('/dashboard/company-admin/cashflow');
-                      }}
-                      disabled={cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode}
-                      className={`h-20 flex flex-col justify-center ${
-                        (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
-                          ? 'bg-green-600 hover:bg-green-700 text-white' 
-                          : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <BanknotesIcon className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">
-                        {locale?.startsWith('es') ? 'Ver Cash Flow' : 'View Cash Flow'}
-                      </span>
-                    </Button>
-
-                    {/* Configurations */}
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                        router.push('/dashboard/company-admin/configurations');
-                      }}
-                      className="h-20 flex flex-col justify-center bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
-                    >
-                      <CogIcon className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">
-                        {locale?.startsWith('es') ? 'Configuraciones' : 'Configurations'}
-                      </span>
-                    </Button>
-
-                    {/* Upload Data */}
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                        router.push('/dashboard/company-admin/upload-data');
-                      }}
-                      className="h-20 flex flex-col justify-center bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-                    >
-                      <CloudArrowUpIcon className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">
-                        {locale?.startsWith('es') ? 'Subir Datos' : 'Upload Data'}
-                      </span>
-                    </Button>
-                  </div>
-
-                  {/* Configuration Summary */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <CogIcon className="w-6 h-6 text-purple-600" />
-                        <div>
-                          <h3 className="text-base font-semibold text-gray-900">
-                            {locale?.startsWith('es') ? 'Configuraciones Activas' : 'Active Configurations'}
+                  {/* Primary Action Grid with Enhanced Descriptions */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* P&L Dashboard Card */}
+                    <div className={`border rounded-lg p-4 ${
+                      pnlStatements.length > 0 ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'
+                    }`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <ChartBarIcon className={`w-6 h-6 ${
+                            pnlStatements.length > 0 ? 'text-blue-600' : 'text-gray-400'
+                          }`} />
+                          <h3 className="font-semibold text-gray-900">
+                            {locale?.startsWith('es') ? 'Estado de Resultados (P&L)' : 'Profit & Loss Statement'}
                           </h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {configurations.length} {locale?.startsWith('es') ? 'configuraciones totales,' : 'total configurations,'} {configurations.filter(c => c.isActive).length} {locale?.startsWith('es') ? 'activas' : 'active'}
-                          </p>
+                        </div>
+                        {pnlStatements.length > 0 && (
+                          <Badge className="bg-green-100 text-green-700">
+                            {locale?.startsWith('es') ? 'Disponible' : 'Available'}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-3">
+                        {locale?.startsWith('es') 
+                          ? 'Rastrea ingresos, gastos y rentabilidad'
+                          : 'Tracks revenue, expenses, and profitability'}
+                      </p>
+                      
+                      <div className="space-y-1 mb-4">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Análisis de ingresos y tendencias' : 'Revenue analysis and trends'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Desglose de gastos operativos' : 'Operating expenses breakdown'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Márgenes y métricas de rentabilidad' : 'Margins and profitability metrics'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Comparaciones YTD y período' : 'YTD and period comparisons'}</span>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-6">
-                        {/* P&L Config Count */}
-                        <div className="text-center">
-                          <div className="text-lg font-semibold text-blue-600">
-                            {configurations.filter(c => c.type === 'pnl').length}
-                          </div>
-                          <div className="text-xs text-gray-500">P&L</div>
+                      <Button
+                        variant={pnlStatements.length > 0 ? "primary" : "secondary"}
+                        onClick={() => {
+                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                          router.push('/dashboard/company-admin/pnl');
+                        }}
+                        disabled={pnlStatements.length === 0}
+                        className={`w-full ${
+                          pnlStatements.length > 0 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {locale?.startsWith('es') ? 'Ver Dashboard P&L' : 'View P&L Dashboard'}
+                      </Button>
+                    </div>
+
+                    {/* Cash Flow Dashboard Card */}
+                    <div className={`border rounded-lg p-4 ${
+                      (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) 
+                        ? 'border-green-200 bg-green-50' 
+                        : 'border-gray-200 bg-gray-50'
+                    }`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <BanknotesIcon className={`w-6 h-6 ${
+                            (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
+                              ? 'text-green-600' 
+                              : 'text-gray-400'
+                          }`} />
+                          <h3 className="font-semibold text-gray-900">
+                            {locale?.startsWith('es') ? 'Flujo de Caja' : 'Cash Flow'}
+                          </h3>
                         </div>
-                        
-                        {/* Cash Flow Config Count */}
-                        <div className="text-center">
-                          <div className="text-lg font-semibold text-green-600">
-                            {configurations.filter(c => c.type === 'cashflow').length}
+                        {(cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) && (
+                          <Badge className="bg-green-100 text-green-700">
+                            {locale?.startsWith('es') ? 'Disponible' : 'Available'}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-3">
+                        {locale?.startsWith('es') 
+                          ? 'Análisis de entradas, salidas y posición de efectivo'
+                          : 'Analysis of inflows, outflows, and cash position'}
+                      </p>
+                      
+                      <div className="space-y-1 mb-4">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Movimientos de efectivo detallados' : 'Detailed cash movements'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Análisis de runway y burn rate' : 'Runway and burn rate analysis'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Proyecciones y forecasting' : 'Projections and forecasting'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Planificación de escenarios' : 'Scenario planning'}</span>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        variant={(cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? "primary" : "secondary"}
+                        onClick={() => {
+                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                          router.push('/dashboard/company-admin/cashflow');
+                        }}
+                        disabled={cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode}
+                        className={`w-full ${
+                          (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {locale?.startsWith('es') ? 'Ver Dashboard Flujo de Caja' : 'View Cash Flow Dashboard'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Configurations and Actions Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                    {/* Configuration Summary - Left Half */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col justify-between min-h-[140px]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-4">
+                          <CogIcon className="w-6 h-6 text-purple-600" />
+                          <div>
+                            <h3 className="text-base font-semibold text-gray-900">
+                              {locale?.startsWith('es') ? 'Configuraciones Activas' : 'Active Configurations'}
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {configurations.length} {locale?.startsWith('es') ? 'configuraciones totales,' : 'total configurations,'} {configurations.filter(c => c.isActive).length} {locale?.startsWith('es') ? 'activas' : 'active'}
+                            </p>
                           </div>
-                          <div className="text-xs text-gray-500">CF</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-6">
+                          {/* P&L Config Count */}
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-blue-600">
+                              {configurations.filter(c => c.type === 'pnl').length}
+                            </div>
+                            <div className="text-xs text-gray-500">P&L</div>
+                          </div>
+                          
+                          {/* Cash Flow Config Count */}
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-green-600">
+                              {configurations.filter(c => c.type === 'cashflow').length}
+                            </div>
+                            <div className="text-xs text-gray-500">CF</div>
+                          </div>
                         </div>
                         
                         {/* New Configuration Button */}
@@ -703,6 +767,39 @@ function CompanyAdminDashboard() {
                           {locale?.startsWith('es') ? 'Nueva' : 'New'}
                         </Button>
                       </div>
+                    </div>
+
+                    {/* Actions Grid - Right Half */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[140px]">
+                      {/* Configurations */}
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                          router.push('/dashboard/company-admin/configurations');
+                        }}
+                        className="h-full flex flex-col justify-center bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                      >
+                        <CogIcon className="w-6 h-6 mb-1" />
+                        <span className="text-sm font-medium">
+                          {locale?.startsWith('es') ? 'Configuraciones' : 'Configurations'}
+                        </span>
+                      </Button>
+
+                      {/* Upload Data */}
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                          router.push('/dashboard/company-admin/upload-data');
+                        }}
+                        className="h-full flex flex-col justify-center bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                      >
+                        <CloudArrowUpIcon className="w-6 h-6 mb-1" />
+                        <span className="text-sm font-medium">
+                          {locale?.startsWith('es') ? 'Subir Datos' : 'Upload Data'}
+                        </span>
+                      </Button>
                     </div>
                   </div>
                 </div>

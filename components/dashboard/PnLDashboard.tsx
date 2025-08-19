@@ -20,6 +20,7 @@ import { transformToPnLData } from '@/lib/utils/financial-transformers';
 import { filterValidPeriods, sortPeriods } from '@/lib/utils/period-utils';
 import { PnLData as PnLDataType } from '@/types/financial';
 import { HelpIcon } from '../HelpIcon';
+import { SuperCoolHelpIcon, WidgetHelpButton } from '../SuperCoolHelpIcon';
 import { helpTopics } from '@/lib/help-content';
 import { useTranslation } from '@/lib/translations';
 import { 
@@ -624,34 +625,61 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     let actualValue = value;
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
     
-    // Apply display units conversion
+    // First, normalize the value to base units based on what unit the data comes in (originalUnits)
+    let normalizedValue = convertedValue;
+    
+    // Debug logging for unit conversion
+    if (value > 1000000) { // Only log for larger values to avoid spam
+      console.log('💰 Unit Conversion Debug:', {
+        originalValue: value,
+        originalUnits,
+        displayUnits,
+        convertedCurrency: convertedValue,
+        willNormalize: originalUnits === 'thousands' || originalUnits === 'millions'
+      });
+    }
+    
+    if (originalUnits === 'thousands') {
+      normalizedValue = convertedValue * 1000; // Convert from thousands to normal
+    } else if (originalUnits === 'millions') {
+      normalizedValue = convertedValue * 1000000; // Convert from millions to normal
+    }
+    // If originalUnits is 'normal' or 'units', no conversion needed
+    
+    // Now apply the display units conversion from the normalized value
+    let displayValue = normalizedValue;
     let suffix = '';
+    
     if (displayUnits === 'K') {
-      // Show as-is with K suffix (data already in thousands)
+      // Convert to thousands
+      displayValue = normalizedValue / 1000;
       suffix = 'K';
     } else if (displayUnits === 'M') {
-      // Convert thousands to millions: divide by 1000
-      convertedValue = convertedValue / 1000;
+      // Convert to millions
+      displayValue = normalizedValue / 1000000;
       suffix = 'M';
     } else if (displayUnits === 'normal') {
-      // Convert thousands to normal: multiply by 1000
-      convertedValue = convertedValue * 1000;
+      // Keep as normal (base units)
+      displayValue = normalizedValue;
     }
     
     // Handle very large numbers by auto-scaling
-    if (displayUnits === 'normal' && Math.abs(convertedValue) >= 1000000000) {
+    if (displayUnits === 'normal' && Math.abs(displayValue) >= 1000000000) {
       // Auto-scale to billions
-      convertedValue = convertedValue / 1000000000;
+      displayValue = displayValue / 1000000000;
       suffix = 'B';
-    } else if (displayUnits === 'normal' && Math.abs(convertedValue) >= 1000000) {
+    } else if (displayUnits === 'normal' && Math.abs(displayValue) >= 1000000) {
       // Auto-scale to millions
-      convertedValue = convertedValue / 1000000;
+      displayValue = displayValue / 1000000;
       suffix = 'M';
-    } else if (displayUnits === 'K' && Math.abs(convertedValue) >= 1000000) {
-      // Auto-scale K to M
-      convertedValue = convertedValue / 1000;
-      suffix = 'M';
+    } else if (displayUnits === 'K' && Math.abs(displayValue) >= 1000000) {
+      // Auto-scale K to B (thousands to billions)
+      displayValue = displayValue / 1000000;
+      suffix = 'B';
     }
+    
+    // Use displayValue for the final formatting
+    convertedValue = displayValue;
     
     // Get the currency symbol from our supported currencies
     const currencyInfo = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency);
@@ -1146,7 +1174,13 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                   {t('dashboard.pnl.revenueSection')} - {getCurrentPeriodDisplay()}
                 </h3>
               </div>
-              <HelpIcon topic={helpTopics['dashboard.revenue']} size="sm" />
+              <SuperCoolHelpIcon 
+                topic="dashboard.revenue" 
+                context={{ widget: 'revenue-analysis', page: 'pnl-dashboard' }}
+                size="sm" 
+                variant="enhanced"
+                showQuickTip={true}
+              />
             </div>
           </div>
           {/* Content */}

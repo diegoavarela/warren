@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectItem } from '@/components/ui/native-select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, Wand2, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Calendar, Wand2, AlertCircle, CheckCircle, X, TrendingUp, HelpCircle } from 'lucide-react';
 import { PeriodMapping, PeriodDefinition } from '@/lib/types/configurations';
 import { useTranslation } from '@/lib/translations';
 import { useExcelPreview } from '@/hooks/useExcelPreview';
@@ -19,6 +19,10 @@ interface PeriodMappingEditorProps {
   onValidate?: (isValid: boolean, errors: string[]) => void;
   configurationId?: string; // For getting Excel preview data
   availableColumns?: string[]; // Override from Excel sheet data
+  // NEW: Actual vs Projected period support
+  lastActualPeriod?: PeriodDefinition;
+  onLastActualPeriodChange?: (period: PeriodDefinition | undefined) => void;
+  configurationType?: 'cashflow' | 'pnl'; // Only show actual/projected for cashflow
 }
 
 export function PeriodMappingEditor({
@@ -27,9 +31,13 @@ export function PeriodMappingEditor({
   onChange,
   onValidate,
   configurationId,
-  availableColumns
+  availableColumns,
+  lastActualPeriod,
+  onLastActualPeriodChange,
+  configurationType = 'cashflow'
 }: PeriodMappingEditorProps) {
   const { t } = useTranslation('es');
+  const isSpanish = true; // Since we're hardcoded to 'es', this is true for now
   // SINGLE SOURCE OF TRUTH: Use currentMapping directly, no internal state
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [voidedColumns, setVoidedColumns] = useState<Set<string>>(new Set());
@@ -40,6 +48,9 @@ export function PeriodMappingEditor({
 
   console.log('📥 [PERIOD EDITOR] Received currentMapping:', currentMapping);
   console.log('📥 [PERIOD EDITOR] Initialized state:', initialized);
+  console.log('📥 [PERIOD EDITOR] Configuration type:', configurationType);
+  console.log('📥 [PERIOD EDITOR] Last actual period:', lastActualPeriod);
+  console.log('📥 [PERIOD EDITOR] Has onChange callback:', !!onLastActualPeriodChange);
 
   // Generate Excel column letters (A, B, C, ..., Z, AA, AB, etc.)
   const getColumnLetter = (index: number): string => {
@@ -517,6 +528,52 @@ export function PeriodMappingEditor({
     onChange([]);
   };
 
+  // Helper functions for actual/projected periods
+  const findPeriodInMapping = (period: PeriodDefinition): PeriodMapping | undefined => {
+    return currentMapping.find(mapping => 
+      mapping.period.type === period.type &&
+      mapping.period.year === period.year &&
+      mapping.period.month === period.month &&
+      mapping.period.quarter === period.quarter &&
+      mapping.period.customValue === period.customValue
+    );
+  };
+
+  const isPeriodActual = (mapping: PeriodMapping): boolean => {
+    if (!lastActualPeriod) return false; // No actual period set, all are projected
+    
+    // Compare periods to determine if this period is actual or projected
+    const currentPeriodDate = getPeriodSortKey(mapping.period);
+    const lastActualDate = getPeriodSortKey(lastActualPeriod);
+    
+    return currentPeriodDate <= lastActualDate;
+  };
+
+  const getPeriodSortKey = (period: PeriodDefinition): number => {
+    // Create a sortable number for period comparison
+    // Format: YYYYMMDD (year + month/quarter as MM + day as 01)
+    const year = period.year || 0;
+    let month = 1;
+    
+    if (period.type === 'month' && period.month) {
+      month = period.month;
+    } else if (period.type === 'quarter' && period.quarter) {
+      month = (period.quarter - 1) * 3 + 1; // Q1=1, Q2=4, Q3=7, Q4=10
+    } else if (period.type === 'year') {
+      month = 12; // Year periods go at end of year
+    }
+    
+    return year * 10000 + month * 100 + 1;
+  };
+
+  const getAvailablePeriods = () => {
+    return currentMapping.map(mapping => ({
+      mapping,
+      label: mapping.period.label,
+      value: JSON.stringify(mapping.period)
+    })).sort((a, b) => getPeriodSortKey(a.mapping.period) - getPeriodSortKey(b.mapping.period));
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -534,7 +591,7 @@ export function PeriodMappingEditor({
             <button
               type="button"
               onClick={selectAllColumns}
-              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors duration-150"
               title="Include all columns"
             >
               Select All
@@ -542,7 +599,7 @@ export function PeriodMappingEditor({
             <button
               type="button"
               onClick={deselectAllColumns}
-              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors duration-150"
               title="Exclude all columns"
             >
               Deselect All
@@ -550,7 +607,7 @@ export function PeriodMappingEditor({
             <button
               type="button"
               onClick={autoDetectPeriods}
-              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg whitespace-nowrap rounded-lg font-medium transition-colors"
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg whitespace-nowrap rounded-lg font-medium transition-colors duration-150"
             >
               <Wand2 className="h-4 w-4" />
               {t('periodMapping.autoDetect')}
@@ -573,7 +630,8 @@ export function PeriodMappingEditor({
           </Alert>
         )}
 
-        <div className="space-y-4">
+
+        <div className="space-y-4 relative" style={{ contain: 'layout' }}>
           <div className="grid grid-cols-6 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
             <div>{t('periodMapping.table.excelColumn')}</div>
             <div>{t('periodMapping.table.periodType')}</div>
@@ -589,11 +647,22 @@ export function PeriodMappingEditor({
             const isVoided = voidedColumns.has(column);
             const index = currentMapping.findIndex(m => m.column === column);
             
+            // Determine if this period is actual or projected (for cash flow)
+            const isActual = configurationType === 'cashflow' && columnMapping && isPeriodActual(columnMapping);
+            const isProjected = configurationType === 'cashflow' && columnMapping && !isPeriodActual(columnMapping);
+            
+            
             return (
-              <div key={column} className={`grid grid-cols-6 gap-4 items-center ${isVoided ? 'opacity-50' : ''}`}>
+              <div key={column} className={`grid grid-cols-6 gap-4 items-center relative transition-colors duration-200 ${isVoided ? 'opacity-50' : ''} ${
+                isActual ? 'bg-green-50' : 
+                isProjected ? 'bg-orange-50' : ''
+              }`} style={{
+                boxShadow: isActual ? 'inset 4px 0 0 #10b981' : 
+                          isProjected ? 'inset 4px 0 0 #f97316' : 'none'
+              }}>
                 {/* Clickable Column - allows voiding */}
                 <div 
-                  className={`font-mono text-sm font-medium rounded px-2 py-1 text-center cursor-pointer transition-colors ${
+                  className={`font-mono text-sm font-medium rounded px-2 py-1 text-center cursor-pointer transition-colors duration-150 ${
                     isVoided 
                       ? 'bg-red-100 text-red-600 hover:bg-red-200' 
                       : 'bg-gray-100 hover:bg-gray-200'
@@ -609,85 +678,65 @@ export function PeriodMappingEditor({
                 {!isVoided && columnMapping ? (
                   <>
                     {/* Period Type */}
-                    <Select
+                    <NativeSelect
                       value={columnMapping.period.type}
-                      onValueChange={(value: 'month' | 'quarter' | 'year' | 'custom') => 
-                        updatePeriod(index, { type: value })
+                      onValueChange={(value: string) => 
+                        updatePeriod(index, { type: value as 'month' | 'quarter' | 'year' | 'custom' })
                       }
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="month">{t('periodMapping.type.monthly')}</SelectItem>
-                        <SelectItem value="quarter">{t('periodMapping.type.quarterly')}</SelectItem>
-                        <SelectItem value="year">{t('periodMapping.type.yearly')}</SelectItem>
-                        <SelectItem value="custom">{t('periodMapping.type.custom')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <NativeSelectItem value="month">{t('periodMapping.type.monthly')}</NativeSelectItem>
+                      <NativeSelectItem value="quarter">{t('periodMapping.type.quarterly')}</NativeSelectItem>
+                      <NativeSelectItem value="year">{t('periodMapping.type.yearly')}</NativeSelectItem>
+                      <NativeSelectItem value="custom">{t('periodMapping.type.custom')}</NativeSelectItem>
+                    </NativeSelect>
                     
                     {/* Year */}
-                    <Select
+                    <NativeSelect
                       value={columnMapping.period.year.toString()}
                       onValueChange={(value) => 
                         updatePeriod(index, { year: parseInt(value) })
                       }
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 6 }, (_, i) => {
-                          const year = new Date().getFullYear() + i - 1;
-                          return (
-                            <SelectItem key={year} value={year.toString()}>
-                              {year}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                      {Array.from({ length: 6 }, (_, i) => {
+                        const year = new Date().getFullYear() + i - 1;
+                        return (
+                          <NativeSelectItem key={year} value={year.toString()}>
+                            {year}
+                          </NativeSelectItem>
+                        );
+                      })}
+                    </NativeSelect>
                     
                     {/* Month/Quarter selector based on type */}
                     {columnMapping.period.type === 'month' && (
-                      <Select
+                      <NativeSelect
                         value={columnMapping.period.month?.toString()}
                         onValueChange={(value) => 
                           updatePeriod(index, { month: parseInt(value) })
                         }
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[t('periodMapping.months.january'), t('periodMapping.months.february'), t('periodMapping.months.march'), t('periodMapping.months.april'), t('periodMapping.months.may'), t('periodMapping.months.june'), 
-                            t('periodMapping.months.july'), t('periodMapping.months.august'), t('periodMapping.months.september'), t('periodMapping.months.october'), t('periodMapping.months.november'), t('periodMapping.months.december')]
-                            .map((month, i) => (
-                              <SelectItem key={i + 1} value={(i + 1).toString()}>
-                                {month}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                        {[t('periodMapping.months.january'), t('periodMapping.months.february'), t('periodMapping.months.march'), t('periodMapping.months.april'), t('periodMapping.months.may'), t('periodMapping.months.june'), 
+                          t('periodMapping.months.july'), t('periodMapping.months.august'), t('periodMapping.months.september'), t('periodMapping.months.october'), t('periodMapping.months.november'), t('periodMapping.months.december')]
+                          .map((month, i) => (
+                            <NativeSelectItem key={i + 1} value={(i + 1).toString()}>
+                              {month}
+                            </NativeSelectItem>
+                          ))}
+                      </NativeSelect>
                     )}
                     
                     {columnMapping.period.type === 'quarter' && (
-                      <Select
+                      <NativeSelect
                         value={columnMapping.period.quarter?.toString()}
                         onValueChange={(value) => 
                           updatePeriod(index, { quarter: parseInt(value) })
                         }
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Q1</SelectItem>
-                          <SelectItem value="2">Q2</SelectItem>
-                          <SelectItem value="3">Q3</SelectItem>
-                          <SelectItem value="4">Q4</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <NativeSelectItem value="1">Q1</NativeSelectItem>
+                        <NativeSelectItem value="2">Q2</NativeSelectItem>
+                        <NativeSelectItem value="3">Q3</NativeSelectItem>
+                        <NativeSelectItem value="4">Q4</NativeSelectItem>
+                      </NativeSelect>
                     )}
                     
                     {columnMapping.period.type === 'custom' && (
@@ -709,10 +758,46 @@ export function PeriodMappingEditor({
                       {generateLabel(columnMapping.period)}
                     </div>
                     
-                    {/* Preview */}
-                    <div className="text-sm text-gray-600 font-mono">
-                      {columnMapping.column}→{generateLabel(columnMapping.period)}
-                    </div>
+                    {/* Preview with Action Button for Cash Flow */}
+                    {configurationType === 'cashflow' ? (
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm text-gray-600 font-mono">
+                          {columnMapping.column}→{generateLabel(columnMapping.period)}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!onLastActualPeriodChange) {
+                              console.warn('⚠️ onLastActualPeriodChange callback not provided');
+                              return;
+                            }
+                            onLastActualPeriodChange(columnMapping.period);
+                          }}
+                          className={`text-xs px-3 py-1 rounded-full font-medium transition-colors duration-150 ${
+                            isActual 
+                              ? 'bg-green-500 text-white hover:bg-green-600 shadow-md' 
+                              : isProjected 
+                                ? 'bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-300'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                          title={isActual 
+                            ? (isSpanish ? 'Este es el último período real' : 'This is the last actual period')
+                            : (isSpanish ? 'Hacer este el último período real' : 'Make this the last actual period')
+                          }
+                        >
+                          {isActual 
+                            ? (isSpanish ? '✓ Último Real' : '✓ Last Actual')
+                            : (isSpanish ? 'Hacer Real' : 'Set Actual')
+                          }
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600 font-mono">
+                        {columnMapping.column}→{generateLabel(columnMapping.period)}
+                      </div>
+                    )}
                   </>
                 ) : (
                   /* Show placeholder for voided columns */

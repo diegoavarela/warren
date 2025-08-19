@@ -1256,6 +1256,8 @@ export default function EditConfigurationPage() {
                   periodsRange={configData.structure.periodsRange}
                   currentMapping={configData.structure.periodMapping || []}
                   configurationId={configId}
+                  configurationType={configData.type}
+                  lastActualPeriod={configData.type === 'cashflow' ? configData.structure.lastActualPeriod : undefined}
                   onChange={(mapping) => {
                     console.log('📝 [SINGLE SOURCE] Received period mapping onChange:', mapping);
                     if (configData) {
@@ -1264,6 +1266,16 @@ export default function EditConfigurationPage() {
                       updatedConfig.structure.periodMapping = mapping;
                       console.log('📝 [SINGLE SOURCE] Updated config with period mapping:', updatedConfig.structure.periodMapping);
                       console.log('📝 [SINGLE SOURCE] Full updated config:', updatedConfig);
+                      setConfigData(updatedConfig);
+                    }
+                  }}
+                  onLastActualPeriodChange={(period) => {
+                    console.log('📝 [SINGLE SOURCE] Received lastActualPeriod onChange:', period);
+                    if (configData) {
+                      // Deep clone to avoid mutation issues
+                      const updatedConfig = JSON.parse(JSON.stringify(configData));
+                      updatedConfig.structure.lastActualPeriod = period;
+                      console.log('📝 [SINGLE SOURCE] Updated config with lastActualPeriod:', updatedConfig.structure.lastActualPeriod);
                       setConfigData(updatedConfig);
                     }
                   }}

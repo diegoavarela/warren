@@ -58,6 +58,15 @@ export const CashFlowStructureSchema = z.object({
       label: z.string(),
     }),
   })).optional(),
+  // Actual vs Projected period distinction
+  lastActualPeriod: z.object({
+    type: z.enum(['month', 'quarter', 'year', 'custom']),
+    year: z.number().min(1900).max(2100),
+    month: z.number().min(1).max(12).optional(),
+    quarter: z.number().min(1).max(4).optional(),
+    customValue: z.string().optional(),
+    label: z.string(),
+  }).optional(),
 });
 
 export const CashFlowConfigurationSchema = BaseConfigurationSchema.extend({

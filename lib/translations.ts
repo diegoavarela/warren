@@ -141,10 +141,25 @@ export const translations = {
     'help.mapper.classification.title': 'Clasificación Contable',
     'help.mapper.classification.content': '<p>Cada cuenta necesita una categoría contable:</p><ul><li><strong>Ingresos</strong>: Ventas, servicios, otros ingresos</li><li><strong>Costos</strong>: Costo de ventas, materiales</li><li><strong>Gastos</strong>: Operacionales, administrativos</li><li><strong>Flujo</strong>: Entrada (+) o salida (-) de efectivo</li></ul><p>La IA sugiere categorías que puedes ajustar manualmente.</p>',
     
+    // AI Financial Chat
+    'chat.ai.title': 'Analista Financiero IA',
+    'chat.ai.subtitle': 'Chat inteligente para análisis financiero',
+    'chat.ai.loading': 'Cargando datos financieros...',
+    'chat.ai.placeholder': 'Pregunta sobre tus datos financieros...',
+    'chat.ai.suggestedQuestions': 'Preguntas sugeridas',
+    'chat.ai.viewPnL': 'Ver P&L',
+    'chat.ai.viewCashFlow': 'Ver Flujo de Caja',
+    'chat.ai.uploadData': 'Subir Datos',
+    
     // P&L Dashboard
     'dashboard.pnl.title': 'Estado de Resultados (P&L)',
     'dashboard.pnl.subtitle': 'Análisis completo de ingresos, costos y rentabilidad',
     'dashboard.pnl.viewCashFlow': 'Ver Flujo de Caja',
+    'dashboard.pnl.description': 'Rastrea ingresos, gastos y rentabilidad',
+    'dashboard.pnl.features.revenue': 'Análisis de ingresos y tendencias',
+    'dashboard.pnl.features.expenses': 'Desglose de gastos operativos',
+    'dashboard.pnl.features.margins': 'Márgenes y métricas de rentabilidad',
+    'dashboard.pnl.features.comparisons': 'Comparaciones YTD y período',
     'dashboard.pnl.period': 'Período',
     'dashboard.pnl.compareWith': 'Comparar con',
     'dashboard.pnl.currency': 'Moneda',
@@ -200,6 +215,16 @@ export const translations = {
     'dashboard.pnl.resetToMarket': 'Restablecer a tasa de mercado',
     'dashboard.pnl.resetAllRates': 'Restablecer todas las tasas',
     'dashboard.pnl.ytdSection': 'Resumen Año a la Fecha (YTD)',
+    
+    // Cash Flow Dashboard
+    'dashboard.cashflow.title': 'Flujo de Caja',
+    'dashboard.cashflow.subtitle': 'Análisis de entradas, salidas y posición de efectivo',
+    'dashboard.cashflow.viewPnL': 'Ver P&L',
+    'dashboard.cashflow.description': 'Análisis de entradas, salidas y posición de efectivo',
+    'dashboard.cashflow.features.movements': 'Movimientos de efectivo detallados',
+    'dashboard.cashflow.features.runway': 'Análisis de runway y burn rate',
+    'dashboard.cashflow.features.projections': 'Proyecciones y forecasting',
+    'dashboard.cashflow.features.scenarios': 'Planificación de escenarios',
     
     // Metric Cards
     'metrics.totalRevenue': 'Ingresos Totales',
@@ -586,6 +611,24 @@ export const translations = {
     'periodMapping.months.short.oct': 'Oct',
     'periodMapping.months.short.nov': 'Nov',
     'periodMapping.months.short.dec': 'Dic',
+    
+    // Actual vs Projected Period Configuration
+    'periodMapping.actualProjected.title': 'Configuración de Períodos Reales vs Proyectados',
+    'periodMapping.actualProjected.description': 'Usa los botones en cada fila para definir el último período real. Los anteriores serán reales, los posteriores proyectados.',
+    'periodMapping.actualProjected.lastActualPeriod': 'Último Período Real',
+    'periodMapping.actualProjected.selectPeriod': 'Seleccionar período...',
+    'periodMapping.actualProjected.noPeriod': 'Sin seleccionar (todos proyectados)',
+    'periodMapping.actualProjected.allActual': 'Todos los períodos son reales',
+    'periodMapping.actualProjected.help.title': 'Períodos Reales vs Proyectados',
+    'periodMapping.actualProjected.help.description': 'Esta configuración te permite distinguir entre datos históricos reales y proyecciones futuras en tu flujo de caja.',
+    'periodMapping.actualProjected.help.point1': 'Haz clic en el botón "Hacer Real" en cualquier fila para definir ese período como el último real',
+    'periodMapping.actualProjected.help.point2': 'Todos los períodos anteriores al seleccionado se marcarán automáticamente como reales', 
+    'periodMapping.actualProjected.help.point3': 'Todos los períodos posteriores al seleccionado se marcarán automáticamente como proyectados',
+    'periodMapping.actualProjected.help.point4': 'Esta distinción se reflejará visualmente en el dashboard de flujo de caja con colores diferentes',
+    'periodMapping.actualProjected.legend.actual': 'Real',
+    'periodMapping.actualProjected.legend.projected': 'Proyectado',
+    'periodMapping.actualProjected.validation.invalidPeriod': 'El período seleccionado no existe en el mapeo de períodos',
+    'periodMapping.actualProjected.buttonInstructions': 'Haz clic en "Hacer Real" para establecer ese período como el último real. Los anteriores serán reales, los posteriores proyectados.',
     
     // Data Rows
     'config.datarows.title': 'Mapeo de Filas de Datos',
@@ -1856,6 +1899,24 @@ export const translations = {
     // Scale insights
     'insights.scale.opportunities.title': 'Scaling Opportunities',
     'insights.scale.opportunities.message': 'With this revenue level, consider investments in automation and capacity expansion.',
+    
+    // Actual vs Projected Period Configuration
+    'periodMapping.actualProjected.title': 'Actual vs Projected Periods Configuration',
+    'periodMapping.actualProjected.description': 'Use the buttons in each row to define the last actual period. Previous ones will be actual, subsequent ones projected.',
+    'periodMapping.actualProjected.lastActualPeriod': 'Last Actual Period',
+    'periodMapping.actualProjected.selectPeriod': 'Select period...',
+    'periodMapping.actualProjected.noPeriod': 'Not selected (all projected)',
+    'periodMapping.actualProjected.allActual': 'All periods are actual',
+    'periodMapping.actualProjected.help.title': 'Actual vs Projected Periods',
+    'periodMapping.actualProjected.help.description': 'This configuration allows you to distinguish between real historical data and future projections in your cash flow.',
+    'periodMapping.actualProjected.help.point1': 'Click the "Set Actual" button in any row to define that period as the last actual one',
+    'periodMapping.actualProjected.help.point2': 'All periods before the selected one will be automatically marked as actual', 
+    'periodMapping.actualProjected.help.point3': 'All periods after the selected one will be automatically marked as projected',
+    'periodMapping.actualProjected.help.point4': 'This distinction will be visually reflected in the cash flow dashboard with different colors',
+    'periodMapping.actualProjected.legend.actual': 'Actual',
+    'periodMapping.actualProjected.legend.projected': 'Projected',
+    'periodMapping.actualProjected.validation.invalidPeriod': 'The selected period does not exist in the period mapping',
+    'periodMapping.actualProjected.buttonInstructions': 'Click "Set Actual" to make that period the last actual one. Previous ones will be actual, subsequent ones projected.',
   }
 };
 

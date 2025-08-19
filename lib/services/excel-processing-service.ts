@@ -314,6 +314,14 @@ export class ExcelProcessingService {
     // Calculate totalInflows and totalOutflows from categories if dataRows are missing/zero
     this.calculateTotalsFromCategories(processedData);
     
+    // Add period metadata for actual vs projected distinction (cash flow only)
+    if (configuration.type === 'cashflow') {
+      processedData.periodMetadata = this.generatePeriodMetadata(
+        periodMapping, 
+        structure.lastActualPeriod
+      );
+    }
+    
     return processedData;
   }
   
@@ -1057,6 +1065,66 @@ export class ExcelProcessingService {
       console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
       throw new Error(`Failed to process Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Generate period metadata for actual vs projected distinction
+   */
+  private generatePeriodMetadata(
+    periodMapping: any[], 
+    lastActualPeriod?: any
+  ): { [periodLabel: string]: { isActual: boolean; isProjected: boolean } } {
+    const periodMetadata: { [periodLabel: string]: { isActual: boolean; isProjected: boolean } } = {};
+    
+    if (!lastActualPeriod) {
+      // No actual period set, all periods are projected
+      periodMapping.forEach(mapping => {
+        periodMetadata[mapping.period.label] = {
+          isActual: false,
+          isProjected: true
+        };
+      });
+      return periodMetadata;
+    }
+    
+    // Sort periods by date to determine which are actual vs projected
+    const sortedPeriods = periodMapping.sort((a, b) => {
+      return this.getPeriodSortKey(a.period) - this.getPeriodSortKey(b.period);
+    });
+    
+    const lastActualSortKey = this.getPeriodSortKey(lastActualPeriod);
+    
+    sortedPeriods.forEach(mapping => {
+      const periodSortKey = this.getPeriodSortKey(mapping.period);
+      const isActual = periodSortKey <= lastActualSortKey;
+      
+      periodMetadata[mapping.period.label] = {
+        isActual: isActual,
+        isProjected: !isActual
+      };
+    });
+    
+    return periodMetadata;
+  }
+
+  /**
+   * Generate a sortable key for period comparison
+   */
+  private getPeriodSortKey(period: any): number {
+    // Create a sortable number for period comparison
+    // Format: YYYYMMDD (year + month/quarter as MM + day as 01)
+    const year = period.year || 0;
+    let month = 1;
+    
+    if (period.type === 'month' && period.month) {
+      month = period.month;
+    } else if (period.type === 'quarter' && period.quarter) {
+      month = (period.quarter - 1) * 3 + 1; // Q1=1, Q2=4, Q3=7, Q4=10
+    } else if (period.type === 'year') {
+      month = 12; // Year periods go at end of year
+    }
+    
+    return year * 10000 + month * 100 + 1;
   }
 }
 

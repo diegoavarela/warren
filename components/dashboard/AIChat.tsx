@@ -21,6 +21,7 @@ import {
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters';
+import { useLocale } from '@/contexts/LocaleContext';
 
 ChartJS.register(...registerables);
 
@@ -50,6 +51,8 @@ interface FinancialContext {
 }
 
 export function AIChat() {
+  const { locale } = useLocale();
+  const isSpanish = locale?.startsWith('es');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -99,15 +102,20 @@ export function AIChat() {
       setContext(data);
       
       // Add welcome message
+      const dataTypes = [];
+      if (data.pnl.available) dataTypes.push(isSpanish ? 'P&L' : 'P&L');
+      if (data.cashflow.available) dataTypes.push(isSpanish ? 'Flujo de Caja' : 'Cash Flow');
+      const dataTypesText = dataTypes.join(isSpanish ? ' y ' : ' and ');
+      
       setMessages([{
         id: '1',
         role: 'assistant',
-        content: `Hello! I'm your AI financial analyst for ${data.companyName}. I have access to your ${
-          [data.pnl.available && 'P&L', data.cashflow.available && 'Cash Flow']
-            .filter(Boolean)
-            .join(' and ')
-        } data covering ${data.metadata.dataQuality.periodsWithData} periods. 
-        
+        content: isSpanish 
+          ? `¡Hola! Soy tu analista financiero IA para ${data.companyName}. Tengo acceso a tus datos de ${dataTypesText} que cubren ${data.metadata.dataQuality.periodsWithData} períodos.
+
+¿Cómo puedo ayudarte a analizar tu desempeño financiero hoy?`
+          : `Hello! I'm your AI financial analyst for ${data.companyName}. I have access to your ${dataTypesText} data covering ${data.metadata.dataQuality.periodsWithData} periods.
+
 How can I help you analyze your financial performance today?`,
         timestamp: new Date()
       }]);
@@ -129,18 +137,42 @@ How can I help you analyze your financial performance today?`,
     if (contextData.pnl?.available) {
       const periods = contextData.pnl.periods;
       if (periods.length >= 2) {
-        newSuggestions.push(`Show me revenue trend for all ${periods.length} periods`);
-        newSuggestions.push(`Compare ${periods[periods.length - 1]} vs ${periods[periods.length - 2]}`);
+        newSuggestions.push(
+          isSpanish 
+            ? `Muéstrame la tendencia de ingresos para los ${periods.length} períodos`
+            : `Show me revenue trend for all ${periods.length} periods`
+        );
+        newSuggestions.push(
+          isSpanish
+            ? `Comparar ${periods[periods.length - 1]} vs ${periods[periods.length - 2]}`
+            : `Compare ${periods[periods.length - 1]} vs ${periods[periods.length - 2]}`
+        );
       }
       if (contextData.pnl.categories.opex.length > 0) {
-        newSuggestions.push('What are my largest operating expenses?');
+        newSuggestions.push(
+          isSpanish
+            ? '¿Cuáles son mis mayores gastos operativos?'
+            : 'What are my largest operating expenses?'
+        );
       }
-      newSuggestions.push('Show me gross margin analysis');
+      newSuggestions.push(
+        isSpanish
+          ? 'Muéstrame el análisis de margen bruto'
+          : 'Show me gross margin analysis'
+      );
     }
     
     if (contextData.cashflow?.available) {
-      newSuggestions.push('What is our current cash runway?');
-      newSuggestions.push('Show cash flow trends');
+      newSuggestions.push(
+        isSpanish
+          ? '¿Cuál es nuestro runway de efectivo actual?'
+          : 'What is our current cash runway?'
+      );
+      newSuggestions.push(
+        isSpanish
+          ? 'Mostrar tendencias de flujo de caja'
+          : 'Show cash flow trends'
+      );
     }
     
     setSuggestions(newSuggestions.slice(0, 4));
@@ -221,7 +253,9 @@ How can I help you analyze your financial performance today?`,
         <CardContent className="flex items-center justify-center h-full">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600">Loading financial data...</p>
+            <p className="text-gray-600">
+              {isSpanish ? 'Cargando datos financieros...' : 'Loading financial data...'}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -242,30 +276,57 @@ How can I help you analyze your financial performance today?`,
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="border-b flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-5 w-5 text-purple-600" />
-            <CardTitle>AI Financial Analyst</CardTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            {context && (
-              <>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Database className="h-3 w-3" />
-                  {context.metadata.dataQuality.periodsWithData} periods
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
-                  {context.metadata.currency}
-                </Badge>
-                <Badge 
-                  variant={context.metadata.dataQuality.completeness > 80 ? "default" : "secondary"}
-                  className="flex items-center gap-1"
-                >
-                  {context.metadata.dataQuality.completeness.toFixed(0)}% complete
-                </Badge>
+    <div className="h-full">
+      {/* Main Chat Area */}
+      <Card className="h-full flex flex-col">
+        <CardHeader className="border-b flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              <CardTitle>
+                {isSpanish ? 'Analista Financiero IA' : 'AI Financial Analyst'}
+              </CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              {context && (
+                <>
+                  {/* Compact Data Indicators */}
+                  {context.pnl?.available && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md" 
+                         title={isSpanish 
+                           ? 'P&L disponible: Ingresos, COGS, Gastos Operacionales, EBITDA, Márgenes' 
+                           : 'P&L available: Revenue, COGS, Operating Expenses, EBITDA, Margins'}>
+                      <BarChart3 className="h-3 w-3 text-blue-600" />
+                      <span className="text-xs text-blue-700">
+                        P&L: {isSpanish ? 'Ingresos • COGS • OpEx • EBITDA' : 'Revenue • COGS • OpEx • EBITDA'}
+                      </span>
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                    </div>
+                  )}
+                  {context.cashflow?.available && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-md"
+                         title={isSpanish 
+                           ? 'Flujo de Caja disponible: Entradas, Salidas, Balance Final, Análisis de Runway' 
+                           : 'Cash Flow available: Inflows, Outflows, Ending Balance, Runway Analysis'}>
+                      <DollarSign className="h-3 w-3 text-green-600" />
+                      <span className="text-xs text-green-700">
+                        CF: {isSpanish ? 'Entradas • Salidas • Balance • Runway' : 'Inflows • Outflows • Balance • Runway'}
+                      </span>
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                    </div>
+                  )}
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Database className="h-3 w-3" />
+                    {context.metadata.dataQuality.periodsWithData} {isSpanish ? 'períodos' : 'periods'}
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    {context.metadata.currency} • {context.metadata.units}
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    {isSpanish ? 'Actualizado' : 'Updated'} {new Date().toLocaleDateString(isSpanish ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric' })}
+                  </Badge>
               </>
             )}
           </div>
@@ -377,7 +438,7 @@ How can I help you analyze your financial performance today?`,
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about your financial data..."
+              placeholder={isSpanish ? "Pregunta sobre tus datos financieros..." : "Ask about your financial data..."}
               disabled={loading || !context}
               className="flex-1"
             />
@@ -396,5 +457,6 @@ How can I help you analyze your financial performance today?`,
         </div>
       </CardContent>
     </Card>
+  </div>
   );
 }

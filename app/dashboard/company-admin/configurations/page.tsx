@@ -526,14 +526,18 @@ export default function ConfigurationsPage() {
                       Versión {config.version} • Creada por {config.createdByName} {config.createdByLastName} 
                       • {new Date(config.createdAt).toLocaleDateString()}
                     </div>
-                    {config.lastProcessedFile && (
+                    {config.lastProcessedFile ? (
                       <div className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-md inline-block mt-2">
                         📄 Mapeado con: {config.lastProcessedFile.fileName}
                         {config.lastProcessedFile.processingStatus === 'completed' && (
                           <span className="ml-2 text-green-600">✓</span>
                         )}
                       </div>
-                    )}
+                    ) : config.isActive ? (
+                      <div className="text-sm text-gray-500 bg-gray-50 px-2 py-1 rounded-md inline-block mt-2">
+                        ⚡ Listo para procesar archivos Excel
+                      </div>
+                    ) : null}
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -577,7 +581,8 @@ export default function ConfigurationsPage() {
                   </div>
                   
                   <div className="flex gap-2">
-                    {config.lastProcessedFile && config.lastProcessedFile.processingStatus === 'completed' && (
+                    {/* Always show Ver Dashboard button for active configurations since we use live API */}
+                    {config.isActive && (
                       <Button
                         variant="outline"
                         size="sm"

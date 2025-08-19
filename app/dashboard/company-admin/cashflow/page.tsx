@@ -19,6 +19,7 @@ export default function CashFlowDashboardPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date());
   const [hybridParserData, setHybridParserData] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [hasPnlConfig, setHasPnlConfig] = useState<boolean>(false);
 
   // Fix hydration: Only run after component mounts
   useEffect(() => {
@@ -63,6 +64,31 @@ export default function CashFlowDashboardPage() {
     }
   }, [isMounted, selectedCompanyId, currentPeriod, locale]); // Add isMounted dependency
 
+  // Check for available configurations
+  useEffect(() => {
+    const checkConfigurations = async () => {
+      if (!selectedCompanyId) return;
+      
+      try {
+        const response = await fetch(`/api/configurations?companyId=${selectedCompanyId}`);
+        if (response.ok) {
+          const result = await response.json();
+          const configurations = result.data || [];
+          
+          // Check if there's an active P&L configuration
+          const pnlConfig = configurations.find(
+            (config: any) => config.type === 'pnl' && config.isActive
+          );
+          setHasPnlConfig(!!pnlConfig);
+        }
+      } catch (error) {
+        console.error('Error checking configurations:', error);
+      }
+    };
+    
+    checkConfigurations();
+  }, [selectedCompanyId]);
+
   return (
     <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.COMPANY_ADMIN]}>
       <AppLayout>
@@ -89,12 +115,14 @@ export default function CashFlowDashboardPage() {
                   </p>
                 </div>
                 <div className="flex space-x-4">
-                  <button
-                    onClick={() => router.push('/dashboard/company-admin/pnl')}
-                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
-                  </button>
+                  {hasPnlConfig && (
+                    <button
+                      onClick={() => router.push('/dashboard/company-admin/pnl')}
+                      className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -17,6 +17,19 @@
   }
 }
 
+/* Prevent page jump when Select dropdowns open */
+[data-radix-popper-content-wrapper] {
+  position: fixed !important;
+  transform: none !important;
+  will-change: transform;
+}
+
+/* Ensure smooth select interactions */
+[data-radix-select-viewport] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
 /* Enhanced form inputs with professional styling */
 @layer components {
   /* Base input styling */
@@ -377,6 +390,54 @@
   .dark-mode-ready {
     @apply bg-gray-900 text-gray-100;
   }
+}
+
+/* Super Cool Help System Animations */
+@keyframes helpGlow {
+  0%, 100% { 
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.2); 
+  }
+}
+
+@keyframes helpPulse {
+  0% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(1.05); 
+    opacity: 0.8; 
+  }
+  100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+
+@keyframes dialogIn {
+  from { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+}
+
+.help-icon-glow {
+  animation: helpGlow 2s ease-in-out infinite;
+}
+
+.help-icon-pulse {
+  animation: helpPulse 2s ease-in-out infinite;
+}
+
+.animate-dialog-in {
+  animation: dialogIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Equal width metric cards */

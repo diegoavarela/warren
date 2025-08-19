@@ -382,23 +382,9 @@ export function getHelpTopicsByCategory(category: string): HelpTopic[] {
   return Object.values(helpTopics).filter(topic => topic.category === category);
 }
 
-// Global keyboard shortcut handler
+// Note: Global keyboard shortcuts are now handled by GlobalHelpSystem component
+// Legacy function kept for compatibility
 export function initializeHelpShortcuts() {
-  if (typeof window === 'undefined') return;
-  
-  const handleKeyPress = (e: KeyboardEvent) => {
-    // Help shortcut: ? or F1
-    if ((e.key === '?' && !e.ctrlKey && !e.metaKey) || e.key === 'F1') {
-      e.preventDefault();
-      // Dispatch custom event to open help
-      window.dispatchEvent(new CustomEvent('openGlobalHelp'));
-    }
-  };
-  
-  document.addEventListener('keydown', handleKeyPress);
-  
-  // Return cleanup function
-  return () => {
-    document.removeEventListener('keydown', handleKeyPress);
-  };
+  // No longer needed - shortcuts handled by GlobalHelpSystem
+  return () => {};
 }

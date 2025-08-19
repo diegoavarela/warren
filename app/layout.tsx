@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { GlobalHelpSystem } from "@/components/GlobalHelpSystem";
 import "@/lib/utils/chartSetup"; // Initialize Chart.js
 
 const inter = Inter({ 
@@ -44,6 +45,7 @@ export default function RootLayout({
             <div className="min-h-full bg-gray-50">
               {children}
             </div>
+            <GlobalHelpSystem />
           </AuthProvider>
         </LocaleProvider>
         
