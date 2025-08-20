@@ -579,8 +579,8 @@ function CompanyAdminDashboard() {
                             router.push('/dashboard/company-admin/financial-chat');
                           }}
                           leftIcon={<ChatBubbleBottomCenterTextIcon className="w-4 h-4" />}
-                          disabled={!selectedCompanyId}
-                          className="bg-purple-600 hover:bg-purple-700"
+                          disabled={!selectedCompanyId || (pnlStatements.length === 0 && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode)}
+                          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
                           ✨ {locale?.startsWith('es') ? 'Chat IA Financiero' : 'AI Financial Chat'}
                         </Button>
