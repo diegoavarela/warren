@@ -78,7 +78,13 @@ const NativeSelect = React.forwardRef<HTMLDivElement, NativeSelectProps>(
         {isOpen && (
           <div
             ref={contentRef}
-            className="absolute z-50 mt-1 w-full min-w-[6rem] max-w-[12rem] overflow-hidden rounded-md border border-gray-200 bg-white text-gray-950 shadow-lg"
+            className="absolute z-[9999] mt-1 w-full min-w-[6rem] max-w-[12rem] overflow-hidden rounded-md border border-gray-200 bg-white text-gray-950 shadow-lg"
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: '0',
+              right: '0'
+            }}
           >
             <div className="p-1 max-h-[150px] overflow-auto">
               {options.map((option) => (

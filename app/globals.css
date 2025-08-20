@@ -20,7 +20,7 @@
 /* Prevent page jump when Select dropdowns open */
 [data-radix-popper-content-wrapper] {
   position: fixed !important;
-  transform: none !important;
+  z-index: 9999 !important;
   will-change: transform;
 }
 
@@ -28,6 +28,28 @@
 [data-radix-select-viewport] {
   overflow-y: auto !important;
   overflow-x: hidden !important;
+}
+
+/* Fix dropdown positioning issues */
+[data-radix-select-content] {
+  z-index: 9999 !important;
+}
+
+[data-radix-popper-content] {
+  z-index: 9999 !important;
+}
+
+/* Ensure dropdown portals are above everything */
+[data-radix-portal] {
+  z-index: 9999 !important;
+}
+
+/* Fix any stacking context issues in dashboard layout */
+.dashboard-layout,
+.dashboard-container,
+.dashboard-content {
+  position: relative;
+  z-index: 1;
 }
 
 /* Enhanced form inputs with professional styling */
