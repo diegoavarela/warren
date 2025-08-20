@@ -22,14 +22,6 @@ interface Company {
   createdAt: string;
 }
 
-interface SubcategoryTemplate {
-  id: string;
-  name: string;
-  description?: string;
-  isDefault: boolean;
-  isActive: boolean;
-  createdAt: string;
-}
 
 function OrgAdminDashboard() {
   const router = useRouter();
@@ -37,10 +29,8 @@ function OrgAdminDashboard() {
   const { locale } = useLocale();
   const { t } = useTranslation(locale || 'en-US');
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [templates, setTemplates] = useState<SubcategoryTemplate[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [templatesLoading, setTemplatesLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,7 +44,6 @@ function OrgAdminDashboard() {
     
     fetchCompanies();
     if (organization?.id) {
-      fetchTemplates();
       fetchUsers();
     }
   }, [organization?.id]);
@@ -83,23 +72,6 @@ function OrgAdminDashboard() {
     }
   };
 
-  const fetchTemplates = async () => {
-    if (!organization?.id) return;
-    
-    try {
-      setTemplatesLoading(true);
-      const response = await fetch(`/api/organizations/${organization.id}/subcategory-templates`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch templates');
-      }
-      const data = await response.json();
-      setTemplates(data.data || []);
-    } catch (err) {
-      console.error('Failed to load templates:', err);
-    } finally {
-      setTemplatesLoading(false);
-    }
-  };
 
   const fetchUsers = async () => {
     if (!organization?.id) return;
@@ -514,93 +486,6 @@ function OrgAdminDashboard() {
           </CardBody>
         </Card>
 
-        {/* Subcategory Templates Section */}
-        <Card className="mt-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <CardTitle>
-                  {locale?.startsWith('es') ? 'Plantillas de Subcategorías' : 'Subcategory Templates'} ({templates.length})
-                </CardTitle>
-              </div>
-              <Button 
-                variant="primary" 
-                onClick={() => router.push('/dashboard/org-admin/subcategory-templates')}
-                className="whitespace-nowrap"
-              >
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span>{locale?.startsWith('es') ? 'Gestionar Plantillas' : 'Manage Templates'}</span>
-                </div>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardBody className="p-0">
-            {templatesLoading ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                <p className="mt-2 text-gray-600">
-                  {locale?.startsWith('es') ? 'Cargando plantillas...' : 'Loading templates...'}
-                </p>
-              </div>
-            ) : templates.length === 0 ? (
-              <div className="text-center py-8">
-                <Settings className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-gray-600">
-                  {locale?.startsWith('es') ? 'No hay plantillas de subcategorías' : 'No subcategory templates yet'}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {locale?.startsWith('es') 
-                    ? 'Crea plantillas para organizar las subcategorías'
-                    : 'Create templates to organize subcategories'}
-                </p>
-                <Button 
-                  variant="primary" 
-                  className="mt-4"
-                  onClick={() => router.push('/dashboard/org-admin/subcategory-templates')}
-                >
-                  {locale?.startsWith('es') ? 'Crear Primera Plantilla' : 'Create First Template'}
-                </Button>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {templates.map((template) => (
-                  <div
-                    key={template.id}
-                    className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between"
-                    onClick={() => router.push('/dashboard/org-admin/subcategory-templates')}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        template.isDefault ? 'bg-yellow-100' : 'bg-blue-100'
-                      }`}>
-                        <Settings className={`w-5 h-5 ${
-                          template.isDefault ? 'text-yellow-600' : 'text-blue-600'
-                        }`} />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900">
-                          {template.name}
-                          {template.isDefault && (
-                            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                              {locale?.startsWith('es') ? 'Predeterminada' : 'Default'}
-                            </span>
-                          )}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {template.description || (locale?.startsWith('es') ? 'Sin descripción' : 'No description')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {locale?.startsWith('es') ? 'Creada' : 'Created'}: {new Date(template.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardBody>
-        </Card>
       </div>
 
       {/* Edit Company Modal */}
