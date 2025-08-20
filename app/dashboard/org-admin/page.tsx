@@ -167,17 +167,74 @@ function OrgAdminDashboard() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error?.message || 'Failed to delete company');
+        const errorData = await response.json();
+        
+        // If it's a 409 error with detailed information, show helpful dialog
+        if (response.status === 409 && errorData.dataToRemove) {
+          const { dataToRemove, alternativeAction } = errorData;
+          
+          let message = `Cannot delete "${companyName}" because it contains:\n\n`;
+          
+          if (dataToRemove.files?.count > 0) {
+            message += `📁 ${dataToRemove.files.count} uploaded files:\n`;
+            dataToRemove.files.items.forEach((file: any, i: number) => {
+              if (i < 3) message += `  • ${file.name}\n`;
+            });
+            if (dataToRemove.files.count > 3) {
+              message += `  • ... and ${dataToRemove.files.count - 3} more\n`;
+            }
+            message += `\n${dataToRemove.files.instructions}\n\n`;
+          }
+          
+          if (dataToRemove.configurations?.count > 0) {
+            message += `⚙️ ${dataToRemove.configurations.count} configurations:\n`;
+            dataToRemove.configurations.items.forEach((config: any, i: number) => {
+              if (i < 3) message += `  • ${config.name} (${config.type})\n`;
+            });
+            message += `\n${dataToRemove.configurations.instructions}\n\n`;
+          }
+          
+          if (alternativeAction?.type === 'deactivate') {
+            message += `💡 Alternative: You can deactivate this company instead.\n`;
+            message += `This will hide it but preserve all data.\n\n`;
+            message += `Would you like to deactivate "${companyName}" instead?`;
+            
+            const deactivate = window.confirm(message);
+            if (deactivate) {
+              // Deactivate the company
+              try {
+                const deactivateResponse = await fetch(`/api/companies/${companyId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ isActive: false })
+                });
+                
+                if (deactivateResponse.ok) {
+                  await fetchCompanies();
+                  alert(`Company "${companyName}" has been deactivated successfully.`);
+                } else {
+                  throw new Error('Failed to deactivate company');
+                }
+              } catch (err) {
+                alert(`Failed to deactivate company: ${err instanceof Error ? err.message : 'Unknown error'}`);
+              }
+            }
+          } else {
+            alert(message);
+          }
+        } else {
+          // Generic error
+          throw new Error(errorData.error || 'Failed to delete company');
+        }
+        return;
       }
 
-      // Refresh the companies list
+      // Success - refresh and show message
       await fetchCompanies();
+      alert(`Company "${companyName}" has been deleted successfully.`);
       
-      // Show success message (using alert for simplicity, could use toast)
-      alert(`Company ${companyName} has been deleted successfully.`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete company');
+      alert(`Failed to delete company: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
