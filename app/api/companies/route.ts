@@ -90,9 +90,11 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // If adminUserId provided, assign them as company admin
-    if (adminUserId) {
-      // Verify the user exists and belongs to the same organization
+    // Always associate the creator with the company
+    let finalAdminUserId = payload.userId; // Default: creator becomes admin
+    
+    // If adminUserId provided, verify they exist and belong to same organization
+    if (adminUserId && adminUserId !== payload.userId) {
       const adminUser = await db
         .select()
         .from(users)
@@ -101,17 +103,21 @@ export async function POST(request: NextRequest) {
         .limit(1);
       
       if (adminUser.length > 0) {
-        await db
-          .insert(companyUsers)
-          .values({
-            companyId: newCompany.id,
-            userId: adminUserId,
-            role: 'company_admin',
-            isActive: true,
-            invitedBy: payload.userId
-          });
+        finalAdminUserId = adminUserId;
       }
+      // If adminUserId invalid, fallback to creator
     }
+    
+    // Create company association for the admin (creator or specified admin)
+    await db
+      .insert(companyUsers)
+      .values({
+        companyId: newCompany.id,
+        userId: finalAdminUserId,
+        role: 'company_admin',
+        isActive: true,
+        invitedBy: payload.userId
+      });
 
     // Log company creation
     console.log(`✅ Company created: ${name} in organization ${organization.name} by ${payload.email}`);
