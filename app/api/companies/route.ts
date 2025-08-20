@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const payload = await verifyJWT(token);
     
     // Check if user can create companies (super_admin, org_admin)
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN && payload.role !== 'admin') {
+    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only platform and organization admins can create companies.' },
         { status: 403 }
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     let companyList;
     
     // Super admins and org admins can see all companies in their organization
-    if (payload.role === ROLES.SUPER_ADMIN || payload.role === ROLES.ORG_ADMIN || payload.role === 'admin') {
+    if (payload.role === ROLES.SUPER_ADMIN || payload.role === ROLES.ORG_ADMIN) {
       // Get user's organization
       const userResult = await db
         .select()
