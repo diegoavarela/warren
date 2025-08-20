@@ -107,7 +107,7 @@ function UserEditPage({ params }: { params: { userId: string } }) {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/v1/companies');
+      const response = await fetch('/api/companies');
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.data)) {
