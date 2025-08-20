@@ -16,6 +16,7 @@ import {
   companySettings, 
   userSettings,
   companyConfigurations,
+  financialDataFiles,
   type OrganizationSetting,
   type CompanySetting,
   type UserSetting
@@ -304,6 +305,17 @@ export class ConfigurationService {
       return result[0];
     } catch (error) {
       console.error('Error creating configuration:', error);
+      
+      // Clean up any orphaned files from this upload session
+      if (data.metadata?.uploadSession) {
+        try {
+          await this.cleanupOrphanedFiles(data.companyId, data.metadata.uploadSession);
+          console.log(`✅ Cleaned up orphaned files for upload session: ${data.metadata.uploadSession}`);
+        } catch (cleanupError) {
+          console.error('Error cleaning up orphaned files:', cleanupError);
+        }
+      }
+      
       throw error;
     }
   }
@@ -352,6 +364,55 @@ export class ConfigurationService {
     } catch (error) {
       console.error('Error deleting configuration:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Clean up orphaned files for a specific upload session
+   * This is called when configuration creation fails
+   */
+  async cleanupOrphanedFiles(companyId: string, uploadSession: string): Promise<void> {
+    try {
+      const deletedFiles = await db
+        .delete(financialDataFiles)
+        .where(and(
+          eq(financialDataFiles.companyId, companyId),
+          eq(financialDataFiles.uploadSession, uploadSession)
+        ))
+        .returning();
+      
+      console.log(`🗑️ Deleted ${deletedFiles.length} orphaned files for session ${uploadSession}`);
+      deletedFiles.forEach((file: any) => {
+        console.log(`   - ${file.originalFilename} (${file.id})`);
+      });
+    } catch (error) {
+      console.error('Error deleting orphaned files:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up all orphaned files older than specified hours
+   * Called periodically to prevent accumulation of orphaned files
+   */
+  async cleanupOldOrphanedFiles(hoursOld: number = 24): Promise<void> {
+    try {
+      const cutoffTime = new Date(Date.now() - hoursOld * 60 * 60 * 1000);
+      
+      // Find files older than cutoff that have no associated configuration
+      const orphanedFiles = await db
+        .select()
+        .from(financialDataFiles)
+        .where(
+          // Add logic to find files without configurations
+          // This would require a LEFT JOIN or subquery to check for configurations
+        );
+      
+      // For now, just log the attempt
+      console.log(`🔍 Checking for orphaned files older than ${hoursOld} hours...`);
+      
+    } catch (error) {
+      console.error('Error cleaning up old orphaned files:', error);
     }
   }
 

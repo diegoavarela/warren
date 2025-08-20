@@ -28,34 +28,58 @@ export async function POST(req: NextRequest) {
     }
 
     const data = validation.data;
+    let uploadSession: string | undefined;
+    let companyId: string | undefined;
 
-    // Check if user has access to the company
-    const hasAccess = await hasCompanyAccess(user.id, data.companyId, ['company_admin', 'org_admin', 'platform_admin']);
-    if (!hasAccess) {
+    try {
+      uploadSession = (data.metadata as any)?.uploadSession;
+      companyId = data.companyId;
+
+      // Check if user has access to the company
+      const hasAccess = await hasCompanyAccess(user.id, data.companyId, ['company_admin', 'org_admin', 'platform_admin']);
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions for this company' },
+          { status: 403 }
+        );
+      }
+
+      // Create the configuration
+      const configuration = await configurationService.createConfiguration(data, user.id);
+
+      return NextResponse.json({
+        success: true,
+        data: configuration
+      }, { status: 201 });
+
+    } catch (configError) {
+      // Clean up any orphaned files from this upload session
+      if (uploadSession && companyId) {
+        try {
+          await configurationService.cleanupOrphanedFiles(companyId, uploadSession);
+          console.log(`✅ Cleaned up orphaned files for failed configuration creation`);
+        } catch (cleanupError) {
+          console.error('Error cleaning up orphaned files:', cleanupError);
+        }
+      }
+      
+      console.error('Error creating configuration:', configError);
+      
+      if (configError instanceof Error && configError.message === 'Company not found') {
+        return NextResponse.json(
+          { error: 'Company not found' },
+          { status: 404 }
+        );
+      }
+
       return NextResponse.json(
-        { error: 'Insufficient permissions for this company' },
-        { status: 403 }
+        { error: 'Internal server error' },
+        { status: 500 }
       );
     }
-
-    // Create the configuration
-    const configuration = await configurationService.createConfiguration(data, user.id);
-
-    return NextResponse.json({
-      success: true,
-      data: configuration
-    }, { status: 201 });
 
   } catch (error) {
-    console.error('Error creating configuration:', error);
-    
-    if (error instanceof Error && error.message === 'Company not found') {
-      return NextResponse.json(
-        { error: 'Company not found' },
-        { status: 404 }
-      );
-    }
-
+    console.error('Error in configuration route:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
