@@ -159,6 +159,18 @@ function CashFlowDashboardContent({
   
   const [selectedCurrency, setSelectedCurrency] = useState(getValidCurrencyCode(currency));
   
+  // Update currency when live data changes
+  useEffect(() => {
+    if (liveData?.data?.metadata?.currency) {
+      console.log('🔄 Currency Update:', {
+        from: selectedCurrency,
+        to: liveData.data.metadata.currency,
+        apiCurrency: liveData.data.metadata.currency
+      });
+      setSelectedCurrency(liveData.data.metadata.currency);
+    }
+  }, [liveData]);
+  
   // Original Warren V2 formatValue function
   const formatValue = (value: number): string => {
     if (!value || isNaN(value)) return '0';
@@ -177,7 +189,19 @@ function CashFlowDashboardContent({
     // Ensure we have a valid currency code for Intl.NumberFormat
     const validCurrency = getValidCurrencyCode(selectedCurrency);
     
-    const formatted = new Intl.NumberFormat(locale || 'es-MX', {
+    // For ARS, use a custom format to show "ARS" instead of "$"
+    if (validCurrency === 'ARS') {
+      const numberFormatted = new Intl.NumberFormat(locale || 'es-AR', {
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+      }).format(convertedValue);
+      
+      return `ARS ${numberFormatted}${suffix ? ` ${suffix}` : ''}`;
+    }
+    
+    // For other currencies, use standard formatting
+    const formatted = new Intl.NumberFormat(locale || 'es-AR', {
       style: 'currency',
       currency: validCurrency,
       minimumFractionDigits: 0,
@@ -1247,7 +1271,7 @@ export function CashFlowDashboard({
   return (
     <CashFlowDashboardContent
       companyId={companyId}
-      currency={currency}
+      currency={liveData?.data?.metadata?.currency || currency}
       locale={locale}
       onPeriodChange={onPeriodChange}
       liveData={liveData}
