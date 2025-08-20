@@ -30,7 +30,7 @@ export async function GET(
         uploadedAt: financialDataFiles.uploadedAt,
         fileSize: financialDataFiles.fileSize,
         mimeType: financialDataFiles.mimeType,
-        status: financialDataFiles.status,
+        uploadSession: financialDataFiles.uploadSession,
       })
       .from(financialDataFiles)
       .where(eq(financialDataFiles.companyId, companyId))
@@ -38,7 +38,7 @@ export async function GET(
 
     // Check which files have associated configurations
     const filesWithStatus = await Promise.all(
-      files.map(async (file) => {
+      files.map(async (file: typeof files[0]) => {
         const configs = await db
           .select({
             id: companyConfigurations.id,
