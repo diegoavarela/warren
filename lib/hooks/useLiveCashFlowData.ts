@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { PeriodDefinition, PeriodMetadata } from '@/lib/utils/period-utils';
 
 export interface LiveCashFlowDataResponse {
   success: boolean;
@@ -32,11 +33,15 @@ export interface LiveCashFlowDataResponse {
       currency?: string;
       units?: string;
     };
+    // Period metadata for actual vs projected distinction
+    periodMetadata: PeriodMetadata;
     metadata: {
       currency: string;
       units: string;
       type: string;
       configurationName: string;
+      lastActualPeriod?: PeriodDefinition;
+      lastActualPeriodLabel?: string | null;
     };
   };
   metadata: {
@@ -47,6 +52,9 @@ export interface LiveCashFlowDataResponse {
     source: string;
     configurationId: string;
     configurationName: string;
+    hasActualData: boolean;
+    actualPeriodsCount: number;
+    projectedPeriodsCount: number;
   };
 }
 

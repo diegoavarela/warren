@@ -170,3 +170,182 @@ export function createPeriodId(month: string, year: number): string {
   if (monthIndex === -1) return `${year}-01`;
   return `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
 }
+
+// ==========================================
+// Configuration-based Period Metadata Utils
+// ==========================================
+
+export interface PeriodDefinition {
+  type: 'month' | 'quarter' | 'year' | 'custom';
+  year: number;
+  month?: number;
+  quarter?: number;
+  customValue?: string;
+  label: string;
+}
+
+export interface PeriodMetadata {
+  [periodLabel: string]: {
+    isActual: boolean;
+    isProjected: boolean;
+  };
+}
+
+export interface Configuration {
+  type: 'cashflow' | 'pnl';
+  structure: {
+    lastActualPeriod?: PeriodDefinition;
+    periodMapping?: Array<{
+      column: string;
+      period: PeriodDefinition;
+    }>;
+  };
+}
+
+/**
+ * Extract the last actual period from a configuration
+ */
+export function getLastActualPeriod(configuration: Configuration): PeriodDefinition | null {
+  return configuration.structure?.lastActualPeriod || null;
+}
+
+/**
+ * Check if a period is actual based on period metadata
+ */
+export function isPeriodActual(periodLabel: string, periodMetadata: PeriodMetadata): boolean {
+  return periodMetadata[periodLabel]?.isActual || false;
+}
+
+/**
+ * Check if a period is projected based on period metadata
+ */
+export function isPeriodProjected(periodLabel: string, periodMetadata: PeriodMetadata): boolean {
+  return periodMetadata[periodLabel]?.isProjected || false;
+}
+
+/**
+ * Format a period definition into a human-readable label
+ */
+export function formatPeriodLabel(period: PeriodDefinition, locale: string = 'en'): string {
+  if (period.label) {
+    return period.label;
+  }
+  
+  if (period.type === 'month' && period.month && period.year) {
+    const monthNames = locale.startsWith('es') 
+      ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+      : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    return `${monthNames[period.month - 1]} ${period.year}`;
+  }
+  
+  if (period.type === 'quarter' && period.quarter && period.year) {
+    const quarterLabel = locale.startsWith('es') ? 'T' : 'Q';
+    return `${quarterLabel}${period.quarter} ${period.year}`;
+  }
+  
+  if (period.type === 'year' && period.year) {
+    return period.year.toString();
+  }
+  
+  if (period.type === 'custom' && period.customValue) {
+    return period.customValue;
+  }
+  
+  return 'Unknown Period';
+}
+
+/**
+ * Get appropriate default period based on configuration
+ * Returns last actual period if available, otherwise current month
+ */
+export function getDefaultPeriod(configuration: Configuration | null, locale: string = 'en'): string {
+  if (configuration) {
+    const lastActualPeriod = getLastActualPeriod(configuration);
+    if (lastActualPeriod) {
+      return formatPeriodLabel(lastActualPeriod, locale);
+    }
+  }
+  
+  // Fallback to current month
+  const currentDate = new Date();
+  return currentDate.toLocaleDateString(locale.startsWith('es') ? 'es-MX' : 'en-US', { 
+    month: 'long', 
+    year: 'numeric' 
+  });
+}
+
+/**
+ * Generate a sortable key for period comparison
+ * Format: YYYYMMDD (year + month/quarter as MM + day as 01)
+ */
+export function getPeriodSortKey(period: PeriodDefinition): number {
+  const year = period.year || 0;
+  let month = 1;
+  
+  if (period.type === 'month' && period.month) {
+    month = period.month;
+  } else if (period.type === 'quarter' && period.quarter) {
+    month = (period.quarter - 1) * 3 + 1; // Q1=1, Q2=4, Q3=7, Q4=10
+  } else if (period.type === 'year') {
+    month = 12; // Year periods sort to end
+  } else if (period.type === 'custom') {
+    month = 6; // Custom periods sort to middle
+  }
+  
+  return year * 10000 + month * 100 + 1;
+}
+
+/**
+ * Find all actual periods from period metadata
+ */
+export function getActualPeriods(periodMetadata: PeriodMetadata): string[] {
+  return Object.entries(periodMetadata)
+    .filter(([_, meta]) => meta?.isActual)
+    .map(([label]) => label);
+}
+
+/**
+ * Find all projected periods from period metadata
+ */
+export function getProjectedPeriods(periodMetadata: PeriodMetadata): string[] {
+  return Object.entries(periodMetadata)
+    .filter(([_, meta]) => meta?.isProjected)
+    .map(([label]) => label);
+}
+
+/**
+ * Get the last actual period label from period metadata
+ */
+export function getLastActualPeriodLabel(periodMetadata: PeriodMetadata): string | null {
+  const actualPeriods = getActualPeriods(periodMetadata);
+  return actualPeriods.length > 0 ? actualPeriods[actualPeriods.length - 1] : null;
+}
+
+/**
+ * Count actual and projected periods
+ */
+export function getPeriodCounts(periodMetadata: PeriodMetadata): { actual: number; projected: number; total: number } {
+  const actualCount = getActualPeriods(periodMetadata).length;
+  const projectedCount = getProjectedPeriods(periodMetadata).length;
+  
+  return {
+    actual: actualCount,
+    projected: projectedCount,
+    total: actualCount + projectedCount
+  };
+}
+
+/**
+ * Create a helper function that can be passed to components for checking if a period is actual
+ */
+export function createIsPeriodActualFunction(periodMetadata: PeriodMetadata) {
+  return (periodLabel: string): boolean => isPeriodActual(periodLabel, periodMetadata);
+}
+
+/**
+ * Create a helper function that can be passed to components for checking if a period is projected
+ */
+export function createIsPeriodProjectedFunction(periodMetadata: PeriodMetadata) {
+  return (periodLabel: string): boolean => isPeriodProjected(periodLabel, periodMetadata);
+}

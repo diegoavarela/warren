@@ -167,6 +167,13 @@ export const translations = {
     'dashboard.pnl.normal': 'Normal',
     'dashboard.pnl.thousands': 'Miles (K)',
     'dashboard.pnl.millions': 'Millones (M)',
+    
+    // Units notification translations
+    'units.mixedFormattingTitle': 'Formato Mixto Detectado',
+    'units.mixedFormattingMessage': 'Algunos números se formatean diferente en modo "Normal". Para consistencia, recomendamos usar "{suggestedUnit}" en todo el dashboard.',
+    'units.switchTo': 'Cambiar a {unit}',
+    'units.dismiss': 'Descartar',
+    
     'dashboard.pnl.ytdSummary': 'Resumen Año a la Fecha (YTD)',
     'dashboard.pnl.executiveMetrics': 'Métricas Ejecutivas',
     'dashboard.pnl.executiveMetricsSubtitle': 'Indicadores clave de rendimiento financiero',
@@ -1526,6 +1533,13 @@ export const translations = {
     'dashboard.pnl.normal': 'Normal',
     'dashboard.pnl.thousands': 'Thousands (K)',
     'dashboard.pnl.millions': 'Millions (M)',
+    
+    // Units notification translations
+    'units.mixedFormattingTitle': 'Mixed Formatting Detected',
+    'units.mixedFormattingMessage': 'Some numbers format differently in "Normal" mode. For consistency, we recommend using "{suggestedUnit}" throughout the dashboard.',
+    'units.switchTo': 'Switch to {unit}',
+    'units.dismiss': 'Dismiss',
+    
     'dashboard.pnl.ytdSummary': 'Year to Date (YTD) Summary',
     'dashboard.pnl.executiveMetrics': 'Executive Metrics',
     'dashboard.pnl.executiveMetricsSubtitle': 'Key financial performance indicators',

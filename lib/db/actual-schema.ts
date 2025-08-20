@@ -348,6 +348,49 @@ export const processedFinancialData = pgTable("processed_financial_data", {
   uniqueCompanyConfigFile: unique().on(table.companyId, table.configId, table.fileId),
 }));
 
+// Additional settings tables for hierarchical configuration management
+export const organizationSettings = pgTable("organization_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").references(() => organizations.id).notNull(),
+  key: varchar("key", { length: 255 }).notNull(),
+  value: jsonb("value").notNull(),
+  inheritedFrom: varchar("inherited_from", { length: 50 }).default("organization"),
+  description: text("description"),
+  category: varchar("category", { length: 100 }).default("general"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueOrgKey: unique().on(table.organizationId, table.key),
+}));
+
+export const companySettings = pgTable("company_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  key: varchar("key", { length: 255 }).notNull(),
+  value: jsonb("value").notNull(),
+  inheritedFrom: varchar("inherited_from", { length: 50 }).default("company"),
+  description: text("description"),
+  category: varchar("category", { length: 100 }).default("general"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyKey: unique().on(table.companyId, table.key),
+}));
+
+export const userSettings = pgTable("user_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  key: varchar("key", { length: 255 }).notNull(),
+  value: jsonb("value").notNull(),
+  inheritedFrom: varchar("inherited_from", { length: 50 }).default("user"),
+  description: text("description"),
+  category: varchar("category", { length: 100 }).default("general"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueUserKey: unique().on(table.userId, table.key),
+}));
+
 // Export new types
 export type CompanyConfiguration = typeof companyConfigurations.$inferSelect;
 export type NewCompanyConfiguration = typeof companyConfigurations.$inferInsert;
@@ -355,3 +398,11 @@ export type FinancialDataFile = typeof financialDataFiles.$inferSelect;
 export type NewFinancialDataFile = typeof financialDataFiles.$inferInsert;
 export type ProcessedFinancialData = typeof processedFinancialData.$inferSelect;
 export type NewProcessedFinancialData = typeof processedFinancialData.$inferInsert;
+
+// Additional settings types
+export type OrganizationSetting = typeof organizationSettings.$inferSelect;
+export type NewOrganizationSetting = typeof organizationSettings.$inferInsert;
+export type CompanySetting = typeof companySettings.$inferSelect;
+export type NewCompanySetting = typeof companySettings.$inferInsert;
+export type UserSetting = typeof userSettings.$inferSelect;
+export type NewUserSetting = typeof userSettings.$inferInsert;

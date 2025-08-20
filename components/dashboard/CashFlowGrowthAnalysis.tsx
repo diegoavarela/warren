@@ -34,11 +34,15 @@ interface CashFlowGrowthProps {
   currentMonth: any;
   previousMonth: any;
   currency: string;
-  displayUnits: 'normal' | 'K' | 'M';
+  displayUnits: 'normal' | 'K' | 'M' | 'B';
   formatValue: (value: number) => string;
   formatPercentage: (value: number) => string;
   locale?: string;
   fullWidth?: boolean;
+  // New props for period metadata
+  periodMetadata?: { [periodLabel: string]: { isActual: boolean; isProjected: boolean } };
+  isPeriodActual?: (periodLabel: string) => boolean;
+  periods?: string[];
 }
 
 export function CashFlowGrowthAnalysis({ 
@@ -50,7 +54,10 @@ export function CashFlowGrowthAnalysis({
   formatValue,
   formatPercentage,
   locale = 'es-MX',
-  fullWidth = false
+  fullWidth = false,
+  periodMetadata,
+  isPeriodActual,
+  periods = []
 }: CashFlowGrowthProps) {
   const { t } = useTranslation(locale);
   
@@ -73,7 +80,9 @@ export function CashFlowGrowthAnalysis({
     // Process first 12 months of chartData (Jan-Dec 2025)
     for (let i = 0; i < 12; i++) {
       const actualData = chartData[i]; // Direct access to CSV data
-      const isActual = i <= 7; // Jan-Aug are actual data (current month is Aug, index 7)
+      // Use period metadata to determine if this period is actual
+      const periodLabel = periods[i];
+      const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : i <= 7; // Fallback to old logic if no metadata
       
       const inflows = actualData?.totalInflows || 0;
       const outflows = actualData?.totalOutflows || 0;
@@ -92,15 +101,18 @@ export function CashFlowGrowthAnalysis({
           label: 'Income',
           data: incomeData,
           backgroundColor: incomeData.map((_, index) => {
-            const isActual = index <= 7;
+            const periodLabel = periods[index];
+            const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7;
             return isActual ? '#6EE7B7' : 'rgba(110, 231, 183, 0.4)';  // Light green
           }),
           borderColor: incomeData.map((_, index) => {
-            const isActual = index <= 7;
+            const periodLabel = periods[index];
+            const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7;
             return isActual ? '#34D399' : '#6EE7B7';  // Medium green borders
           }),
           borderWidth: incomeData.map((_, index) => {
-            const isActual = index <= 7;
+            const periodLabel = periods[index];
+            const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7;
             return isActual ? 1 : 2;
           }),
           barPercentage: 0.8,        // Wide bars
@@ -112,15 +124,18 @@ export function CashFlowGrowthAnalysis({
           label: 'Expenses',
           data: expenseData,
           backgroundColor: expenseData.map((_, index) => {
-            const isActual = index <= 7;
+            const periodLabel = periods[index];
+            const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7;
             return isActual ? '#F97316' : 'rgba(249, 115, 22, 0.4)';
           }),
           borderColor: expenseData.map((_, index) => {
-            const isActual = index <= 7;
+            const periodLabel = periods[index];
+            const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7;
             return isActual ? '#EA580C' : '#F97316';
           }),
           borderWidth: expenseData.map((_, index) => {
-            const isActual = index <= 7;
+            const periodLabel = periods[index];
+            const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7;
             return isActual ? 1 : 2;
           }),
           barPercentage: 0.8,        

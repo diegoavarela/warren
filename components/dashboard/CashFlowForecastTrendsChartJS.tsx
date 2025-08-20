@@ -26,6 +26,10 @@ interface CashFlowForecastTrendsProps {
   formatPercentage: (value: number) => string;
   locale?: string;
   fullWidth?: boolean;
+  // New props for period metadata
+  periodMetadata?: { [periodLabel: string]: { isActual: boolean; isProjected: boolean } };
+  isPeriodActual?: (periodLabel: string) => boolean;
+  periods?: string[];
 }
 
 export function CashFlowForecastTrendsChartJS({  
@@ -38,7 +42,10 @@ export function CashFlowForecastTrendsChartJS({
   formatValue,
   formatPercentage,
   locale = 'es-MX',
-  fullWidth = false
+  fullWidth = false,
+  periodMetadata,
+  isPeriodActual,
+  periods = []
 }: CashFlowForecastTrendsProps) {
   
   const { chartData, forecastStats } = useMemo(() => {
@@ -50,24 +57,23 @@ export function CashFlowForecastTrendsChartJS({
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const data2025 = historicalData.slice(0, 12); // Only 2025 data
     
-    // Extract actual FINAL BALANCE data points (Jan-Aug = indices 0-7)
-    const actualData = data2025.slice(0, 8).map((item: any, index: number) => ({
-      x: index,
-      y: item.finalBalance || 0, // Use Final Balance (Row 105) instead of netCashFlow
-      month: monthNames[index],
-      isActual: true
-    }));
+    // Process all data points using period metadata to determine actual vs forecast
+    const allPoints = data2025.map((item: any, index: number) => {
+      // Use period metadata to determine if this period is actual
+      const periodLabel = periods[index];
+      const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7; // Fallback to old logic
+      
+      return {
+        x: index,
+        y: item.finalBalance || 0, // Use Final Balance (Row 105) instead of netCashFlow
+        month: monthNames[index],
+        isActual
+      };
+    });
 
-    // Extract forecast FINAL BALANCE data points (Sep-Dec = indices 8-11)
-    const forecastPoints = data2025.slice(8, 12).map((item: any, index: number) => ({
-      x: 8 + index, // Continue from where actual data ends
-      y: item.finalBalance || 0, // Use Final Balance (Row 105) instead of netCashFlow
-      month: monthNames[8 + index],
-      isActual: false
-    }));
-
-    // Combine actual and forecast data
-    const allPoints = [...actualData, ...forecastPoints];
+    // Separate actual and forecast points for different styling
+    const actualData = allPoints.filter(point => point.isActual);
+    const forecastPoints = allPoints.filter(point => !point.isActual);
     
     // Calculate linear regression for trend line using ALL data (actual + forecast)
     const { slope, intercept } = calculateLinearRegression(allPoints);

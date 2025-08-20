@@ -15,6 +15,10 @@ interface CashFlowHeatmapProps {
   formatValue: (value: number) => string;
   locale?: string;
   fullWidth?: boolean;
+  // New props for period metadata
+  periodMetadata?: { [periodLabel: string]: { isActual: boolean; isProjected: boolean } };
+  isPeriodActual?: (periodLabel: string) => boolean;
+  periods?: string[];
 }
 
 interface HeatmapCell {
@@ -29,7 +33,10 @@ export function CashFlowHeatmap({
   historicalData,
   formatValue,
   locale = 'es-MX',
-  fullWidth = false
+  fullWidth = false,
+  periodMetadata,
+  isPeriodActual,
+  periods = []
 }: CashFlowHeatmapProps) {
   const [viewMode, setViewMode] = useState<'net' | 'inflows' | 'outflows'>('net');
   const currentYear = 2025;
@@ -62,10 +69,14 @@ export function CashFlowHeatmap({
           value = period.monthlyGeneration || 0;
       }
       
+      // Use period metadata to determine if this period is actual
+      const periodLabel = periods[index];
+      const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : index <= 7; // Fallback to old logic
+      
       return {
         month: monthNames[index],
         value,
-        isActual: index <= 7 // Jan-Aug are actual, Sep-Dec are forecast
+        isActual
       };
     });
 
@@ -240,7 +251,9 @@ export function CashFlowHeatmap({
                   {monthNames.slice(0, 6).map((month, index) => {
                     const cell = getCellData(month);
                     const monthIndex = index;
-                    const isActual = monthIndex <= 7; // Jan-Aug are actual
+                    // Use period metadata to determine if this period is actual
+                    const periodLabel = periods[monthIndex];
+                    const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : monthIndex <= 7;
                     
                     return (
                       <div key={month} className="flex flex-col items-center">
@@ -297,7 +310,9 @@ export function CashFlowHeatmap({
                   {monthNames.slice(6, 12).map((month, index) => {
                     const cell = getCellData(month);
                     const monthIndex = index + 6; // Adjust for second row
-                    const isActual = monthIndex <= 7; // Jan-Aug are actual
+                    // Use period metadata to determine if this period is actual
+                    const periodLabel = periods[monthIndex];
+                    const isActual = isPeriodActual && periodLabel ? isPeriodActual(periodLabel) : monthIndex <= 7;
                     
                     return (
                       <div key={month} className="flex flex-col items-center">

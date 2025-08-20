@@ -123,67 +123,95 @@ interface ForecastData {
   months: string[];
 }
 
-export function CashFlowDashboard({ 
+// Inner content component that has access to Smart Units context
+function CashFlowDashboardContent({ 
   companyId, 
   currency = '$', 
   locale = 'es-MX',
-  onPeriodChange 
-}: CashFlowDashboardProps) {
-  // State for live API data
-  const [liveData, setLiveData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch live API data
-  useEffect(() => {
-    if (!companyId) {
-      setLoading(false);
-      return;
+  onPeriodChange,
+  liveData,
+  directData,
+  isDirectMode,
+  regularData,
+  loading,
+  error
+}: CashFlowDashboardProps & {
+  liveData: any;
+  directData: any;
+  isDirectMode: boolean;
+  regularData: any;
+  loading: boolean;
+  error: string | null;
+}) {
+  // Translation hook
+  const { t } = useTranslation(locale);
+  
+  // Original Warren V2 formatting (NO Smart components)
+  const [displayUnits, setDisplayUnits] = useState<'normal' | 'K' | 'M'>('normal');
+  
+  // Validate currency code - if it's a symbol like '$', use USD as default
+  const getValidCurrencyCode = (curr?: string): string => {
+    if (!curr) return 'USD';
+    // If it's a symbol or invalid code, default to USD
+    if (curr === '$' || curr.length < 3) return 'USD';
+    return curr;
+  };
+  
+  const [selectedCurrency, setSelectedCurrency] = useState(getValidCurrencyCode(currency));
+  
+  // Original Warren V2 formatValue function
+  const formatValue = (value: number): string => {
+    if (!value || isNaN(value)) return '0';
+    
+    let convertedValue = value;
+    let suffix = '';
+    
+    if (displayUnits === 'K') {
+      convertedValue = value / 1000;
+      suffix = 'K';
+    } else if (displayUnits === 'M') {
+      convertedValue = value / 1000000;
+      suffix = 'M';
     }
+    
+    // Ensure we have a valid currency code for Intl.NumberFormat
+    const validCurrency = getValidCurrencyCode(selectedCurrency);
+    
+    const formatted = new Intl.NumberFormat(locale || 'es-MX', {
+      style: 'currency',
+      currency: validCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
+    }).format(convertedValue);
+    
+    return formatted + (suffix ? ` ${suffix}` : '');
+  };
 
-    const fetchLiveData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        console.log('🔍 Fetching live Cash Flow data for company:', companyId);
-        
-        const response = await fetch(`/api/cashflow-live/${companyId}?limit=12`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error || 'API returned failure');
-        }
-
-        console.log('✅ Live Cash Flow data fetched successfully:', result);
-        setLiveData(result);
-
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch live Cash Flow data';
-        console.error('❌ Error fetching live Cash Flow data:', err);
-        setError(errorMessage);
-        setLiveData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLiveData();
-  }, [companyId]);
+  // Note: Data fetching now handled by parent component
 
   console.log('🔍 Cash Flow Dashboard: Live data:', { liveData, loading, error, companyId });
+  
+  // Extract period metadata for actual vs projected distinction
+  const periodMetadata = liveData?.data?.periodMetadata || {};
+  const lastActualPeriodLabel = liveData?.data?.metadata?.lastActualPeriodLabel;
+  
+  // Utility function to check if a period is actual based on metadata
+  const isPeriodActual = (periodLabel: string): boolean => {
+    return periodMetadata[periodLabel]?.isActual || false;
+  };
+  
+  // Utility function to check if a period is projected based on metadata
+  const isPeriodProjected = (periodLabel: string): boolean => {
+    return periodMetadata[periodLabel]?.isProjected || false;
+  };
+  
+  console.log('📅 Period Metadata:', {
+    periodMetadata,
+    lastActualPeriodLabel,
+    totalPeriods: Object.keys(periodMetadata).length,
+    actualPeriods: Object.entries(periodMetadata).filter(([_, meta]: [string, any]) => meta?.isActual).map(([label]) => label),
+    projectedPeriods: Object.entries(periodMetadata).filter(([_, meta]: [string, any]) => meta?.isProjected).map(([label]) => label)
+  });
   
   // Debug: Check which configuration is being used
   if (liveData) {
@@ -195,7 +223,8 @@ export function CashFlowDashboard({
       periodsCount: liveData.data?.periods?.length,
       periodsFirstFew: liveData.data?.periods?.slice(0, 3),
       hasDataRows: Object.keys(liveData.data?.data?.dataRows || {}).length > 0,
-      hasCategories: Object.keys(liveData.data?.data?.categories || {}).length > 0
+      hasCategories: Object.keys(liveData.data?.data?.categories || {}).length > 0,
+      hasPeriodMetadata: Object.keys(periodMetadata).length > 0
     });
   }
   
@@ -217,58 +246,19 @@ export function CashFlowDashboard({
     console.log('- monthlyGeneration:', liveData.data?.data?.dataRows?.monthlyGeneration?.values[febIndex]);
   }
 
-  // Transform live data to the format expected by the dashboard
-  const directData = liveData ? {
-    periods: liveData.data.periods.map((period: string, index: number) => {
-      // Generate proper dates - assuming monthly periods starting from Jan 2025
-      const year = 2025;
-      const month = index + 1; // 1-based month
-      const periodStart = new Date(year, month - 1, 1); // month is 0-based in Date constructor
-      const periodEnd = new Date(year, month, 0); // Last day of the month
-      
-      return {
-        id: `period-${index}`,
-        companyId: companyId || '',
-        periodStart: periodStart.toISOString().split('T')[0],
-        periodEnd: periodEnd.toISOString().split('T')[0],
-        periodType: 'monthly' as const,
-        lineItems: [], // Empty array to prevent filter errors
-        totalInflows: liveData.data.data.dataRows?.totalInflows?.values[index] || 0,
-        totalOutflows: Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0),
-        netCashFlow: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0,
-        currency: liveData.data.metadata.currency,
-        initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index] || 0,
-        finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0,
-        lowestBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0, // Use finalBalance as fallback
-        monthlyGeneration: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0
-      };
-    }),
-    summary: {
-      totalPeriods: liveData.data.periods.length,
-      currency: liveData.data.metadata.currency,
-      periodRange: `${liveData.data.periods[0]} - ${liveData.data.periods[liveData.data.periods.length - 1]}`,
-      lastUpdated: new Date().toISOString()
-    },
-    // Add the nested data structure for CashFlowComposition
-    data: {
-      data: {
-        categories: liveData.data.data.categories
-      }
-    }
-  } : null;
-
-  const isDirectMode = !!liveData;
+  // Use the directData passed as prop instead of creating a new one
+  // const directData already passed as prop, no need to redefine
+  
+  // Use the isDirectMode passed as prop instead of creating a new one
+  // const isDirectMode already passed as prop, no need to redefine
   
   console.log('🔍 Cash Flow Dashboard: isDirectMode =', isDirectMode, 'liveData exists =', !!liveData);
-  
-  const [regularData, setRegularData] = useState<any>(null);
   
   // Dashboard state matching P&L exactly
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
   const [comparisonPeriod, setComparisonPeriod] = useState<'lastMonth' | 'lastQuarter' | 'lastYear'>('lastMonth');
   const [viewMode, setViewMode] = useState<'current' | 'ytd'>('current');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('ARS');
-  const [displayUnits, setDisplayUnits] = useState<'normal' | 'K' | 'M'>('M'); // Default to millions for cash flow data
+  // Note: selectedCurrency and displayUnits now managed at component top
   const [originalCurrency, setOriginalCurrency] = useState<string>('ARS'); // Data is already in ARS
   const [originalUnits, setOriginalUnits] = useState<string>('units');
   const [showRateEditor, setShowRateEditor] = useState(false);
@@ -282,8 +272,6 @@ export function CashFlowDashboard({
   const [isAnalysisSectionCollapsed, setIsAnalysisSectionCollapsed] = useState(false);
   const [isForecastSectionCollapsed, setIsForecastSectionCollapsed] = useState(false);
   const [showAdvancedAnalysis, setShowAdvancedAnalysis] = useState(true);
-  
-  const { t } = useTranslation(locale);
 
   // Set selectedPeriod to August 2025 (current period) when data is available
   useEffect(() => {
@@ -313,34 +301,7 @@ export function CashFlowDashboard({
     }
   }, [isDirectMode, directData, onPeriodChange]);
 
-  // Handle processed data loading
-  useEffect(() => {
-    if (isDirectMode && companyId && companyId !== '') {
-      const loadRegularData = async () => {
-        try {
-          const response = await fetch(`/api/processed-data/cashflow/${companyId}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data) {
-              // The new API returns transformed dashboard data directly
-              console.log('🔍 Cash Flow Dashboard: Received data from API:', data);
-              console.log('📊 Cash Flow Dashboard: Setting regularData to:', data.data);
-              setRegularData(data.data);
-            } else {
-              setRegularData([]);
-            }
-          } else {
-            setRegularData([]);
-          }
-        } catch (err) {
-          console.error('Error loading regular cash flow data:', err);
-          setRegularData([]);
-        }
-      };
-
-      loadRegularData();
-    }
-  }, [isDirectMode, companyId]);
+  // Note: Data loading now handled by parent component
 
   useEffect(() => {
     fetchExchangeRates();
@@ -375,65 +336,7 @@ export function CashFlowDashboard({
     setEditingRates(prev => ({ ...prev, [currency]: rates[currency].toString() }));
   };
 
-  const formatValue = (value: number): string => {
-    if (!value || isNaN(value)) return '0';
-    
-    let actualValue = value;
-    let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
-    
-    let suffix = '';
-    if (displayUnits === 'K') {
-      convertedValue = convertedValue / 1000;
-      suffix = 'K';
-    } else if (displayUnits === 'M') {
-      convertedValue = convertedValue / 1000000;
-      suffix = 'M';
-    }
-    // Note: 'normal' displayUnits doesn't modify the value - shows raw ARS amount
-    
-    // Auto-scale for readability when displayUnits is 'normal'
-    if (displayUnits === 'normal') {
-      if (Math.abs(convertedValue) >= 1000000000) {
-        convertedValue = convertedValue / 1000000000;
-        suffix = 'B';
-      } else if (Math.abs(convertedValue) >= 1000000) {
-        convertedValue = convertedValue / 1000000;
-        suffix = 'M';
-      }
-    } else if (displayUnits === 'K' && Math.abs(convertedValue) >= 1000000) {
-      convertedValue = convertedValue / 1000;
-      suffix = 'M';
-    }
-    
-    const currencyInfo = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency);
-    const currencySymbol = currencyInfo?.symbol || selectedCurrency;
-    
-    const magnitude = Math.abs(convertedValue);
-    let maximumFractionDigits = 0;
-    let minimumFractionDigits = 0;
-    
-    if (magnitude < 10) {
-      maximumFractionDigits = 2;
-      minimumFractionDigits = 1;
-    } else if (magnitude < 100) {
-      maximumFractionDigits = 1;
-      minimumFractionDigits = 0;
-    } else {
-      maximumFractionDigits = 0;
-      minimumFractionDigits = 0;
-    }
-    
-    const numberFormatter = new Intl.NumberFormat(locale, {
-      minimumFractionDigits,
-      maximumFractionDigits
-    });
-    
-    const formattedNumber = numberFormatter.format(convertedValue);
-    const suffixWithSpace = suffix ? ` ${suffix}` : '';
-    const currencyWithSpace = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
-    
-    return `${currencyWithSpace}${formattedNumber}${suffixWithSpace}`;
-  };
+  // Note: formatValue now handled by Smart Units system
 
   const formatPercentage = (value: number): string => {
     if (value % 1 === 0) {
@@ -629,11 +532,7 @@ export function CashFlowDashboard({
     return `${current.month} ${current.year}`;
   };
 
-  // Helper to add common currency props
-  const currencyProps = {
-    currency: selectedCurrency,
-    displayUnits: displayUnits
-  };
+  // Note: Currency props now handled by Smart Units system
 
   // Show loading state if no companyId yet (waiting for hydration) or data loading
   if (!companyId || companyId === '' || loading || (!isDirectMode && !regularData)) {
@@ -835,12 +734,13 @@ export function CashFlowDashboard({
 
               <div className="text-gray-400 hidden lg:block">|</div>
 
-              <div className="flex items-center gap-2">
-                <ChartBarIcon className="h-4 w-4 text-gray-500" />
+              {/* Original Warren V2 Units Selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 font-medium">{t('dashboard.pnl.units')}:</span>
                 <select
                   value={displayUnits}
                   onChange={(e) => setDisplayUnits(e.target.value as 'normal' | 'K' | 'M')}
-                  className="pl-3 pr-12 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[140px]"
+                  className="px-3 py-1.5 bg-white border border-gray-300 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="normal">{t('dashboard.pnl.normal')}</option>
                   <option value="K">{t('dashboard.pnl.thousands')}</option>
@@ -878,7 +778,9 @@ export function CashFlowDashboard({
                   ytdValue={ytd.totalInflows}
                   originalCurrency={originalCurrency}
                   format="currency"
-                  {...currencyProps}
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
+                  currency={selectedCurrency}
                   locale={locale}
                   icon={<ArrowUpIcon className="h-5 w-5" />}
                   colorScheme="revenue"
@@ -892,8 +794,10 @@ export function CashFlowDashboard({
                   previousValue={previous?.totalOutflows}
                   ytdValue={ytd.totalOutflows}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<ArrowDownIcon className="h-5 w-5" />}
                   colorScheme="cost"
                   helpTopic={helpTopics['metrics.totalOutflows']}
@@ -906,8 +810,10 @@ export function CashFlowDashboard({
                   previousValue={previous?.netCashFlow}
                   ytdValue={ytd.netCashFlow}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<CurrencyDollarIcon className="h-5 w-5" />}
                   colorScheme={current.netCashFlow >= 0 ? "profit" : "cost"}
                   helpTopic={helpTopics['metrics.netCashFlow']}
@@ -919,8 +825,10 @@ export function CashFlowDashboard({
                   currentValue={current.finalBalance}
                   previousValue={previous?.finalBalance}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<BuildingLibraryIcon className="h-5 w-5" />}
                   colorScheme={current.finalBalance >= 0 ? "profit" : "cost"}
                   helpTopic={helpTopics['metrics.finalBalance']}
@@ -932,8 +840,10 @@ export function CashFlowDashboard({
                   currentValue={current.monthlyGeneration || 0}
                   previousValue={previous?.monthlyGeneration}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<CircleStackIcon className="h-5 w-5" />}
                   subtitle={`${locale?.startsWith('es') ? 'Runway' : 'Runway'}: ${
                     (current.runwayMonths || 0) === Number.POSITIVE_INFINITY 
@@ -977,8 +887,10 @@ export function CashFlowDashboard({
                   title={locale?.startsWith('es') ? 'Entradas YTD' : 'YTD Inflows'}
                   currentValue={ytd.totalInflows}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<ArrowUpIcon className="h-5 w-5" />}
                   subtitle={`${ytd.monthsIncluded} ${locale?.startsWith('es') ? 'meses' : 'months'}`}
                   colorScheme="revenue"
@@ -988,8 +900,10 @@ export function CashFlowDashboard({
                   title={locale?.startsWith('es') ? 'Salidas YTD' : 'YTD Outflows'}
                   currentValue={ytd.totalOutflows}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<ArrowDownIcon className="h-5 w-5" />}
                   subtitle={`${ytd.monthsIncluded} ${locale?.startsWith('es') ? 'meses' : 'months'}`}
                   colorScheme="cost"
@@ -999,8 +913,10 @@ export function CashFlowDashboard({
                   title={locale?.startsWith('es') ? 'Flujo Neto YTD' : 'YTD Net Flow'}
                   currentValue={ytd.netCashFlow}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<CurrencyDollarIcon className="h-5 w-5" />}
                   subtitle={`${ytd.monthsIncluded} ${locale?.startsWith('es') ? 'meses' : 'months'}`}
                   colorScheme={ytd.netCashFlow >= 0 ? "profit" : "cost"}
@@ -1010,8 +926,10 @@ export function CashFlowDashboard({
                   title={locale?.startsWith('es') ? 'Generación Prom. Mensual' : 'Avg Monthly Generation'}
                   currentValue={ytd.averageMonthlyGeneration}
                   format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
                   originalCurrency={originalCurrency}
-                  {...currencyProps}
+                  currency={selectedCurrency}
                   icon={<ChartBarIcon className="h-5 w-5" />}
                   subtitle={`${locale?.startsWith('es') ? 'Promedio de' : 'Average of'} ${ytd.monthsIncluded} ${locale?.startsWith('es') ? 'meses' : 'months'}`}
                   colorScheme={ytd.averageMonthlyGeneration >= 0 ? "profit" : "cost"}
@@ -1057,6 +975,9 @@ export function CashFlowDashboard({
                   formatPercentage={formatPercentage}
                   locale={locale}
                   fullWidth={true}
+                  periodMetadata={periodMetadata}
+                  isPeriodActual={isPeriodActual}
+                  periods={liveData?.data?.periods || []}
                 />
               </div>
               
@@ -1073,6 +994,9 @@ export function CashFlowDashboard({
                   formatPercentage={formatPercentage}
                   locale={locale}
                   fullWidth={true}
+                  periodMetadata={periodMetadata}
+                  isPeriodActual={isPeriodActual}
+                  periods={liveData?.data?.periods || []}
                 />
               </div>
               
@@ -1128,6 +1052,9 @@ export function CashFlowDashboard({
                   formatValue={formatValue}
                   locale={locale}
                   fullWidth={false}
+                  periodMetadata={periodMetadata}
+                  isPeriodActual={isPeriodActual}
+                  periods={liveData?.data?.periods || []}
                 />
               </div>
             </div>
@@ -1180,5 +1107,155 @@ export function CashFlowDashboard({
           : `Cash flow data loaded: ${regularData?.length || 0} periods`}
       </p>
     </div>
+  );
+}
+
+// Main wrapper component that handles data fetching and Smart Units integration
+export function CashFlowDashboard({ 
+  companyId, 
+  currency = '$', 
+  locale = 'es-MX',
+  onPeriodChange 
+}: CashFlowDashboardProps) {
+  // State for live API data
+  const [liveData, setLiveData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [regularData, setRegularData] = useState<any>(null);
+
+  // Fetch live API data
+  useEffect(() => {
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchLiveData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔍 Fetching live Cash Flow data for company:', companyId);
+        
+        const response = await fetch(`/api/cashflow-live/${companyId}?limit=12`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'API returned failure');
+        }
+
+        console.log('✅ Live Cash Flow data fetched successfully:', result);
+        setLiveData(result);
+
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch live Cash Flow data';
+        console.error('❌ Error fetching live Cash Flow data:', err);
+        setError(errorMessage);
+        setLiveData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLiveData();
+  }, [companyId]);
+
+  // Transform live data to the format expected by the dashboard
+  const directData = liveData ? {
+    periods: liveData.data.periods.map((period: string, index: number) => {
+      // Generate proper dates - assuming monthly periods starting from Jan 2025
+      const year = 2025;
+      const month = index + 1; // 1-based month
+      const periodStart = new Date(year, month - 1, 1); // month is 0-based in Date constructor
+      const periodEnd = new Date(year, month, 0); // Last day of the month
+      
+      return {
+        id: `period-${index}`,
+        companyId: companyId || '',
+        periodStart: periodStart.toISOString().split('T')[0],
+        periodEnd: periodEnd.toISOString().split('T')[0],
+        periodType: 'monthly' as const,
+        lineItems: [], // Empty array to prevent filter errors
+        totalInflows: liveData.data.data.dataRows?.totalInflows?.values[index] || 0,
+        totalOutflows: Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0),
+        netCashFlow: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0,
+        currency: liveData.data.metadata.currency,
+        initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index] || 0,
+        finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0,
+        lowestBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0, // Use finalBalance as fallback
+        monthlyGeneration: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0
+      };
+    }),
+    summary: {
+      totalPeriods: liveData.data.periods.length,
+      currency: liveData.data.metadata.currency,
+      periodRange: `${liveData.data.periods[0]} - ${liveData.data.periods[liveData.data.periods.length - 1]}`,
+      lastUpdated: new Date().toISOString()
+    },
+    // Add the nested data structure for CashFlowComposition
+    data: {
+      data: {
+        categories: liveData.data.data.categories
+      }
+    }
+  } : null;
+
+  const isDirectMode = !!liveData;
+
+  // Handle processed data loading
+  useEffect(() => {
+    if (isDirectMode && companyId && companyId !== '') {
+      const loadRegularData = async () => {
+        try {
+          const response = await fetch(`/api/processed-data/cashflow/${companyId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              // The new API returns transformed dashboard data directly
+              console.log('🔍 Cash Flow Dashboard: Received data from API:', data);
+              console.log('📊 Cash Flow Dashboard: Setting regularData to:', data.data);
+              setRegularData(data.data);
+            } else {
+              setRegularData([]);
+            }
+          } else {
+            setRegularData([]);
+          }
+        } catch (err) {
+          console.error('Error loading regular cash flow data:', err);
+          setRegularData([]);
+        }
+      };
+
+      loadRegularData();
+    }
+  }, [isDirectMode, companyId]);
+
+  // Return original Warren V2 Cash Flow Dashboard layout (NO Smart components)
+  return (
+    <CashFlowDashboardContent
+      companyId={companyId}
+      currency={currency}
+      locale={locale}
+      onPeriodChange={onPeriodChange}
+      liveData={liveData}
+      directData={directData}
+      isDirectMode={isDirectMode}
+      regularData={regularData}
+      loading={loading}
+      error={error}
+    />
   );
 }

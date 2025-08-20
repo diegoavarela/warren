@@ -318,6 +318,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   const [showAllPeriods, setShowAllPeriods] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('ARS');
   const [displayUnits, setDisplayUnits] = useState<'normal' | 'K' | 'M'>('normal');
+  const [userHasOverriddenUnits, setUserHasOverriddenUnits] = useState<boolean>(false);
+  const [showUnitsNotification, setShowUnitsNotification] = useState<boolean>(false);
+  const [suggestedUnit, setSuggestedUnit] = useState<'K' | 'M'>('K');
   const [originalCurrency, setOriginalCurrency] = useState<string>('USD');
   const [originalUnits, setOriginalUnits] = useState<string>('units');
   const [showRateEditor, setShowRateEditor] = useState(false);
@@ -381,6 +384,32 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       }
     }
   }, [data, onPeriodChange, hasNotifiedPeriod, selectedPeriod]);
+
+  // Smart Units Auto-Selection: Analyze data and set optimal units
+  useEffect(() => {
+    if (transformedData && originalUnits && !userHasOverriddenUnits) {
+      const optimalUnits = analyzeOptimalDisplayUnits(transformedData, originalUnits);
+      console.log('🎯 Smart Units Analysis:', {
+        originalUnits,
+        analyzedOptimalUnits: optimalUnits,
+        userHasOverridden: userHasOverriddenUnits,
+        currentDisplayUnits: displayUnits
+      });
+      
+      // Only update if the optimal units are different from current
+      if (optimalUnits !== displayUnits) {
+        setDisplayUnits(optimalUnits);
+        console.log(`✅ Smart Units: Auto-selected ${optimalUnits} for optimal display`);
+      }
+    }
+  }, [transformedData, originalUnits, userHasOverriddenUnits, displayUnits]);
+
+  // Reset user override when data changes significantly (new company/period)
+  useEffect(() => {
+    if (apiData) {
+      setUserHasOverriddenUnits(false); // Re-enable auto-selection for new data
+    }
+  }, [companyId, selectedPeriod]);
 
   const fetchExchangeRates = async () => {
     const rates = await currencyService.fetchLatestRates('USD');
@@ -619,25 +648,39 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   };
 
   const formatValue = (value: number): string => {
+    // 🔍 ULTRA-DEBUG: Log every formatting operation
+    console.log('💰 FORMAT VALUE DEBUG:', {
+      inputValue: value,
+      originalUnits,
+      displayUnits,
+      originalCurrency,
+      selectedCurrency,
+      timestamp: new Date().toISOString()
+    });
+    
     // Handle edge cases
-    if (!value || isNaN(value)) return '0';
+    if (!value || isNaN(value)) {
+      console.log('⚠️ FORMAT WARNING: Invalid value:', value);
+      return '0';
+    }
     
     let actualValue = value;
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
     
+    console.log('💱 CURRENCY CONVERSION:', {
+      original: actualValue,
+      converted: convertedValue,
+      rate: `${originalCurrency} -> ${selectedCurrency}`
+    });
+    
     // First, normalize the value to base units based on what unit the data comes in (originalUnits)
     let normalizedValue = convertedValue;
     
-    // Debug logging for unit conversion
-    if (value > 1000000) { // Only log for larger values to avoid spam
-      console.log('💰 Unit Conversion Debug:', {
-        originalValue: value,
-        originalUnits,
-        displayUnits,
-        convertedCurrency: convertedValue,
-        willNormalize: originalUnits === 'thousands' || originalUnits === 'millions'
-      });
-    }
+    console.log('🔧 NORMALIZATION STEP:', {
+      beforeNormalization: convertedValue,
+      originalUnits,
+      willMultiplyBy: originalUnits === 'thousands' ? '1000' : originalUnits === 'millions' ? '1000000' : 'none'
+    });
     
     if (originalUnits === 'thousands') {
       normalizedValue = convertedValue * 1000; // Convert from thousands to normal
@@ -646,9 +689,17 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     }
     // If originalUnits is 'normal' or 'units', no conversion needed
     
+    console.log('✅ NORMALIZED VALUE:', normalizedValue);
+    
     // Now apply the display units conversion from the normalized value
     let displayValue = normalizedValue;
     let suffix = '';
+    
+    console.log('🎯 DISPLAY UNITS CONVERSION:', {
+      normalizedValue,
+      displayUnits,
+      willDivideBy: displayUnits === 'K' ? '1000' : displayUnits === 'M' ? '1000000' : 'none'
+    });
     
     if (displayUnits === 'K') {
       // Convert to thousands
@@ -663,20 +714,15 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       displayValue = normalizedValue;
     }
     
-    // Handle very large numbers by auto-scaling
-    if (displayUnits === 'normal' && Math.abs(displayValue) >= 1000000000) {
-      // Auto-scale to billions
-      displayValue = displayValue / 1000000000;
-      suffix = 'B';
-    } else if (displayUnits === 'normal' && Math.abs(displayValue) >= 1000000) {
-      // Auto-scale to millions
-      displayValue = displayValue / 1000000;
-      suffix = 'M';
-    } else if (displayUnits === 'K' && Math.abs(displayValue) >= 1000000) {
-      // Auto-scale K to B (thousands to billions)
-      displayValue = displayValue / 1000000;
-      suffix = 'B';
-    }
+    console.log('📊 FINAL DISPLAY VALUE:', {
+      displayValue,
+      suffix,
+      willFormat: `${displayValue} with suffix "${suffix}"`
+    });
+    
+    // NO AUTO-SCALING: Use only the centrally determined displayUnits for consistency
+    // The Smart Units Analysis system determines the optimal unit for ALL components
+    // This ensures perfect consistency across the entire dashboard
     
     // Use displayValue for the final formatting
     convertedValue = displayValue;
@@ -727,6 +773,155 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       return `${value.toFixed(0)}%`;
     }
     return `${value.toFixed(1)}%`;
+  };
+
+  // Smart Units Analysis: Determine optimal display unit for ALL dashboard values
+  const analyzeOptimalDisplayUnits = (data: any, originalUnits: string): 'normal' | 'K' | 'M' => {
+    console.log('🔍 SMART UNITS ANALYSIS START:', {
+      hasData: !!data,
+      hasPeriod: !!data?.currentPeriod,
+      originalUnits,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (!data || !data.currentPeriod) {
+      console.log('❌ ANALYSIS ABORTED: No data or current period');
+      return 'normal';
+    }
+
+    // Collect ALL financial values that will be displayed on the dashboard
+    const allValues: number[] = [];
+    
+    console.log('📊 RAW DATA VALUES:', {
+      currentRevenue: data.currentPeriod.revenue,
+      currentCogs: data.currentPeriod.cogs,
+      currentNetIncome: data.currentPeriod.netIncome,
+      ytdRevenue: data.yearToDate?.revenue,
+      ytdNetIncome: data.yearToDate?.netIncome
+    });
+    
+    // Current period values
+    const current = data.currentPeriod;
+    allValues.push(
+      current.revenue,
+      current.cogs,
+      current.grossProfit,
+      current.operatingExpenses,
+      current.operatingIncome,
+      current.earningsBeforeTax,
+      current.taxes,
+      current.netIncome,
+      current.ebitda
+    );
+
+    // Previous period values (if available)
+    if (data.previousPeriod) {
+      const previous = data.previousPeriod;
+      allValues.push(
+        previous.revenue,
+        previous.cogs,
+        previous.grossProfit,
+        previous.operatingExpenses,
+        previous.operatingIncome,
+        previous.earningsBeforeTax,
+        previous.taxes,
+        previous.netIncome,
+        previous.ebitda
+      );
+    }
+
+    // Year-to-date values
+    const ytd = data.yearToDate;
+    allValues.push(
+      ytd.revenue,
+      ytd.cogs,
+      ytd.grossProfit,
+      ytd.operatingExpenses,
+      ytd.operatingIncome,
+      ytd.earningsBeforeTax,
+      ytd.taxes,
+      ytd.netIncome,
+      ytd.ebitda
+    );
+
+    // Category values (for charts and breakdowns)
+    if (data.categories) {
+      if (data.categories.revenue) {
+        data.categories.revenue.forEach((cat: any) => allValues.push(cat.amount));
+      }
+      if (data.categories.cogs) {
+        data.categories.cogs.forEach((cat: any) => allValues.push(cat.amount));
+      }
+      if (data.categories.operatingExpenses) {
+        data.categories.operatingExpenses.forEach((cat: any) => allValues.push(cat.amount));
+      }
+      if (data.categories.taxes) {
+        data.categories.taxes.forEach((cat: any) => allValues.push(cat.amount));
+      }
+    }
+
+    // Filter out null, undefined, and zero values
+    const validValues = allValues.filter(value => value && !isNaN(value) && Math.abs(value) > 0);
+    
+    if (validValues.length === 0) {
+      return 'normal';
+    }
+
+    // Normalize values based on originalUnits (from configuration)
+    const normalizedValues = validValues.map(value => {
+      let normalizedValue = value;
+      if (originalUnits === 'thousands') {
+        normalizedValue = value * 1000; // Convert from thousands to base units
+      } else if (originalUnits === 'millions') {
+        normalizedValue = value * 1000000; // Convert from millions to base units
+      }
+      // If originalUnits is 'units' or 'normal', no conversion needed
+      return Math.abs(normalizedValue);
+    });
+
+    // Find the maximum value to determine optimal unit
+    const maxValue = Math.max(...normalizedValues);
+    
+    console.log('🎯 ANALYSIS RESULTS:', {
+      totalValues: validValues.length,
+      maxNormalizedValue: maxValue,
+      sampleValues: normalizedValues.slice(0, 5),
+      threshold100K: maxValue >= 100000,
+      threshold100M: maxValue >= 100000000
+    });
+
+    // Determine optimal unit based on comfort thresholds
+    // These thresholds ensure values fit comfortably in cards
+    let selectedUnit: 'normal' | 'K' | 'M';
+    if (maxValue >= 100000000) {
+      // 100M+ needs millions (fits as "999.9M")
+      selectedUnit = 'M';
+    } else if (maxValue >= 100000) {
+      // 100K+ needs thousands (fits as "999.9K")  
+      selectedUnit = 'K';
+    } else {
+      // < 100K can stay normal (fits as "99,999")
+      selectedUnit = 'normal';
+    }
+    
+    console.log('✅ SMART UNITS DECISION:', {
+      selectedUnit,
+      maxValue,
+      reasoning: selectedUnit === 'M' ? 'Max value >= 100M' : 
+                 selectedUnit === 'K' ? 'Max value >= 100K' : 
+                 'Max value < 100K'
+    });
+    
+    // 🚨 DETECT MIXED UNITS: Check if user chose 'normal' but system suggests different
+    if (displayUnits === 'normal' && selectedUnit !== 'normal' && userHasOverriddenUnits) {
+      console.log('⚠️ MIXED UNITS DETECTED: User chose normal but optimal is', selectedUnit);
+      setShowUnitsNotification(true);
+      setSuggestedUnit(selectedUnit as 'K' | 'M');
+    } else {
+      setShowUnitsNotification(false);
+    }
+    
+    return selectedUnit;
   };
 
   // Clean up category names by removing redundant suffixes and handling database IDs
@@ -1148,7 +1343,11 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               <ChartBarIcon className="h-4 w-4 text-gray-500" />
               <select
                 value={displayUnits}
-                onChange={(e) => setDisplayUnits(e.target.value as 'normal' | 'K' | 'M')}
+                onChange={(e) => {
+                  const newUnits = e.target.value as 'normal' | 'K' | 'M';
+                  setDisplayUnits(newUnits);
+                  setUserHasOverriddenUnits(true); // Mark as user override
+                }}
                 className="pl-3 pr-12 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[140px]"
               >
                 <option value="normal">{t('dashboard.pnl.normal')}</option>
@@ -1194,6 +1393,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             originalCurrency={originalCurrency}
             format="currency"
             {...currencyProps}
+            formatValue={formatValue}
             locale={locale}
             icon={<CurrencyDollarIcon className="h-5 w-5" />}
             showBreakdown={false}
@@ -1227,6 +1427,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<BanknotesIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.grossMargin)}`}
             colorScheme="profit"
@@ -1254,6 +1455,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<ChartBarIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.operatingMargin)}`}
             colorScheme={current.operatingIncome >= 0 ? "profit" : "cost"}
@@ -1281,6 +1483,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<BanknotesIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.netMargin)}`}
             colorScheme={current.netIncome >= 0 ? "profit" : "cost"}
@@ -1308,6 +1511,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(current.ebitdaMargin)}`}
             colorScheme={current.ebitda >= 0 ? "profit" : "cost"}
@@ -1361,6 +1565,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               format="currency"
               originalCurrency={originalCurrency}
               {...currencyProps}
+              formatValue={formatValue}
               icon={<CalculatorIcon className="h-5 w-5" />}
               colorScheme="cost"
               helpTopic={helpTopics['metrics.cogs']}
@@ -1413,6 +1618,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
               format="currency"
               originalCurrency={originalCurrency}
               {...currencyProps}
+              formatValue={formatValue}
               icon={<DocumentTextIcon className="h-5 w-5" />}
               colorScheme="cost"
               helpTopic={helpTopics['metrics.operatingExpenses']}
@@ -1487,6 +1693,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<CurrencyDollarIcon className="h-5 w-5" />}
             subtitle={`${ytd.monthsIncluded} ${t('metrics.months')}`}
             colorScheme="revenue"
@@ -1498,6 +1705,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<CalculatorIcon className="h-5 w-5" />}
             colorScheme="cost"
             helpTopic={helpTopics['metrics.ytdExpenses']}
@@ -1508,6 +1716,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<BanknotesIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(ytd.netMargin)}`}
             colorScheme={ytd.netIncome >= 0 ? "profit" : "cost"}
@@ -1519,6 +1728,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             format="currency"
             originalCurrency={originalCurrency}
             {...currencyProps}
+            formatValue={formatValue}
             icon={<ArrowTrendingUpIcon className="h-5 w-5" />}
             subtitle={`${t('metrics.margin')}: ${formatPercentage(ytd.ebitdaMargin)}`}
             colorScheme={ytd.ebitda >= 0 ? "profit" : "cost"}
@@ -2171,6 +2381,45 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           }}
         />
       </div>
+      
+      {/* Units Formatting Notification */}
+      {showUnitsNotification && (
+        <div className="fixed top-4 right-4 bg-amber-50 border border-amber-200 rounded-lg shadow-lg p-4 max-w-sm z-50 animate-in slide-in-from-right-2 duration-300">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <InformationCircleIcon className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-amber-800 mb-1">
+                {t('units.mixedFormattingTitle')}
+              </h4>
+              <p className="text-sm text-amber-700 mb-3">
+                {t('units.mixedFormattingMessage').replace('{suggestedUnit}', suggestedUnit)}
+              </p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    setDisplayUnits(suggestedUnit);
+                    setUserHasOverriddenUnits(true);
+                    setShowUnitsNotification(false);
+                  }}
+                  className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-md transition-colors"
+                >
+                  <CheckIcon className="h-3 w-3 mr-1" />
+                  {t('units.switchTo').replace('{unit}', suggestedUnit)}
+                </button>
+                <button
+                  onClick={() => setShowUnitsNotification(false)}
+                  className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                >
+                  <XMarkIcon className="h-3 w-3 mr-1" />
+                  {t('units.dismiss')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Expense Detail Modal */}
       <ExpenseDetailModal

@@ -22,6 +22,7 @@ interface HeatmapChartProps {
   originalCurrency?: string;
   displayUnits?: 'normal' | 'K' | 'M';
   locale?: string;
+  formatValue?: (value: number) => string; // NEW: External formatter from dashboard
 }
 
 export function HeatmapChart({ 
@@ -34,7 +35,8 @@ export function HeatmapChart({
   currency = 'USD',
   originalCurrency,
   displayUnits = 'normal',
-  locale
+  locale,
+  formatValue: externalFormatValue
 }: HeatmapChartProps) {
   const { locale: contextLocale } = useLocale();
   const { t } = useTranslation(locale || contextLocale);
@@ -138,6 +140,12 @@ export function HeatmapChart({
   };
 
   const formatValue = (value: number) => {
+    // 🎯 CENTRALIZED FORMATTING: Use external formatter if provided
+    if (externalFormatValue && colorScale !== 'margin') {
+      return externalFormatValue(value);
+    }
+    
+    // 🔄 FALLBACK: Keep existing logic for margins and compatibility
     if (colorScale === 'margin') {
       return `${value.toFixed(1)}%`;
     }
@@ -158,11 +166,8 @@ export function HeatmapChart({
       suffix = 'K';
     } else if (displayUnits === 'M') {
       suffix = 'M';
-    } else if (displayUnits === 'normal' && Math.abs(convertedValue) >= 1000000) {
-      // Auto-scale to millions for readability
-      convertedValue = convertedValue / 1000000;
-      suffix = 'M';
     }
+    // NO AUTO-SCALING in fallback - let centralized system handle unit decisions
     
     const formatted = new Intl.NumberFormat('es-MX', {
       style: 'currency',

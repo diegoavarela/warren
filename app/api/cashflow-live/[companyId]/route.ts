@@ -110,6 +110,36 @@ export async function GET(
     console.log('✅ processExcelWithConfiguration completed successfully');
 
     console.log('✅ Live processing complete - periods found:', processedData.periods?.length || 0);
+    console.log('🔍 Period metadata generated:', !!processedData.periodMetadata);
+    console.log('📅 Period metadata details:', processedData.periodMetadata);
+    console.log('⚙️ Configuration lastActualPeriod:', cashFlowConfig.configJson?.structure?.lastActualPeriod);
+    
+    // Helper function to find the last actual period label
+    const getLastActualPeriodLabel = (periodMetadata: any, lastActualPeriod: any): string | null => {
+      if (!periodMetadata || !lastActualPeriod) return null;
+      
+      // Find the period label that matches the lastActualPeriod configuration
+      for (const [periodLabel, metadata] of Object.entries(periodMetadata)) {
+        if (metadata && typeof metadata === 'object' && 'isActual' in metadata) {
+          // For cash flow, find the last period that is marked as actual
+          const actualPeriods = Object.entries(periodMetadata)
+            .filter(([_, meta]: [string, any]) => meta?.isActual)
+            .map(([label]) => label);
+          
+          if (actualPeriods.length > 0) {
+            return actualPeriods[actualPeriods.length - 1]; // Return the last actual period
+          }
+        }
+      }
+      return null;
+    };
+    
+    const lastActualPeriodLabel = getLastActualPeriodLabel(
+      processedData.periodMetadata, 
+      cashFlowConfig.configJson?.structure?.lastActualPeriod
+    );
+    
+    console.log('🎯 Calculated last actual period label:', lastActualPeriodLabel);
     
     // Transform to dashboard format
     const response = {
@@ -117,11 +147,15 @@ export async function GET(
       data: {
         periods: processedData.periods || [],
         data: processedData,
+        // Explicitly include period metadata for actual vs projected distinction
+        periodMetadata: processedData.periodMetadata || {},
         metadata: {
-          currency: 'ARS', // From configuration metadata
-          units: 'normal', // From configuration metadata  
+          currency: cashFlowConfig.configJson?.metadata?.currency || 'ARS',
+          units: cashFlowConfig.configJson?.metadata?.units || 'normal',
           type: 'cashflow',
-          configurationName: cashFlowConfig.name
+          configurationName: cashFlowConfig.name,
+          lastActualPeriod: cashFlowConfig.configJson?.structure?.lastActualPeriod,
+          lastActualPeriodLabel: lastActualPeriodLabel
         }
       },
       metadata: {
@@ -131,7 +165,12 @@ export async function GET(
         requestedAt: new Date().toISOString(),
         source: 'live-configuration',
         configurationId: cashFlowConfig.id,
-        configurationName: cashFlowConfig.name
+        configurationName: cashFlowConfig.name,
+        hasActualData: !!lastActualPeriodLabel,
+        actualPeriodsCount: processedData.periodMetadata ? 
+          Object.values(processedData.periodMetadata).filter((meta: any) => meta?.isActual).length : 0,
+        projectedPeriodsCount: processedData.periodMetadata ? 
+          Object.values(processedData.periodMetadata).filter((meta: any) => meta?.isProjected).length : 0
       }
     };
 

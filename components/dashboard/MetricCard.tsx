@@ -46,6 +46,7 @@ interface MetricCardProps {
   };
   comparisonPeriod?: 'lastMonth' | 'lastQuarter' | 'lastYear';
   previousPeriodLabel?: string;
+  formatValue?: (value: number) => string; // NEW: External formatter from dashboard
 }
 
 export function MetricCard({
@@ -69,12 +70,19 @@ export function MetricCard({
   helpTopic,
   helpContext,
   comparisonPeriod,
-  previousPeriodLabel
+  previousPeriodLabel,
+  formatValue: externalFormatValue
 }: MetricCardProps) {
   const { locale: contextLocale } = useLocale();
   const { t } = useTranslation(locale || contextLocale);
   const [isExpanded, setIsExpanded] = useState(false);
   const formatValue = (value: number): string => {
+    // 🎯 CENTRALIZED FORMATTING: Use external formatter if provided
+    if (externalFormatValue && format === 'currency') {
+      return externalFormatValue(value);
+    }
+    
+    // 🔄 FALLBACK: Keep existing logic for compatibility and non-currency formats
     // Handle edge cases
     if (!value || isNaN(value)) return '0';
     

@@ -60,12 +60,17 @@ export function RevenueForecastTrendsChartJS({
     const forecastMonths = 6;
     const forecastPoints = [];
 
+    // Safety check: ensure we have data to forecast from
+    if (lastIndex < 0 || !actualData[lastIndex] || !actualData[lastIndex].month) {
+      return { labels: [], datasets: [] };
+    }
+
     for (let i = 1; i <= forecastMonths; i++) {
       const x = lastIndex + i;
       const y = slope * x + intercept;
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const currentMonth = actualData[lastIndex].month;
-      const currentMonthIndex = monthNames.findIndex(m => currentMonth.includes(m.substring(0, 3)));
+      const currentMonthIndex = monthNames.findIndex(m => currentMonth && currentMonth.includes(m.substring(0, 3)));
       const forecastMonthIndex = (currentMonthIndex + i) % 12;
       
       forecastPoints.push({

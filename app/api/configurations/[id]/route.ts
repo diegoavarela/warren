@@ -106,7 +106,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     console.log('🔍 [API] selectedSheet after validation:', data.configJson?.metadata?.selectedSheet);
 
     // Update the configuration
-    const updatedConfiguration = await configurationService.updateConfiguration(configId, data);
+    const updatedConfiguration = await configurationService.updateConfiguration(configId, data, ''); // Empty userId for now
     console.log('💾 [API] Configuration updated. Result metadata:', updatedConfiguration.configJson?.metadata);
 
     return NextResponse.json({

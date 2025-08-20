@@ -38,15 +38,60 @@ export default function CashFlowDashboardPage() {
       }
     }
     
-    // Set current period to actual current month
-    if (!currentPeriod && locale) {
-      const currentDate = new Date();
-      const formattedPeriod = currentDate.toLocaleDateString(locale?.startsWith('es') ? 'es-MX' : 'en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-      });
-      setCurrentPeriod(formattedPeriod);
-      setLastUpdate(new Date());
+    // Set current period to last actual period from configuration, or current month as fallback
+    if (!currentPeriod && locale && selectedCompanyId) {
+      // Try to get the last actual period from configuration
+      const getLastActualPeriod = async () => {
+        try {
+          const response = await fetch(`/api/configurations?companyId=${selectedCompanyId}`);
+          if (response.ok) {
+            const result = await response.json();
+            const configurations = result.data || [];
+            
+            // Find active cash flow configuration
+            const cashFlowConfig = configurations.find(
+              (config: any) => config.type === 'cashflow' && config.isActive
+            );
+            
+            if (cashFlowConfig?.configJson?.structure?.lastActualPeriod) {
+              const lastActualPeriod = cashFlowConfig.configJson.structure.lastActualPeriod;
+              
+              // Format the period based on its type
+              let formattedPeriod = '';
+              if (lastActualPeriod.type === 'month' && lastActualPeriod.month && lastActualPeriod.year) {
+                const monthNames = locale?.startsWith('es') 
+                  ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+                  : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                
+                formattedPeriod = `${monthNames[lastActualPeriod.month - 1]} ${lastActualPeriod.year}`;
+              } else if (lastActualPeriod.label) {
+                formattedPeriod = lastActualPeriod.label;
+              }
+              
+              if (formattedPeriod) {
+                console.log('🎯 Setting period to last actual period from configuration:', formattedPeriod);
+                setCurrentPeriod(formattedPeriod);
+                setLastUpdate(new Date());
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Could not fetch last actual period from configuration:', error);
+        }
+        
+        // Fallback to current month
+        const currentDate = new Date();
+        const formattedPeriod = currentDate.toLocaleDateString(locale?.startsWith('es') ? 'es-MX' : 'en-US', { 
+          month: 'long', 
+          year: 'numeric' 
+        });
+        console.log('📅 Falling back to current month period:', formattedPeriod);
+        setCurrentPeriod(formattedPeriod);
+        setLastUpdate(new Date());
+      };
+      
+      getLastActualPeriod();
     }
     
     // Check for hybrid parser result data

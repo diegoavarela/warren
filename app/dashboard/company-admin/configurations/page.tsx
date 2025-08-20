@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, FileSpreadsheet, Trash2, Edit, TrendingUp, DollarSign, ArrowLeft, Code2, Copy, Check, Save, X } from 'lucide-react';
+import { PlusCircle, FileSpreadsheet, Trash2, Edit, TrendingUp, DollarSign, ArrowLeft, Code2, Copy, Check, Save, X, Trash } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
 
@@ -37,6 +37,8 @@ export default function ConfigurationsPage() {
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [selectedConfigJson, setSelectedConfigJson] = useState<any>(null);
   const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
@@ -129,6 +131,31 @@ export default function ConfigurationsPage() {
     } catch (error) {
       console.error('Error deleting configuration:', error);
       toast.error('Failed to delete configuration');
+    }
+  };
+
+  const handleBulkDeleteInactive = async () => {
+    const inactiveConfigs = configurations.filter(config => !config.isActive);
+    
+    if (inactiveConfigs.length === 0) {
+      toast.warning('No inactive configurations to delete');
+      return;
+    }
+
+    try {
+      // Delete all inactive configurations
+      await Promise.all(
+        inactiveConfigs.map(config => 
+          fetch(`/api/configurations/${config.id}`, { method: 'DELETE' })
+        )
+      );
+
+      toast.success(`Successfully deleted ${inactiveConfigs.length} inactive configurations`);
+      setShowBulkDeleteConfirm(false);
+      fetchConfigurations(); // Refresh the list
+    } catch (error) {
+      console.error('Error bulk deleting configurations:', error);
+      toast.error('Failed to delete some configurations');
     }
   };
 
@@ -413,6 +440,13 @@ export default function ConfigurationsPage() {
       'Tracks revenue, expenses, and profitability';
   };
 
+  // Filter configurations based on status
+  const filteredConfigurations = configurations.filter(config => {
+    if (statusFilter === 'active') return config.isActive;
+    if (statusFilter === 'inactive') return !config.isActive;
+    return true; // 'all'
+  });
+
   if (!selectedCompany) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -451,12 +485,40 @@ export default function ConfigurationsPage() {
             Crear y gestionar configuraciones de análisis de Excel para {selectedCompany.name}
           </p>
         </div>
-        <Button 
-          onClick={() => router.push('/dashboard/company-admin/configurations/new')}
-          leftIcon={<PlusCircle className="h-4 w-4" />}
-        >
-          Nueva Configuración
-        </Button>
+        <div className="flex items-center gap-4">
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Filter:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            >
+              <option value="all">All ({configurations.length})</option>
+              <option value="active">Active ({configurations.filter(c => c.isActive).length})</option>
+              <option value="inactive">Inactive ({configurations.filter(c => !c.isActive).length})</option>
+            </select>
+          </div>
+
+          {/* Bulk Delete Inactive Button */}
+          {configurations.filter(c => !c.isActive).length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              leftIcon={<Trash className="h-4 w-4" />}
+              className="text-red-600 border-red-300 hover:bg-red-50"
+            >
+              Clean Up ({configurations.filter(c => !c.isActive).length} inactive)
+            </Button>
+          )}
+          
+          <Button 
+            onClick={() => router.push('/dashboard/company-admin/configurations/new')}
+            leftIcon={<PlusCircle className="h-4 w-4" />}
+          >
+            Nueva Configuración
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -473,13 +535,19 @@ export default function ConfigurationsPage() {
             </Card>
           ))}
         </div>
-      ) : configurations.length === 0 ? (
+      ) : filteredConfigurations.length === 0 ? (
         <Card className="text-center py-12">
           <CardBody>
             <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Aún no hay configuraciones</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {statusFilter === 'all' ? 'Aún no hay configuraciones' : 
+               statusFilter === 'active' ? 'No hay configuraciones activas' : 
+               'No hay configuraciones inactivas'}
+            </h3>
             <p className="text-gray-500 mb-4">
-              Crea tu primera configuración de análisis de Excel para comenzar.
+              {statusFilter === 'all' ? 'Crea tu primera configuración de análisis de Excel para comenzar.' :
+               statusFilter === 'active' ? 'No se encontraron configuraciones activas. Activa una configuración existente o crea una nueva.' :
+               'No se encontraron configuraciones inactivas.'}
             </p>
             <Button 
               onClick={() => router.push('/dashboard/company-admin/configurations/new')}
@@ -491,7 +559,7 @@ export default function ConfigurationsPage() {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {configurations.map((config) => (
+          {filteredConfigurations.map((config) => (
             <Card key={config.id} className={`hover:shadow-md transition-shadow border-l-4 ${getCardBorderColor(config.type)}`}>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -937,6 +1005,55 @@ export default function ConfigurationsPage() {
                   <div><kbd className="bg-white px-1 rounded">Ctrl+F</kbd> Format JSON</div>
                   <div><kbd className="bg-white px-1 rounded">Enter</kbd> Smart line break</div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md mx-auto">
+            <div className="p-6">
+              <div className="flex items-start gap-3">
+                <Trash className="w-6 h-6 text-red-500 mt-1" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Delete All Inactive Configurations?
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    This will permanently delete <strong>{configurations.filter(c => !c.isActive).length} inactive configurations</strong>. 
+                    This action cannot be undone.
+                  </p>
+                  <div className="text-sm text-gray-500 mb-4">
+                    <p className="font-medium mb-1">Configurations to be deleted:</p>
+                    <ul className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                      {configurations.filter(c => !c.isActive).map(config => (
+                        <li key={config.id} className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${config.type === 'cashflow' ? 'bg-blue-400' : 'bg-green-400'}`}></span>
+                          {config.name} ({config.type})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <Button
+                  onClick={handleBulkDeleteInactive}
+                  className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                  leftIcon={<Trash className="h-4 w-4" />}
+                >
+                  Delete All Inactive
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBulkDeleteConfirm(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
               </div>
             </div>
           </div>
