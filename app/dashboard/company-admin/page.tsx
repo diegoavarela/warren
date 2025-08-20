@@ -505,9 +505,12 @@ function CompanyAdminDashboard() {
               <Button
                 variant="ghost"
                 onClick={() => {
+                  // Clear company selection
                   setSelectedCompanyId('');
                   sessionStorage.removeItem('selectedCompanyId');
                   sessionStorage.removeItem('selectedCompanyName');
+                  // Navigate back to org admin page
+                  router.push('/dashboard/org-admin');
                 }}
                 className="mb-2"
               >
