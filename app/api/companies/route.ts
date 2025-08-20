@@ -175,8 +175,11 @@ export async function GET(request: NextRequest) {
       
       const user = userResult[0];
       
-      // Get all companies in the organization
-      companyList = await db
+      // Get companies in the organization (active by default, unless includeInactive=true)
+      const { searchParams } = new URL(request.url);
+      const includeInactive = searchParams.get('includeInactive') === 'true';
+      
+      let query = db
         .select({
           id: companies.id,
           name: companies.name,
@@ -190,11 +193,20 @@ export async function GET(request: NextRequest) {
           createdAt: companies.createdAt
         })
         .from(companies)
-        .where(eq(companies.organizationId, user.organizationId))
-        .orderBy(companies.createdAt);
+        .where(eq(companies.organizationId, user.organizationId));
+      
+      // Filter active companies unless includeInactive is requested
+      if (!includeInactive) {
+        query = query.where(eq(companies.isActive, true));
+      }
+      
+      companyList = await query.orderBy(companies.createdAt);
     } else {
-      // Regular users only see companies they have access to
-      const userCompanies = await db
+      // Regular users only see active companies they have access to
+      const { searchParams } = new URL(request.url);
+      const includeInactive = searchParams.get('includeInactive') === 'true';
+      
+      let userQuery = db
         .select({
           company: companies,
           role: companyUsers.role
@@ -203,6 +215,13 @@ export async function GET(request: NextRequest) {
         .innerJoin(companies, eq(companyUsers.companyId, companies.id))
         .where(eq(companyUsers.userId, payload.userId))
         .where(eq(companyUsers.isActive, true));
+      
+      // Filter active companies unless includeInactive is requested
+      if (!includeInactive) {
+        userQuery = userQuery.where(eq(companies.isActive, true));
+      }
+      
+      const userCompanies = await userQuery;
       
       companyList = userCompanies.map((uc: any) => ({
         ...uc.company,

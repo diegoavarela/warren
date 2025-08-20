@@ -80,13 +80,39 @@ export async function DELETE(
       .where(eq(processedFinancialData.companyId, companyId));
 
     if (configCount.length > 0 || fileCount.length > 0 || processedDataCount.length > 0) {
+      // Get specific details for better user guidance
+      const configDetails = configCount.map((c: any) => ({ name: c.name, type: c.type }));
+      const fileDetails = fileCount.map((f: any) => ({ name: f.originalFilename, uploadedAt: f.uploadedAt }));
+      
       return NextResponse.json(
         { 
-          error: 'Cannot delete company with existing data. Please remove all configurations and financial data first.',
-          details: {
-            configurations: configCount.length,
-            files: fileCount.length,
-            processedData: processedDataCount.length
+          error: 'Cannot permanently delete company with existing financial data',
+          message: 'This company contains important financial data that would be permanently lost.',
+          suggestions: [
+            'Option 1: Deactivate the company instead (preserves all data)',
+            'Option 2: Delete specific items first, then delete the company'
+          ],
+          dataToRemove: {
+            configurations: {
+              count: configCount.length,
+              items: configDetails,
+              instructions: 'Go to Configurations page and delete each configuration'
+            },
+            files: {
+              count: fileCount.length,
+              items: fileDetails,
+              instructions: 'Go to Upload Data page and remove uploaded files'
+            },
+            processedData: {
+              count: processedDataCount.length,
+              instructions: 'Processed data will be removed automatically when files are deleted'
+            }
+          },
+          alternativeAction: {
+            type: 'deactivate',
+            description: 'Deactivate company to hide it without losing data',
+            endpoint: `PATCH /api/companies/${companyId}`,
+            payload: { isActive: false }
           }
         },
         { status: 409 }
@@ -204,6 +230,106 @@ export async function GET(
     console.error('Company fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch company' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { companyId: string } }
+) {
+  try {
+    const cookieStore = cookies();
+    const token = cookieStore.get('auth-token')?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Verify JWT and check permissions
+    const payload = await verifyJWT(token);
+    
+    // Only super_admin and org_admin can modify companies
+    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions. Only platform and organization admins can modify companies.' },
+        { status: 403 }
+      );
+    }
+
+    const { companyId } = params;
+    const body = await request.json();
+
+    // Get company details first to verify permissions
+    const companyQuery = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1);
+
+    if (companyQuery.length === 0) {
+      return NextResponse.json(
+        { error: 'Company not found' },
+        { status: 404 }
+      );
+    }
+
+    const company = companyQuery[0];
+
+    // Check if org admin is trying to modify company outside their organization
+    if (payload.role === ROLES.ORG_ADMIN && payload.organizationId !== company.organizationId) {
+      return NextResponse.json(
+        { error: 'You can only modify companies within your organization' },
+        { status: 403 }
+      );
+    }
+
+    // Allowed fields for update
+    const allowedFields = ['isActive', 'name', 'taxId', 'industry', 'locale', 'baseCurrency'];
+    const updateFields: any = {};
+    
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateFields[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400 }
+      );
+    }
+
+    // Update the company
+    const [updatedCompany] = await db
+      .update(companies)
+      .set({
+        ...updateFields,
+        updatedAt: new Date()
+      })
+      .where(eq(companies.id, companyId))
+      .returning();
+
+    const action = updateFields.isActive === false ? 'deactivated' : 
+                  updateFields.isActive === true ? 'reactivated' : 'updated';
+    
+    console.log(`✅ Company ${action}: ${company.name} (${companyId}) by ${payload.email}`);
+
+    return NextResponse.json({
+      success: true,
+      message: `Company ${action} successfully`,
+      data: updatedCompany
+    });
+
+  } catch (error) {
+    console.error('Company update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update company' },
       { status: 500 }
     );
   }
