@@ -63,7 +63,7 @@ function OrgUserInvitePage() {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/companies');
+      const response = await fetch('/api/v1/companies');
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.data)) {
