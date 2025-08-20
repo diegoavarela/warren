@@ -44,7 +44,7 @@ export function CompanySelector({ selectedCompanyId, onCompanySelect, className 
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/v1/companies');
+      const response = await fetch('/api/companies');
       if (response.ok) {
         const data = await response.json();
         // Ensure data.data is an array before setting it
@@ -84,7 +84,7 @@ export function CompanySelector({ selectedCompanyId, onCompanySelect, className 
     setError('');
 
     try {
-      const response = await fetch('/api/v1/companies', {
+      const response = await fetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
