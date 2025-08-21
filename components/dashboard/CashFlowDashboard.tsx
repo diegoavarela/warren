@@ -365,20 +365,39 @@ function CashFlowDashboardContent({
   const [isForecastSectionCollapsed, setIsForecastSectionCollapsed] = useState(false);
   const [showAdvancedAnalysis, setShowAdvancedAnalysis] = useState(true);
 
-  // Set selectedPeriod to August 2025 (current period) when data is available
+  // Set selectedPeriod to last actual period from configuration, fallback to current month
   useEffect(() => {
     if (isDirectMode && directData && !selectedPeriod) {
       const data = transformDirectDataToCashFlowData(directData, selectedPeriod);
-      // Find August 2025 period specifically
+      
+      // First priority: Use lastActualPeriod from configuration
+      if (lastActualPeriodLabel) {
+        console.log('🎯 [PERIOD SELECTION] Using lastActualPeriod from config:', lastActualPeriodLabel);
+        // Find period matching the last actual period label
+        const actualPeriod = data.periods.find(p => {
+          const periodLabel = `${p.month} ${p.year}`;
+          return periodLabel.toLowerCase().includes(lastActualPeriodLabel.toLowerCase()) ||
+                 lastActualPeriodLabel.toLowerCase().includes(p.month.toLowerCase());
+        });
+        
+        if (actualPeriod?.id) {
+          console.log('✅ [PERIOD SELECTION] Found matching period:', actualPeriod);
+          setSelectedPeriod(actualPeriod.id);
+          return;
+        }
+      }
+      
+      // Fallback: Find August 2025 period specifically  
+      console.log('🔄 [PERIOD SELECTION] Fallback to August 2025');
       const augustPeriod = data.periods.find(p => p.month === 'Aug' && p.year === 2025);
       if (augustPeriod?.id) {
         setSelectedPeriod(augustPeriod.id);
       } else if (data.periods[7]) {
-        // Fallback to index 7 if month matching fails
+        // Final fallback to index 7 if month matching fails
         setSelectedPeriod(data.periods[7].id);
       }
     }
-  }, [isDirectMode, directData, selectedPeriod]);
+  }, [isDirectMode, directData, selectedPeriod, lastActualPeriodLabel]);
 
   // Note: Removed auto-detection logic since we default to 'M' for cash flow data
 
