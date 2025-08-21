@@ -441,7 +441,7 @@ function OrgAdminDashboard() {
                   <div
                     key={user.id}
                     className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between"
-                    onClick={() => router.push('/dashboard/org-admin/users')}
+                    onClick={() => router.push(`/dashboard/org-admin/users/${user.id}/edit`)}
                   >
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
