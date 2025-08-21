@@ -189,7 +189,7 @@ function OrgUsersPage() {
             <Button
               variant="primary"
               onClick={() => router.push('/dashboard/org-admin/users/invite')}
-              className="inline-flex items-center"
+              className="inline-flex items-center whitespace-nowrap"
             >
               <Plus className="mr-2 h-4 w-4" />
               {locale?.startsWith('es') ? 'Invitar Usuario' : 'Invite User'}
@@ -214,7 +214,7 @@ function OrgUsersPage() {
                     placeholder={locale?.startsWith('es') ? 'Buscar usuarios...' : 'Search users...'}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
                   />
                 </div>
               </div>
