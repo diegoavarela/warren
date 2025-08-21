@@ -37,22 +37,49 @@ export function Header() {
     { code: 'en-US', name: 'English (US)', flag: '🇺🇸' },
   ];
 
-  const notifications = [
+  const [notifications, setNotifications] = useState([
     {
       id: '1',
       title: locale?.startsWith('es') ? 'Nueva empresa registrada' : 'New company registered',
       time: locale?.startsWith('es') ? 'hace 5 min' : '5 min ago',
-      read: false
+      read: false,
+      action: 'view_companies'
     },
     {
       id: '2',
       title: locale?.startsWith('es') ? 'Actualización del sistema completada' : 'System update completed',
       time: locale?.startsWith('es') ? 'hace 1 hora' : '1 hour ago',
-      read: true
+      read: true,
+      action: 'view_updates'
     }
-  ];
+  ]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleNotificationClick = (notification: any) => {
+    // Mark notification as read
+    setNotifications(prev => 
+      prev.map(n => 
+        n.id === notification.id ? { ...n, read: true } : n
+      )
+    );
+
+    // Handle different notification actions
+    switch (notification.action) {
+      case 'view_companies':
+        router.push('/dashboard/org-admin');
+        break;
+      case 'view_updates':
+        // Show update details or navigate to changelog
+        console.log('System update notification clicked');
+        break;
+      default:
+        console.log('Notification clicked:', notification.title);
+    }
+
+    // Close notifications dropdown
+    setShowNotifications(false);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -288,12 +315,20 @@ export function Header() {
                         {notifications.map((notification) => (
                           <div
                             key={notification.id}
+                            onClick={() => handleNotificationClick(notification)}
                             className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-all duration-200 hover:translate-x-1 ${
                               !notification.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                             }`}
                           >
-                            <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                            <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                                <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                              </div>
+                              {!notification.read && (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1 flex-shrink-0"></div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
