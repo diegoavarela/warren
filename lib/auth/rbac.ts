@@ -1,6 +1,6 @@
 // Role-Based Access Control (RBAC) for Multi-tenant Warren App
 import { NextRequest, NextResponse } from 'next/server';
-import { db, companyUsers, eq } from '@/lib/db';
+import { db, companyUsers, companies, users, eq } from '@/lib/db';
 import { verifyJWT } from './jwt';
 
 // Role definitions
@@ -326,7 +326,42 @@ export async function hasCompanyAccess(
   requiredRoles: string[]
 ): Promise<boolean> {
   try {
-    // Load user's company access
+    // First, check if user is an organization admin for this company's organization
+    const userResult = await db.select({
+      id: users.id,
+      role: users.role,
+      organizationId: users.organizationId
+    }).from(users).where(eq(users.id, userId)).limit(1);
+    
+    if (userResult.length === 0) {
+      return false;
+    }
+    
+    const user = userResult[0];
+    
+    // Organization admins have access to all companies in their organization
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      // Check if the company belongs to the user's organization
+      const companyResult = await db.select({
+        organizationId: companies.organizationId
+      }).from(companies).where(eq(companies.id, companyId)).limit(1);
+      
+      if (companyResult.length > 0) {
+        const company = companyResult[0];
+        
+        // Super admins have access to all companies
+        if (user.role === 'super_admin') {
+          return true;
+        }
+        
+        // Organization admins have access to companies in their organization
+        if (user.role === 'admin' && company.organizationId === user.organizationId) {
+          return true;
+        }
+      }
+    }
+    
+    // Load user's company access for non-admin users or cross-organization access
     const companyAccess = await loadUserCompanyAccess(userId);
     
     // Check if user has access to the company with one of the required roles

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT } from '@/lib/auth/jwt';
-import { db, companies, organizations, users, companyUsers, eq } from '@/lib/db';
+import { db, companies, organizations, users, companyUsers, eq, and } from '@/lib/db';
 import { ROLES, hasPermission, PERMISSIONS } from '@/lib/auth/rbac';
 
 export async function POST(request: NextRequest) {
@@ -118,6 +118,48 @@ export async function POST(request: NextRequest) {
         isActive: true,
         invitedBy: payload.userId
       });
+
+    // Auto-grant access to all organization admins in the same organization
+    console.log(`🔐 Auto-granting access to all organization admins for new company: ${name}`);
+    
+    const orgAdmins = await db
+      .select({ id: users.id, email: users.email })
+      .from(users)
+      .where(eq(users.organizationId, organizationId))
+      .where(eq(users.role, 'admin'));
+    
+    console.log(`📦 Found ${orgAdmins.length} organization admins to grant access to`);
+    
+    for (const admin of orgAdmins) {
+      // Skip if this admin is already the creator/specified admin
+      if (admin.id === finalAdminUserId) {
+        console.log(`⏭️ Skipping ${admin.email} - already granted access as company admin`);
+        continue;
+      }
+      
+      // Check if admin already has access (shouldn't happen, but safety check)
+      const existingAccess = await db
+        .select()
+        .from(companyUsers)
+        .where(eq(companyUsers.companyId, newCompany.id))
+        .where(eq(companyUsers.userId, admin.id))
+        .limit(1);
+
+      if (existingAccess.length === 0) {
+        await db
+          .insert(companyUsers)
+          .values({
+            companyId: newCompany.id,
+            userId: admin.id,
+            role: 'company_admin',
+            isActive: true,
+            invitedBy: payload.userId
+          });
+        console.log(`✅ Granted access to organization admin: ${admin.email}`);
+      }
+    }
+    
+    console.log(`🎉 All organization admins now have access to company: ${name}`);
 
     // Log company creation
     console.log(`✅ Company created: ${name} in organization ${organization.name} by ${payload.email}`);
