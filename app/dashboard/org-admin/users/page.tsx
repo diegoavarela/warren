@@ -175,8 +175,8 @@ function OrgUsersPage() {
           >
             ← {locale?.startsWith('es') ? 'Volver al panel' : 'Back to dashboard'}
           </Button>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900">
                 {locale?.startsWith('es') ? 'Gestión de Usuarios' : 'User Management'}
               </h1>
@@ -189,7 +189,7 @@ function OrgUsersPage() {
             <Button
               variant="primary"
               onClick={() => router.push('/dashboard/org-admin/users/invite')}
-              className="inline-flex items-center whitespace-nowrap"
+              className="inline-flex items-center whitespace-nowrap flex-shrink-0"
             >
               <Plus className="mr-2 h-4 w-4" />
               {locale?.startsWith('es') ? 'Invitar Usuario' : 'Invite User'}
@@ -200,23 +200,21 @@ function OrgUsersPage() {
         {/* Users List */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <CardTitle className="flex items-center">
-                  <Users className="mr-2 h-5 w-5" />
-                  {locale?.startsWith('es') ? 'Usuarios' : 'Users'} ({users.length})
-                </CardTitle>
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder={locale?.startsWith('es') ? 'Buscar usuarios...' : 'Search users...'}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
-                </div>
+            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <CardTitle className="flex items-center">
+                <Users className="mr-2 h-5 w-5" />
+                {locale?.startsWith('es') ? 'Usuarios' : 'Users'} ({users.length})
+              </CardTitle>
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+                <input
+                  type="text"
+                  placeholder={locale?.startsWith('es') ? 'Buscar usuarios...' : 'Search users...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
+                />
               </div>
             </div>
           </CardHeader>
