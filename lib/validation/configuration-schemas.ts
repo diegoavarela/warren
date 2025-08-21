@@ -41,7 +41,8 @@ export const CashFlowStructureSchema = z.object({
     finalBalance: z.number().min(1),
     totalInflows: z.number().min(1),
     totalOutflows: z.number().min(1),
-    monthlyGeneration: z.number().min(1),
+    monthlyGeneration: z.number().min(1).optional(),
+    netCashFlow: z.number().min(1).optional(),
   }),
   categories: z.object({
     inflows: CashFlowCategoryGroupSchema,

@@ -78,9 +78,10 @@ export function ConfigurationPreview({
       const cashflowConfig = configuration as CashFlowConfiguration;
       const dataRows = cashflowConfig.structure.dataRows;
       
-      const requiredRows = ['initialBalance', 'finalBalance', 'totalInflows', 'totalOutflows', 'monthlyGeneration'];
+      const requiredRows = ['initialBalance', 'finalBalance', 'totalInflows', 'totalOutflows'];
+      const optionalRows = ['monthlyGeneration', 'netCashFlow'];
       requiredFieldsCount = requiredRows.length;
-      totalFieldsCount = requiredRows.length;
+      totalFieldsCount = requiredRows.length + optionalRows.length;
       
       requiredRows.forEach(row => {
         const value = dataRows[row as keyof typeof dataRows];
@@ -91,8 +92,17 @@ export function ConfigurationPreview({
         }
       });
 
-      // Check for duplicate rows
-      const usedRows = requiredRows.map(row => dataRows[row as keyof typeof dataRows]).filter(Boolean);
+      // Count optional fields that are mapped
+      optionalRows.forEach(row => {
+        const value = dataRows[row as keyof typeof dataRows];
+        if (value && value > 0) {
+          mappedFieldsCount++;
+        }
+      });
+
+      // Check for duplicate rows (including optional fields)
+      const allRows = [...requiredRows, ...optionalRows];
+      const usedRows = allRows.map(row => dataRows[row as keyof typeof dataRows]).filter(value => value && value > 0);
       if (new Set(usedRows).size !== usedRows.length) {
         warnings.push('Some data rows are mapped to the same Excel row');
       }

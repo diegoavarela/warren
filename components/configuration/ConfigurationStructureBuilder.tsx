@@ -53,7 +53,7 @@ export function ConfigurationStructureBuilder({
     // Type-specific validation
     if (configuration.type === 'cashflow') {
       const cashflowConfig = configuration as CashFlowConfiguration;
-      const requiredRows = ['initialBalance', 'finalBalance', 'totalInflows', 'totalOutflows', 'monthlyGeneration'];
+      const requiredRows = ['initialBalance', 'finalBalance', 'totalInflows', 'totalOutflows'];
       requiredRows.forEach(row => {
         if (!cashflowConfig.structure.dataRows[row as keyof typeof cashflowConfig.structure.dataRows] || 
             cashflowConfig.structure.dataRows[row as keyof typeof cashflowConfig.structure.dataRows] < 1) {

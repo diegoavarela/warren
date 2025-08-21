@@ -66,9 +66,16 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
     {
       key: 'monthlyGeneration',
       label: t('config.fields.monthlyGeneration'),
-      description: t('config.fields.monthlyGenerationDesc'),
-      required: true,
-      category: 'core'
+      description: t('config.fields.monthlyGenerationDesc') + ' (Optional - Auto-calculated as Final Balance - Initial Balance if not provided)',
+      required: false,
+      category: 'calculated'
+    },
+    {
+      key: 'netCashFlow',
+      label: 'Flujo Neto (Net Cash Flow)',
+      description: 'Optional - Auto-calculated as Total Inflows - Total Outflows if not provided',
+      required: false,
+      category: 'calculated'
     }
   ];
 

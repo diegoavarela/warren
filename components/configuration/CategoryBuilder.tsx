@@ -110,7 +110,8 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
               finalBalance: 0, 
               totalInflows: 0, 
               totalOutflows: 0, 
-              monthlyGeneration: 0 
+              monthlyGeneration: 0, // Optional - auto-calculated
+              netCashFlow: 0        // Optional - auto-calculated
             },
             categories: { inflows: {}, outflows: {} }
           } 

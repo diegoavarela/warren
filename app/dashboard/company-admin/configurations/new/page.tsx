@@ -370,7 +370,8 @@ export default function NewConfigurationPage() {
                 finalBalance: 105,
                 totalInflows: 95,
                 totalOutflows: 94,
-                monthlyGeneration: 114
+                monthlyGeneration: 0, // Optional - will be auto-calculated as finalBalance - initialBalance
+                netCashFlow: 0        // Optional - will be auto-calculated as totalInflows - totalOutflows
               },
               categories: {
                 inflows: {},

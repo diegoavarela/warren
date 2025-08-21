@@ -314,6 +314,9 @@ export class ExcelProcessingService {
     // Calculate totalInflows and totalOutflows from categories if dataRows are missing/zero
     this.calculateTotalsFromCategories(processedData);
     
+    // Calculate derived fields (netCashFlow and monthlyGeneration) if missing
+    this.calculateDerivedFields(processedData);
+    
     // Add period metadata for actual vs projected distinction (cash flow only)
     if (configuration.type === 'cashflow') {
       processedData.periodMetadata = this.generatePeriodMetadata(
@@ -769,6 +772,73 @@ export class ExcelProcessingService {
         processedData.dataRows.totalOutflows.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
       
       console.log('✅ Calculated totalOutflows:', processedData.dataRows.totalOutflows.values);
+    }
+  }
+
+  /**
+   * Calculate derived fields (netCashFlow and monthlyGeneration) if missing or zero
+   */
+  private calculateDerivedFields(processedData: ProcessedData): void {
+    const periods = processedData.periods;
+    
+    // Check if netCashFlow needs to be calculated
+    const netCashFlowMissing = !processedData.dataRows.netCashFlow || 
+      processedData.dataRows.netCashFlow.values.every(v => v === 0 || v === null || v === undefined);
+    
+    if (netCashFlowMissing) {
+      console.log('🔄 Calculating netCashFlow from totalInflows - totalOutflows...');
+      
+      // Initialize netCashFlow if it doesn't exist
+      if (!processedData.dataRows.netCashFlow) {
+        processedData.dataRows.netCashFlow = {
+          label: 'Net Cash Flow',
+          values: new Array(periods.length).fill(0),
+          total: 0
+        };
+      }
+      
+      // Calculate Net Cash Flow = Total Inflows - Total Outflows
+      for (let periodIndex = 0; periodIndex < periods.length; periodIndex++) {
+        const inflow = processedData.dataRows.totalInflows?.values[periodIndex] || 0;
+        const outflow = processedData.dataRows.totalOutflows?.values[periodIndex] || 0;
+        processedData.dataRows.netCashFlow.values[periodIndex] = inflow - outflow;
+      }
+      
+      // Calculate total across all periods
+      processedData.dataRows.netCashFlow.total = 
+        processedData.dataRows.netCashFlow.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
+      
+      console.log('✅ Calculated netCashFlow:', processedData.dataRows.netCashFlow.values);
+    }
+    
+    // Check if monthlyGeneration needs to be calculated
+    const monthlyGenerationMissing = !processedData.dataRows.monthlyGeneration || 
+      processedData.dataRows.monthlyGeneration.values.every(v => v === 0 || v === null || v === undefined);
+    
+    if (monthlyGenerationMissing) {
+      console.log('🔄 Calculating monthlyGeneration from finalBalance - initialBalance...');
+      
+      // Initialize monthlyGeneration if it doesn't exist
+      if (!processedData.dataRows.monthlyGeneration) {
+        processedData.dataRows.monthlyGeneration = {
+          label: 'Monthly Generation',
+          values: new Array(periods.length).fill(0),
+          total: 0
+        };
+      }
+      
+      // Calculate Monthly Generation = Final Balance - Initial Balance
+      for (let periodIndex = 0; periodIndex < periods.length; periodIndex++) {
+        const finalBalance = processedData.dataRows.finalBalance?.values[periodIndex] || 0;
+        const initialBalance = processedData.dataRows.initialBalance?.values[periodIndex] || 0;
+        processedData.dataRows.monthlyGeneration.values[periodIndex] = finalBalance - initialBalance;
+      }
+      
+      // Calculate total across all periods
+      processedData.dataRows.monthlyGeneration.total = 
+        processedData.dataRows.monthlyGeneration.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
+      
+      console.log('✅ Calculated monthlyGeneration:', processedData.dataRows.monthlyGeneration.values);
     }
   }
   
