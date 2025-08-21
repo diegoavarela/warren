@@ -114,23 +114,30 @@ export async function GET(
     console.log('📅 Period metadata details:', processedData.periodMetadata);
     console.log('⚙️ Configuration lastActualPeriod:', cashFlowConfig.configJson?.structure?.lastActualPeriod);
     
-    // Helper function to find the last actual period label
+    // Helper function to get the last actual period label from configuration
     const getLastActualPeriodLabel = (periodMetadata: any, lastActualPeriod: any): string | null => {
-      if (!periodMetadata || !lastActualPeriod) return null;
+      if (!lastActualPeriod) return null;
       
-      // Find the period label that matches the lastActualPeriod configuration
-      for (const [periodLabel, metadata] of Object.entries(periodMetadata)) {
-        if (metadata && typeof metadata === 'object' && 'isActual' in metadata) {
-          // For cash flow, find the last period that is marked as actual
-          const actualPeriods = Object.entries(periodMetadata)
-            .filter(([_, meta]: [string, any]) => meta?.isActual)
-            .map(([label]) => label);
-          
-          if (actualPeriods.length > 0) {
-            return actualPeriods[actualPeriods.length - 1]; // Return the last actual period
-          }
+      // First priority: Generate label from lastActualPeriod configuration
+      if (lastActualPeriod.type === 'month' && lastActualPeriod.month && lastActualPeriod.year) {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthName = monthNames[lastActualPeriod.month - 1];
+        return `${monthName} ${lastActualPeriod.year}`;
+      } else if (lastActualPeriod.label) {
+        return lastActualPeriod.label;
+      }
+      
+      // Fallback: Look for periods marked as actual in metadata (if any processed data exists)
+      if (periodMetadata) {
+        const actualPeriods = Object.entries(periodMetadata)
+          .filter(([_, meta]: [string, any]) => meta?.isActual)
+          .map(([label]) => label);
+        
+        if (actualPeriods.length > 0) {
+          return actualPeriods[actualPeriods.length - 1]; // Return the last actual period
         }
       }
+      
       return null;
     };
     
