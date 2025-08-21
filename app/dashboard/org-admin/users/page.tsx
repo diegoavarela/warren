@@ -269,7 +269,8 @@ function OrgUsersPage() {
                 {filteredUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="px-6 py-4 hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                    className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between group"
+                    onClick={() => router.push(`/dashboard/org-admin/users/${user.id}/edit`)}
                   >
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -279,7 +280,7 @@ function OrgUsersPage() {
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <h3 className="text-base font-semibold text-gray-900">
+                          <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                             {user.firstName} {user.lastName}
                           </h3>
                           <span className={`px-2 py-1 text-xs rounded-full ${getRoleBadgeColor(user.organizationRole)}`}>
@@ -312,7 +313,10 @@ function OrgUsersPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => router.push(`/dashboard/org-admin/users/${user.id}/edit`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/dashboard/org-admin/users/${user.id}/edit`);
+                        }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                         title={locale?.startsWith('es') ? 'Editar usuario' : 'Edit user'}
                       >
@@ -321,7 +325,10 @@ function OrgUsersPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleResetPassword(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleResetPassword(user);
+                        }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                         title={locale?.startsWith('es') ? 'Restablecer contraseña' : 'Reset password'}
                       >
@@ -331,7 +338,10 @@ function OrgUsersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteUser(user.id, user.email)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteUser(user.id, user.email);
+                          }}
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
                           title={locale?.startsWith('es') ? 'Eliminar usuario' : 'Delete user'}
                         >
