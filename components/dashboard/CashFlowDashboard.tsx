@@ -11,6 +11,7 @@ import { HelpIcon } from '../HelpIcon';
 import { helpTopics } from '@/lib/help-content';
 import { useTranslation } from '@/lib/translations';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
+import { useLocale } from '@/contexts/LocaleContext';
 import { 
   BanknotesIcon, 
   ArrowUpIcon, 
@@ -123,6 +124,64 @@ interface ForecastData {
   months: string[];
 }
 
+// Custom number formatter that ensures consistent formatting across all browsers/systems
+function createConsistentFormatter(
+  thousandsSeparator: string,
+  decimalSeparator: string,
+  currencySymbol: string
+) {
+  return function formatNumber(value: number, options: {
+    style: 'currency' | 'decimal';
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+    currency?: string;
+  }): string {
+    if (!value || isNaN(value)) return '0';
+    
+    const { style, minimumFractionDigits = 0, maximumFractionDigits = 1 } = options;
+    
+    // Handle negative values
+    const isNegative = value < 0;
+    const absValue = Math.abs(value);
+    
+    // Round to desired decimal places
+    const factor = Math.pow(10, maximumFractionDigits);
+    const rounded = Math.round(absValue * factor) / factor;
+    
+    // Split into integer and decimal parts
+    const [integerPart, decimalPart = ''] = rounded.toString().split('.');
+    
+    // Add thousands separators
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
+    
+    // Handle decimal part
+    let formattedDecimal = decimalPart.padEnd(minimumFractionDigits, '0');
+    if (maximumFractionDigits === 0) {
+      formattedDecimal = '';
+    } else if (formattedDecimal.length > maximumFractionDigits) {
+      formattedDecimal = formattedDecimal.substring(0, maximumFractionDigits);
+    }
+    
+    // Combine parts
+    let result = formattedInteger;
+    if (formattedDecimal && (minimumFractionDigits > 0 || parseFloat('0.' + formattedDecimal) > 0)) {
+      result += decimalSeparator + formattedDecimal;
+    }
+    
+    // Add currency symbol for currency style
+    if (style === 'currency') {
+      result = currencySymbol + ' ' + result;
+    }
+    
+    // Add negative sign
+    if (isNegative) {
+      result = '-' + result;
+    }
+    
+    return result;
+  };
+}
+
 // Inner content component that has access to Smart Units context
 function CashFlowDashboardContent({ 
   companyId, 
@@ -145,6 +204,9 @@ function CashFlowDashboardContent({
 }) {
   // Translation hook
   const { t } = useTranslation(locale);
+  
+  // Get consistent locale context for number formatting
+  const { numberFormat: localeNumberFormat } = useLocale();
   
   // Original Warren V2 formatting (NO Smart components)
   const [displayUnits, setDisplayUnits] = useState<'normal' | 'K' | 'M'>('normal');
@@ -171,7 +233,7 @@ function CashFlowDashboardContent({
     }
   }, [liveData]);
   
-  // Original Warren V2 formatValue function
+  // Consistent cross-browser number formatter
   const formatValue = (value: number): string => {
     if (!value || isNaN(value)) return '0';
     
@@ -186,27 +248,33 @@ function CashFlowDashboardContent({
       suffix = 'M';
     }
     
-    // Ensure we have a valid currency code for Intl.NumberFormat
+    // Get locale-specific number format settings
+    const { decimalSeparator, thousandsSeparator, currencySymbol } = localeNumberFormat;
+    
+    // Create consistent formatter using explicit locale rules
+    const formatter = createConsistentFormatter(thousandsSeparator, decimalSeparator, currencySymbol);
+    
+    // Ensure we have a valid currency code
     const validCurrency = getValidCurrencyCode(selectedCurrency);
     
-    // For ARS, use a custom format to show "ARS" instead of "$"
+    // For ARS, use decimal format with "ARS" prefix
     if (validCurrency === 'ARS') {
-      const numberFormatted = new Intl.NumberFormat(locale || 'es-AR', {
+      const numberFormatted = formatter(convertedValue, {
         style: 'decimal',
         minimumFractionDigits: 0,
         maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
-      }).format(convertedValue);
+      });
       
       return `ARS ${numberFormatted}${suffix ? ` ${suffix}` : ''}`;
     }
     
-    // For other currencies, use standard formatting
-    const formatted = new Intl.NumberFormat(locale || 'es-AR', {
+    // For other currencies, use currency format
+    const formatted = formatter(convertedValue, {
       style: 'currency',
-      currency: validCurrency,
       minimumFractionDigits: 0,
-      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1
-    }).format(convertedValue);
+      maximumFractionDigits: displayUnits === 'normal' ? 0 : 1,
+      currency: validCurrency
+    });
     
     return formatted + (suffix ? ` ${suffix}` : '');
   };

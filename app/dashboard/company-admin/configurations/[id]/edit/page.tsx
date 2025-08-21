@@ -633,6 +633,8 @@ export default function EditConfigurationPage() {
       };
       
       console.log('💾 [AUTOSAVE] Payload being sent:');
+      console.log('🔍 [AUTOSAVE] Payload lastActualPeriod:', 
+        payload.configJson.type === 'cashflow' ? (payload.configJson.structure as any).lastActualPeriod : 'N/A (P&L config)');
       console.log(JSON.stringify(payload, null, 2));
       
       const response = await fetch(`/api/configurations/${configId}`, {
@@ -743,8 +745,10 @@ export default function EditConfigurationPage() {
         version: (configuration?.version || 0) + 1, // Increment version
       };
       
-      // Debug: Check if period mapping is included
+      // Debug: Check if period mapping and lastActualPeriod are included
       console.log('🔍 [SINGLE SOURCE] Period mappings in final config:', finalConfigJson.structure?.periodMapping);
+      console.log('🔍 [SINGLE SOURCE] Last actual period in final config:', 
+        finalConfigJson.type === 'cashflow' ? (finalConfigJson.structure as any).lastActualPeriod : 'N/A (P&L config)');
       console.log('🔍 [SINGLE SOURCE] Full final structure:', finalConfigJson.structure);
       
       const payload = {
@@ -765,6 +769,8 @@ export default function EditConfigurationPage() {
       
       console.log('💾 [SINGLE SOURCE] Final payload:', payload);
       console.log('🔍 [SINGLE SOURCE] Payload period mappings:', payload.configJson.structure?.periodMapping);
+      console.log('🔍 [SINGLE SOURCE] Payload lastActualPeriod:', 
+        payload.configJson.type === 'cashflow' ? (payload.configJson.structure as any).lastActualPeriod : 'N/A (P&L config)');
       
       const response = await fetch(`/api/configurations/${configId}`, {
         method: 'PUT',
