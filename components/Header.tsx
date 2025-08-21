@@ -312,14 +312,20 @@ export function Header() {
                         </h3>
                       </div>
                       <div className="max-h-96 overflow-y-auto">
-                        {notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            onClick={() => handleNotificationClick(notification)}
-                            className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-all duration-200 hover:translate-x-1 ${
-                              !notification.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                            }`}
-                          >
+                        {notifications.map((notification) => {
+                          console.log('🔔 Rendering notification:', notification.id, 'read:', notification.read);
+                          return (
+                            <div
+                              key={notification.id}
+                              onClick={() => {
+                                console.log('🔔 Notification clicked:', notification.id);
+                                alert('Notification clicked: ' + notification.title);
+                                handleNotificationClick(notification);
+                              }}
+                              className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-all duration-200 hover:translate-x-1 ${
+                                !notification.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                              }`}
+                            >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-900">{notification.title}</p>
@@ -330,7 +336,8 @@ export function Header() {
                               )}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div className="px-4 py-2 border-t border-gray-100">
                         <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
