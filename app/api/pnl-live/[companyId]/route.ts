@@ -101,6 +101,11 @@ export async function GET(
           currency: pnlConfig.configJson?.metadata?.currency || 'USD',
           units: pnlConfig.configJson?.metadata?.units || 'normal',
           displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
+          numberFormat: pnlConfig.configJson?.metadata?.numberFormat || {
+            decimalSeparator: '.',
+            thousandsSeparator: ',',
+            decimalPlaces: 0
+          },
           type: 'pnl',
           configurationName: pnlConfig.name
         }

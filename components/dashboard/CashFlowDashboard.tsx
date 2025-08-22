@@ -233,7 +233,7 @@ function CashFlowDashboardContent({
     }
   }, [liveData]);
   
-  // Consistent cross-browser number formatter
+  // Consistent cross-browser number formatter with configuration override
   const formatValue = (value: number): string => {
     if (!value || isNaN(value)) return '0';
     
@@ -248,10 +248,26 @@ function CashFlowDashboardContent({
       suffix = 'M';
     }
     
-    // Get locale-specific number format settings
-    const { decimalSeparator, thousandsSeparator, currencySymbol } = localeNumberFormat;
+    // Get formatting settings - prioritize configuration over locale detection
+    const configNumberFormat = liveData?.data?.metadata?.numberFormat;
+    let decimalSeparator, thousandsSeparator, currencySymbol;
     
-    // Create consistent formatter using explicit locale rules
+    if (configNumberFormat) {
+      // Use configuration formatting (consistent for all users)
+      decimalSeparator = configNumberFormat.decimalSeparator;
+      thousandsSeparator = configNumberFormat.thousandsSeparator;
+      currencySymbol = selectedCurrency === 'ARS' ? 'ARS' : '$';
+      console.log('📊 Using configuration formatting:', { decimalSeparator, thousandsSeparator });
+    } else {
+      // Fallback to locale detection
+      const localeFormat = localeNumberFormat;
+      decimalSeparator = localeFormat.decimalSeparator;
+      thousandsSeparator = localeFormat.thousandsSeparator;
+      currencySymbol = localeFormat.currencySymbol;
+      console.log('📊 Using locale formatting:', { decimalSeparator, thousandsSeparator });
+    }
+    
+    // Create consistent formatter using explicit rules
     const formatter = createConsistentFormatter(thousandsSeparator, decimalSeparator, currencySymbol);
     
     // Ensure we have a valid currency code

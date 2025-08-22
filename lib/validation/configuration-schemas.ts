@@ -9,6 +9,11 @@ export const ConfigurationMetadataSchema = z.object({
   dateFormat: z.string().optional(),
   selectedSheet: z.string().optional(), // For Excel sheet persistence
   lastSheetUpdate: z.string().optional(), // Timestamp of last sheet change
+  numberFormat: z.object({
+    decimalSeparator: z.enum(['.', ',']),
+    thousandsSeparator: z.enum([',', '.', ' ']),
+    decimalPlaces: z.number().min(0).max(4).optional().default(0),
+  }).optional(),
 });
 
 export const BaseConfigurationSchema = z.object({

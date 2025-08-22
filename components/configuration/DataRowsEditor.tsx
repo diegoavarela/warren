@@ -30,7 +30,7 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
   const [showExcelPreview, setShowExcelPreview] = useState(false);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
-  const { t } = useTranslation('es');
+  const { t } = useTranslation(configuration.metadata?.locale || 'es');
   const { excelData, loading, error } = useExcelPreview(configurationId);
 
   // Define field definitions for each configuration type
@@ -66,14 +66,14 @@ export function DataRowsEditor({ configuration, onChange, configurationId }: Dat
     {
       key: 'monthlyGeneration',
       label: t('config.fields.monthlyGeneration'),
-      description: t('config.fields.monthlyGenerationDesc') + ' (Optional - Auto-calculated as Final Balance - Initial Balance if not provided)',
+      description: t('config.fields.monthlyGeneration.description'),
       required: false,
       category: 'calculated'
     },
     {
       key: 'netCashFlow',
-      label: 'Flujo Neto (Net Cash Flow)',
-      description: 'Optional - Auto-calculated as Total Inflows - Total Outflows if not provided',
+      label: t('config.fields.netCashFlow'),
+      description: t('config.fields.netCashFlow.description'),
       required: false,
       category: 'calculated'
     }

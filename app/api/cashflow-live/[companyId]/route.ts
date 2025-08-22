@@ -170,6 +170,11 @@ export async function GET(
         metadata: {
           currency: cashFlowConfig.configJson?.metadata?.currency || 'ARS',
           units: cashFlowConfig.configJson?.metadata?.units || 'normal',
+          numberFormat: cashFlowConfig.configJson?.metadata?.numberFormat || {
+            decimalSeparator: '.',
+            thousandsSeparator: ',',
+            decimalPlaces: 0
+          },
           type: 'cashflow',
           configurationName: cashFlowConfig.name,
           lastActualPeriod: cashFlowConfig.configJson?.structure?.lastActualPeriod,

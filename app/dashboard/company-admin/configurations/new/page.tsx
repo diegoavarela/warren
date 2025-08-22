@@ -96,6 +96,10 @@ export default function NewConfigurationPage() {
       const inheritedCurrency = selectedCompany.baseCurrency || 'USD';
       // Ensure locale is valid (2-10 characters as per schema)
       let inheritedLocale = selectedCompany.locale || 'en';
+      // If it's a long locale like 'es-AR', convert to just 'es' for the schema
+      if (inheritedLocale.includes('-')) {
+        inheritedLocale = inheritedLocale.split('-')[0];
+      }
       if (inheritedLocale.length < 2 || inheritedLocale.length > 10) {
         inheritedLocale = 'en';
       }
@@ -361,7 +365,15 @@ export default function NewConfigurationPage() {
         if (formData.type === 'cashflow') {
           configJson = {
             type: 'cashflow',
-            metadata: formData.metadata,
+            metadata: {
+              ...formData.metadata,
+              // Add default number formatting for consistency
+              numberFormat: {
+                decimalSeparator: '.',
+                thousandsSeparator: ',',
+                decimalPlaces: 0
+              }
+            },
             structure: {
               periodsRow: 8,
               periodsRange: 'B8:M8',
@@ -369,9 +381,8 @@ export default function NewConfigurationPage() {
                 initialBalance: 10,
                 finalBalance: 105,
                 totalInflows: 95,
-                totalOutflows: 94,
-                monthlyGeneration: 0, // Optional - will be auto-calculated as finalBalance - initialBalance
-                netCashFlow: 0        // Optional - will be auto-calculated as totalInflows - totalOutflows
+                totalOutflows: 94
+                // monthlyGeneration and netCashFlow are optional and will be auto-calculated
               },
               categories: {
                 inflows: {},
@@ -382,7 +393,15 @@ export default function NewConfigurationPage() {
         } else {
           configJson = {
             type: 'pnl',
-            metadata: formData.metadata,
+            metadata: {
+              ...formData.metadata,
+              // Add default number formatting for consistency
+              numberFormat: {
+                decimalSeparator: '.',
+                thousandsSeparator: ',',
+                decimalPlaces: 0
+              }
+            },
             structure: {
               periodsRow: 4,
               periodsRange: 'B4:M4',
@@ -416,16 +435,25 @@ export default function NewConfigurationPage() {
         }
       }
 
-      // Add missing fields to configJson
+      // Add missing fields to configJson - these are required by BaseConfigurationSchema
       configJson.name = formData.name;
+      configJson.description = formData.description || '';
       configJson.version = 1;
       
       // Ensure locale is valid before sending
-      if (!formData.metadata.locale || formData.metadata.locale.length < 2) {
-        console.warn('⚠️ Invalid locale detected, falling back to default');
-        formData.metadata.locale = 'en';
-        configJson.metadata.locale = 'en';
+      let finalLocale = formData.metadata.locale || 'en';
+      // If it's a long locale like 'es-AR', convert to just 'es' for the schema
+      if (finalLocale.includes('-')) {
+        finalLocale = finalLocale.split('-')[0];
       }
+      if (!finalLocale || finalLocale.length < 2 || finalLocale.length > 10) {
+        console.warn('⚠️ Invalid locale detected, falling back to default');
+        finalLocale = 'en';
+      }
+      
+      // Update both formData and configJson with the valid locale
+      formData.metadata.locale = finalLocale;
+      configJson.metadata.locale = finalLocale;
 
       const payload = {
         companyId: selectedCompany.id,
@@ -434,8 +462,9 @@ export default function NewConfigurationPage() {
         type: formData.type,
         isTemplate: formData.isTemplate,
         configJson,
-        metadata: formData.metadata,
-        ...(uploadedFileId && { associatedFileId: uploadedFileId })
+        metadata: formData.metadata
+        // Note: associatedFileId is not part of CompanyConfigurationCreateSchema
+        // File association will be handled by the service layer after configuration creation
       };
       
       console.log('Creating configuration with payload:', payload);

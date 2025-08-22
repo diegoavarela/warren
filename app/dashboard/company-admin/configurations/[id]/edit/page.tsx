@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Settings, Database, Layers, Calendar, Code, Copy, Download, Eye, HelpCircle, ChevronDown, ChevronRight, Code2, Check, X, Edit, FileSpreadsheet, TrendingUp, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, Settings, Database, Layers, Calendar, Code, Copy, Download, Eye, HelpCircle, ChevronDown, ChevronRight, Code2, Check, X, Edit, FileSpreadsheet, TrendingUp, DollarSign, Calculator, Globe, Hash } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppLayout } from '@/components/AppLayout';
 import { DataRowsEditor } from '@/components/configuration/DataRowsEditor';
@@ -48,6 +48,11 @@ interface ConfigurationFormData {
     currency: string;
     locale: string;
     units: 'normal' | 'thousands' | 'millions';
+    numberFormat?: {
+      decimalSeparator: '.' | ',';
+      thousandsSeparator: ',' | '.' | ' ';
+      decimalPlaces: number;
+    };
   };
 }
 
@@ -73,6 +78,7 @@ export default function EditConfigurationPage() {
   const [showJsonTree, setShowJsonTree] = useState(false);
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [showHelperOverlay, setShowHelperOverlay] = useState(false);
+  const [showMetadataHelp, setShowMetadataHelp] = useState(false);
   
   const [formData, setFormData] = useState<ConfigurationFormData>({
     name: '',
@@ -83,7 +89,12 @@ export default function EditConfigurationPage() {
     metadata: {
       currency: 'USD',
       locale: 'en',
-      units: 'normal'
+      units: 'normal',
+      numberFormat: {
+        decimalSeparator: '.',
+        thousandsSeparator: ',',
+        decimalPlaces: 0
+      }
     }
   });
 
@@ -228,6 +239,11 @@ export default function EditConfigurationPage() {
           currency: configData.metadata?.currency || prev.metadata.currency,
           locale: configData.metadata?.locale || prev.metadata.locale,
           units: configData.metadata?.units || prev.metadata.units,
+          numberFormat: configData.metadata?.numberFormat || prev.metadata.numberFormat || {
+            decimalSeparator: '.',
+            thousandsSeparator: ',',
+            decimalPlaces: 0
+          }
         }
       }));
     }
@@ -305,7 +321,12 @@ export default function EditConfigurationPage() {
         metadata: {
           currency: config.metadata?.currency || 'USD',
           locale: config.metadata?.locale || 'en',
-          units: config.metadata?.units || 'normal'
+          units: config.metadata?.units || 'normal',
+          numberFormat: config.metadata?.numberFormat || {
+            decimalSeparator: '.',
+            thousandsSeparator: ',',
+            decimalPlaces: 0
+          }
         }
       };
       setFormData(initialFormData);
@@ -507,27 +528,61 @@ export default function EditConfigurationPage() {
     }
   };
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: string, value: string | boolean | number) => {
     // Update formData
     if (field.startsWith('metadata.')) {
-      const metadataField = field.replace('metadata.', '');
-      setFormData(prev => ({
-        ...prev,
-        metadata: {
-          ...prev.metadata,
-          [metadataField]: value
-        }
-      }));
+      const fieldPath = field.replace('metadata.', '');
       
-      // SINGLE SOURCE OF TRUTH: Also update configData metadata
-      if (configData) {
-        const updatedConfigData = JSON.parse(JSON.stringify(configData));
-        updatedConfigData.metadata = {
-          ...updatedConfigData.metadata,
-          [metadataField]: value as any
-        };
-        console.log('📝 [SINGLE SOURCE] Updated configData metadata:', updatedConfigData.metadata);
-        setConfigData(updatedConfigData);
+      // Handle nested numberFormat fields
+      if (fieldPath.startsWith('numberFormat.')) {
+        const numberFormatField = fieldPath.replace('numberFormat.', '');
+        setFormData(prev => ({
+          ...prev,
+          metadata: {
+            ...prev.metadata,
+            numberFormat: {
+              decimalSeparator: '.' as const,
+              thousandsSeparator: ',' as const,
+              decimalPlaces: 0,
+              ...prev.metadata.numberFormat,
+              [numberFormatField]: value
+            }
+          }
+        }));
+        
+        // SINGLE SOURCE OF TRUTH: Also update configData metadata
+        if (configData) {
+          const updatedConfigData = JSON.parse(JSON.stringify(configData));
+          updatedConfigData.metadata = {
+            ...updatedConfigData.metadata,
+            numberFormat: {
+              ...updatedConfigData.metadata.numberFormat,
+              [numberFormatField]: value as any
+            }
+          };
+          console.log('📝 [SINGLE SOURCE] Updated configData numberFormat:', updatedConfigData.metadata.numberFormat);
+          setConfigData(updatedConfigData);
+        }
+      } else {
+        // Handle regular metadata fields
+        setFormData(prev => ({
+          ...prev,
+          metadata: {
+            ...prev.metadata,
+            [fieldPath]: value
+          }
+        }));
+        
+        // SINGLE SOURCE OF TRUTH: Also update configData metadata
+        if (configData) {
+          const updatedConfigData = JSON.parse(JSON.stringify(configData));
+          updatedConfigData.metadata = {
+            ...updatedConfigData.metadata,
+            [fieldPath]: value as any
+          };
+          console.log('📝 [SINGLE SOURCE] Updated configData metadata:', updatedConfigData.metadata);
+          setConfigData(updatedConfigData);
+        }
       }
     } else {
       setFormData(prev => ({
@@ -793,12 +848,6 @@ export default function EditConfigurationPage() {
       
       toast.success(t('config.success.updated'));
       
-      // Show dashboard link suggestion
-      const dashboardType = formData.type === 'cashflow' ? 'cashflow' : 'pnl';
-      const dashboardName = formData.type === 'cashflow' ? 'Cash Flow' : 'P&L';
-      setTimeout(() => {
-        toast.info(`Configuration ready! You can now view the ${dashboardName} Dashboard`, 'Dashboard Available');
-      }, 500);
       
       // PHASE 4: Reset unsaved changes tracking after successful save
       setLastSavedAt(new Date());
@@ -883,7 +932,7 @@ export default function EditConfigurationPage() {
               }
             } else {
               console.warn('⚠️ [AUTO-PROCESS] No matching file found for session:', uploadSession);
-              toast.info('Configuration saved. Upload the Excel file through "Procesar Archivos" to see the dashboard.');
+              toast.info('Configuration saved. Upload the Excel file through "Procesar Archivos".');
             }
           } else {
             console.error('❌ [AUTO-PROCESS] Failed to fetch files:', filesResponse.status);
@@ -1117,7 +1166,19 @@ export default function EditConfigurationPage() {
                   {/* Metadata Section */}
                   <div className="border-t pt-6">
                     <div className="mb-4">
-                      <h3 className="text-lg font-medium">{t('config.metadata.title')}</h3>
+                      <h3 className="text-lg font-medium flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
+                        {t('config.metadata.title')}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowMetadataHelp(true)}
+                          className="ml-auto p-1 h-6 w-6 rounded-full hover:bg-blue-100"
+                        >
+                          <HelpCircle className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         {t('config.metadata.description')}
                       </p>
@@ -1173,6 +1234,100 @@ export default function EditConfigurationPage() {
                             <SelectItem value="millions">{t('config.units.millions')}</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+
+                    {/* Number Formatting Section */}
+                    <div className="border-t pt-6">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-medium flex items-center gap-2">
+                          <DollarSign className="h-5 w-5" />
+                          {t('config.numberFormat.title')}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {t('config.numberFormat.description')}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="decimalSeparator">{t('config.numberFormat.decimalSeparator')}</Label>
+                          <Select 
+                            value={formData.metadata.numberFormat?.decimalSeparator || '.'} 
+                            onValueChange={(value) => handleInputChange('metadata.numberFormat.decimalSeparator', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('config.numberFormat.decimalSeparator')} />
+                            </SelectTrigger>
+                            <SelectContent className="w-auto min-w-max max-w-xs" sideOffset={4} align="start">
+                              <SelectItem value=".">{t('config.numberFormat.decimalSeparator.period')}</SelectItem>
+                              <SelectItem value=",">{t('config.numberFormat.decimalSeparator.comma')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="thousandsSeparator">{t('config.numberFormat.thousandsSeparator')}</Label>
+                          <Select 
+                            value={formData.metadata.numberFormat?.thousandsSeparator || ','} 
+                            onValueChange={(value) => handleInputChange('metadata.numberFormat.thousandsSeparator', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('config.numberFormat.thousandsSeparator')} />
+                            </SelectTrigger>
+                            <SelectContent className="w-auto min-w-max max-w-xs" sideOffset={4} align="start">
+                              <SelectItem value=",">{t('config.numberFormat.thousandsSeparator.comma')}</SelectItem>
+                              <SelectItem value=".">{t('config.numberFormat.thousandsSeparator.period')}</SelectItem>
+                              <SelectItem value=" ">{t('config.numberFormat.thousandsSeparator.space')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="decimalPlaces">{t('config.numberFormat.decimalPlaces')}</Label>
+                          <Select 
+                            value={String(formData.metadata.numberFormat?.decimalPlaces || 0)} 
+                            onValueChange={(value) => handleInputChange('metadata.numberFormat.decimalPlaces', parseInt(value))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('config.numberFormat.decimalPlaces')} />
+                            </SelectTrigger>
+                            <SelectContent className="w-auto min-w-max max-w-xs" sideOffset={4} align="start">
+                              <SelectItem value="0">{t('config.numberFormat.decimalPlaces.0')}</SelectItem>
+                              <SelectItem value="1">{t('config.numberFormat.decimalPlaces.1')}</SelectItem>
+                              <SelectItem value="2">{t('config.numberFormat.decimalPlaces.2')}</SelectItem>
+                              <SelectItem value="3">{t('config.numberFormat.decimalPlaces.3')}</SelectItem>
+                              <SelectItem value="4">{t('config.numberFormat.decimalPlaces.4')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Preview */}
+                      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-blue-800 mb-2">
+                          <Eye className="h-4 w-4" />
+                          <span className="font-medium">{t('config.numberFormat.preview')}</span>
+                        </div>
+                        <div className="text-sm text-blue-700">
+                          {t('config.numberFormat.example')}: {(() => {
+                            const format = formData.metadata.numberFormat;
+                            const decimal = format?.decimalSeparator || '.';
+                            const thousands = format?.thousandsSeparator || ',';
+                            const places = format?.decimalPlaces || 0;
+                            
+                            let number = '1234567';
+                            if (places > 0) {
+                              number += decimal + '89'.padEnd(places, '0').substring(0, places);
+                            }
+                            
+                            // Add thousands separators
+                            const parts = number.split(decimal);
+                            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousands);
+                            
+                            return parts.join(decimal);
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1598,21 +1753,6 @@ export default function EditConfigurationPage() {
                 >
                   {saving || isAutoSaving ? 'Guardando...' : 'Guardar y Salir'}
                 </Button>
-                
-                {/* Show View Dashboard button if configuration is saved and has a type */}
-                {!hasUnsavedChanges && configuration && formData.type && (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const dashboardType = formData.type === 'cashflow' ? 'cashflow' : 'pnl';
-                      router.push(`/dashboard/company-admin/${dashboardType}`);
-                    }}
-                    leftIcon={formData.type === 'cashflow' ? <TrendingUp className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    Ver Dashboard {formData.type === 'cashflow' ? 'Cash Flow' : 'P&L'}
-                  </Button>
-                )}
               </div>
             </div>
           </form>
@@ -1738,6 +1878,96 @@ export default function EditConfigurationPage() {
                       <p>• Required fields: type, name, version, metadata, structure</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Metadata Help Modal */}
+        {showMetadataHelp && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Settings className="h-6 w-6" />
+                    {t('config.metadata.help.title')}
+                  </h2>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowMetadataHelp(false)}
+                    className="p-2"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                <div className="prose max-w-none">
+                  <p className="text-lg text-gray-700 mb-6">
+                    {t('config.metadata.help.intro')}
+                  </p>
+                  
+                  <div className="space-y-8">
+                    {/* Currency Section */}
+                    <div className="border-l-4 border-blue-500 pl-4">
+                      <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                        <DollarSign className="h-5 w-5" />
+                        {t('config.metadata.help.currency.title')}
+                      </h3>
+                      <div 
+                        className="text-gray-700" 
+                        dangerouslySetInnerHTML={{ __html: t('config.metadata.help.currency.content') }}
+                      />
+                    </div>
+                    
+                    {/* Units Section */}
+                    <div className="border-l-4 border-green-500 pl-4">
+                      <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                        <Calculator className="h-5 w-5" />
+                        {t('config.metadata.help.units.title')}
+                      </h3>
+                      <div 
+                        className="text-gray-700" 
+                        dangerouslySetInnerHTML={{ __html: t('config.metadata.help.units.content') }}
+                      />
+                    </div>
+                    
+                    {/* Language Section */}
+                    <div className="border-l-4 border-purple-500 pl-4">
+                      <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                        <Globe className="h-5 w-5" />
+                        {t('config.metadata.help.locale.title')}
+                      </h3>
+                      <div 
+                        className="text-gray-700" 
+                        dangerouslySetInnerHTML={{ __html: t('config.metadata.help.locale.content') }}
+                      />
+                    </div>
+                    
+                    {/* Number Format Section */}
+                    <div className="border-l-4 border-orange-500 pl-4">
+                      <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                        <Hash className="h-5 w-5" />
+                        {t('config.metadata.help.numberFormat.title')}
+                      </h3>
+                      <div 
+                        className="text-gray-700" 
+                        dangerouslySetInnerHTML={{ __html: t('config.metadata.help.numberFormat.content') }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end mt-8 pt-4 border-t">
+                  <Button
+                    type="button"
+                    onClick={() => setShowMetadataHelp(false)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {t('common.close')}
+                  </Button>
                 </div>
               </div>
             </div>

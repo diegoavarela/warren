@@ -15,6 +15,7 @@ import { RevenueForecastTrendsChartJS } from './RevenueForecastTrendsChartJS';
 import { NetIncomeForecastTrendsChartJS } from './NetIncomeForecastTrendsChartJS';
 import { ComparisonPeriodSelector } from './ComparisonPeriodSelector';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
+import { useLocale } from '@/contexts/LocaleContext';
 // Removed legacy processed data hook - using Live API instead
 import { transformToPnLData } from '@/lib/utils/financial-transformers';
 import { filterValidPeriods, sortPeriods } from '@/lib/utils/period-utils';
@@ -56,6 +57,13 @@ interface PnLData {
   forecasts?: {
     revenue: ForecastData;
     netIncome: ForecastData;
+  };
+  metadata?: {
+    numberFormat?: {
+      decimalSeparator: '.' | ',';
+      thousandsSeparator: ',' | '.' | ' ';
+      decimalPlaces: number;
+    };
   };
 }
 
@@ -750,6 +758,21 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     // Use compact notation for very large numbers
     const useCompactNotation = magnitude >= 1000000;
     
+    // Get formatting settings - prioritize configuration over locale detection
+    const configNumberFormat = data?.metadata?.numberFormat;
+    let decimalSeparator, thousandsSeparator;
+    
+    if (configNumberFormat) {
+      // Use configuration formatting (consistent for all users)
+      decimalSeparator = configNumberFormat.decimalSeparator;
+      thousandsSeparator = configNumberFormat.thousandsSeparator;
+    } else {
+      // Fallback to locale detection
+      const { numberFormat: localeNumberFormat } = useLocale();
+      decimalSeparator = localeNumberFormat.decimalSeparator;
+      thousandsSeparator = localeNumberFormat.thousandsSeparator;
+    }
+
     const numberFormatter = new Intl.NumberFormat(locale, {
       minimumFractionDigits,
       maximumFractionDigits,

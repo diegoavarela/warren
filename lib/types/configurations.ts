@@ -19,6 +19,11 @@ export interface ConfigurationMetadata {
   dateFormat?: string;
   selectedSheet?: string; // For Excel sheet persistence
   lastSheetUpdate?: string; // Timestamp of last sheet change
+  numberFormat?: {
+    decimalSeparator: '.' | ',';
+    thousandsSeparator: ',' | '.' | ' ';
+    decimalPlaces: number;
+  };
 }
 
 // Cash Flow Configuration Structure

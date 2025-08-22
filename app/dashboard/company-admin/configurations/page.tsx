@@ -649,20 +649,6 @@ export default function ConfigurationsPage() {
                   </div>
                   
                   <div className="flex gap-2">
-                    {/* Always show Ver Dashboard button for active configurations since we use live API */}
-                    {config.isActive && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const dashboardType = config.type === 'cashflow' ? 'cashflow' : 'pnl';
-                          router.push(`/dashboard/company-admin/${dashboardType}`);
-                        }}
-                        leftIcon={config.type === 'cashflow' ? <TrendingUp className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />}
-                      >
-                        Ver Dashboard
-                      </Button>
-                    )}
                   </div>
                 </div>
               </CardBody>

@@ -99,6 +99,13 @@ export interface PnLData {
     revenue: ForecastData;
     netIncome: ForecastData;
   };
+  metadata?: {
+    numberFormat?: {
+      decimalSeparator: '.' | ',';
+      thousandsSeparator: ',' | '.' | ' ';
+      decimalPlaces: number;
+    };
+  };
 }
 
 export interface CashFlowData {
