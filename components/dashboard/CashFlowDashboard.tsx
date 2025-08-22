@@ -706,6 +706,15 @@ function CashFlowDashboardContent({
     const current = data.currentPeriod;
     const previous = data.previousPeriod;
     const ytd = data.yearToDate;
+    
+    // DEBUG: Check what values are being passed to UI components
+    console.log('🚨 UI COMPONENT VALUES - What gets displayed:', {
+      'current.netCashFlow': current.netCashFlow,
+      'current.monthlyGeneration': current.monthlyGeneration,
+      'current.finalBalance': current.finalBalance,
+      'current.totalInflows': current.totalInflows,
+      'current.totalOutflows': current.totalOutflows
+    });
 
     // Debug the actual values being rendered
     console.log('=== DASHBOARD RENDER DEBUG - UPDATED VERSION ===');
