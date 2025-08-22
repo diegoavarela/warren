@@ -1298,8 +1298,8 @@ export function CashFlowDashboard({
       const monthlyGeneration = liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0;
       
       // Debug logging for the issue
-      if (index === 7) { // August 2025
-        console.log('🐛 LIVE DATA DEBUG - August 2025 (index 7):', {
+      if (index === 4) { // May 2025 - ACTUAL CURRENT PERIOD
+        console.log('🐛 LIVE DATA DEBUG - May 2025 (index 4 - YOUR ACTUAL PERIOD):', {
           totalInflows,
           totalOutflows,
           netCashFlow,
