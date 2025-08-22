@@ -114,6 +114,17 @@ export async function GET(
     console.log('📅 Period metadata details:', processedData.periodMetadata);
     console.log('⚙️ Configuration lastActualPeriod:', cashFlowConfig.configJson?.structure?.lastActualPeriod);
     
+    // Debug financial data for the problematic period (August 2025, likely index 7)
+    if (processedData.dataRows && processedData.periods?.length > 7) {
+      console.log('🐛 API DEBUG - August 2025 financial data (index 7):');
+      console.log('- Total Inflows:', processedData.dataRows.totalInflows?.values[7]);
+      console.log('- Total Outflows:', processedData.dataRows.totalOutflows?.values[7]);
+      console.log('- Net Cash Flow (API):', processedData.dataRows.netCashFlow?.values[7]);
+      console.log('- Monthly Generation:', processedData.dataRows.monthlyGeneration?.values[7]);
+      console.log('- Final Balance:', processedData.dataRows.finalBalance?.values[7]);
+      console.log('- Initial Balance:', processedData.dataRows.initialBalance?.values[7]);
+    }
+    
     // Helper function to get the last actual period label from configuration
     const getLastActualPeriodLabel = (periodMetadata: any, lastActualPeriod: any): string | null => {
       if (!lastActualPeriod) return null;

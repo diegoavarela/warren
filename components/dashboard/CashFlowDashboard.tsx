@@ -1292,6 +1292,26 @@ export function CashFlowDashboard({
       const periodStart = new Date(year, month - 1, 1); // month is 0-based in Date constructor
       const periodEnd = new Date(year, month, 0); // Last day of the month
       
+      const totalInflows = liveData.data.data.dataRows?.totalInflows?.values[index] || 0;
+      const totalOutflows = Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0);
+      const calculatedNetCashFlow = totalInflows - totalOutflows;
+      const monthlyGeneration = liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0;
+      
+      // Debug logging for the issue
+      if (index === 7) { // August 2025
+        console.log('🐛 LIVE DATA DEBUG - August 2025 (index 7):', {
+          totalInflows,
+          totalOutflows,
+          calculatedNetCashFlow,
+          monthlyGeneration,
+          rawInflows: liveData.data.data.dataRows?.totalInflows?.values[index],
+          rawOutflows: liveData.data.data.dataRows?.totalOutflows?.values[index],
+          netCashFlowFromAPI: liveData.data.data.dataRows?.netCashFlow?.values[index],
+          finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index],
+          initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index]
+        });
+      }
+
       return {
         id: `period-${index}`,
         companyId: companyId || '',
@@ -1299,15 +1319,14 @@ export function CashFlowDashboard({
         periodEnd: periodEnd.toISOString().split('T')[0],
         periodType: 'monthly' as const,
         lineItems: [], // Empty array to prevent filter errors
-        totalInflows: liveData.data.data.dataRows?.totalInflows?.values[index] || 0,
-        totalOutflows: Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0),
-        netCashFlow: (liveData.data.data.dataRows?.totalInflows?.values[index] || 0) - 
-                     Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0),
+        totalInflows,
+        totalOutflows,
+        netCashFlow: calculatedNetCashFlow,
         currency: liveData.data.metadata.currency,
         initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index] || 0,
         finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0,
         lowestBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0, // Use finalBalance as fallback
-        monthlyGeneration: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0
+        monthlyGeneration
       };
     }),
     summary: {
