@@ -809,6 +809,13 @@ export class ExcelProcessingService {
         processedData.dataRows.netCashFlow.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
       
       console.log('✅ Calculated netCashFlow:', processedData.dataRows.netCashFlow.values);
+      console.log('🔍 NetCashFlow calculation details for first few periods:');
+      for (let i = 0; i < Math.min(3, periods.length); i++) {
+        const inflow = processedData.dataRows.totalInflows?.values[i] || 0;
+        const outflow = processedData.dataRows.totalOutflows?.values[i] || 0;
+        const calculated = inflow - outflow;
+        console.log(`  Period ${i + 1}: ${inflow} - ${outflow} = ${calculated}`);
+      }
     }
     
     // Check if monthlyGeneration needs to be calculated
