@@ -1294,7 +1294,7 @@ export function CashFlowDashboard({
       
       const totalInflows = liveData.data.data.dataRows?.totalInflows?.values[index] || 0;
       const totalOutflows = Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0);
-      const calculatedNetCashFlow = totalInflows - totalOutflows;
+      const netCashFlow = liveData.data.data.dataRows?.netCashFlow?.values[index] || (totalInflows - totalOutflows);
       const monthlyGeneration = liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0;
       
       // Debug logging for the issue
@@ -1302,7 +1302,7 @@ export function CashFlowDashboard({
         console.log('🐛 LIVE DATA DEBUG - August 2025 (index 7):', {
           totalInflows,
           totalOutflows,
-          calculatedNetCashFlow,
+          netCashFlow,
           monthlyGeneration,
           rawInflows: liveData.data.data.dataRows?.totalInflows?.values[index],
           rawOutflows: liveData.data.data.dataRows?.totalOutflows?.values[index],
@@ -1321,7 +1321,7 @@ export function CashFlowDashboard({
         lineItems: [], // Empty array to prevent filter errors
         totalInflows,
         totalOutflows,
-        netCashFlow: calculatedNetCashFlow,
+        netCashFlow,
         currency: liveData.data.metadata.currency,
         initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index] || 0,
         finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0,
