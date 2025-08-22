@@ -16,6 +16,7 @@ interface DataRowsEditorProps {
   configuration: CashFlowConfiguration | PLConfiguration;
   onChange: (config: CashFlowConfiguration | PLConfiguration) => void;
   configurationId?: string;
+  locale?: string;
 }
 
 interface FieldDefinition {
@@ -26,11 +27,11 @@ interface FieldDefinition {
   category: string;
 }
 
-export function DataRowsEditor({ configuration, onChange, configurationId }: DataRowsEditorProps) {
+export function DataRowsEditor({ configuration, onChange, configurationId, locale }: DataRowsEditorProps) {
   const [showExcelPreview, setShowExcelPreview] = useState(false);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
-  const { t } = useTranslation(configuration.metadata?.locale || 'es');
+  const { t } = useTranslation(locale || configuration.metadata?.locale || 'es');
   const { excelData, loading, error } = useExcelPreview(configurationId);
 
   // Define field definitions for each configuration type

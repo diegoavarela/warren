@@ -649,6 +649,26 @@ export default function ConfigurationsPage() {
                   </div>
                   
                   <div className="flex gap-2">
+                    {config.lastProcessedFile && config.lastProcessedFile.processingStatus === 'completed' && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          // Store company info in session storage
+                          sessionStorage.setItem('selectedCompanyId', selectedCompany?.id || '');
+                          sessionStorage.setItem('selectedCompanyName', selectedCompany?.name || '');
+                          
+                          // Navigate to appropriate dashboard based on configuration type
+                          const dashboardPath = config.type === 'cashflow' 
+                            ? '/dashboard/company-admin/cashflow' 
+                            : '/dashboard/company-admin/pnl';
+                          router.push(dashboardPath);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        Ver Dashboard
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardBody>

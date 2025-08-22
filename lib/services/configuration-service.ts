@@ -17,11 +17,12 @@ import {
   userSettings,
   companyConfigurations,
   financialDataFiles,
+  processedFinancialData,
   type OrganizationSetting,
   type CompanySetting,
   type UserSetting
 } from '@/lib/db/actual-schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 
 export interface ConfigurationContext {
   userId?: string;
@@ -278,11 +279,49 @@ export class ConfigurationService {
 
       const results = await query;
       
-      return results.map((config: any) => ({
-        ...config,
-        isActive: config.isActive,
-        configJson: config.configJson
-      }));
+      // For each configuration, also fetch the latest processed data info
+      const configurationsWithProcessedData = await Promise.all(
+        results.map(async (config: any) => {
+          try {
+            // Get the latest processed data for this configuration
+            const latestProcessedData = await db
+              .select()
+              .from(processedFinancialData)
+              .where(eq(processedFinancialData.configId, config.id))
+              .orderBy(desc(processedFinancialData.processedAt))
+              .limit(1);
+
+            let lastProcessedFile = null;
+            if (latestProcessedData.length > 0) {
+              const processedData = latestProcessedData[0];
+              // You might want to also fetch file information from the files table
+              lastProcessedFile = {
+                fileName: 'Processed Data', // You can enhance this to get actual filename
+                fileSize: 0,
+                processedAt: processedData.processedAt?.toISOString() || new Date().toISOString(),
+                processingStatus: processedData.processingStatus
+              };
+            }
+
+            return {
+              ...config,
+              isActive: config.isActive,
+              configJson: config.configJson,
+              lastProcessedFile
+            };
+          } catch (err) {
+            console.error(`Error fetching processed data for config ${config.id}:`, err);
+            return {
+              ...config,
+              isActive: config.isActive,
+              configJson: config.configJson,
+              lastProcessedFile: null
+            };
+          }
+        })
+      );
+      
+      return configurationsWithProcessedData;
     } catch (error) {
       console.error('Error fetching configurations by company:', error);
       throw error;
@@ -356,10 +395,20 @@ export class ConfigurationService {
 
   async deleteConfiguration(id: string) {
     try {
+      // First, delete all processed financial data that references this configuration
+      const deletedProcessedData = await db
+        .delete(processedFinancialData)
+        .where(eq(processedFinancialData.configId, id))
+        .returning();
+
+      console.log(`🗑️ Deleted ${deletedProcessedData.length} processed financial data records for configuration ${id}`);
+
+      // Then delete the configuration itself
       await db
         .delete(companyConfigurations)
         .where(eq(companyConfigurations.id, id));
 
+      console.log(`✅ Successfully deleted configuration ${id}`);
       return true;
     } catch (error) {
       console.error('Error deleting configuration:', error);

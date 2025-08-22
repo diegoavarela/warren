@@ -23,6 +23,7 @@ interface PeriodMappingEditorProps {
   lastActualPeriod?: PeriodDefinition;
   onLastActualPeriodChange?: (period: PeriodDefinition | undefined) => void;
   configurationType?: 'cashflow' | 'pnl'; // Only show actual/projected for cashflow
+  locale?: string;
 }
 
 export function PeriodMappingEditor({
@@ -34,10 +35,11 @@ export function PeriodMappingEditor({
   availableColumns,
   lastActualPeriod,
   onLastActualPeriodChange,
-  configurationType = 'cashflow'
+  configurationType = 'cashflow',
+  locale
 }: PeriodMappingEditorProps) {
-  const { t } = useTranslation('es');
-  const isSpanish = true; // Since we're hardcoded to 'es', this is true for now
+  const { t } = useTranslation(locale || 'es');
+  const isSpanish = (locale || 'es').startsWith('es');
   // SINGLE SOURCE OF TRUTH: Use currentMapping directly, no internal state
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [voidedColumns, setVoidedColumns] = useState<Set<string>>(new Set());

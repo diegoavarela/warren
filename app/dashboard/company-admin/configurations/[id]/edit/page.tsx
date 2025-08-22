@@ -21,6 +21,7 @@ import { useExcelPreview } from '@/hooks/useExcelPreview';
 import { CashFlowConfiguration, PLConfiguration } from '@/lib/types/configurations';
 import { useTranslation } from '@/lib/translations';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
+import { useLocale } from '@/contexts/LocaleContext';
 
 interface Configuration {
   id: string;
@@ -60,8 +61,11 @@ export default function EditConfigurationPage() {
   const router = useRouter();
   const params = useParams();
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
-  // Use dynamic locale - will update when configData loads
-  const [currentLocale, setCurrentLocale] = useState('es');
+  
+  // Use application-level locale from header dropdown
+  const { locale: appLocale } = useLocale();
+  // Convert app locale (es-AR, en-US) to simple format (es, en) for translation system
+  const currentLocale = appLocale?.split('-')[0] || 'es';
   const { t } = useTranslation(currentLocale);
   const toast = useToast();
   
@@ -90,7 +94,7 @@ export default function EditConfigurationPage() {
     isActive: true,
     metadata: {
       currency: 'USD',
-      locale: 'en',
+      locale: 'es', // Default to Spanish
       units: 'normal',
       numberFormat: {
         decimalSeparator: '.',
@@ -160,12 +164,7 @@ export default function EditConfigurationPage() {
     }
   }, []);
 
-  // Update locale when configData loads
-  useEffect(() => {
-    if (configData?.metadata?.locale) {
-      setCurrentLocale(configData.metadata.locale);
-    }
-  }, [configData?.metadata?.locale]);
+  // Note: We now use the app-level locale from LocaleContext instead of configuration metadata
 
   // Initialize selected sheet when excel data loads (only once)
   useEffect(() => {
@@ -321,6 +320,9 @@ export default function EditConfigurationPage() {
       setConfiguration(config);
       
       // Populate form with existing data
+      // Priority: configJson.metadata.locale > config.metadata.locale > default to 'es'
+      const configLocale = config.configJson?.metadata?.locale || config.metadata?.locale || 'es';
+      
       const initialFormData = {
         name: config.name,
         description: config.description || '',
@@ -328,10 +330,10 @@ export default function EditConfigurationPage() {
         isTemplate: config.isTemplate,
         isActive: config.isActive,
         metadata: {
-          currency: config.metadata?.currency || 'USD',
-          locale: config.metadata?.locale || 'en',
-          units: config.metadata?.units || 'normal',
-          numberFormat: config.metadata?.numberFormat || {
+          currency: config.configJson?.metadata?.currency || config.metadata?.currency || 'USD',
+          locale: configLocale,
+          units: config.configJson?.metadata?.units || config.metadata?.units || 'normal',
+          numberFormat: config.configJson?.metadata?.numberFormat || config.metadata?.numberFormat || {
             decimalSeparator: '.',
             thousandsSeparator: ',',
             decimalPlaces: 0
@@ -1454,6 +1456,7 @@ export default function EditConfigurationPage() {
                       console.warn('Period mapping validation failed:', errors);
                     }
                   }}
+                  locale={currentLocale}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
@@ -1469,6 +1472,7 @@ export default function EditConfigurationPage() {
                   configuration={configData}
                   onChange={setConfigData}
                   configurationId={configId}
+                  locale={currentLocale}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
