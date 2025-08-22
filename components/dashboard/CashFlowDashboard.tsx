@@ -474,7 +474,7 @@ function CashFlowDashboardContent({
     const periods: CashFlowPeriodData[] = directData.periods.map((period: any, index: number) => {
       const totalInflows = vortexData.totalIncome[index] || 0;
       const totalOutflows = Math.abs(vortexData.totalExpense[index]) || 0;
-      const netCashFlow = totalInflows - totalOutflows; // Calculate Net Cash Flow correctly
+      const netCashFlow = period.netCashFlow || (totalInflows - totalOutflows); // Use API value first, fallback to calculation
       const finalBalance = vortexData.finalBalance[index] || 0;
       const lowestBalance = vortexData.lowestBalance[index] || 0;
       
