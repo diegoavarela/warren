@@ -474,7 +474,7 @@ function CashFlowDashboardContent({
     const periods: CashFlowPeriodData[] = directData.periods.map((period: any, index: number) => {
       const totalInflows = vortexData.totalIncome[index] || 0;
       const totalOutflows = Math.abs(vortexData.totalExpense[index]) || 0;
-      const netCashFlow = vortexData.monthlyGeneration[index] || 0;
+      const netCashFlow = totalInflows - totalOutflows; // Calculate Net Cash Flow correctly
       const finalBalance = vortexData.finalBalance[index] || 0;
       const lowestBalance = vortexData.lowestBalance[index] || 0;
       
@@ -558,7 +558,7 @@ function CashFlowDashboardContent({
     console.log('- YTD Income:', ytdTotalInflows); // Should be 513182457.72
     console.log('- YTD Expenses:', ytdTotalExpenses); // Should be 515216725.59
     console.log('================================');
-    const ytdNetCashFlow = vortexData.monthlyGeneration.slice(0, 8).reduce((sum, val) => sum + val, 0); // Jan-Aug 2025
+    const ytdNetCashFlow = ytdTotalInflows - ytdTotalExpenses; // YTD Net Cash Flow = YTD Inflows - YTD Outflows
     
     const yearToDate: YTDMetrics = {
       totalInflows: ytdTotalInflows,
@@ -1301,7 +1301,9 @@ export function CashFlowDashboard({
         lineItems: [], // Empty array to prevent filter errors
         totalInflows: liveData.data.data.dataRows?.totalInflows?.values[index] || 0,
         totalOutflows: Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0),
-        netCashFlow: liveData.data.data.dataRows?.monthlyGeneration?.values[index] || 0,
+        netCashFlow: liveData.data.data.dataRows?.netCashFlow?.values[index] || 
+                     ((liveData.data.data.dataRows?.totalInflows?.values[index] || 0) - 
+                      Math.abs(liveData.data.data.dataRows?.totalOutflows?.values[index] || 0)),
         currency: liveData.data.metadata.currency,
         initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index] || 0,
         finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index] || 0,
