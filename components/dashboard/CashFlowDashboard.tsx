@@ -538,6 +538,16 @@ function CashFlowDashboardContent({
     const currentPeriod = currentPeriodIndex >= 0 ? periods[currentPeriodIndex] : periods[Math.min(0, periods.length - 1)]; // Safe fallback
     const previousPeriod = currentPeriodIndex > 0 ? periods[currentPeriodIndex - 1] : (periods.length > 1 ? periods[periods.length - 2] : undefined);
     
+    // DEBUG: Check the currentPeriod selection
+    console.log('🔍 PERIOD SELECTION DEBUG:', {
+      currentPeriodIndex,
+      totalPeriods: periods.length,
+      'currentPeriod.netCashFlow': currentPeriod?.netCashFlow,
+      'currentPeriod.monthlyGeneration': currentPeriod?.monthlyGeneration,
+      'periods[4].netCashFlow (May)': periods[4]?.netCashFlow,
+      'periods[4].monthlyGeneration (May)': periods[4]?.monthlyGeneration
+    });
+    
     console.log(`✅ Selected current period: ${currentPeriod?.month} ${currentPeriod?.year} (index: ${currentPeriodIndex})`);
     console.log(`📅 Selected previous period: ${previousPeriod?.month} ${previousPeriod?.year}`);
 
