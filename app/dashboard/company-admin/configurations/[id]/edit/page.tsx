@@ -60,7 +60,9 @@ export default function EditConfigurationPage() {
   const router = useRouter();
   const params = useParams();
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
-  const { t } = useTranslation('es');
+  // Use dynamic locale - will update when configData loads
+  const [currentLocale, setCurrentLocale] = useState('es');
+  const { t } = useTranslation(currentLocale);
   const toast = useToast();
   
   const [configuration, setConfiguration] = useState<Configuration | null>(null);
@@ -157,6 +159,13 @@ export default function EditConfigurationPage() {
       }
     }
   }, []);
+
+  // Update locale when configData loads
+  useEffect(() => {
+    if (configData?.metadata?.locale) {
+      setCurrentLocale(configData.metadata.locale);
+    }
+  }, [configData?.metadata?.locale]);
 
   // Initialize selected sheet when excel data loads (only once)
   useEffect(() => {
