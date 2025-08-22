@@ -274,7 +274,7 @@ export class DirectCashFlowProvider {
       
       const totalInflows = vortexData.totalIncome[i];
       const totalOutflows = Math.abs(vortexData.totalExpense[i]);
-      const netCashFlow = vortexData.monthlyGeneration[i]; // Use actual monthly generation
+      const netCashFlow = totalInflows - totalOutflows; // Calculate as totalInflows - totalOutflows
       
       // Debug log for August 2025 (index 7)
       if (i === 7) {
