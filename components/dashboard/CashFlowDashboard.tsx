@@ -52,6 +52,7 @@ interface CashFlowPeriodData {
   id: string;
   month: string;
   year: number;
+  initialBalance: number;
   totalInflows: number;
   totalOutflows: number;
   netCashFlow: number;
@@ -514,6 +515,7 @@ function CashFlowDashboardContent({
         id: period.id,
         month: new Date(period.periodEnd).toLocaleDateString('en-US', { month: 'short' }), // Force English month names
         year: new Date(period.periodEnd).getFullYear(),
+        initialBalance: period.initialBalance || 0,
         totalInflows,
         totalOutflows,
         netCashFlow,
@@ -567,9 +569,61 @@ function CashFlowDashboardContent({
     console.log(`✅ Selected current period: ${currentPeriod?.month} ${currentPeriod?.year} (index: ${currentPeriodIndex})`);
     console.log(`📅 Selected previous period: ${previousPeriod?.month} ${previousPeriod?.year}`);
 
-    // YTD calculation: January 2025 to August 2025 (current month) - Direct calculation
-    const ytdTotalInflows = vortexData.totalIncome.slice(0, 8).reduce((sum, val) => sum + val, 0); // Jan-Aug 2025
-    const ytdTotalExpenses = vortexData.totalExpense.slice(0, 8).reduce((sum, val) => sum + Math.abs(val), 0); // Jan-Aug 2025
+    // Helper function to determine actual period count based on configuration
+    const getActualPeriodCount = (): number => {
+      if (!liveData?.data?.periodMetadata) {
+        console.log('⚠️ No period metadata available, using fallback of 8 periods');
+        return 8; // Fallback to hardcoded value if no metadata
+      }
+      
+      const periodMetadata = liveData.data.periodMetadata;
+      const periodsArray = liveData.data.periods || [];
+      
+      // Count periods marked as actual in metadata
+      let actualCount = 0;
+      for (let i = 0; i < periodsArray.length; i++) {
+        const periodLabel = periodsArray[i];
+        if (periodMetadata[periodLabel]?.isActual) {
+          actualCount = i + 1; // Index + 1 gives us the count up to this period
+        } else {
+          break; // Stop counting when we hit the first non-actual period
+        }
+      }
+      
+      // If no actual periods found in metadata, fallback to using lastActualPeriodLabel
+      if (actualCount === 0 && lastActualPeriodLabel) {
+        // Find the index of the last actual period by matching the label
+        for (let i = 0; i < periods.length; i++) {
+          const periodLabel = `${periods[i].month} ${periods[i].year}`;
+          if (periodLabel.toLowerCase().includes(lastActualPeriodLabel.toLowerCase()) ||
+              lastActualPeriodLabel.toLowerCase().includes(periods[i].month.toLowerCase())) {
+            actualCount = i + 1;
+            break;
+          }
+        }
+      }
+      
+      // Final fallback to ensure we have at least 1 period
+      const finalCount = Math.max(actualCount, 1);
+      
+      console.log('📊 YTD Calculation - Period Analysis:', {
+        totalPeriods: periodsArray.length,
+        actualCount: finalCount,
+        lastActualPeriodLabel,
+        periodMetadataKeys: Object.keys(periodMetadata),
+        actualPeriods: Object.entries(periodMetadata)
+          .filter(([_, meta]: [string, any]) => meta?.isActual)
+          .map(([label]) => label)
+      });
+      
+      return finalCount;
+    };
+
+    const actualPeriodCount = getActualPeriodCount();
+
+    // YTD calculation: Only include actual periods based on configuration
+    const ytdTotalInflows = vortexData.totalIncome.slice(0, actualPeriodCount).reduce((sum, val) => sum + val, 0);
+    const ytdTotalExpenses = vortexData.totalExpense.slice(0, actualPeriodCount).reduce((sum, val) => sum + Math.abs(val), 0);
 
     // Debug log to verify correct August 2025 values
     console.log('=== CASH FLOW DATA DEBUG ===');
@@ -580,19 +634,22 @@ function CashFlowDashboardContent({
     console.log('- Final Balance:', vortexData.finalBalance[7]); // Should be 13308616.55
     console.log('Current Period Index found:', currentPeriodIndex);
     console.log('Current Period Object:', currentPeriod);
-    console.log('YTD Totals:');
-    console.log('- YTD Income:', ytdTotalInflows); // Should be 513182457.72
-    console.log('- YTD Expenses:', ytdTotalExpenses); // Should be 515216725.59
-    console.log('================================');
+    console.log('YTD Totals (ACTUAL DATA ONLY):');
+    console.log('- Actual Period Count:', actualPeriodCount);
+    console.log('- YTD Income (actual only):', ytdTotalInflows);
+    console.log('- YTD Expenses (actual only):', ytdTotalExpenses);
     const ytdNetCashFlow = ytdTotalInflows - ytdTotalExpenses; // YTD Net Cash Flow = YTD Inflows - YTD Outflows
+    console.log('- YTD Net Cash Flow (actual only):', ytdNetCashFlow);
+    console.log('================================');
     
     const yearToDate: YTDMetrics = {
       totalInflows: ytdTotalInflows,
       totalOutflows: ytdTotalExpenses,
       netCashFlow: ytdNetCashFlow,
-      averageMonthlyGeneration: ytdNetCashFlow / 8,
-      monthsIncluded: 8,
-      averageCashBurn: vortexData.monthlyGeneration.slice(0, 8).filter(val => val < 0).reduce((sum, val) => sum + Math.abs(val), 0) / 8,
+      averageMonthlyGeneration: actualPeriodCount > 0 ? ytdNetCashFlow / actualPeriodCount : 0,
+      monthsIncluded: actualPeriodCount,
+      averageCashBurn: actualPeriodCount > 0 ? 
+        vortexData.monthlyGeneration.slice(0, actualPeriodCount).filter(val => val < 0).reduce((sum, val) => sum + Math.abs(val), 0) / actualPeriodCount : 0,
       projectedRunway: currentPeriod?.runwayMonths || 0
     };
 
@@ -918,6 +975,21 @@ function CashFlowDashboardContent({
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 w-full metric-cards-container">
                 <MetricCard
+                  title={locale?.startsWith('es') ? 'Balance Inicial' : 'Initial Balance'}
+                  currentValue={current.initialBalance}
+                  previousValue={previous?.initialBalance}
+                  format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
+                  originalCurrency={originalCurrency}
+                  currency={selectedCurrency}
+                  icon={<BuildingLibraryIcon className="h-5 w-5" />}
+                  colorScheme={current.initialBalance >= 0 ? "profit" : "cost"}
+                  helpTopic={helpTopics['metrics.initialBalance']}
+                  comparisonPeriod={comparisonPeriod}
+                  previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
+                />
+                <MetricCard
                   title={locale?.startsWith('es') ? 'Entradas Totales' : 'Total Inflows'}
                   currentValue={current.totalInflows}
                   previousValue={previous?.totalInflows}
@@ -951,22 +1023,6 @@ function CashFlowDashboardContent({
                   previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
                 />
                 <MetricCard
-                  title={locale?.startsWith('es') ? 'Flujo Neto' : 'Net Cash Flow'}
-                  currentValue={current.netCashFlow}
-                  previousValue={previous?.netCashFlow}
-                  ytdValue={ytd.netCashFlow}
-                  format="currency"
-                  displayUnits={displayUnits}
-                  formatValue={formatValue}
-                  originalCurrency={originalCurrency}
-                  currency={selectedCurrency}
-                  icon={<CurrencyDollarIcon className="h-5 w-5" />}
-                  colorScheme={current.netCashFlow >= 0 ? "profit" : "cost"}
-                  helpTopic={helpTopics['metrics.netCashFlow']}
-                  comparisonPeriod={comparisonPeriod}
-                  previousPeriodLabel={previous ? `${previous.month} ${previous.year}` : undefined}
-                />
-                <MetricCard
                   title={locale?.startsWith('es') ? 'Balance Final' : 'Final Balance'}
                   currentValue={current.finalBalance}
                   previousValue={previous?.finalBalance}
@@ -975,7 +1031,7 @@ function CashFlowDashboardContent({
                   formatValue={formatValue}
                   originalCurrency={originalCurrency}
                   currency={selectedCurrency}
-                  icon={<BuildingLibraryIcon className="h-5 w-5" />}
+                  icon={<CreditCardIcon className="h-5 w-5" />}
                   colorScheme={current.finalBalance >= 0 ? "profit" : "cost"}
                   helpTopic={helpTopics['metrics.finalBalance']}
                   comparisonPeriod={comparisonPeriod}

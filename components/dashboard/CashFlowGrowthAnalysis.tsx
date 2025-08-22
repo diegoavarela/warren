@@ -66,6 +66,35 @@ export function CashFlowGrowthAnalysis({
     return <div>{locale?.startsWith('es') ? 'Cargando...' : 'Loading...'}</div>;
   }
 
+  // Calculate actual vs forecast period counts dynamically
+  const actualPeriodCount = useMemo(() => {
+    if (!isPeriodActual || !periods || periods.length === 0) {
+      return 8; // Fallback to hardcoded value
+    }
+    
+    let count = 0;
+    for (let i = 0; i < Math.min(periods.length, 12); i++) {
+      if (isPeriodActual(periods[i])) {
+        count++;
+      } else {
+        break; // Stop counting when we hit first non-actual period
+      }
+    }
+    
+    return Math.max(count, 1); // Ensure at least 1 actual period
+  }, [isPeriodActual, periods]);
+  
+  const forecastPeriodCount = Math.max(12 - actualPeriodCount, 0);
+  
+  // Find the last actual period index for percentage calculations
+  const lastActualIndex = useMemo(() => {
+    if (!isPeriodActual || !periods || periods.length === 0) {
+      return 7; // Fallback to August (index 7)
+    }
+    
+    return Math.max(actualPeriodCount - 1, 0);
+  }, [actualPeriodCount, isPeriodActual, periods]);
+
   // Generate 2025 data (Jan-Dec) using actual CSV data - SEPARATE BARS NOT STACKED
   const chartDataConfig = useMemo(() => {
     // Month names in Spanish/English
@@ -98,7 +127,7 @@ export function CashFlowGrowthAnalysis({
       datasets: [
         // Income bars (lighter green - solid for actual, transparent for forecast)
         {
-          label: 'Income',
+          label: locale?.startsWith('es') ? 'Ingresos' : 'Income',
           data: incomeData,
           backgroundColor: incomeData.map((_, index) => {
             const periodLabel = periods[index];
@@ -121,7 +150,7 @@ export function CashFlowGrowthAnalysis({
         },
         // Expense bars (orange/red - solid for actual, transparent for forecast) 
         {
-          label: 'Expenses',
+          label: locale?.startsWith('es') ? 'Gastos' : 'Expenses',
           data: expenseData,
           backgroundColor: expenseData.map((_, index) => {
             const periodLabel = periods[index];
@@ -144,7 +173,7 @@ export function CashFlowGrowthAnalysis({
         },
         // Final Balance line (dotted green line like warren-lightsail reference) - RENDER ON TOP
         {
-          label: 'Final Balance',
+          label: locale?.startsWith('es') ? 'Balance Final' : 'Final Balance',
           type: 'line' as const,
           data: finalBalanceData,
           borderColor: '#22C55E',
@@ -165,9 +194,9 @@ export function CashFlowGrowthAnalysis({
     };
   }, [chartData, locale]);
 
-  // Calculate accurate cash flow growth from actual data (Aug vs Jul 2025)
-  const currentMonthData = chartData[7]; // August 2025 (index 7)
-  const previousMonthData = chartData[6]; // July 2025 (index 6)
+  // Calculate accurate cash flow growth from actual data using last actual period
+  const currentMonthData = chartData[lastActualIndex];
+  const previousMonthData = lastActualIndex > 0 ? chartData[lastActualIndex - 1] : null;
   
   // Calculate meaningful cash flow improvement (show absolute improvement instead of percentage)
   let cashFlowGrowth = 0;
@@ -179,9 +208,10 @@ export function CashFlowGrowthAnalysis({
     const improvement = currentFlow - previousFlow;
     
     // Debug log to verify values
-    console.log('Cash Flow Analysis:', {
-      currentMonth: 'Aug 2025',
-      previousMonth: 'Jul 2025', 
+    console.log('Cash Flow Analysis (Dynamic):', {
+      lastActualIndex,
+      currentMonthData,
+      previousMonthData,
       currentNetFlow: currentFlow,
       previousNetFlow: previousFlow,
       improvement: improvement
@@ -200,10 +230,10 @@ export function CashFlowGrowthAnalysis({
     }
   }
 
-  // YTD calculations for 8 months only (Jan-Aug 2025) - matches Resumen Anual Acumulado
-  const ytdNetFlow = chartData.slice(0, 8).reduce((sum, d) => sum + (d.netCashFlow || 0), 0);
-  const ytdInflows = chartData.slice(0, 8).reduce((sum, d) => sum + (d.totalInflows || 0), 0);
-  const ytdOutflows = chartData.slice(0, 8).reduce((sum, d) => sum + (d.totalOutflows || 0), 0);
+  // YTD calculations using actual period count - matches Resumen Anual Acumulado
+  const ytdNetFlow = chartData.slice(0, actualPeriodCount).reduce((sum, d) => sum + (d.netCashFlow || 0), 0);
+  const ytdInflows = chartData.slice(0, actualPeriodCount).reduce((sum, d) => sum + (d.totalInflows || 0), 0);
+  const ytdOutflows = chartData.slice(0, actualPeriodCount).reduce((sum, d) => sum + (d.totalOutflows || 0), 0);
 
   // Chart.js options - Mixed chart with bars and line for final balance
   const chartOptions = useMemo(() => ({
@@ -311,7 +341,9 @@ export function CashFlowGrowthAnalysis({
                 {locale?.startsWith('es') ? 'Análisis de Crecimiento del Cash Flow' : 'Cash Flow Growth Analysis'}
               </h3>
               <p className="text-sm text-white/80">
-                {locale?.startsWith('es') ? '2025: 8 reales + 4 pronóstico' : '2025: 8 actual + 4 forecast'}
+                {locale?.startsWith('es') 
+                  ? `2025: ${actualPeriodCount} reales + ${forecastPeriodCount} pronóstico` 
+                  : `2025: ${actualPeriodCount} actual + ${forecastPeriodCount} forecast`}
               </p>
             </div>
           </div>
@@ -329,8 +361,8 @@ export function CashFlowGrowthAnalysis({
                   {showAsPercentage ? formatPercentage(cashFlowGrowth) : `+${cashFlowGrowth.toFixed(1)}M`}
                 </span>
                 <span className="text-xs text-white/80 font-medium">
-                  {previousMonthData ? 
-                    `${locale?.startsWith('es') ? 'vs Jul 2025' : 'vs Jul 2025'}` : 
+                  {previousMonthData && lastActualIndex > 0 ? 
+                    `${locale?.startsWith('es') ? 'vs' : 'vs'} ${chartData[lastActualIndex - 1]?.month || ''} ${chartData[lastActualIndex - 1]?.year || ''}` : 
                     (locale?.startsWith('es') ? 'Sin comparación' : 'No comparison')
                   }
                 </span>
@@ -343,72 +375,6 @@ export function CashFlowGrowthAnalysis({
 
       {/* Content */}
       <div className="p-6">
-        {/* Key Metrics */}
-        <div className={`grid gap-4 mb-6 ${fullWidth ? 'grid-cols-5' : 'grid-cols-3'}`}>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">
-              {locale?.startsWith('es') ? 'Flujo Neto Actual' : 'Current Net Flow'}
-            </p>
-            <p className={`text-xl font-bold ${currentMonth.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatValue(currentMonth.netCashFlow)}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {locale?.startsWith('es') ? `${currentMonth.month} ${currentMonth.year}` : `${currentMonth.month} ${currentMonth.year}`}
-            </p>
-          </div>
-          
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">
-              {locale?.startsWith('es') ? 'YTD Flujo Neto' : 'YTD Net Flow'}
-            </p>
-            <p className={`text-xl font-bold ${ytdNetFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatValue(ytdNetFlow)}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              8 {locale?.startsWith('es') ? 'meses' : 'months'}
-            </p>
-          </div>
-          
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">
-              {locale?.startsWith('es') ? 'Balance Final' : 'Final Balance'}
-            </p>
-            <p className={`text-xl font-bold ${currentMonth.finalBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              {formatValue(currentMonth.finalBalance)}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {locale?.startsWith('es') ? 'Posición de efectivo' : 'Cash position'}
-            </p>
-          </div>
-
-          {fullWidth && (
-            <>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">
-                  {locale?.startsWith('es') ? 'YTD Entradas' : 'YTD Inflows'}
-                </p>
-                <p className="text-xl font-bold text-green-600">
-                  {formatValue(ytdInflows)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {locale?.startsWith('es') ? 'Total de ingresos' : 'Total income'}
-                </p>
-              </div>
-              
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">
-                  {locale?.startsWith('es') ? 'YTD Salidas' : 'YTD Outflows'}
-                </p>
-                <p className="text-xl font-bold text-red-600">
-                  {formatValue(ytdOutflows)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {locale?.startsWith('es') ? 'Total de gastos' : 'Total expenses'}
-                </p>
-              </div>
-            </>
-          )}
-        </div>
 
         {/* Chart */}
         <div className="mb-6">
@@ -419,23 +385,29 @@ export function CashFlowGrowthAnalysis({
             <div className="flex items-center space-x-4 text-xs">
               <div className="flex items-center space-x-1">
                 <div className="w-3 h-3 bg-green-300 rounded-sm"></div>
-                <span className="text-gray-600">Income</span>
+                <span className="text-gray-600">{locale?.startsWith('es') ? 'Ingresos' : 'Income'}</span>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
-                <span className="text-gray-600">Expenses</span>
+                <span className="text-gray-600">{locale?.startsWith('es') ? 'Gastos' : 'Expenses'}</span>
               </div>
               <div className="flex items-center space-x-1 ml-2">
                 <div className="w-4 h-0 border-t-2 border-green-500 border-dashed"></div>
-                <span className="text-gray-600">Final Balance</span>
+                <span className="text-gray-600">{locale?.startsWith('es') ? 'Balance Final' : 'Final Balance'}</span>
               </div>
               <div className="flex items-center space-x-4 ml-4">
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-green-300 rounded-sm opacity-100"></div>
-                  <span className="text-gray-600 text-xs">{locale?.startsWith('es') ? 'Datos Reales' : 'Real Data'}</span>
+                  <div className="flex items-center space-x-0.5">
+                    <div className="w-2 h-3 bg-green-400 rounded-sm"></div>
+                    <div className="w-2 h-3 bg-orange-500 rounded-sm"></div>
+                  </div>
+                  <span className="text-gray-600 text-xs">{locale?.startsWith('es') ? 'Datos Reales' : 'Actual Data'}</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-green-300 rounded-sm opacity-40"></div>
+                  <div className="flex items-center space-x-0.5">
+                    <div className="w-2 h-3 bg-green-200 rounded-sm opacity-60"></div>
+                    <div className="w-2 h-3 bg-orange-300 rounded-sm opacity-60"></div>
+                  </div>
                   <span className="text-gray-600 text-xs">{locale?.startsWith('es') ? 'Pronóstico' : 'Forecast'}</span>
                 </div>
               </div>
@@ -470,12 +442,12 @@ export function CashFlowGrowthAnalysis({
             </h4>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• {locale?.startsWith('es') 
-                ? '4 meses de pronóstico (Sep-Dec)'
-                : '4 months forecast (Sep-Dec)'
+                ? `${forecastPeriodCount} meses de pronóstico`
+                : `${forecastPeriodCount} months forecast`
               }</li>
               <li>• {locale?.startsWith('es') 
-                ? '8 meses reales (Jan-Ago)'
-                : '8 actual months (Jan-Aug)'
+                ? `${actualPeriodCount} meses reales`
+                : `${actualPeriodCount} actual months`
               }</li>
             </ul>
           </div>

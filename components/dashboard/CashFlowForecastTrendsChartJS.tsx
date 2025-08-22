@@ -53,9 +53,26 @@ export function CashFlowForecastTrendsChartJS({
       return { chartData: null, forecastStats: null };
     }
 
-    // Use only first 12 months (Jan-Dec 2025) and split at August (index 7)
+    // Use only first 12 months (Jan-Dec 2025) and determine actual vs forecast split
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const data2025 = historicalData.slice(0, 12); // Only 2025 data
+    
+    // Calculate actual period count dynamically
+    let actualPeriodCount = 8; // Fallback
+    if (isPeriodActual && periods && periods.length > 0) {
+      actualPeriodCount = 0;
+      for (let i = 0; i < Math.min(periods.length, 12); i++) {
+        if (isPeriodActual(periods[i])) {
+          actualPeriodCount++;
+        } else {
+          break; // Stop counting when we hit first non-actual period
+        }
+      }
+      actualPeriodCount = Math.max(actualPeriodCount, 1); // Ensure at least 1 actual period
+    }
+    
+    const lastActualIndex = actualPeriodCount - 1;
+    const forecastPeriodCount = 12 - actualPeriodCount;
     
     // Process all data points using period metadata to determine actual vs forecast
     const allPoints = data2025.map((item: any, index: number) => {
@@ -97,10 +114,10 @@ export function CashFlowForecastTrendsChartJS({
     const chartJSData = {
       labels: monthNames, // All 12 months of 2025
       datasets: [
-        // Final Balance - Actual (solid line Jan-Aug)
+        // Final Balance - Actual (solid line for actual periods)
         {
           label: locale?.startsWith('es') ? 'Balance Final Real' : 'Actual Final Balance',
-          data: netFlowData.map((value, index) => index <= 7 ? value : null), // Only actual data
+          data: netFlowData.map((value, index) => index < actualPeriodCount ? value : null), // Only actual data
           borderColor: '#10B981',
           backgroundColor: 'transparent',
           borderWidth: 3,
@@ -109,10 +126,10 @@ export function CashFlowForecastTrendsChartJS({
           tension: 0.2,
           spanGaps: false
         },
-        // Final Balance - Forecast (dashed line Sep-Dec)
+        // Final Balance - Forecast (dashed line for forecast periods)
         {
           label: locale?.startsWith('es') ? 'Pronóstico Balance Final' : 'Final Balance Forecast',
-          data: netFlowData.map((value, index) => index >= 7 ? value : null), // Forecast + bridge from Aug
+          data: netFlowData.map((value, index) => index >= lastActualIndex ? value : null), // Forecast + bridge from last actual
           borderColor: '#3B82F6',
           backgroundColor: 'transparent',
           borderWidth: 2,
@@ -127,7 +144,7 @@ export function CashFlowForecastTrendsChartJS({
           label: locale?.startsWith('es') ? 'Entradas Totales' : 'Total Inflows',
           data: inflowData,
           borderColor: '#34D399',
-          backgroundColor: inflowData.map((_, index) => index <= 7 ? 'rgba(52, 211, 153, 0.2)' : 'rgba(52, 211, 153, 0.1)'),
+          backgroundColor: inflowData.map((_, index) => index < actualPeriodCount ? 'rgba(52, 211, 153, 0.2)' : 'rgba(52, 211, 153, 0.1)'),
           borderWidth: 1,
           pointRadius: 2,
           fill: 'origin',
@@ -138,7 +155,7 @@ export function CashFlowForecastTrendsChartJS({
           label: locale?.startsWith('es') ? 'Salidas Totales' : 'Total Outflows',
           data: outflowData,
           borderColor: '#EF4444',
-          backgroundColor: outflowData.map((_, index) => index <= 7 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)'),
+          backgroundColor: outflowData.map((_, index) => index < actualPeriodCount ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)'),
           borderWidth: 1,
           pointRadius: 2,
           fill: 'origin',
@@ -163,16 +180,18 @@ export function CashFlowForecastTrendsChartJS({
     const lastActualValue = actualData[actualData.length - 1]?.y || 0;
     const lastForecastValue = forecastPoints[forecastPoints.length - 1]?.y || 0;
     
-    // Calculate month-over-month change (Aug 2025 vs Jul 2025) - ACCURATE CALCULATION
-    const currentMonthValue = actualData[7]?.y || 0; // Aug 2025 (index 7)
-    const previousMonthValue = actualData[6]?.y || 0; // Jul 2025 (index 6)
+    // Calculate month-over-month change using last actual period - DYNAMIC CALCULATION
+    const currentMonthValue = actualData[lastActualIndex]?.y || 0; // Last actual period
+    const previousMonthValue = lastActualIndex > 0 ? actualData[lastActualIndex - 1]?.y || 0 : 0; // Previous actual period
     
     // Debug logging to verify Final Balance data
     console.log('CashFlowForecastTrends - Final Balance Analysis:', {
-      currentMonth: 'Aug 2025',
-      previousMonth: 'Jul 2025',
-      augustFinalBalance: currentMonthValue,
-      julyFinalBalance: previousMonthValue,
+      actualPeriodCount,
+      lastActualIndex,
+      currentMonth: actualData[lastActualIndex]?.month || 'N/A',
+      previousMonth: lastActualIndex > 0 ? actualData[lastActualIndex - 1]?.month || 'N/A' : 'N/A',
+      currentMonthFinalBalance: currentMonthValue,
+      previousMonthFinalBalance: previousMonthValue,
       decemberFinalBalance: data2025[11]?.finalBalance || 'missing',
       allActualBalances: actualData.map(d => ({ month: d.month, finalBalance: d.y })),
       allForecastBalances: forecastPoints.map(d => ({ month: d.month, finalBalance: d.y }))
@@ -213,29 +232,29 @@ export function CashFlowForecastTrendsChartJS({
     });
 
     // Calculate runway based on FINAL BALANCE trend, not monthly generation
-    const augustFinalBalance = data2025[7]?.finalBalance || 0; // August final balance
+    const lastActualFinalBalance = data2025[lastActualIndex]?.finalBalance || 0; // Last actual period final balance
     const decemberFinalBalance = data2025[11]?.finalBalance || 0; // December final balance
-    const finalBalanceTrend = decemberFinalBalance - augustFinalBalance; // Balance growth Aug→Dec
+    const finalBalanceTrend = decemberFinalBalance - lastActualFinalBalance; // Balance growth from last actual→Dec
     
     let projectedRunway = 0;
     let runwayLabel = '';
     
     console.log('Runway Analysis - Final Balance Trend:', {
-      augustFinalBalance,
+      lastActualFinalBalance,
       decemberFinalBalance,
       balanceGrowth: finalBalanceTrend,
       isGrowing: finalBalanceTrend > 0
     });
     
-    if (augustFinalBalance > 0 && finalBalanceTrend > 0) {
+    if (lastActualFinalBalance > 0 && finalBalanceTrend > 0) {
       // Final balance is positive AND growing - no runway concern
       projectedRunway = -1; // Signal for "no concern"
       runwayLabel = locale?.startsWith('es') ? 'Balance creciente' : 'Growing balance';
-    } else if (augustFinalBalance > 0 && finalBalanceTrend < 0 && decemberFinalBalance > 0) {
+    } else if (lastActualFinalBalance > 0 && finalBalanceTrend < 0 && decemberFinalBalance > 0) {
       // Balance decreasing but still positive in December
       projectedRunway = -2; // Signal for "declining but safe"
       runwayLabel = locale?.startsWith('es') ? 'Declining pero positivo' : 'Declining but positive';
-    } else if (augustFinalBalance > 0 && decemberFinalBalance <= 0) {
+    } else if (lastActualFinalBalance > 0 && decemberFinalBalance <= 0) {
       // Will run out of money before December
       projectedRunway = 4;
       runwayLabel = locale?.startsWith('es') ? 'riesgo en 4 meses' : 'risk in 4 months';
@@ -254,7 +273,14 @@ export function CashFlowForecastTrendsChartJS({
       monthOverMonth,
       showAsPercentage,
       currentMonthValue,
-      previousMonthValue
+      previousMonthValue,
+      // Add variables needed for UI
+      actualPeriodCount,
+      forecastPeriodCount,
+      lastActualIndex,
+      actualData,
+      currentMonthName: actualData[lastActualIndex]?.month || '',
+      previousMonthName: lastActualIndex > 0 ? actualData[lastActualIndex - 1]?.month || '' : ''
     };
 
     return { chartData: chartJSData, forecastStats: stats };
@@ -361,7 +387,10 @@ export function CashFlowForecastTrendsChartJS({
                   }
                 </span>
                 <span className="text-xs text-white/80">
-                  {locale?.startsWith('es') ? 'vs Jul 2025' : 'vs Jul 2025'}
+                  {forecastStats?.lastActualIndex > 0 && forecastStats?.previousMonthValue !== 0 
+                    ? `${locale?.startsWith('es') ? 'vs' : 'vs'} ${forecastStats?.previousMonthName} 2025`
+                    : (locale?.startsWith('es') ? 'Sin comparación' : 'No comparison')
+                  }
                 </span>
               </div>
             </div>
@@ -385,7 +414,9 @@ export function CashFlowForecastTrendsChartJS({
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 flex-shrink-0">
           <div className="bg-cyan-50 rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">
-              {locale?.startsWith('es') ? 'Cambio Aug vs Jul' : 'Aug vs Jul Change'}
+              {locale?.startsWith('es') 
+                ? `Cambio ${forecastStats?.currentMonthName} vs ${forecastStats?.previousMonthName}` 
+                : `${forecastStats?.currentMonthName} vs ${forecastStats?.previousMonthName} Change`}
             </p>
             <p className="text-lg font-semibold text-cyan-900">
               {(forecastStats?.monthOverMonth || 0) > 0 ? '↗' : (forecastStats?.monthOverMonth || 0) < 0 ? '↘' : '→'} {
@@ -395,7 +426,9 @@ export function CashFlowForecastTrendsChartJS({
               }
             </p>
             <p className="text-xs text-gray-500">
-              {locale?.startsWith('es') ? 'Aug vs Jul 2025' : 'Aug vs Jul 2025'}
+              {locale?.startsWith('es') 
+                ? `${forecastStats?.currentMonthName} vs ${forecastStats?.previousMonthName} 2025`
+                : `${forecastStats?.currentMonthName} vs ${forecastStats?.previousMonthName} 2025`}
             </p>
           </div>
           
@@ -425,7 +458,9 @@ export function CashFlowForecastTrendsChartJS({
               {formatValue(forecastStats?.currentMonthValue || 0)}
             </p>
             <p className="text-xs text-gray-500">
-              {locale?.startsWith('es') ? 'Agosto 2025' : 'August 2025'}
+              {locale?.startsWith('es') 
+                ? `${forecastStats?.currentMonthName} 2025`
+                : `${forecastStats?.currentMonthName} 2025`}
             </p>
           </div>
           
@@ -461,8 +496,8 @@ export function CashFlowForecastTrendsChartJS({
           <ul className="space-y-1 text-sm text-blue-700">
             <li>
               • {locale?.startsWith('es') 
-                ? '8 meses reales (Ene-Ago 2025) + 4 meses pronóstico'
-                : '8 actual months (Jan-Aug 2025) + 4 months forecast'
+                ? `${forecastStats?.actualPeriodCount} meses reales + ${forecastStats?.forecastPeriodCount} meses pronóstico`
+                : `${forecastStats?.actualPeriodCount} actual months + ${forecastStats?.forecastPeriodCount} months forecast`
               }
             </li>
             <li>
@@ -473,12 +508,12 @@ export function CashFlowForecastTrendsChartJS({
             </li>
             <li>
               • {locale?.startsWith('es') 
-                ? `Cambio ${(forecastStats?.monthOverMonth || 0) >= 0 ? 'positivo' : 'negativo'} Aug vs Jul 2025: ${
+                ? `Cambio ${(forecastStats?.monthOverMonth || 0) >= 0 ? 'positivo' : 'negativo'} ${forecastStats?.currentMonthName} vs ${forecastStats?.previousMonthName} 2025: ${
                     forecastStats?.showAsPercentage 
                       ? `${Math.abs(forecastStats.monthOverMonth || 0).toFixed(1)}%`
                       : `${Math.abs(forecastStats?.monthOverMonth || 0).toFixed(1)}M ARS`
                   }`
-                : `${(forecastStats?.monthOverMonth || 0) >= 0 ? 'Positive' : 'Negative'} change Aug vs Jul 2025: ${
+                : `${(forecastStats?.monthOverMonth || 0) >= 0 ? 'Positive' : 'Negative'} change ${forecastStats?.currentMonthName} vs ${forecastStats?.previousMonthName} 2025: ${
                     forecastStats?.showAsPercentage 
                       ? `${Math.abs(forecastStats.monthOverMonth || 0).toFixed(1)}%`
                       : `${Math.abs(forecastStats?.monthOverMonth || 0).toFixed(1)}M ARS`
