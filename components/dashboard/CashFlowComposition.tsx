@@ -145,11 +145,7 @@ export function CashFlowComposition({
     // Get the selected period index (default to latest period)
     const periodIndex = selectedPeriod < periods.length ? selectedPeriod : periods.length - 1;
     
-    console.log('🎯 CashFlowComposition: Processing period', periodIndex, 'of', periods.length);
-    console.log('📅 CashFlowComposition: Periods received:', periods);
-    console.log('📊 Categories available:', Object.keys(categories));
-    console.log('🔍 selectedPeriod:', selectedPeriod, 'selectedPeriodValue:', periods[selectedPeriod]);
-    console.log('🔍 Full data structure:', data);
+    // Processing period data
 
     // Create inflows data from API categories
     const inflowsData: CompositionItem[] = [];
@@ -239,16 +235,7 @@ export function CashFlowComposition({
       combinedData[1].percentage = (mappedTotalOutflows / totalFlow) * 100;
     }
 
-    console.log('✅ CashFlowComposition: Processed data', {
-      periodIndex,
-      inflows: inflowsData.length,
-      outflows: outflowsData.length,
-      categorySumInflows: totalInflowsSum,
-      categorySumOutflows: totalOutflowsSum,
-      mappedTotalInflows: mappedTotalInflows,
-      mappedTotalOutflows: mappedTotalOutflows,
-      usingMappedTotals: 'for GENERAL view'
-    });
+    // Using mapped totals for GENERAL view
 
     return { inflowsData, outflowsData, combinedData };
   }, [data, selectedPeriod, locale]);
@@ -308,7 +295,6 @@ export function CashFlowComposition({
     if (!chartRef.current) return;
     
     const elements = getElementsAtEvent(chartRef.current, event);
-    console.log('Chart click elements:', elements);
     
     if (elements.length > 0) {
       const dataIndex = elements[0].index;
@@ -317,10 +303,7 @@ export function CashFlowComposition({
                   compositionData.combinedData;
       const clickedItem = data[dataIndex];
       
-      console.log('Clicked item:', clickedItem);
-      
       if (clickedItem && (clickedItem as any).isGroup) {
-        console.log('Opening modal for group:', (clickedItem as any)?.groupId);
         setModalData(clickedItem);
       }
     }
