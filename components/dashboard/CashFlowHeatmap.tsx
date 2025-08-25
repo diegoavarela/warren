@@ -406,12 +406,12 @@ export function CashFlowHeatmap({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-100 border border-purple-200 rounded-lg">
                   <h4 className="font-medium text-purple-800 mb-2">
-                    Mejores Rendimientos 2025
+                    {locale?.startsWith('es') ? 'Mejores Rendimientos 2025' : 'Best Performance 2025'}
                   </h4>
                   <div className="space-y-1 text-sm text-purple-700">
                     {summaryStats.bestMonth && (
                       <p>
-                        • Mejor mes: {summaryStats.bestMonth.month} ({formatValue(summaryStats.bestMonth.value)})
+                        • {locale?.startsWith('es') ? 'Número mas Alto' : 'Highest Number'}: {summaryStats.bestMonth.month} ({formatValue(summaryStats.bestMonth.value)})
                       </p>
                     )}
                     {viewMode === 'net' && (

@@ -450,7 +450,7 @@ export function CashFlowForecastTrendsChartJS({
           
           <div className="bg-orange-50 rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">
-              {locale?.startsWith('es') ? 'Generación Mensual' : 'Monthly Generation'}
+              {locale?.startsWith('es') ? 'Saldo Final' : 'Final Balance'}
             </p>
             <p className={`text-lg font-semibold ${
               (forecastStats?.currentMonthValue || 0) >= 0 ? 'text-green-900' : 'text-red-900'
