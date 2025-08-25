@@ -1227,7 +1227,8 @@ function CashFlowDashboardContent({
                 <CashFlowComposition
                   data={directData ? {
                     periods: liveData.data.periods,
-                    categories: liveData.data.data.categories as any
+                    categories: liveData.data.data.categories as any,
+                    dataRows: liveData.data.data.dataRows as any
                   } : null}
                   formatValue={formatValue}
                   formatPercentage={formatPercentage}

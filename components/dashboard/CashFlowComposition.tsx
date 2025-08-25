@@ -71,6 +71,18 @@ interface CashFlowCompositionProps {
         subcategories?: Record<string, any>;
       }>;
     };
+    dataRows: {
+      totalInflows: {
+        label: string;
+        values: (number | null)[];
+        total: number;
+      };
+      totalOutflows: {
+        label: string;
+        values: (number | null)[];
+        total: number;
+      };
+    };
   } | null;
   formatValue: (value: number) => string;
   formatPercentage: (value: number) => string;
@@ -124,11 +136,11 @@ export function CashFlowComposition({
 
   // Calculate composition data using the live API data structure
   const compositionData = useMemo(() => {
-    if (!data || !data.categories) {
+    if (!data || !data.categories || !data.dataRows) {
       return { inflowsData: [], outflowsData: [], combinedData: [] };
     }
 
-    const { categories, periods } = data;
+    const { categories, periods, dataRows } = data;
     
     // Get the selected period index (default to latest period)
     const periodIndex = selectedPeriod < periods.length ? selectedPeriod : periods.length - 1;
@@ -199,36 +211,43 @@ export function CashFlowComposition({
     // Sort by value (largest to smallest)
     outflowsData.sort((a, b) => b.value - a.value);
 
-    // Create combined data
+    // Create combined data using mapped totals from Excel (not category sums)
+    const mappedTotalInflows = Math.abs(dataRows.totalInflows?.values[periodIndex] || 0);
+    const mappedTotalOutflows = Math.abs(dataRows.totalOutflows?.values[periodIndex] || 0);
+    
     const combinedData = [
       {
         name: locale?.startsWith('es') ? 'Entradas' : 'Inflows',
-        value: totalInflowsSum,
+        value: mappedTotalInflows,
         percentage: 0, // Will be calculated below
         color: '#10B981',
         type: 'inflow'
       },
       {
         name: locale?.startsWith('es') ? 'Salidas' : 'Outflows',
-        value: totalOutflowsSum,
+        value: mappedTotalOutflows,
         percentage: 0, // Will be calculated below
         color: '#EF4444',
         type: 'outflow'
       }
     ];
 
-    // Calculate proper percentages for combined view
-    const totalFlow = totalInflowsSum + totalOutflowsSum;
+    // Calculate proper percentages for combined view using mapped totals
+    const totalFlow = mappedTotalInflows + mappedTotalOutflows;
     if (totalFlow > 0) {
-      combinedData[0].percentage = (totalInflowsSum / totalFlow) * 100;
-      combinedData[1].percentage = (totalOutflowsSum / totalFlow) * 100;
+      combinedData[0].percentage = (mappedTotalInflows / totalFlow) * 100;
+      combinedData[1].percentage = (mappedTotalOutflows / totalFlow) * 100;
     }
 
     console.log('✅ CashFlowComposition: Processed data', {
+      periodIndex,
       inflows: inflowsData.length,
       outflows: outflowsData.length,
-      totalInflows: totalInflowsSum,
-      totalOutflows: totalOutflowsSum
+      categorySumInflows: totalInflowsSum,
+      categorySumOutflows: totalOutflowsSum,
+      mappedTotalInflows: mappedTotalInflows,
+      mappedTotalOutflows: mappedTotalOutflows,
+      usingMappedTotals: 'for GENERAL view'
     });
 
     return { inflowsData, outflowsData, combinedData };
