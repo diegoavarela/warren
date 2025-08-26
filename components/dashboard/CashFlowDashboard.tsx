@@ -76,6 +76,16 @@ interface YTDMetrics {
   projectedRunway: number;
 }
 
+interface ProjectedAnnualMetrics {
+  totalInflows: number;
+  totalOutflows: number;
+  netCashFlow: number;
+  averageMonthlyGeneration: number;
+  actualMonths: number;
+  projectedMonths: number;
+  totalMonths: number;
+}
+
 interface DirectCashFlowData {
   periods: Array<{
     id: string;
@@ -107,6 +117,7 @@ interface CashFlowData {
   currentPeriod: CashFlowPeriodData;
   previousPeriod?: CashFlowPeriodData;
   yearToDate: YTDMetrics;
+  projectedAnnual?: ProjectedAnnualMetrics | null;
   categories: {
     operating: { name: string; amount: number; percentage: number; subcategories?: { name: string; amount: number }[] }[];
     investing: { name: string; amount: number; percentage: number; subcategories?: { name: string; amount: number }[] }[];
@@ -566,6 +577,28 @@ function CashFlowDashboardContent({
       projectedRunway: currentPeriod?.runwayMonths || 0
     };
 
+    // Projected Annual calculation: Include ALL 12 months (actual + forecast) if available
+    const hasFullYearData = vortexData.totalIncome.length >= 12 && vortexData.totalExpense.length >= 12;
+    const projectedMonthsCount = 12 - actualPeriodCount;
+    const hasProjectedData = projectedMonthsCount > 0 && hasFullYearData;
+
+    let projectedAnnual: ProjectedAnnualMetrics | null = null;
+    if (hasProjectedData) {
+      const projectedTotalInflows = vortexData.totalIncome.slice(0, 12).reduce((sum, val) => sum + val, 0);
+      const projectedTotalExpenses = vortexData.totalExpense.slice(0, 12).reduce((sum, val) => sum + Math.abs(val), 0);
+      const projectedNetCashFlow = projectedTotalInflows - projectedTotalExpenses;
+
+      projectedAnnual = {
+        totalInflows: projectedTotalInflows,
+        totalOutflows: projectedTotalExpenses,
+        netCashFlow: projectedNetCashFlow,
+        averageMonthlyGeneration: projectedNetCashFlow / 12,
+        actualMonths: actualPeriodCount,
+        projectedMonths: projectedMonthsCount,
+        totalMonths: 12
+      };
+    }
+
     const totalOperating = periods.reduce((sum, p) => sum + Math.abs(p.operatingCashFlow), 0);
     const totalInvesting = periods.reduce((sum, p) => sum + Math.abs(p.investingCashFlow), 0);
     const totalFinancing = periods.reduce((sum, p) => sum + Math.abs(p.financingCashFlow), 0);
@@ -628,6 +661,7 @@ function CashFlowDashboardContent({
       currentPeriod,
       previousPeriod,
       yearToDate,
+      projectedAnnual,
       categories,
       forecasts
     };
@@ -702,6 +736,7 @@ function CashFlowDashboardContent({
     const current = data.currentPeriod;
     const previous = data.previousPeriod;
     const ytd = data.yearToDate;
+    const projectedAnnual = data.projectedAnnual;
     
     // DEBUG: Check what values are being passed to UI components
 
@@ -1026,6 +1061,85 @@ function CashFlowDashboardContent({
                   subtitle={`${locale?.startsWith('es') ? 'Promedio de' : 'Average of'} ${ytd.monthsIncluded} ${locale?.startsWith('es') ? 'meses' : 'months'}`}
                   colorScheme={ytd.averageMonthlyGeneration >= 0 ? "profit" : "cost"}
                   helpTopic={helpTopics['metrics.monthlyAverage']}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Projected Annual Section - Only show when there's projected data */}
+        {projectedAnnual && (
+        <div className="mb-8">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            {/* Colored Header with purple/pink gradient */}
+            <div className="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <CalendarIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    {locale?.startsWith('es') ? 'Proyectado Anual Acumulado' : 'Projected Annual Total'}
+                  </h3>
+                </div>
+                <HelpIcon topic={helpTopics['dashboard.projectedAnnual']} size="sm" />
+              </div>
+            </div>
+            {/* Content */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <MetricCard
+                  title={locale?.startsWith('es') ? 'Entradas Proyectadas Anuales' : 'Projected Annual Inflows'}
+                  currentValue={projectedAnnual.totalInflows}
+                  format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
+                  originalCurrency={originalCurrency}
+                  currency={selectedCurrency}
+                  icon={<ArrowUpIcon className="h-5 w-5" />}
+                  subtitle={`12 ${locale?.startsWith('es') ? 'meses' : 'months'} (${projectedAnnual.actualMonths} ${locale?.startsWith('es') ? 'actual' : 'actual'} + ${projectedAnnual.projectedMonths} ${locale?.startsWith('es') ? 'proyectado' : 'forecast'})`}
+                  colorScheme="revenue"
+                  helpTopic={helpTopics['metrics.projectedAnnualInflows']}
+                />
+                <MetricCard
+                  title={locale?.startsWith('es') ? 'Salidas Proyectadas Anuales' : 'Projected Annual Outflows'}
+                  currentValue={projectedAnnual.totalOutflows}
+                  format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
+                  originalCurrency={originalCurrency}
+                  currency={selectedCurrency}
+                  icon={<ArrowDownIcon className="h-5 w-5" />}
+                  subtitle={`12 ${locale?.startsWith('es') ? 'meses' : 'months'} (${projectedAnnual.actualMonths} ${locale?.startsWith('es') ? 'actual' : 'actual'} + ${projectedAnnual.projectedMonths} ${locale?.startsWith('es') ? 'proyectado' : 'forecast'})`}
+                  colorScheme="cost"
+                  helpTopic={helpTopics['metrics.projectedAnnualOutflows']}
+                />
+                <MetricCard
+                  title={locale?.startsWith('es') ? 'Flujo Neto Proyectado Anual' : 'Projected Annual Net Flow'}
+                  currentValue={projectedAnnual.netCashFlow}
+                  format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
+                  originalCurrency={originalCurrency}
+                  currency={selectedCurrency}
+                  icon={<CurrencyDollarIcon className="h-5 w-5" />}
+                  subtitle={`12 ${locale?.startsWith('es') ? 'meses' : 'months'} (${locale?.startsWith('es') ? 'actual + proyectado' : 'actual + forecast'})`}
+                  colorScheme={projectedAnnual.netCashFlow >= 0 ? "profit" : "cost"}
+                  helpTopic={helpTopics['metrics.projectedAnnualNetFlow']}
+                />
+                <MetricCard
+                  title={locale?.startsWith('es') ? 'Generación Prom. Mensual Proyectada' : 'Projected Avg Monthly Generation'}
+                  currentValue={projectedAnnual.averageMonthlyGeneration}
+                  format="currency"
+                  displayUnits={displayUnits}
+                  formatValue={formatValue}
+                  originalCurrency={originalCurrency}
+                  currency={selectedCurrency}
+                  icon={<ChartBarIcon className="h-5 w-5" />}
+                  subtitle={`12 ${locale?.startsWith('es') ? 'meses proyectados' : 'months projected'}`}
+                  colorScheme={projectedAnnual.averageMonthlyGeneration >= 0 ? "profit" : "cost"}
+                  helpTopic={helpTopics['metrics.projectedMonthlyAverage']}
                 />
               </div>
             </div>
