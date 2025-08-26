@@ -83,8 +83,6 @@ function FinancialDashboardPage() {
           return;
         }
 
-        console.log('Fetching dashboard data for company:', companyId, 'statement:', params.statementId);
-
         // Fetch company details
         const companyResponse = await fetch(`/api/v1/companies/${companyId}`);
         if (companyResponse.ok) {
@@ -108,7 +106,6 @@ function FinancialDashboardPage() {
         }
 
         const result = await response.json();
-        console.log('Dashboard data received:', result);
         setDashboardData(result.data);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);

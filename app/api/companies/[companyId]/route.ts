@@ -129,8 +129,6 @@ export async function DELETE(
       .delete(companies)
       .where(eq(companies.id, companyId));
 
-    console.log(`✅ Company deleted: ${company.name} (${companyId}) by ${payload.email}`);
-
     return NextResponse.json({
       success: true,
       message: 'Company deleted successfully'
@@ -317,8 +315,6 @@ export async function PATCH(
 
     const action = updateFields.isActive === false ? 'deactivated' : 
                   updateFields.isActive === true ? 'reactivated' : 'updated';
-    
-    console.log(`✅ Company ${action}: ${company.name} (${companyId}) by ${payload.email}`);
 
     return NextResponse.json({
       success: true,

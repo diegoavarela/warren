@@ -42,8 +42,6 @@ const DEFAULT_SETTINGS = {
 // GET /api/platform/settings
 export async function GET(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
-    console.log('Platform settings GET request started');
-    console.log('systemSettings table:', systemSettings);
     
     // Only platform admins can access settings
     if (user.role !== ROLES.SUPER_ADMIN) {
@@ -58,9 +56,6 @@ export async function GET(request: NextRequest) {
       const { searchParams } = new URL(request.url);
       const category = searchParams.get('category');
 
-      console.log('Querying systemSettings table...');
-      console.log('Category filter:', category);
-
       // Build query
       let query = db.select().from(systemSettings);
       if (category) {
@@ -69,7 +64,6 @@ export async function GET(request: NextRequest) {
 
       // Execute query
       const settings = await query;
-      console.log('Query result:', settings);
 
     // Transform settings into a more usable format
     const settingsMap: Record<string, any> = {};
@@ -122,8 +116,6 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     const { category, settings } = body;
-
-    console.log('Received settings update request:', { category, settings });
 
     if (!category || !settings) {
       return NextResponse.json(
@@ -190,7 +182,6 @@ export async function PUT(request: NextRequest) {
     // Execute all updates
     try {
       await Promise.all(updates);
-      console.log(`Successfully updated ${updates.length} settings`);
     } catch (dbError) {
       console.error('Database error during settings update:', dbError);
       return NextResponse.json(
@@ -200,7 +191,6 @@ export async function PUT(request: NextRequest) {
     }
 
       // Log the change
-      console.log(`Platform settings updated by ${user.email} - Category: ${category}, Keys: ${Object.keys(settings).join(', ')}`);
 
       return NextResponse.json({
         success: true,

@@ -193,6 +193,8 @@ export function KeyboardShortcutsPanel({
   );
 }
 
+export default KeyboardShortcutsPanel;
+
 // Default shortcuts for CategoryBuilder
 export const DEFAULT_CATEGORY_SHORTCUTS: ShortcutItem[] = [
   // Navigation

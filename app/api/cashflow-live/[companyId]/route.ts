@@ -11,13 +11,13 @@ import { getCurrentUser } from '@/lib/auth/server-auth';
 import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { configurationService } from '@/lib/services/configuration-service';
 import { excelProcessingService } from '@/lib/services/excel-processing-service';
+import { cacheService } from '@/lib/services/cache-service';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { companyId: string } }
 ) {
   try {
-    console.log('🔍 Live Cash Flow API: Processing request for company', params.companyId);
 
     // Authentication
     const user = await getCurrentUser();
@@ -31,6 +31,21 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
+    // Check cache first
+    const cacheKey = cacheService.generateKey.cashflowData(params.companyId);
+    const cachedData = cacheService.get(cacheKey);
+    
+    if (cachedData) {
+      return NextResponse.json({
+        ...cachedData,
+        metadata: {
+          ...cachedData.metadata,
+          fromCache: true,
+          cachedAt: new Date().toISOString()
+        }
+      });
+    }
+
     // Get the active Cash Flow configuration for this company
     const configurations = await configurationService.getConfigurationsByCompany(params.companyId);
     const cashFlowConfig = configurations.find((config: any) => config.type === 'cashflow' && config.isActive);
@@ -40,18 +55,9 @@ export async function GET(
         error: 'No active Cash Flow configuration found for this company' 
       }, { status: 404 });
     }
-
-    console.log('✅ Found active Cash Flow configuration:', cashFlowConfig.name);
-    console.log('📋 Configuration structure check:');
-    console.log('- configJson type:', typeof cashFlowConfig.configJson);
-    console.log('- configJson exists:', !!cashFlowConfig.configJson);
     
     if (cashFlowConfig.configJson) {
-      console.log('- configJson keys:', Object.keys(cashFlowConfig.configJson));
-      console.log('- has structure:', !!cashFlowConfig.configJson.structure);
-      console.log('- structure type:', typeof cashFlowConfig.configJson.structure);
       if (cashFlowConfig.configJson.structure) {
-        console.log('- structure keys:', Object.keys(cashFlowConfig.configJson.structure));
       }
     } else {
       console.error('❌ configJson is null or undefined');
@@ -61,7 +67,6 @@ export async function GET(
     }
 
     // Get the Excel file from the database and process it with the configuration
-    console.log('🔄 Processing Excel file with live configuration...');
     
     const { db, financialDataFiles } = await import('@/lib/db');
     const { eq, desc } = await import('drizzle-orm');
@@ -88,18 +93,8 @@ export async function GET(
       }, { status: 404 });
     }
 
-    console.log('📊 Found Excel file, processing with configuration...');
-
     // Process the Excel file with the current configuration
     // The configJson already has the correct structure from the database
-    console.log('🔧 Configuration structure debug:');
-    console.log('- Configuration type:', cashFlowConfig.configJson?.type);
-    console.log('- Period mapping exists:', !!cashFlowConfig.configJson?.structure?.periodMapping);
-    console.log('- Period mapping length:', cashFlowConfig.configJson?.structure?.periodMapping?.length || 0);
-    console.log('- Data rows:', Object.keys(cashFlowConfig.configJson?.structure?.dataRows || {}));
-    console.log('- File content length:', fileResult[0].fileContent?.length || 0);
-    
-    console.log('🔄 About to call processExcelWithConfiguration...');
     const selectedSheet = cashFlowConfig.configJson?.metadata?.selectedSheet;
     const processedData = await excelProcessingService.processExcelWithConfiguration(
       fileResult[0].fileContent,
@@ -107,22 +102,9 @@ export async function GET(
       'cashflow',
       selectedSheet // Pass the selected sheet from configuration
     );
-    console.log('✅ processExcelWithConfiguration completed successfully');
-
-    console.log('✅ Live processing complete - periods found:', processedData.periods?.length || 0);
-    console.log('🔍 Period metadata generated:', !!processedData.periodMetadata);
-    console.log('📅 Period metadata details:', processedData.periodMetadata);
-    console.log('⚙️ Configuration lastActualPeriod:', cashFlowConfig.configJson?.structure?.lastActualPeriod);
     
     // Debug financial data for the problematic period (August 2025, likely index 7)
     if (processedData.dataRows && processedData.periods?.length > 7) {
-      console.log('🐛 API DEBUG - August 2025 financial data (index 7):');
-      console.log('- Total Inflows:', processedData.dataRows.totalInflows?.values[7]);
-      console.log('- Total Outflows:', processedData.dataRows.totalOutflows?.values[7]);
-      console.log('- Net Cash Flow (API):', processedData.dataRows.netCashFlow?.values[7]);
-      console.log('- Monthly Generation:', processedData.dataRows.monthlyGeneration?.values[7]);
-      console.log('- Final Balance:', processedData.dataRows.finalBalance?.values[7]);
-      console.log('- Initial Balance:', processedData.dataRows.initialBalance?.values[7]);
     }
     
     // Helper function to get the last actual period label from configuration
@@ -156,8 +138,6 @@ export async function GET(
       processedData.periodMetadata, 
       cashFlowConfig.configJson?.structure?.lastActualPeriod
     );
-    
-    console.log('🎯 Calculated last actual period label:', lastActualPeriodLabel);
     
     // Transform to dashboard format
     const response = {
@@ -196,8 +176,10 @@ export async function GET(
           Object.values(processedData.periodMetadata).filter((meta: any) => meta?.isProjected).length : 0
       }
     };
-
-    console.log('✅ Live Cash Flow API: Returning data with', response.data.periods.length, 'periods');
+    
+    // Cache the response for 5 minutes
+    cacheService.set(cacheKey, response);
+    
     return NextResponse.json(response);
 
   } catch (error) {

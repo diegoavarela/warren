@@ -135,7 +135,6 @@ export class FinancialDataAggregator {
     }
     
     // For unknown categories, default to expense (safer assumption)
-    console.warn(`Unknown financial category: ${category} - defaulting to expense`);
     return false;
   }
 
@@ -144,7 +143,6 @@ export class FinancialDataAggregator {
    */
   async getCompanyFinancialSummary(companyId: string): Promise<CompanyFinancialSummary> {
     try {
-      console.log('🔍 AGGREGATOR DEBUG - getCompanyFinancialSummary called for company:', companyId);
       // Get company info
       const company = await db
         .select()
@@ -153,11 +151,8 @@ export class FinancialDataAggregator {
         .limit(1);
 
       if (!company.length) {
-        console.log('🚨 AGGREGATOR DEBUG - Company not found:', companyId);
         throw new Error('Company not found');
       }
-      
-      console.log('🔍 AGGREGATOR DEBUG - Found company:', company[0].name);
 
       // Get all financial statements for the company
       const statements = await db
@@ -173,10 +168,7 @@ export class FinancialDataAggregator {
         .from(financialStatements)
         .where(eq(financialStatements.companyId, companyId))
         .orderBy(desc(financialStatements.periodEnd));
-
-      console.log('🔍 AGGREGATOR DEBUG - Found statements:', statements.length);
       statements.forEach((stmt: any) => {
-        console.log(`  - ${stmt.statementType}: ${stmt.periodStart} to ${stmt.periodEnd} (${stmt.currency})`);
       });
 
       // Get line item counts and categories for each statement
@@ -250,7 +242,6 @@ export class FinancialDataAggregator {
   ): Promise<DetailedFinancialData> {
     try {
       const { statementTypes = ['profit_loss', 'cash_flow'], periodLimit = 12 } = options;
-      console.log('🔍 AGGREGATOR - DATABASE ONLY MODE - Reading stored values for company:', companyId);
 
       // Get company info
       const company = await db
@@ -281,22 +272,17 @@ export class FinancialDataAggregator {
         statementTypes.includes(s.statementType as 'profit_loss' | 'cash_flow')
       );
 
-      console.log(`🔍 Processing ${filteredStatements.length} statements - DATABASE ONLY`);
-
       // Process each statement - READ STORED VALUES ONLY
       const detailedStatements = [];
       const periodAnalysis = [];
 
       for (const statement of filteredStatements) {
-        console.log(`🔍 Reading stored values for period: ${statement.periodStart} to ${statement.periodEnd}`);
         
         // Get ALL line items for this statement
         const lineItems = await db
           .select()
           .from(financialLineItems)
           .where(eq(financialLineItems.statementId, statement.id));
-
-        console.log(`🔍 Found ${lineItems.length} line items in database`);
 
         // Process line items and extract STORED calculated values ONLY
         const processedLineItems = [];
@@ -326,23 +312,17 @@ export class FinancialDataAggregator {
             
             if (lowerAccountName.includes('ebitda') && !lowerAccountName.includes('margin')) {
               storedEBITDA = amount;
-              console.log(`✅ Found STORED EBITDA: ${amount} ${statement.currency}`);
             } else if (lowerAccountName.includes('gross profit')) {
               storedGrossProfit = amount;
-              console.log(`✅ Found STORED Gross Profit: ${amount} ${statement.currency}`);
             } else if (lowerAccountName.includes('net income')) {
               storedNetIncome = amount;
-              console.log(`✅ Found STORED Net Income: ${amount} ${statement.currency}`);
             }
           } else if (item.category === 'revenue' && (item.isTotal || accountName.toLowerCase().includes('total revenue'))) {
             storedRevenue = amount;
-            console.log(`✅ Found STORED Revenue: ${amount} ${statement.currency}`);
           } else if (item.category === 'cogs' && (item.isTotal || accountName.toLowerCase().includes('total cost'))) {
             storedCOGS = amount;
-            console.log(`✅ Found STORED COGS: ${amount} ${statement.currency}`);
           } else if (item.category === 'operating_expenses' && (item.isTotal || accountName.toLowerCase().includes('total operating'))) {
             storedOperatingExpenses = amount;
-            console.log(`✅ Found STORED Operating Expenses: ${amount} ${statement.currency}`);
           }
         }
 
@@ -370,12 +350,6 @@ export class FinancialDataAggregator {
       const totalRevenue = periodAnalysis.reduce((sum, p) => sum + (p.revenue || 0), 0);
       const totalExpenses = periodAnalysis.reduce((sum, p) => sum + (p.expenses || 0), 0);
       const netIncome = periodAnalysis.reduce((sum, p) => sum + (p.netIncome || 0), 0);
-
-      console.log('🔍 AGGREGATOR - STORED VALUES SUMMARY:');
-      console.log('  Total Revenue (from stored):', totalRevenue);
-      console.log('  Total Expenses (from stored):', totalExpenses);
-      console.log('  Net Income (from stored):', netIncome);
-      console.log('  Period Analysis:', periodAnalysis);
 
       return {
         company: company[0],
@@ -477,7 +451,6 @@ export class FinancialDataAggregator {
             }
 
           } catch (decryptError) {
-            console.warn(`Failed to decrypt account name for search:`, decryptError);
           }
         }
       }
@@ -536,7 +509,6 @@ export class FinancialDataAggregator {
       if (totalItems.length > 0) {
         // Use the stored total, not the calculated sum
         categoryDetails[category].total = totalItems[0].amount;
-        console.log(`✅ Using STORED total for ${category}: ${totalItems[0].amount}`);
       }
     });
 

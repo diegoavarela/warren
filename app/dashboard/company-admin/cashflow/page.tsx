@@ -69,7 +69,6 @@ export default function CashFlowDashboardPage() {
               }
               
               if (formattedPeriod) {
-                console.log('🎯 Setting period to last actual period from configuration:', formattedPeriod);
                 setCurrentPeriod(formattedPeriod);
                 setLastUpdate(new Date());
                 return;
@@ -77,7 +76,6 @@ export default function CashFlowDashboardPage() {
             }
           }
         } catch (error) {
-          console.warn('Could not fetch last actual period from configuration:', error);
         }
         
         // Fallback to current month
@@ -86,7 +84,6 @@ export default function CashFlowDashboardPage() {
           month: 'long', 
           year: 'numeric' 
         });
-        console.log('📅 Falling back to current month period:', formattedPeriod);
         setCurrentPeriod(formattedPeriod);
         setLastUpdate(new Date());
       };

@@ -30,8 +30,6 @@ export async function POST(request: NextRequest) {
         path: '/'
       });
 
-      console.log('🔧 DEV AUTH: Mock session token set successfully');
-
       return NextResponse.json({
         success: true,
         message: "Development authentication successful",
@@ -52,8 +50,6 @@ export async function POST(request: NextRequest) {
         maxAge: 0,
         path: '/'
       });
-
-      console.log('🔧 DEV AUTH: Mock session token cleared');
 
       return NextResponse.json({
         success: true,

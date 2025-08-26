@@ -22,7 +22,6 @@ interface Company {
   createdAt: string;
 }
 
-
 function OrgAdminDashboard() {
   const router = useRouter();
   const { user, organization } = useAuth();
@@ -60,7 +59,6 @@ function OrgAdminDashboard() {
       const filteredCompanies = (data.data || []).filter((company: Company) => {
         const belongsToUserOrg = company.organizationId === organization?.id;
         if (!belongsToUserOrg) {
-          console.warn(`⚠️ Company ${company.name} (${company.id}) has wrong organizationId: ${company.organizationId}, expected: ${organization?.id}`);
         }
         return belongsToUserOrg;
       });
@@ -71,7 +69,6 @@ function OrgAdminDashboard() {
       setLoading(false);
     }
   };
-
 
   const fetchUsers = async () => {
     if (!organization?.id) return;
@@ -261,7 +258,6 @@ function OrgAdminDashboard() {
             </div>
           </div>
         </div>
-
 
         {/* Companies Section */}
         <Card>

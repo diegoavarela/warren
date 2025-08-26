@@ -8,10 +8,13 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, CardTitle } from '@/components/ui/Card';
-import { AIChat } from '@/components/dashboard/AIChat';
+// Lazy load AI Chat for better page load performance
+import { AIChat } from '@/components/LazyComponents';
 import { ArrowLeftIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
 import { GlobalHelpButton } from '@/components/SuperCoolHelpIcon';
 import { ROLES } from '@/lib/auth/rbac';
+import { ClientOnly } from '@/components/ClientOnly';
+import { useLocaleText } from '@/hooks/useLocaleText';
 
 interface Company {
   id: string;
@@ -24,6 +27,7 @@ function FinancialChatPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { locale } = useLocale();
+  const { t } = useLocaleText();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,10 +36,6 @@ function FinancialChatPage() {
     // Get selected company from session storage
     const companyId = sessionStorage.getItem('selectedCompanyId');
     const companyName = sessionStorage.getItem('selectedCompanyName');
-    
-    console.log('🔍 CHAT PAGE DEBUG - Session storage values:');
-    console.log('  selectedCompanyId:', companyId);
-    console.log('  selectedCompanyName:', companyName);
     
     if (companyId) {
       setSelectedCompanyId(companyId);
@@ -95,15 +95,13 @@ function FinancialChatPage() {
           <Card className="max-w-md">
             <CardBody className="text-center py-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {locale?.startsWith('es') ? 'Empresa no seleccionada' : 'No Company Selected'}
+                {t('No Company Selected', 'Empresa no seleccionada')}
               </h3>
               <p className="text-gray-600 mb-6">
-                {locale?.startsWith('es') 
-                  ? 'Por favor selecciona una empresa para acceder al chat financiero.'
-                  : 'Please select a company to access the financial chat.'}
+                {t('Please select a company to access the financial chat.', 'Por favor selecciona una empresa para acceder al chat financiero.')}
               </p>
               <Button variant="primary" onClick={handleBackToAdmin}>
-                {locale?.startsWith('es') ? 'Volver a Administración' : 'Back to Administration'}
+                {t('Back to Administration', 'Volver a Administración')}
               </Button>
             </CardBody>
           </Card>

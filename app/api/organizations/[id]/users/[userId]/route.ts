@@ -80,8 +80,6 @@ export async function DELETE(
       .delete(users)
       .where(eq(users.id, userId));
 
-    console.log(`✅ User ${targetUser.email} deleted from organization ${organizationId}`);
-
     return NextResponse.json({
       success: true,
       message: 'User deleted successfully'
@@ -204,7 +202,6 @@ export async function PUT(
     }
 
     const updatedUser = userResult[0];
-    console.log(`✅ User ${updatedUser.email} updated in organization ${organizationId}`);
 
     return NextResponse.json({
       success: true,

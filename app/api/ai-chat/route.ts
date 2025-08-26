@@ -379,8 +379,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('🤖 [AI Chat] Processing message:', message);
-
     // Helper to extract period indices for quarters
     const quarterMapping: Record<string, number[]> = {
       'Q1': [0, 1, 2], // Jan, Feb, Mar
@@ -470,8 +468,6 @@ When providing insights, base them solely on the available data.`;
       const toolCall = responseMessage.tool_calls[0];
       const functionName = toolCall.function.name;
       const functionArgs = JSON.parse(toolCall.function.arguments);
-      
-      console.log('🤖 [AI Chat] Tool called:', functionName, functionArgs);
       
       switch (functionName) {
         case 'create_chart':
@@ -608,8 +604,6 @@ When providing insights, base them solely on the available data.`;
         dataQuality: context.metadata.dataQuality
       }
     };
-
-    console.log('🤖 [AI Chat] Response generated successfully');
     return NextResponse.json(response);
 
   } catch (error) {

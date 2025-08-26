@@ -101,8 +101,6 @@ export async function PUT(
         );
       }
 
-      console.log(`✅ Organization settings updated: ${updatedOrganization.name} by ${user.email}`);
-
       return NextResponse.json({
         success: true,
         data: updatedOrganization

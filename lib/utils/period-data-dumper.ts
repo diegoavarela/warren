@@ -90,7 +90,6 @@ export class PeriodDataDumper {
 
       try {
         writeFileSync(filepath, JSON.stringify(periodData, null, 2), 'utf8');
-        console.log(`📄 Period data dumped: ${filename}`);
         createdFiles.push(filepath);
       } catch (error) {
         console.error(`❌ Failed to dump period data for ${period}:`, error);
@@ -126,7 +125,6 @@ export class PeriodDataDumper {
     const filepath = join(this.dataDir, filename);
 
     writeFileSync(filepath, JSON.stringify(indexData, null, 2), 'utf8');
-    console.log(`📋 Periods index created: ${filename}`);
     
     return filepath;
   }
@@ -173,7 +171,6 @@ export class PeriodDataDumper {
     files.forEach((file: string) => {
       if (file.startsWith(companyPrefix)) {
         fs.unlinkSync(join(this.dataDir, file));
-        console.log(`🗑️ Cleaned up old data file: ${file}`);
       }
     });
   }

@@ -115,8 +115,6 @@ export async function PUT(
       );
     }
 
-    console.log(`✅ Organization updated: ${updatedOrganization.name} (tier: ${updatedOrganization.tier}) by ${payload.email}`);
-
     return NextResponse.json({
       success: true,
       organization: updatedOrganization
@@ -169,8 +167,6 @@ export async function DELETE(
         { status: 404 }
       );
     }
-
-    console.log(`🗑️ Organization deactivated: ${deletedOrganization.name} by ${payload.email}`);
 
     return NextResponse.json({
       success: true,

@@ -20,7 +20,6 @@ export async function cleanupOldUploads(maxAgeMinutes: number = 60): Promise<voi
         // Check if file is older than maxAge
         if (now - stats.mtime.getTime() > maxAge) {
           await unlink(filePath);
-          console.log(`Cleaned up old upload file: ${file}`);
         }
       }
     }

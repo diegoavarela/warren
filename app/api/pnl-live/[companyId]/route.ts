@@ -11,6 +11,7 @@ import { getCurrentUser } from '@/lib/auth/server-auth';
 import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { configurationService } from '@/lib/services/configuration-service';
 import { excelProcessingService } from '@/lib/services/excel-processing-service';
+import { cacheService } from '@/lib/services/cache-service';
 
 export async function GET(
   request: NextRequest,
@@ -27,6 +28,21 @@ export async function GET(
     const accessCheck = await hasCompanyAccess(user.id, params.companyId, ['company_admin', 'org_admin', 'platform_admin', 'user']);
     if (!accessCheck) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Check cache first
+    const cacheKey = cacheService.generateKey.pnlData(params.companyId);
+    const cachedData = cacheService.get(cacheKey);
+    
+    if (cachedData) {
+      return NextResponse.json({
+        ...cachedData,
+        metadata: {
+          ...cachedData.metadata,
+          fromCache: true,
+          cachedAt: new Date().toISOString()
+        }
+      });
     }
 
     // Get the active P&L configuration for this company
@@ -121,12 +137,11 @@ export async function GET(
       }
     };
 
+    // Cache the response for 5 minutes
+    cacheService.set(cacheKey, response);
+    
     // Returning P&L data with ${response.data.periods.length} periods
-    console.log('📊 [LIVE P&L] Processing complete at', new Date().toISOString());
-    console.log('📊 [LIVE P&L] Configuration dataRows:', pnlConfig.configJson?.structure?.dataRows);
-    console.log('📊 [LIVE P&L] Processed data has taxes?:', !!processedData.dataRows?.taxes);
     if (processedData.dataRows?.taxes) {
-      console.log('📊 [LIVE P&L] Taxes values:', processedData.dataRows.taxes.values);
     }
     return NextResponse.json(response);
 

@@ -115,10 +115,8 @@ export function FinancialDataChatV2({ companyId, className }: FinancialDataChatV
 
   const loadDataSummary = async () => {
     try {
-      console.log('🔍 FRONTEND V2 DEBUG - Loading data summary for company:', companyId);
       const response = await fetch(`/api/ai-analysis/summary?companyId=${companyId}`);
       const result = await response.json();
-      console.log('🔍 FRONTEND V2 DEBUG - Data summary result:', result);
       
       if (result.success) {
         setDataSummary(result.data);
@@ -155,8 +153,6 @@ export function FinancialDataChatV2({ companyId, className }: FinancialDataChatV
   const sendMessage = async (query: string) => {
     if (!query.trim() || isLoading) return;
 
-    console.log('🔍 FRONTEND V2 DEBUG - Sending query to company:', companyId, 'Query:', query);
-
     const userMessage: ChatMessage = {
       role: 'user',
       content: query.trim(),
@@ -185,7 +181,6 @@ export function FinancialDataChatV2({ companyId, className }: FinancialDataChatV
       });
 
       const result = await response.json();
-      console.log('🔍 FRONTEND V2 DEBUG - Query response:', result);
 
       if (result.success) {
         const analysisResponse: AIAnalysisResponse = result.data;
@@ -661,3 +656,5 @@ export function FinancialDataChatV2({ companyId, className }: FinancialDataChatV
     </Card>
   );
 }
+
+export default FinancialDataChatV2;

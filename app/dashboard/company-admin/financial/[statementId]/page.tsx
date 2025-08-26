@@ -72,7 +72,6 @@ function FinancialStatementViewerPage() {
         }
 
         const data = await response.json();
-        console.log('Statement API response:', data);
         
         if (data.success && data.data) {
           setStatement(data.data);

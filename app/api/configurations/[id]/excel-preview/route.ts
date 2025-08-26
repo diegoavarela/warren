@@ -14,12 +14,10 @@ interface RouteParams {
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    console.log(`Excel preview API called for config ID: ${params.id}`);
     
     // Get current user
     const user = await getCurrentUser();
     if (!user) {
-      console.log('Unauthorized access to Excel preview API');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,9 +25,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // Get optional selectedSheet parameter from query string
     const url = new URL(req.url);
     const selectedSheet = url.searchParams.get('sheet') || undefined;
-    
-    console.log(`User ${user.id} requesting Excel preview for config ${configId}${selectedSheet ? ` with selected sheet: ${selectedSheet}` : ''}`);
-    console.log(`📋 Sheet selection parameter:`, selectedSheet);
 
     // Get the configuration
     const configResult = await db
@@ -60,7 +55,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     // Get the most recent Excel file for this company based on configuration type
-    console.log(`Looking for Excel files for company: ${config.companyId}, type: ${config.type}`);
     
     // Filter by filename pattern based on configuration type
     // For cashflow configs, look for files with "cashflow" or "cash" in the name
@@ -70,8 +64,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       .from(financialDataFiles)
       .where(eq(financialDataFiles.companyId, config.companyId))
       .orderBy(desc(financialDataFiles.uploadedAt));
-    
-    console.log(`Found ${allFiles.length} total Excel files for company ${config.companyId}`);
     
     // Filter files based on configuration type
     const fileResult = allFiles.filter((file: any) => {
@@ -86,8 +78,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       }
       return true;
     }).slice(0, 1);
-
-    console.log(`Found ${fileResult.length} Excel files for company ${config.companyId}`);
 
     if (fileResult.length === 0) {
       return NextResponse.json(

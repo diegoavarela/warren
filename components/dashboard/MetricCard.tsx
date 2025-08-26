@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useTranslation } from '@/lib/translations';
 import { useLocale } from '@/contexts/LocaleContext';
 import { ArrowUpIcon, ArrowDownIcon, MinusIcon } from '@heroicons/react/24/solid';
@@ -49,7 +49,7 @@ interface MetricCardProps {
   formatValue?: (value: number) => string; // NEW: External formatter from dashboard
 }
 
-export function MetricCard({
+const MetricCardComponent = function MetricCard({
   title,
   currentValue,
   previousValue,
@@ -401,4 +401,10 @@ export function MetricCard({
       )}
     </>
   );
-}
+};
+
+// Memoized export for performance optimization
+export const MetricCard = memo(MetricCardComponent);
+
+// Also export as default for compatibility
+export default MetricCard;

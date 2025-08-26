@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { KPICard } from './KPICard';
 import { WarrenChart, CHART_CONFIGS } from '../charts/WarrenChart';
 import { MetricCard } from './MetricCard';
-import { HeatmapChart } from './HeatmapChart';
-import { HorizontalStackedChart } from './HorizontalStackedChart';
+// Lazy load heavy chart components for better performance
+import { HeatmapChart, HorizontalStackedChart } from '../LazyComponents';
 import { KeyInsights } from './KeyInsights';
 import { HelpIcon } from '../HelpIcon';
 import { helpTopics } from '@/lib/help-content';
@@ -225,11 +225,6 @@ function CashFlowDashboardContent({
   // Update currency when live data changes
   useEffect(() => {
     if (liveData?.data?.metadata?.currency) {
-      console.log('🔄 Currency Update:', {
-        from: selectedCurrency,
-        to: liveData.data.metadata.currency,
-        apiCurrency: liveData.data.metadata.currency
-      });
       setSelectedCurrency(liveData.data.metadata.currency);
     }
   }, [liveData]);
@@ -258,14 +253,12 @@ function CashFlowDashboardContent({
       decimalSeparator = configNumberFormat.decimalSeparator;
       thousandsSeparator = configNumberFormat.thousandsSeparator;
       currencySymbol = selectedCurrency === 'ARS' ? 'ARS' : '$';
-      console.log('📊 Using configuration formatting:', { decimalSeparator, thousandsSeparator });
     } else {
       // Fallback to locale detection
       const localeFormat = localeNumberFormat;
       decimalSeparator = localeFormat.decimalSeparator;
       thousandsSeparator = localeFormat.thousandsSeparator;
       currencySymbol = localeFormat.currencySymbol;
-      console.log('📊 Using locale formatting:', { decimalSeparator, thousandsSeparator });
     }
     
     // Create consistent formatter using explicit rules
@@ -297,8 +290,6 @@ function CashFlowDashboardContent({
   };
 
   // Note: Data fetching now handled by parent component
-
-  console.log('🔍 Cash Flow Dashboard: Live data:', { liveData, loading, error, companyId });
   
   // Extract period metadata for actual vs projected distinction
   const periodMetadata = liveData?.data?.periodMetadata || {};
@@ -314,45 +305,17 @@ function CashFlowDashboardContent({
     return periodMetadata[periodLabel]?.isProjected || false;
   };
   
-  console.log('📅 Period Metadata:', {
-    periodMetadata,
-    lastActualPeriodLabel,
-    totalPeriods: Object.keys(periodMetadata).length,
-    actualPeriods: Object.entries(periodMetadata).filter(([_, meta]: [string, any]) => meta?.isActual).map(([label]) => label),
-    projectedPeriods: Object.entries(periodMetadata).filter(([_, meta]: [string, any]) => meta?.isProjected).map(([label]) => label)
-  });
-  
   // Debug: Check which configuration is being used
   if (liveData) {
-    console.log('🔧 Configuration Debug - Dashboard is using:');
-    console.log('- Configuration Name:', liveData.data?.metadata?.configurationName);
-    console.log('- Data Source:', 'live-api');
-    console.log('- Processed At:', new Date().toISOString());
-    console.log('- Data Structure:', {
-      periodsCount: liveData.data?.periods?.length,
-      periodsFirstFew: liveData.data?.periods?.slice(0, 3),
-      hasDataRows: Object.keys(liveData.data?.data?.dataRows || {}).length > 0,
-      hasCategories: Object.keys(liveData.data?.data?.categories || {}).length > 0,
-      hasPeriodMetadata: Object.keys(periodMetadata).length > 0
-    });
   }
   
   // Debug: Show the actual structure of liveData
   if (liveData) {
-    console.log('📊 Cash Flow Debug - Full live data structure:', JSON.stringify(liveData, null, 2));
-    console.log('📊 Cash Flow Debug - Data periods:', liveData.data?.periods);
-    console.log('📊 Cash Flow Debug - Data rows keys:', Object.keys(liveData.data?.data?.dataRows || {}));
     
     // Configuration-based processing no longer exposes Excel structure
-    console.log('📊 Cash Flow Debug - Using configuration-based processing');
     
     // Show current values being used
     const febIndex = 1; // February should be index 1
-    console.log('📊 Cash Flow Debug - February values (index 1):');
-    console.log('- totalInflows:', liveData.data?.data?.dataRows?.totalInflows?.values[febIndex]);
-    console.log('- totalOutflows:', liveData.data?.data?.dataRows?.totalOutflows?.values[febIndex]);
-    console.log('- finalBalance:', liveData.data?.data?.dataRows?.finalBalance?.values[febIndex]);
-    console.log('- monthlyGeneration:', liveData.data?.data?.dataRows?.monthlyGeneration?.values[febIndex]);
   }
 
   // Use the directData passed as prop instead of creating a new one
@@ -360,8 +323,6 @@ function CashFlowDashboardContent({
   
   // Use the isDirectMode passed as prop instead of creating a new one
   // const isDirectMode already passed as prop, no need to redefine
-  
-  console.log('🔍 Cash Flow Dashboard: isDirectMode =', isDirectMode, 'liveData exists =', !!liveData);
   
   // Dashboard state matching P&L exactly
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
@@ -389,7 +350,6 @@ function CashFlowDashboardContent({
       
       // First priority: Use lastActualPeriod from configuration
       if (lastActualPeriodLabel) {
-        console.log('🎯 [PERIOD SELECTION] Using lastActualPeriod from config:', lastActualPeriodLabel);
         // Find period matching the last actual period label
         const actualPeriod = data.periods.find(p => {
           const periodLabel = `${p.month} ${p.year}`;
@@ -398,14 +358,12 @@ function CashFlowDashboardContent({
         });
         
         if (actualPeriod?.id) {
-          console.log('✅ [PERIOD SELECTION] Found matching period:', actualPeriod);
           setSelectedPeriod(actualPeriod.id);
           return;
         }
       }
       
-      // Fallback: Find August 2025 period specifically  
-      console.log('🔄 [PERIOD SELECTION] Fallback to August 2025');
+      // Fallback: Find August 2025 period specifically
       const augustPeriod = data.periods.find(p => p.month === 'Aug' && p.year === 2025);
       if (augustPeriod?.id) {
         setSelectedPeriod(augustPeriod.id);
@@ -500,11 +458,6 @@ function CashFlowDashboardContent({
       
       // Debug log for August 2025 (index 7)
       if (index === 7) {
-        console.log('August 2025 Monthly Generation:', {
-          index,
-          monthlyGeneration,
-          shouldShow: `ARS ${(monthlyGeneration/1000000).toFixed(1)} M`
-        });
       }
       
       // Calculate runway months based on net cash flow (if burning cash, otherwise infinite)
@@ -531,15 +484,12 @@ function CashFlowDashboardContent({
     });
 
     // Find current period - use targetPeriodId if provided, otherwise August 2025 or most recent
-    console.log('🔍 Looking for current period in periods:', periods.map(p => `${p.month} ${p.year}`));
-    console.log('🎯 Target period ID:', targetPeriodId);
     
     let currentPeriodIndex = -1;
     
     if (targetPeriodId) {
       // Find by specific period ID
       currentPeriodIndex = periods.findIndex(p => p.id === targetPeriodId);
-      console.log('🎯 Found target period at index:', currentPeriodIndex);
     }
     
     // Fallback to August 2025 if target not found
@@ -550,29 +500,16 @@ function CashFlowDashboardContent({
     // Final fallback to most recent period
     if (currentPeriodIndex === -1) {
       currentPeriodIndex = periods.length - 1; // Most recent period
-      console.log('⚠️ Target period not found, using most recent period:', currentPeriodIndex);
     }
     
     const currentPeriod = currentPeriodIndex >= 0 ? periods[currentPeriodIndex] : periods[Math.min(0, periods.length - 1)]; // Safe fallback
     const previousPeriod = currentPeriodIndex > 0 ? periods[currentPeriodIndex - 1] : (periods.length > 1 ? periods[periods.length - 2] : undefined);
     
     // DEBUG: Check the currentPeriod selection
-    console.log('🔍 PERIOD SELECTION DEBUG:', {
-      currentPeriodIndex,
-      totalPeriods: periods.length,
-      'currentPeriod.netCashFlow': currentPeriod?.netCashFlow,
-      'currentPeriod.monthlyGeneration': currentPeriod?.monthlyGeneration,
-      'periods[4].netCashFlow (May)': periods[4]?.netCashFlow,
-      'periods[4].monthlyGeneration (May)': periods[4]?.monthlyGeneration
-    });
-    
-    console.log(`✅ Selected current period: ${currentPeriod?.month} ${currentPeriod?.year} (index: ${currentPeriodIndex})`);
-    console.log(`📅 Selected previous period: ${previousPeriod?.month} ${previousPeriod?.year}`);
 
     // Helper function to determine actual period count based on configuration
     const getActualPeriodCount = (): number => {
       if (!liveData?.data?.periodMetadata) {
-        console.log('⚠️ No period metadata available, using fallback of 8 periods');
         return 8; // Fallback to hardcoded value if no metadata
       }
       
@@ -606,16 +543,6 @@ function CashFlowDashboardContent({
       // Final fallback to ensure we have at least 1 period
       const finalCount = Math.max(actualCount, 1);
       
-      console.log('📊 YTD Calculation - Period Analysis:', {
-        totalPeriods: periodsArray.length,
-        actualCount: finalCount,
-        lastActualPeriodLabel,
-        periodMetadataKeys: Object.keys(periodMetadata),
-        actualPeriods: Object.entries(periodMetadata)
-          .filter(([_, meta]: [string, any]) => meta?.isActual)
-          .map(([label]) => label)
-      });
-      
       return finalCount;
     };
 
@@ -625,22 +552,8 @@ function CashFlowDashboardContent({
     const ytdTotalInflows = vortexData.totalIncome.slice(0, actualPeriodCount).reduce((sum, val) => sum + val, 0);
     const ytdTotalExpenses = vortexData.totalExpense.slice(0, actualPeriodCount).reduce((sum, val) => sum + Math.abs(val), 0);
 
-    // Debug log to verify correct August 2025 values
-    console.log('=== CASH FLOW DATA DEBUG ===');
-    console.log('All periods array:', periods.map(p => ({ month: p.month, year: p.year, id: p.id, income: p.totalInflows, expense: p.totalOutflows })));
-    console.log('August 2025 Raw Data (index 7):');
-    console.log('- Income:', vortexData.totalIncome[7]); // Should be 60201807.32
-    console.log('- Expense:', vortexData.totalExpense[7]); // Should be -54716848.36
-    console.log('- Final Balance:', vortexData.finalBalance[7]); // Should be 13308616.55
-    console.log('Current Period Index found:', currentPeriodIndex);
-    console.log('Current Period Object:', currentPeriod);
-    console.log('YTD Totals (ACTUAL DATA ONLY):');
-    console.log('- Actual Period Count:', actualPeriodCount);
-    console.log('- YTD Income (actual only):', ytdTotalInflows);
-    console.log('- YTD Expenses (actual only):', ytdTotalExpenses);
+    // Debug log to verify correct August 2025 values // Should be 60201807.32 // Should be -54716848.36 // Should be 13308616.55
     const ytdNetCashFlow = ytdTotalInflows - ytdTotalExpenses; // YTD Net Cash Flow = YTD Inflows - YTD Outflows
-    console.log('- YTD Net Cash Flow (actual only):', ytdNetCashFlow);
-    console.log('================================');
     
     const yearToDate: YTDMetrics = {
       totalInflows: ytdTotalInflows,
@@ -791,31 +704,8 @@ function CashFlowDashboardContent({
     const ytd = data.yearToDate;
     
     // DEBUG: Check what values are being passed to UI components
-    console.log('🚨 UI COMPONENT VALUES - What gets displayed:', {
-      'current.netCashFlow': current.netCashFlow,
-      'current.monthlyGeneration': current.monthlyGeneration,
-      'current.finalBalance': current.finalBalance,
-      'current.totalInflows': current.totalInflows,
-      'current.totalOutflows': current.totalOutflows
-    });
 
     // Debug the actual values being rendered
-    console.log('=== DASHBOARD RENDER DEBUG - UPDATED VERSION ===');
-    console.log('Current Period Values:', {
-      totalInflows: current.totalInflows,
-      totalOutflows: current.totalOutflows,
-      netCashFlow: current.netCashFlow,
-      finalBalance: current.finalBalance,
-      runwayMonths: current.runwayMonths
-    });
-    console.log('Formatted values:', {
-      inflowsFormatted: formatValue(current.totalInflows),
-      outflowsFormatted: formatValue(current.totalOutflows),
-      netCashFlowFormatted: formatValue(current.netCashFlow),
-      finalBalanceFormatted: formatValue(current.finalBalance)
-    });
-    console.log('TEST - New formatValue working:', formatValue(60201807));
-    console.log('================================');
 
     return (
       <div className="space-y-8">
@@ -1314,7 +1204,7 @@ function CashFlowDashboardContent({
 }
 
 // Main wrapper component that handles data fetching and Smart Units integration
-export function CashFlowDashboard({ 
+const CashFlowDashboardComponent = function CashFlowDashboard({ 
   companyId, 
   currency = '$', 
   locale = 'es-MX',
@@ -1338,8 +1228,6 @@ export function CashFlowDashboard({
         setLoading(true);
         setError(null);
         
-        console.log('🔍 Fetching live Cash Flow data for company:', companyId);
-        
         const response = await fetch(`/api/cashflow-live/${companyId}?limit=12`, {
           method: 'GET',
           headers: {
@@ -1358,8 +1246,6 @@ export function CashFlowDashboard({
         if (!result.success) {
           throw new Error(result.error || 'API returned failure');
         }
-
-        console.log('✅ Live Cash Flow data fetched successfully:', result);
         setLiveData(result);
 
       } catch (err) {
@@ -1391,17 +1277,6 @@ export function CashFlowDashboard({
       
       // Debug logging for the issue
       if (index === 4) { // May 2025 - ACTUAL CURRENT PERIOD
-        console.log('🐛 LIVE DATA DEBUG - May 2025 (index 4 - YOUR ACTUAL PERIOD):', {
-          totalInflows,
-          totalOutflows,
-          netCashFlow,
-          monthlyGeneration,
-          rawInflows: liveData.data.data.dataRows?.totalInflows?.values[index],
-          rawOutflows: liveData.data.data.dataRows?.totalOutflows?.values[index],
-          netCashFlowFromAPI: liveData.data.data.dataRows?.netCashFlow?.values[index],
-          finalBalance: liveData.data.data.dataRows?.finalBalance?.values[index],
-          initialBalance: liveData.data.data.dataRows?.initialBalance?.values[index]
-        });
       }
 
       return {
@@ -1447,8 +1322,6 @@ export function CashFlowDashboard({
             const data = await response.json();
             if (data.success && data.data) {
               // The new API returns transformed dashboard data directly
-              console.log('🔍 Cash Flow Dashboard: Received data from API:', data);
-              console.log('📊 Cash Flow Dashboard: Setting regularData to:', data.data);
               setRegularData(data.data);
             } else {
               setRegularData([]);
@@ -1481,4 +1354,10 @@ export function CashFlowDashboard({
       error={error}
     />
   );
-}
+};
+
+// Memoized export for performance optimization
+export const CashFlowDashboard = memo(CashFlowDashboardComponent);
+
+// Also export as default for compatibility
+export default CashFlowDashboard;

@@ -349,7 +349,6 @@ export class ConfigurationService {
       if (data.metadata?.uploadSession) {
         try {
           await this.cleanupOrphanedFiles(data.companyId, data.metadata.uploadSession);
-          console.log(`✅ Cleaned up orphaned files for upload session: ${data.metadata.uploadSession}`);
         } catch (cleanupError) {
           console.error('Error cleaning up orphaned files:', cleanupError);
         }
@@ -401,14 +400,10 @@ export class ConfigurationService {
         .where(eq(processedFinancialData.configId, id))
         .returning();
 
-      console.log(`🗑️ Deleted ${deletedProcessedData.length} processed financial data records for configuration ${id}`);
-
       // Then delete the configuration itself
       await db
         .delete(companyConfigurations)
         .where(eq(companyConfigurations.id, id));
-
-      console.log(`✅ Successfully deleted configuration ${id}`);
       return true;
     } catch (error) {
       console.error('Error deleting configuration:', error);
@@ -429,10 +424,7 @@ export class ConfigurationService {
           eq(financialDataFiles.uploadSession, uploadSession)
         ))
         .returning();
-      
-      console.log(`🗑️ Deleted ${deletedFiles.length} orphaned files for session ${uploadSession}`);
       deletedFiles.forEach((file: any) => {
-        console.log(`   - ${file.originalFilename} (${file.id})`);
       });
     } catch (error) {
       console.error('Error deleting orphaned files:', error);
@@ -458,7 +450,6 @@ export class ConfigurationService {
         );
       
       // For now, just log the attempt
-      console.log(`🔍 Checking for orphaned files older than ${hoursOld} hours...`);
       
     } catch (error) {
       console.error('Error cleaning up old orphaned files:', error);

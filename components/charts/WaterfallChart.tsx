@@ -100,7 +100,6 @@ export function WaterfallChart({
           (isPositive ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)')
       };
     } catch (error) {
-      console.warn('Error processing waterfall data point:', error);
       return {
         label: `Item ${index + 1}`,
         value: 0,
@@ -277,7 +276,6 @@ export function WaterfallChart({
 
         ctx.restore();
       } catch (error) {
-        console.warn('Error drawing waterfall connectors:', error);
       }
     };
 

@@ -66,7 +66,6 @@ class FinancialDataCacheService {
    * This runs when user opens the chat
    */
   async generateCacheForCompany(companyId: string): Promise<CachedFinancialMetrics> {
-    console.log('🔄 CACHE SERVICE - Generating financial data cache for company:', companyId);
     
     try {
       // Get all the raw data
@@ -75,8 +74,6 @@ class FinancialDataCacheService {
         statementTypes: ['profit_loss'],
         periodLimit: 12,
       });
-      
-      console.log('✅ CACHE SERVICE - Raw data retrieved');
       
       // Process into structured format (warren-lightsail style)
       const monthlyMetrics = (detailedData.aggregatedData.periodAnalysis || []).map(period => {
@@ -166,14 +163,6 @@ class FinancialDataCacheService {
       
       // Cache it
       this.cache.set(companyId, cachedMetrics);
-      
-      console.log('✅ CACHE SERVICE - Financial data cached successfully');
-      console.log('📊 CACHE STATS:', {
-        periods: cachedMetrics.stats.periodsAvailable,
-        revenue: cachedMetrics.totalRevenue,
-        ebitda: cachedMetrics.totalEBITDA,
-        categories: Object.keys(cachedMetrics.categoryBreakdowns).length
-      });
       
       return cachedMetrics;
       

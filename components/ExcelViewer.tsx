@@ -65,18 +65,14 @@ export function ExcelViewer({
   };
 
   const handleMappingUpdate = (columnIndex: number, field: string, dataType: string) => {
-    console.log('Mapping update:', { columnIndex, field, dataType });
     
     const currentDetection = columnDetections.find(d => d.columnIndex === columnIndex);
-    console.log('Current detection:', currentDetection);
 
     const updatedMapping: Partial<ColumnMapping> = {
       targetField: field,
       dataType: dataType as any,
       confidence: field === 'unmapped' ? 0 : 95
     };
-
-    console.log('Updated mapping:', updatedMapping);
     onMappingChange(columnIndex, updatedMapping);
     setSelectedColumn(null);
   };

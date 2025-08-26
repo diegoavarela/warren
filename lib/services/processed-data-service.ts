@@ -48,7 +48,6 @@ export class ProcessedDataService {
    */
   async getCompanyData(query: ProcessedDataQuery): Promise<ProcessedPeriodData[]> {
     try {
-      console.log('🔍 ProcessedDataService: Getting company data', query);
 
       const conditions = [
         eq(processedFinancialData.companyId, query.companyId),
@@ -85,8 +84,6 @@ export class ProcessedDataService {
         .where(and(...conditions))
         .orderBy(desc(processedFinancialData.periodStart))
         .limit(query.limit || 12);
-
-      console.log(`✅ ProcessedDataService: Found ${results.length} records`);
 
       return results.map((result: any) => {
         // Ensure dates are properly converted to Date objects
@@ -151,7 +148,6 @@ export class ProcessedDataService {
    */
   async getAvailablePeriods(companyId: string, type?: 'pnl' | 'cashflow'): Promise<{ period: string; periodStart: Date; periodEnd: Date; type: string }[]> {
     try {
-      console.log('🔍 ProcessedDataService: Getting available periods', { companyId, type });
 
       const conditions = [
         eq(processedFinancialData.companyId, companyId),
@@ -198,7 +194,6 @@ export class ProcessedDataService {
    */
   async getCompanySummary(companyId: string): Promise<ProcessedDataSummary[]> {
     try {
-      console.log('🔍 ProcessedDataService: Getting company summary', companyId);
 
       const results = await db
         .select({
@@ -243,7 +238,6 @@ export class ProcessedDataService {
     type: 'pnl' | 'cashflow'
   ): Promise<ProcessedPeriodData | null> {
     try {
-      console.log('🔍 ProcessedDataService: Getting specific period data', { companyId, periodStart, periodEnd, type });
 
       const result = await db
         .select({
@@ -266,7 +260,6 @@ export class ProcessedDataService {
         .limit(1);
 
       if (result.length === 0) {
-        console.log('⚠️ ProcessedDataService: No data found for period');
         return null;
       }
 

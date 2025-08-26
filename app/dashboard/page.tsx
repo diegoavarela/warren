@@ -11,7 +11,6 @@ function DashboardRouter({ user }: { user: any }) {
 
   useEffect(() => {
     if (user) {
-      console.log('Dashboard routing - User:', user);
       
       // First check organization-level roles (these take priority)
       switch (user.role) {

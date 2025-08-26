@@ -109,7 +109,6 @@ export class SuperCoolHelpService {
           const data = JSON.parse(stored);
           this.userInteractions = new Map(Object.entries(data));
         } catch (e) {
-          console.warn('Failed to load help interactions:', e);
         }
       }
     }

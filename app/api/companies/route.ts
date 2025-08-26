@@ -120,7 +120,6 @@ export async function POST(request: NextRequest) {
       });
 
     // Auto-grant access to all organization admins in the same organization
-    console.log(`🔐 Auto-granting access to all organization admins for new company: ${name}`);
     
     const orgAdmins = await db
       .select({ id: users.id, email: users.email })
@@ -128,12 +127,9 @@ export async function POST(request: NextRequest) {
       .where(eq(users.organizationId, organizationId))
       .where(eq(users.role, 'admin'));
     
-    console.log(`📦 Found ${orgAdmins.length} organization admins to grant access to`);
-    
     for (const admin of orgAdmins) {
       // Skip if this admin is already the creator/specified admin
       if (admin.id === finalAdminUserId) {
-        console.log(`⏭️ Skipping ${admin.email} - already granted access as company admin`);
         continue;
       }
       
@@ -155,14 +151,10 @@ export async function POST(request: NextRequest) {
             isActive: true,
             invitedBy: payload.userId
           });
-        console.log(`✅ Granted access to organization admin: ${admin.email}`);
       }
     }
-    
-    console.log(`🎉 All organization admins now have access to company: ${name}`);
 
     // Log company creation
-    console.log(`✅ Company created: ${name} in organization ${organization.name} by ${payload.email}`);
 
     return NextResponse.json({
       success: true,

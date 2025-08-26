@@ -614,3 +614,5 @@ export function CashFlowScenarioPlanning({
     </div>
   );
 }
+
+export default CashFlowScenarioPlanning;

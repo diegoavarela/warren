@@ -65,8 +65,6 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    console.log('🤖 [AI Context] Loading comprehensive financial data for company:', params.companyId);
-
     // Get company details
     const { db, companies, financialDataFiles } = await import('@/lib/db');
     const { eq, desc } = await import('drizzle-orm');
@@ -141,7 +139,6 @@ export async function GET(
     // Process P&L data if configuration exists
     const pnlConfig = configurations.find((c: any) => c.type === 'pnl' && c.isActive);
     if (pnlConfig && pnlConfig.configJson) {
-      console.log('🤖 [AI Context] Processing P&L data with configuration:', pnlConfig.name);
       
       const pnlData = await excelProcessingService.processExcelWithConfiguration(
         fileResult[0].fileContent,
@@ -182,7 +179,6 @@ export async function GET(
     // Process Cash Flow data if configuration exists
     const cashflowConfig = configurations.find((c: any) => c.type === 'cashflow' && c.isActive);
     if (cashflowConfig && cashflowConfig.configJson) {
-      console.log('🤖 [AI Context] Processing Cash Flow data with configuration:', cashflowConfig.name);
       
       const cashflowData = await excelProcessingService.processExcelWithConfiguration(
         fileResult[0].fileContent,
@@ -228,13 +224,6 @@ export async function GET(
       periodsWithData,
       totalPeriods
     };
-
-    console.log('🤖 [AI Context] Data loaded successfully:', {
-      pnlAvailable: context.pnl.available,
-      cashflowAvailable: context.cashflow.available,
-      totalPeriods: context.metadata.dataQuality.totalPeriods,
-      completeness: `${context.metadata.dataQuality.completeness.toFixed(1)}%`
-    });
 
     return NextResponse.json(context);
 

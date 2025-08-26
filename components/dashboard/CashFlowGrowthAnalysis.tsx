@@ -208,14 +208,6 @@ export function CashFlowGrowthAnalysis({
     const improvement = currentFlow - previousFlow;
     
     // Debug log to verify values
-    console.log('Cash Flow Analysis (Dynamic):', {
-      lastActualIndex,
-      currentMonthData,
-      previousMonthData,
-      currentNetFlow: currentFlow,
-      previousNetFlow: previousFlow,
-      improvement: improvement
-    });
     
     // For negative-to-positive or large swings, show improvement in millions
     if ((previousFlow < 0 && currentFlow > 0) || Math.abs(improvement / Math.abs(previousFlow || 1)) > 3) {
@@ -474,3 +466,5 @@ export function CashFlowGrowthAnalysis({
     </div>
   );
 }
+
+export default CashFlowGrowthAnalysis;

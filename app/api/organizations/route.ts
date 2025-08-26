@@ -120,7 +120,6 @@ export async function POST(request: NextRequest) {
       .returning();
 
     // Log organization creation
-    console.log(`✅ Organization created: ${name} (${subdomain}) by ${payload.email}`);
 
     return NextResponse.json({
       success: true,

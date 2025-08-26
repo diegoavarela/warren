@@ -71,10 +71,8 @@ export function Header() {
         break;
       case 'view_updates':
         // Show update details or navigate to changelog
-        console.log('System update notification clicked');
         break;
       default:
-        console.log('Notification clicked:', notification.title);
     }
 
     // Close notifications dropdown
@@ -89,12 +87,10 @@ export function Header() {
   // Handle client-side mounting
   useEffect(() => {
     setMounted(true);
-    console.log('Header: Component mounted, isAuthenticated:', isAuthenticated, 'user:', user);
   }, []);
 
   // Debug authentication state changes
   useEffect(() => {
-    console.log('Header: Auth state changed - isAuthenticated:', isAuthenticated, 'user:', user);
   }, [isAuthenticated, user]);
 
   // Close menus when clicking outside
@@ -179,8 +175,7 @@ export function Header() {
       
       // Build breadcrumbs by processing segments and skipping UUIDs
       let pathSoFar = '';
-      
-      
+
       for (let i = 0; i < paths.length; i++) {
         const segment = paths[i];
         pathSoFar += '/' + segment;
@@ -192,8 +187,7 @@ export function Header() {
         if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(segment)) {
           continue;
         }
-        
-        
+
         let label = segment;
         
         // Translate common paths
@@ -313,12 +307,10 @@ export function Header() {
                       </div>
                       <div className="max-h-96 overflow-y-auto">
                         {notifications.map((notification) => {
-                          console.log('🔔 Rendering notification:', notification.id, 'read:', notification.read);
                           return (
                             <div
                               key={notification.id}
                               onClick={() => {
-                                console.log('🔔 Notification clicked:', notification.id);
                                 alert('Notification clicked: ' + notification.title);
                                 handleNotificationClick(notification);
                               }}
@@ -474,7 +466,6 @@ export function Header() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    console.log('Sign In button clicked');
                     router.push('/login');
                   }}
                   className="min-w-[80px] bg-opacity-100"
@@ -486,7 +477,6 @@ export function Header() {
                   variant="primary"
                   size="sm"
                   onClick={() => {
-                    console.log('Sign Up button clicked');
                     router.push('/signup');
                   }}
                   className="min-w-[80px] bg-opacity-100"

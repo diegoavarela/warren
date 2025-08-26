@@ -161,7 +161,6 @@ export default function ConfigurationsPage() {
 
   const handleViewJson = async (configId: string) => {
     try {
-      console.log('🔍 Loading configuration:', configId);
       const response = await fetch(`/api/configurations/${configId}`);
       
       if (!response.ok) {
@@ -169,8 +168,6 @@ export default function ConfigurationsPage() {
       }
 
       const data = await response.json();
-      console.log('📥 Loaded configuration data:', data.data);
-      console.log('📄 Configuration JSON:', data.data.configJson);
       
       setSelectedConfigJson(data.data.configJson);
       setSelectedConfigId(configId);
@@ -291,9 +288,6 @@ export default function ConfigurationsPage() {
     try {
       const parsedJson = JSON.parse(editedJsonText);
       
-      console.log('🔄 Saving configuration:', selectedConfigId);
-      console.log('📄 Updated JSON:', parsedJson);
-      
       const response = await fetch(`/api/configurations/${selectedConfigId}`, {
         method: 'PUT',
         headers: {
@@ -310,7 +304,6 @@ export default function ConfigurationsPage() {
       }
 
       const updatedData = await response.json();
-      console.log('✅ Configuration saved:', updatedData);
       
       // Update the local state with the saved JSON
       setSelectedConfigJson(parsedJson);

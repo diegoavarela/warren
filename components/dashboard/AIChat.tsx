@@ -460,3 +460,5 @@ How can I help you analyze your financial performance today?`,
   </div>
   );
 }
+
+export default AIChat;

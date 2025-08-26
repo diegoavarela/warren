@@ -87,11 +87,6 @@ export default function NewConfigurationPage() {
   // Update currency when company data loads
   useEffect(() => {
     if (selectedCompany) {
-      console.log('💱 Currency inheritance logic triggered for company:', {
-        name: selectedCompany.name,
-        baseCurrency: selectedCompany.baseCurrency,
-        locale: selectedCompany.locale
-      });
       
       const inheritedCurrency = selectedCompany.baseCurrency || 'USD';
       // Ensure locale is valid (2-10 characters as per schema)
@@ -103,8 +98,6 @@ export default function NewConfigurationPage() {
       if (inheritedLocale.length < 2 || inheritedLocale.length > 10) {
         inheritedLocale = 'en';
       }
-      
-      console.log('💰 Inheriting currency:', inheritedCurrency, 'and locale:', inheritedLocale);
       
       setFormData(prev => ({
         ...prev,
@@ -129,24 +122,14 @@ export default function NewConfigurationPage() {
       const result = await response.json();
       const companies = result.data || [];
       
-      console.log('🏢 Configuration page: Companies fetched from API:', companies);
-      console.log('🔍 Looking for companies with the following details:', companies.map((c: Company) => ({
-        id: c.id,
-        name: c.name,
-        baseCurrency: c.baseCurrency,
-        organizationId: c.organizationId
-      })));
-      
       // Try to get company context from session storage or header context
       const storedCompanyId = sessionStorage.getItem('selectedCompanyId');
-      console.log('📦 Company ID from session storage:', storedCompanyId);
       
       let selectedCompany = null;
       
       if (storedCompanyId) {
         // First try to use the company from session storage (user's current context)
         selectedCompany = companies.find((c: Company) => c.id === storedCompanyId);
-        console.log('🎯 Found company from session storage:', selectedCompany);
       }
       
       if (!selectedCompany) {
@@ -154,25 +137,16 @@ export default function NewConfigurationPage() {
         selectedCompany = companies.find((c: Company) => 
           c.name === 'VTEX Solutions SRL' || c.name?.includes('VTEX')
         );
-        console.log('🔎 Found VTEX company by name:', selectedCompany);
       }
       
       if (!selectedCompany && companies.length > 0) {
         // Fallback to first company if none found
         selectedCompany = companies[0];
-        console.log('⚠️ Using fallback (first company):', selectedCompany);
       }
       
       if (selectedCompany) {
-        console.log('✅ Selected company for configuration:', {
-          id: selectedCompany.id,
-          name: selectedCompany.name,
-          baseCurrency: selectedCompany.baseCurrency,
-          locale: selectedCompany.locale
-        });
         setSelectedCompany(selectedCompany);
       } else {
-        console.log('❌ No companies available');
         toast.error('No accessible companies found');
       }
     } catch (error) {
@@ -186,7 +160,6 @@ export default function NewConfigurationPage() {
   const fetchTemplates = async (type: 'cashflow' | 'pnl') => {
     try {
       setTemplatesLoading(true);
-      console.log('🌐 Fetching templates with locale:', formData.metadata.locale, 'for type:', type);
       const response = await fetch(`/api/configurations/templates?type=${type}&locale=${formData.metadata.locale}`);
       
       if (!response.ok) {
@@ -335,10 +308,6 @@ export default function NewConfigurationPage() {
           // Store upload session and filename for auto-processing
           sessionStorage.setItem('excel_upload_session', uploadSession);
           sessionStorage.setItem('excel_uploaded_filename', selectedFile.name);
-          
-          console.log('File uploaded successfully with ID:', uploadedFileId);
-          console.log('📊 Stored upload session for auto-processing:', uploadSession);
-          console.log('📁 Stored filename for auto-processing:', selectedFile.name);
         } catch (uploadError) {
           console.error('File upload failed:', uploadError);
           toast.error(`File upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
@@ -447,7 +416,6 @@ export default function NewConfigurationPage() {
         finalLocale = finalLocale.split('-')[0];
       }
       if (!finalLocale || finalLocale.length < 2 || finalLocale.length > 10) {
-        console.warn('⚠️ Invalid locale detected, falling back to default');
         finalLocale = 'en';
       }
       
@@ -466,10 +434,6 @@ export default function NewConfigurationPage() {
         // Note: associatedFileId is not part of CompanyConfigurationCreateSchema
         // File association will be handled by the service layer after configuration creation
       };
-      
-      console.log('Creating configuration with payload:', payload);
-      console.log('🔍 Payload metadata locale:', payload.metadata.locale);
-      console.log('🔍 ConfigJson metadata locale:', payload.configJson.metadata.locale);
       
       const response = await fetch('/api/configurations', {
         method: 'POST',

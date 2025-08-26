@@ -241,16 +241,13 @@ export class ExcelProcessingService {
     if (!periodMapping || periodMapping.length === 0) {
       // Try to convert from legacy format
       if (structure.periodsRow && structure.periodsRange) {
-        console.log('🔄 Converting legacy configuration format to periodMapping...');
         periodMapping = this.convertLegacyPeriodsToMapping(worksheet, structure.periodsRow, structure.periodsRange);
-        console.log('✅ Converted to periodMapping:', periodMapping.length, 'periods');
       } else {
         throw new Error('Configuration must have explicit period mapping. Auto-detection is disabled.');
       }
     }
     
     const periods = this.extractPeriodsFromMapping(periodMapping);
-    console.log('🎯 Configuration-based processing - using explicit period mapping:', periods.length, 'periods');
     processedData.periods = periods;
     
     // Extract core data rows using explicit column mapping
@@ -351,28 +348,21 @@ export class ExcelProcessingService {
     if (!periodMapping || periodMapping.length === 0) {
       // Try to convert from legacy format
       if (structure.periodsRow && structure.periodsRange) {
-        console.log('🔄 Converting legacy P&L configuration format to periodMapping...');
         periodMapping = this.convertLegacyPeriodsToMapping(worksheet, structure.periodsRow, structure.periodsRange);
-        console.log('✅ Converted P&L to periodMapping:', periodMapping.length, 'periods');
       } else {
         throw new Error('Configuration must have explicit period mapping. Auto-detection is disabled.');
       }
     }
     
     const periods = this.extractPeriodsFromMapping(periodMapping);
-    console.log('🎯 Configuration-based processing - using explicit period mapping for P&L:', periods.length, 'periods');
     processedData.periods = periods;
     
     // Extract core data rows using explicit column mapping
     for (const [fieldName, rowNumber] of Object.entries(structure.dataRows)) {
       const rowData = this.extractRowDataFromMapping(worksheet, rowNumber, periodMapping);
-      console.log(`🔍 P&L Data Row [${fieldName}] from row ${rowNumber}:`, rowData);
       
       // Special logging for taxes to debug YTD calculation
       if (fieldName === 'taxes') {
-        console.log('🏛️ [TAXES] Reading taxes from row', rowNumber);
-        console.log('🏛️ [TAXES] Tax values extracted:', rowData);
-        console.log('🏛️ [TAXES] Total taxes:', rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0));
       }
       
       processedData.dataRows[fieldName] = {
@@ -388,10 +378,8 @@ export class ExcelProcessingService {
       
       // Special logging for COGS and OPEX categories
       if (groupKey === 'cogs') {
-        console.log(`📊 [EXCEL] Processing COGS categories:`, Object.keys(group));
       }
       if (groupKey === 'opex') {
-        console.log(`💼 [EXCEL] Processing OPEX categories:`, Object.keys(group));
       }
       
       for (const [categoryKey, category] of Object.entries(group)) {
@@ -399,20 +387,10 @@ export class ExcelProcessingService {
         
         // Special logging for COGS categories
         if (groupKey === 'cogs') {
-          console.log(`📊 [EXCEL] COGS category ${categoryKey} (row ${category.row}):`, {
-            rowData: rowData,
-            firstThreeValues: rowData.slice(0, 3),
-            total: rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0)
-          });
         }
         
         // Special logging for OPEX categories
         if (groupKey === 'opex') {
-          console.log(`💼 [EXCEL] OPEX category ${categoryKey} (row ${category.row}):`, {
-            rowData: rowData,
-            firstThreeValues: rowData.slice(0, 3),
-            total: rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0)
-          });
         }
         
         processedData.categories[groupKey][categoryKey] = {
@@ -482,16 +460,6 @@ export class ExcelProcessingService {
     fileHash?: string
   ) {
     try {
-      console.log('🗂️ Attempting to store file info:', {
-        companyId,
-        filename,
-        originalFilename,
-        fileSize,
-        uploadedBy,
-        uploadSession,
-        fileContentLength: fileContentBase64?.length,
-        hasFileHash: !!fileHash
-      });
 
       const result = await db
         .insert(financialDataFiles)
@@ -506,12 +474,6 @@ export class ExcelProcessingService {
           uploadSession
         })
         .returning();
-      
-      console.log('✅ File info stored successfully:', {
-        id: result[0]?.id,
-        filename: result[0]?.filename,
-        uploadedAt: result[0]?.uploadedAt
-      });
       
       return result[0];
       
@@ -547,8 +509,6 @@ export class ExcelProcessingService {
     const [, startCol, startRow, endCol, endRow] = match;
     const startColIndex = this.columnLetterToIndex(startCol);
     const endColIndex = this.columnLetterToIndex(endCol);
-    
-    console.log(`🔄 Converting legacy range ${periodsRange} from row ${periodsRow}`);
     
     // Extract period labels from the specified row and range
     for (let col = startColIndex; col <= endColIndex; col++) {
@@ -606,7 +566,6 @@ export class ExcelProcessingService {
         
         return `${month} ${year}`;
       } catch (error) {
-        console.warn(`⚠️ Failed to convert Excel date ${numValue}:`, error);
         return cellValue.toString();
       }
     }
@@ -686,7 +645,6 @@ export class ExcelProcessingService {
    * @deprecated Use extractRowDataFromMapping instead
    */
   private extractRowData(worksheet: XLSX.WorkSheet, row: number, numColumns: number): (number | null)[] {
-    console.warn('⚠️ extractRowData is deprecated - use extractRowDataFromMapping instead');
     const data: (number | null)[] = [];
     
     // Start from column B (index 1) for data, skip label column
@@ -709,7 +667,6 @@ export class ExcelProcessingService {
     const totalOutflowsZero = processedData.dataRows.totalOutflows?.values.every(v => v === 0 || v === null);
     
     if (totalInflowsZero || !processedData.dataRows.totalInflows) {
-      console.log('🔄 Calculating totalInflows from categories...');
       
       // Initialize totalInflows if it doesn't exist
       if (!processedData.dataRows.totalInflows) {
@@ -737,12 +694,9 @@ export class ExcelProcessingService {
       // Calculate total across all periods
       processedData.dataRows.totalInflows.total = 
         processedData.dataRows.totalInflows.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
-      
-      console.log('✅ Calculated totalInflows:', processedData.dataRows.totalInflows.values);
     }
     
     if (totalOutflowsZero || !processedData.dataRows.totalOutflows) {
-      console.log('🔄 Calculating totalOutflows from categories...');
       
       // Initialize totalOutflows if it doesn't exist
       if (!processedData.dataRows.totalOutflows) {
@@ -770,8 +724,6 @@ export class ExcelProcessingService {
       // Calculate total across all periods
       processedData.dataRows.totalOutflows.total = 
         processedData.dataRows.totalOutflows.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
-      
-      console.log('✅ Calculated totalOutflows:', processedData.dataRows.totalOutflows.values);
     }
   }
 
@@ -786,7 +738,6 @@ export class ExcelProcessingService {
       processedData.dataRows.netCashFlow.values.every(v => v === 0 || v === null || v === undefined);
     
     if (netCashFlowMissing) {
-      console.log('🔄 Calculating netCashFlow from totalInflows - totalOutflows...');
       
       // Initialize netCashFlow if it doesn't exist
       if (!processedData.dataRows.netCashFlow) {
@@ -807,14 +758,10 @@ export class ExcelProcessingService {
       // Calculate total across all periods
       processedData.dataRows.netCashFlow.total = 
         processedData.dataRows.netCashFlow.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
-      
-      console.log('✅ Calculated netCashFlow:', processedData.dataRows.netCashFlow.values);
-      console.log('🔍 NetCashFlow calculation details for first few periods:');
       for (let i = 0; i < Math.min(3, periods.length); i++) {
         const inflow = processedData.dataRows.totalInflows?.values[i] || 0;
         const outflow = processedData.dataRows.totalOutflows?.values[i] || 0;
         const calculated = inflow - outflow;
-        console.log(`  Period ${i + 1}: ${inflow} - ${outflow} = ${calculated}`);
       }
     }
     
@@ -823,7 +770,6 @@ export class ExcelProcessingService {
       processedData.dataRows.monthlyGeneration.values.every(v => v === 0 || v === null || v === undefined);
     
     if (monthlyGenerationMissing) {
-      console.log('🔄 Calculating monthlyGeneration from finalBalance - initialBalance...');
       
       // Initialize monthlyGeneration if it doesn't exist
       if (!processedData.dataRows.monthlyGeneration) {
@@ -844,8 +790,6 @@ export class ExcelProcessingService {
       // Calculate total across all periods
       processedData.dataRows.monthlyGeneration.total = 
         processedData.dataRows.monthlyGeneration.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
-      
-      console.log('✅ Calculated monthlyGeneration:', processedData.dataRows.monthlyGeneration.values);
     }
   }
   
@@ -856,7 +800,6 @@ export class ExcelProcessingService {
     
     // Debug logging for first few reads to see what's happening
     if (Math.random() < 0.1) { // Only log 10% of reads to avoid spam
-      console.log(`🔍 Cell ${cellAddress} (R${row}C${col+1}): ${value} (type: ${typeof value})`);
     }
     
     return value;
@@ -928,7 +871,6 @@ export class ExcelProcessingService {
       if (selectedSheet && workbook.SheetNames.includes(selectedSheet)) {
         sheetName = selectedSheet;
         detectedSheetName = selectedSheet;
-        console.log(`📋 Using manually selected sheet: "${selectedSheet}"`);
       } else {
         // Smart detection: Look for the main data sheet - try to find one with cash flow or financial data
         detectedSheetName = workbook.SheetNames[0]; // Default to first sheet
@@ -1073,34 +1015,19 @@ export class ExcelProcessingService {
    * Process Excel file with configuration (from base64 content)
    */
   async processExcelWithConfiguration(fileContent: string, configuration: any, type: 'pnl' | 'cashflow', selectedSheet?: string): Promise<ProcessedData> {
-    console.log(`🔄 Processing Excel with live configuration for ${type}...`);
-    console.log('🔍 Configuration received:', !!configuration);
-    console.log('🔍 File content length:', fileContent?.length || 0);
     
     try {
-      console.log('📥 Decoding base64 Excel content...');
       // Decode base64 Excel content
       const buffer = Buffer.from(fileContent, 'base64');
-      console.log('📊 Buffer created, size:', buffer.length);
-      
-      console.log('📖 Reading Excel workbook...');
       const workbook = XLSX.read(buffer, { type: 'buffer' });
-      
-      console.log('📋 Excel sheets found:', workbook.SheetNames);
       
       // Smart sheet selection with manual override capability (same logic as getExcelPreview)
       let sheetName: string;
       let detectedSheetName: string;
       
-      console.log('🔍 Sheet selection debug:');
-      console.log('- selectedSheet parameter:', selectedSheet);
-      console.log('- available sheets:', workbook.SheetNames);
-      console.log('- selectedSheet exists in workbook:', selectedSheet ? workbook.SheetNames.includes(selectedSheet) : false);
-      
       if (selectedSheet && workbook.SheetNames.includes(selectedSheet)) {
         sheetName = selectedSheet;
         detectedSheetName = selectedSheet;
-        console.log(`📋 Using manually selected sheet: "${selectedSheet}"`);
       } else {
         // Smart detection: Look for the main data sheet - try to find one with cash flow or financial data
         detectedSheetName = workbook.SheetNames[0]; // Default to first sheet
@@ -1124,15 +1051,11 @@ export class ExcelProcessingService {
       }
       
       const worksheet = workbook.Sheets[sheetName];
-      console.log('📄 Using worksheet:', sheetName);
       
       // Process using the configuration
-      console.log('🔄 Processing data with configuration type:', type);
       if (type === 'cashflow') {
-        console.log('💰 Processing as Cash Flow...');
         return this.processCashFlowData(worksheet, configuration);
       } else if (type === 'pnl') {
-        console.log('📊 Processing as P&L...');
         return this.processPLData(worksheet, configuration);
       } else {
         throw new Error(`Unsupported data type: ${type}`);

@@ -244,7 +244,6 @@ export function ExpenseHeatmapChart({
             <div
               key={index}
               onClick={() => {
-                console.log('Heatmap tile clicked:', item);
                 onCategoryClick?.(item);
               }}
               onMouseEnter={() => setHoveredCategory(item.category)}

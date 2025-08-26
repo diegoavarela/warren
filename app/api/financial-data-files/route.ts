@@ -17,14 +17,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { companyId, filename, originalFilename, fileContent, fileSize, mimeType } = body;
 
-    console.log('📁 File upload request:', { 
-      companyId, 
-      filename, 
-      originalFilename, 
-      fileSize, 
-      mimeType: mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-    });
-
     // Validate required fields
     if (!companyId || !filename || !originalFilename || !fileContent) {
       return NextResponse.json({ 
@@ -52,7 +44,6 @@ export async function POST(req: NextRequest) {
       .limit(1);
 
     if (existingFile.length > 0) {
-      console.log('📁 File already exists, returning existing file:', existingFile[0].id);
       return NextResponse.json({
         success: true,
         data: existingFile[0],
@@ -76,8 +67,6 @@ export async function POST(req: NextRequest) {
         createdAt: new Date()
       })
       .returning();
-
-    console.log('✅ File uploaded successfully:', result[0].id);
 
     return NextResponse.json({
       success: true,

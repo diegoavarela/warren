@@ -8,8 +8,6 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    console.log('Login attempt for email:', email);
-
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -18,19 +16,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
-    console.log('Searching for user in database...');
     const userResult = await db
       .select()
       .from(users)
       .where(eq(users.email, email.toLowerCase()));
-
-    console.log('User search result:', userResult.length > 0 ? 'User found' : 'User not found');
     
     // Filter for active users
     const activeUsers = userResult.filter((u: any) => u.isActive);
     
     if (activeUsers.length === 0) {
-      console.log('No active user found with this email');
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }

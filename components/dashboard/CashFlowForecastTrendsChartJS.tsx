@@ -185,17 +185,6 @@ export function CashFlowForecastTrendsChartJS({
     const previousMonthValue = lastActualIndex > 0 ? actualData[lastActualIndex - 1]?.y || 0 : 0; // Previous actual period
     
     // Debug logging to verify Final Balance data
-    console.log('CashFlowForecastTrends - Final Balance Analysis:', {
-      actualPeriodCount,
-      lastActualIndex,
-      currentMonth: actualData[lastActualIndex]?.month || 'N/A',
-      previousMonth: lastActualIndex > 0 ? actualData[lastActualIndex - 1]?.month || 'N/A' : 'N/A',
-      currentMonthFinalBalance: currentMonthValue,
-      previousMonthFinalBalance: previousMonthValue,
-      decemberFinalBalance: data2025[11]?.finalBalance || 'missing',
-      allActualBalances: actualData.map(d => ({ month: d.month, finalBalance: d.y })),
-      allForecastBalances: forecastPoints.map(d => ({ month: d.month, finalBalance: d.y }))
-    });
     
     let monthOverMonth = 0;
     let showAsPercentage = true;
@@ -224,12 +213,6 @@ export function CashFlowForecastTrendsChartJS({
     const avgBurnRate = negativePeriods.length > 0 
       ? negativePeriods.reduce((sum, d) => sum + Math.abs(d.y), 0) / negativePeriods.length
       : 0;
-    
-    console.log('CashFlowForecastTrends - Burn Rate Calculation:', {
-      negativePeriods: negativePeriods.map(p => ({ month: p.month, value: p.y })),
-      avgBurnRate,
-      decemberForecast: lastForecastValue
-    });
 
     // Calculate runway based on FINAL BALANCE trend, not monthly generation
     const lastActualFinalBalance = data2025[lastActualIndex]?.finalBalance || 0; // Last actual period final balance
@@ -238,13 +221,6 @@ export function CashFlowForecastTrendsChartJS({
     
     let projectedRunway = 0;
     let runwayLabel = '';
-    
-    console.log('Runway Analysis - Final Balance Trend:', {
-      lastActualFinalBalance,
-      decemberFinalBalance,
-      balanceGrowth: finalBalanceTrend,
-      isGrowing: finalBalanceTrend > 0
-    });
     
     if (lastActualFinalBalance > 0 && finalBalanceTrend > 0) {
       // Final balance is positive AND growing - no runway concern
@@ -562,3 +538,5 @@ function calculateStandardError(data: DataPoint[], slope: number, intercept: num
 
   return n > 2 ? Math.sqrt(sumSquaredErrors / (n - 2)) : 0;
 }
+
+export default CashFlowForecastTrendsChartJS;

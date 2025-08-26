@@ -318,7 +318,6 @@ export async function validateDashboardConsistency(
 
   // This would be implemented to scan DOM for SmartMetricCard components
   // and validate their formatting consistency
-  console.log(`Validating ${dashboardName} dashboard for units consistency...`);
   
   // In a real implementation, this would:
   // 1. Query all metric card components in the DOM

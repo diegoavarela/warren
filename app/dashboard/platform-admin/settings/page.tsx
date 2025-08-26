@@ -89,17 +89,13 @@ export default function SettingsPage() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      console.log('Fetching platform settings...');
       const response = await fetch('/api/platform/settings');
-      console.log('Settings response status:', response.status);
       
       if (response.ok) {
         const result = await response.json();
-        console.log('Settings response data:', result);
         if (result.success) {
           setSettings(result.data);
           setFormData(result.data);
-          console.log('Settings loaded successfully:', result.data);
         } else {
           console.error('Settings fetch failed:', result.error);
           setError(result.error || 'Failed to load settings');
@@ -127,9 +123,6 @@ export default function SettingsPage() {
         settings: formData[activeSection] || {},
       };
       
-      console.log('Saving settings for category:', activeSection);
-      console.log('Settings data:', saveData.settings);
-      
       const response = await fetch('/api/platform/settings', {
         method: 'PUT',
         headers: {
@@ -137,12 +130,9 @@ export default function SettingsPage() {
         },
         body: JSON.stringify(saveData),
       });
-      
-      console.log('Save response status:', response.status);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Save response data:', result);
         
         setSaved(true);
         setError(null);
@@ -169,7 +159,6 @@ export default function SettingsPage() {
   };
 
   const updateFormData = (category: string, key: string, value: any) => {
-    console.log(`Updating ${category}.${key} to:`, value);
     setFormData(prev => {
       const updated = {
         ...prev,
@@ -178,7 +167,6 @@ export default function SettingsPage() {
           [key]: value,
         },
       };
-      console.log('Updated form data:', updated);
       return updated;
     });
   };
@@ -551,7 +539,6 @@ export default function SettingsPage() {
                   size="sm"
                   onClick={() => {
                     // TODO: Implement test email functionality
-                    console.log('Test email functionality to be implemented');
                   }}
                 >
                   {locale?.startsWith('es') ? 'Enviar Prueba' : 'Send Test'}

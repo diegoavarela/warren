@@ -79,10 +79,8 @@ export function FinancialDataChat({ companyId, className }: FinancialDataChatPro
 
   const loadDataContext = async () => {
     try {
-      console.log('🔍 FRONTEND DEBUG - Loading data for company:', companyId);
       const response = await fetch(`/api/v1/companies/${companyId}/financial-chat`);
       const result = await response.json();
-      console.log('🔍 FRONTEND DEBUG - Data context result:', result);
       
       if (result.success) {
         setDataContext(result.data);
@@ -117,8 +115,6 @@ export function FinancialDataChat({ companyId, className }: FinancialDataChatPro
 
   const sendMessage = async (query: string) => {
     if (!query.trim() || isLoading) return;
-
-    console.log('🔍 FRONTEND DEBUG - Sending query to company:', companyId, 'Query:', query);
 
     const userMessage: ChatMessage = {
       role: 'user',

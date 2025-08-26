@@ -51,7 +51,6 @@ export function CompanySelector({ selectedCompanyId, onCompanySelect, className 
         if (Array.isArray(data.data)) {
           setCompanies(data.data);
         } else {
-          console.warn('API returned non-array data:', data);
           // Fallback to demo companies if API structure is unexpected
           setCompanies([
             { id: 'demo-1', name: 'Empresa Demo 1', taxId: 'RFC123456789', industry: 'Tecnología' },

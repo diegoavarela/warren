@@ -60,7 +60,6 @@ let sql: any;
 // Always use real database
 if (!isServer) {
   // Client-side: Create empty stubs to avoid errors
-  console.log('🌐 Client-side: Database operations not available');
   db = null;
   organizations = null;
   users = null;
@@ -87,7 +86,6 @@ if (!isServer) {
   );
 } else {
   // Use real database
-  console.log('🔌 Connecting to Neon database...');
   const { drizzle } = require("drizzle-orm/neon-http");
   const { neon } = require("@neondatabase/serverless");
   const { eq: realEq, desc: realDesc, count: realCount, and: realAnd, gte: realGte, like: realLike, or: realOr, sql: realSql } = require("drizzle-orm");

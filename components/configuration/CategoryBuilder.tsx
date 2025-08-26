@@ -65,7 +65,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
   // Fetch Excel preview with correct sheet when selected sheet changes
   useEffect(() => {
     if (configurationId && selectedSheet) {
-      console.log('🔄 [CategoryBuilder] Fetching Excel preview for sheet:', selectedSheet);
       fetchExcelPreview(selectedSheet);
     }
   }, [configurationId, selectedSheet, fetchExcelPreview]);
@@ -169,7 +168,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
 
     // Fix P&L categories that are missing labels
     if (configuration.type === 'pnl' && configuration.structure?.categories) {
-      console.log('🔧 [CategoryBuilder] Checking P&L categories for missing labels...');
       const sectionKeys = ['revenue', 'cogs', 'opex', 'otherIncome', 'otherExpenses', 'taxes'];
       
       // Ensure we have a deep copy for categories
@@ -183,7 +181,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
         const categories = (updatedConfig.structure.categories as any)[sectionKey] || {};
         Object.entries(categories).forEach(([categoryKey, categoryData]: [string, any]) => {
           if (!categoryData.label) {
-            console.log('🔧 [CategoryBuilder] Fixing missing label for category:', categoryKey, 'in section:', sectionKey);
             needsUpdate = true;
             
             // Fix the category with proper label
@@ -194,22 +191,15 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
                 es: categoryKey
               }
             };
-            
-            console.log('🔧 [CategoryBuilder] Fixed category:', categoryKey, 'with label:', {
-              en: categoryKey,
-              es: categoryKey
-            });
           }
         });
       });
       
       if (needsUpdate) {
-        console.log('🔧 [CategoryBuilder] Categories after label fixes:', updatedConfig.structure.categories);
       }
     }
 
     if (needsUpdate) {
-      console.log('🔧 [CategoryBuilder] Updating configuration with fixed structure/labels');
       // Use setTimeout to defer the state update until after the render phase
       setTimeout(() => {
         onChange(updatedConfig);
@@ -263,7 +253,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
   const handleSaveConfiguration = useCallback(() => {
     // Trigger autosave or manual save
     // This would typically call a parent component save function
-    console.log('💾 Save triggered via keyboard shortcut');
   }, []);
 
   const handleSectionNavigation = useCallback((sectionIndex: number) => {
@@ -388,8 +377,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
 
   // Add new category - memoized to prevent re-renders
   const addCategory = useCallback((sectionKey: string, categoryData: CategoryFormData) => {
-    console.log('🔵 Adding category:', { sectionKey, categoryData });
-    console.log('🔵 Current configuration:', configuration);
     
     // Create a deep copy to ensure React sees the change
     const updatedConfig = JSON.parse(JSON.stringify(configuration));
@@ -420,11 +407,7 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
       },
       subcategories: {}
     };
-
-    console.log('🟢 Updated config categories:', updatedConfig.structure.categories);
-    console.log('🟢 Calling onChange with updated config');
     onChange(updatedConfig);
-    console.log('🟢 onChange called successfully');
   }, [configuration, onChange]);
 
   // Update category - memoized to prevent re-renders
@@ -445,7 +428,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
     (updatedConfig.structure.categories as any)[sectionKey] = categories;
     onChange(updatedConfig);
   }, [configuration, onChange]);
-
 
   // Calculate section stats
   const calculateSectionStats = (sectionKey: string) => {
@@ -472,7 +454,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
     const handleSubmit = () => {
       
       if (submitting) {
-        console.log('Already submitting, ignoring');
         return;
       }
       
@@ -483,7 +464,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
       
       try {
         setSubmitting(true);
-        console.log('Form submitting with data:', formData);
         addCategory(sectionKey, formData);
         // Reset form data
         setFormData({
@@ -491,7 +471,6 @@ export function CategoryBuilder({ configuration, onChange, configurationId }: Ca
           row: 0,
           required: false
         });
-        console.log('Category added successfully, closing form');
         onClose();
       } catch (error) {
         console.error('Error adding category:', error);

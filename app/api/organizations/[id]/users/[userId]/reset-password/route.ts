@@ -86,8 +86,6 @@ export async function POST(
       })
       .where(eq(users.id, userId));
 
-    console.log(`✅ Password reset for user ${targetUser.email} by ${payload.email}`);
-
     return NextResponse.json({
       success: true,
       message: 'Password reset successfully. Please share the new temporary password securely.',

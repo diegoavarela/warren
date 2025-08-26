@@ -71,7 +71,6 @@ class FinancialDataService {
   private companyData: Map<string, CompanyFinancialData> = new Map();
 
   private constructor() {
-    console.log('🏗️ FinancialDataService singleton initialized');
   }
 
   public static getInstance(): FinancialDataService {
@@ -85,11 +84,6 @@ class FinancialDataService {
    * Store processed financial data for a company
    */
   public storeCompanyData(companyId: string, data: CompanyFinancialData): void {
-    console.log(`💾 Storing financial data for company: ${companyId}`, {
-      dataPoints: data.dataPoints.length,
-      periods: data.periods.length,
-      currency: data.currency
-    });
 
     this.companyData.set(companyId, {
       ...data,
@@ -103,12 +97,7 @@ class FinancialDataService {
   public getCompanyData(companyId: string): CompanyFinancialData | null {
     const data = this.companyData.get(companyId);
     if (data) {
-      console.log(`📊 Retrieved financial data for company: ${companyId}`, {
-        dataPoints: data.dataPoints.length,
-        lastUpdated: data.lastUpdated
-      });
     } else {
-      console.log(`❌ No financial data found for company: ${companyId}`);
     }
     return data || null;
   }
@@ -133,9 +122,7 @@ class FinancialDataService {
       updatedData.summary = this.calculateSummary(updatedItems);
       
       this.companyData.set(companyId, updatedData);
-      console.log(`➕ Added ${items.length} financial items to company: ${companyId}`);
     } else {
-      console.log(`❌ Cannot add items - no existing data for company: ${companyId}`);
     }
   }
 
@@ -173,12 +160,6 @@ class FinancialDataService {
       );
     }
 
-    console.log(`🔍 Filtered data for ${companyId}:`, {
-      originalCount: data.dataPoints.length,
-      filteredCount: filteredItems.length,
-      filters
-    });
-
     return filteredItems;
   }
 
@@ -201,7 +182,6 @@ class FinancialDataService {
    */
   public clearCompanyData(companyId: string): void {
     this.companyData.delete(companyId);
-    console.log(`🗑️ Cleared cached data for company: ${companyId}`);
   }
 
   /**
@@ -209,9 +189,7 @@ class FinancialDataService {
    */
   public clearAllData(): void {
     this.companyData.clear();
-    console.log(`🗑️ Cleared all cached financial data`);
   }
-
 
   /**
    * Get memory usage statistics
@@ -241,19 +219,14 @@ class FinancialDataService {
   private calculateMetrics(items: ProcessedFinancialItem[], currency: string): FinancialMetrics {
     // Debug all categories first
     const allCategories = Array.from(new Set(items.map(item => item.category)));
-    console.log(`🔍 RAW CATEGORIES DEBUG - All categories in data:`, allCategories);
-    console.log(`🔍 RAW CATEGORIES DEBUG - Total items:`, items.length);
     
     const revenueItems = items.filter(item => 
       item.category === 'revenue' || item.category === 'sales'
     );
-    console.log(`🔍 FILTERING DEBUG - Revenue items found:`, revenueItems.length);
     
     const beforeFiltering = items.filter(item => 
       item.category !== 'revenue' && item.category !== 'sales'
     );
-    console.log(`🔍 FILTERING DEBUG - Non-revenue items:`, beforeFiltering.length);
-    console.log(`🔍 FILTERING DEBUG - Non-revenue categories:`, Array.from(new Set(beforeFiltering.map(item => item.category))));
     
     const expenseItems = items.filter(item => 
       item.category !== 'revenue' && 
@@ -266,17 +239,9 @@ class FinancialDataService {
       item.category !== 'net_income'
     );
     
-    console.log(`🔍 FILTERING DEBUG - After filtering expense items:`, expenseItems.length);
-    console.log(`🔍 FILTERING DEBUG - Final expense categories:`, Array.from(new Set(expenseItems.map(item => item.category))));
-    
     const problematicItems = items.filter(item => 
       ['total', 'calculation', 'margin', 'earnings_before_tax', 'net_income'].includes(item.category)
     );
-    console.log(`🔍 FILTERING DEBUG - Problematic items that should be filtered:`, problematicItems.map(item => ({
-      category: item.category,
-      amount: item.amount,
-      accountName: item.accountName
-    })));
     const opexItems = items.filter(item => 
       item.category === 'operating_expenses'
     );
@@ -299,12 +264,6 @@ class FinancialDataService {
       }
     };
 
-    console.log(`🔍 EXPENSE DEBUG - Filtered expense items: ${expenseItems.length}, Total: ${expenses.total}`);
-    console.log(`🔍 EXPENSE DEBUG - Categories included:`, Array.from(new Set(expenseItems.map(item => item.category))));
-    console.log(`🔍 EXPENSE DEBUG - Problematic categories found:`, items.filter(item => 
-      ['total', 'calculation', 'margin', 'earnings_before_tax', 'net_income'].includes(item.category)
-    ).map(item => `${item.category}: ${item.amount}`));
-
     // Get COGS (Cost of Goods Sold) and calculate proper margins
     const cogsItems = items.filter(item => 
       item.category === 'cogs' || item.category === 'cost_of_goods_sold'
@@ -312,9 +271,6 @@ class FinancialDataService {
     const totalCogs = cogsItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
     
     // Debug logging to see what's happening
-    console.log(`🔍 EBITDA DEBUG - Revenue: ${revenue.total}, COGS: ${totalCogs}, OPEX: ${expenses.operatingExpenses.total}`);
-    console.log(`🔍 EBITDA DEBUG - Total Expenses: ${expenses.total}`);
-    console.log(`🔍 EBITDA DEBUG - Expense Categories:`, expenseItems.map(item => `${item.category}: ${item.amount}`).slice(0, 10));
     
     // Margin calculations - using proper financial formulas
     const grossMargin = revenue.total - totalCogs;
@@ -325,8 +281,6 @@ class FinancialDataService {
     
     // EBITDA = Revenue - COGS - Operating Expenses (before interest, taxes, depreciation, amortization)
     const ebitda = grossMargin - expenses.operatingExpenses.total;
-    
-    console.log(`🔍 EBITDA DEBUG - Calculated: Gross: ${grossMargin}, Operating: ${operatingMargin}, EBITDA: ${ebitda}`);
 
     return {
       revenue,

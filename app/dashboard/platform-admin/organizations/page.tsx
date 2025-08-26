@@ -229,7 +229,6 @@ export default function OrganizationsPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log('Delete organization:', org.id);
                             }}
                             className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-all"
                           >

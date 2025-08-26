@@ -42,7 +42,6 @@ export function ExcelGridHelper({
 
   // Handle sheet selection change
   const handleSheetChange = async (newSheet: string) => {
-    console.log('🔄 Changing sheet from', selectedSheet, 'to', newSheet);
     setSelectedSheet(newSheet);
     await fetchExcelPreview(newSheet);
   };
@@ -53,7 +52,6 @@ export function ExcelGridHelper({
       setSelectedSheet(excelData.preview.sheetName);
     }
   }, [excelData, selectedSheet]);
-
 
   // Generate Excel column letters (A, B, C, ..., Z, AA, AB, etc.)
   const getColumnLetter = (index: number): string => {
@@ -103,7 +101,6 @@ export function ExcelGridHelper({
       return generateTemplateGrid();
     }
   };
-
 
   // Generate template grid (fallback when no Excel data is available)
   const generateTemplateGrid = () => {
@@ -417,7 +414,6 @@ export function ExcelGridHelper({
                   </div>
                 </div>
               )}
-
 
               {/* Legend */}
               <div className="flex flex-wrap gap-4 text-xs">

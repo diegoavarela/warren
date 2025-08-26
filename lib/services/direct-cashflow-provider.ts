@@ -278,14 +278,6 @@ export class DirectCashFlowProvider {
       
       // Debug log for August 2025 (index 7)
       if (i === 7) {
-        console.log('DirectCashFlowProvider - August 2025 (index 7):', {
-          monthName: vortexData.months[i],
-          totalInflows,
-          totalOutflows,
-          netCashFlow,
-          rawIncome: vortexData.totalIncome[i],
-          rawExpense: vortexData.totalExpense[i]
-        });
       }
       
       periods.push({
@@ -354,7 +346,6 @@ export class DirectCashFlowProvider {
         return data.data?.cashflowDirectMode === true;
       }
     } catch (error) {
-      console.warn('Could not check direct access status:', error);
     }
     return false;
   }

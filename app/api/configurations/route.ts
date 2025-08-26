@@ -15,8 +15,6 @@ export async function POST(req: NextRequest) {
     // Parse request body
     const body = await req.json();
     
-    console.log('📝 Configuration creation request body:', JSON.stringify(body, null, 2));
-    
     // Validate request data
     const validation = CompanyConfigurationCreateSchema.safeParse(body);
     if (!validation.success) {
@@ -62,7 +60,6 @@ export async function POST(req: NextRequest) {
       if (uploadSession && companyId) {
         try {
           await configurationService.cleanupOrphanedFiles(companyId, uploadSession);
-          console.log(`✅ Cleaned up orphaned files for failed configuration creation`);
         } catch (cleanupError) {
           console.error('Error cleaning up orphaned files:', cleanupError);
         }

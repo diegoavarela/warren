@@ -50,23 +50,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
 }) => {
   const chartRef = useRef<ChartJS>(null)
   
-  // Debug logging
-  console.log('🎨 ChartRenderer received:', { type, title, dataLength: data.length, isArea: type === 'area' })
-  
-  if (type === 'area') {
-    console.log('🎨 AREA CHART CONFIG: fill=start, backgroundColor with 50% opacity')
-  }
-
-  useEffect(() => {
-    // Cleanup on unmount
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.destroy()
-      }
-    }
-  }, [])
-
-  // Format data based on chart type
+  // Format chart data based on type
   const formatChartData = (): ChartData<any> => {
     // Apply professional colors
     const colors = [
@@ -258,14 +242,14 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
     switch (type) {
       case 'line':
       case 'area':
-        return 'line'
+        return 'line';
       case 'bar':
       case 'column':
-        return 'bar'
+        return 'bar';
       case 'pie':
-        return 'pie'
+        return 'pie';
       default:
-        return 'bar'
+        return 'bar';
     }
   }
 
@@ -280,5 +264,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
         />
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default ChartRenderer;

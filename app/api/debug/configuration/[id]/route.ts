@@ -14,7 +14,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    console.log('🔍 Debug: Fetching configuration details for ID:', params.id);
 
     // Get current user
     const user = await getCurrentUser();
@@ -24,17 +23,6 @@ export async function GET(
 
     // Get the configuration
     const configuration = await configurationService.getConfigurationById(params.id);
-
-    console.log('📋 Debug: Configuration found:', {
-      id: configuration.id,
-      name: configuration.name,
-      version: configuration.version,
-      type: configuration.type,
-      updatedAt: configuration.updatedAt,
-      configJsonKeys: Object.keys(configuration.configJson || {}),
-      hasStructure: !!(configuration.configJson as any)?.structure,
-      hasPeriodsConfig: !!(configuration.configJson as any)?.structure?.periodsRow
-    });
 
     // Return detailed configuration info for debugging
     return NextResponse.json({

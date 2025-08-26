@@ -72,11 +72,18 @@ docker-compose.dev.yml
 # Scripts that shouldn't be deployed
 /scripts/dev-*
 /scripts/test-*
+/scripts/analyze-*
+/scripts/bundle-*
 debug-*.js
 test-*.js
 fix-*.js
 *.test.js
 *.spec.js
+
+# Performance monitoring files
+/performance-reports
+bundle-analysis.json
+webpack-bundle-analyzer-report.html
 
 # Database files
 /drizzle

@@ -60,7 +60,6 @@ function FinancialStatementsPage() {
         }
 
         const data = await response.json();
-        console.log('Financial statements API response:', data);
         
         // The API returns { success: true, data: { statements: [...], pagination: {...} } }
         let statementsData = [];
@@ -75,8 +74,6 @@ function FinancialStatementsPage() {
         } else if (Array.isArray(data)) {
           statementsData = data;
         }
-        
-        console.log('Processed statements data:', statementsData);
         setStatements(statementsData);
       } catch (err) {
         console.error('Error loading statements:', err);

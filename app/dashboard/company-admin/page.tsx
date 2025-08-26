@@ -108,7 +108,6 @@ async function getTemplateName(statements: any[], companyId: string): Promise<st
       }
     }
   } catch (error) {
-    console.warn('Could not fetch configuration information:', error);
   }
   
   return 'Configuration-based Template';
@@ -204,13 +203,10 @@ function CompanyAdminDashboard() {
 
   const fetchTemplates = async (companyId: string) => {
     try {
-      console.log('Fetching configurations for company:', companyId);
       const response = await fetch(`/api/configurations?companyId=${companyId}`);
-      console.log('Configurations response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Configurations data:', data);
         
         if (data.success && Array.isArray(data.data)) {
           // Transform configurations to template format for display compatibility
@@ -227,9 +223,6 @@ function CompanyAdminDashboard() {
           // Separate by type
           const pnl = configTemplates.filter((t: any) => t.statementType === 'pnl');
           const cashFlow = configTemplates.filter((t: any) => t.statementType === 'cashflow');
-          
-          console.log('P&L configurations:', pnl.length);
-          console.log('Cash Flow configurations:', cashFlow.length);
           setPnlTemplates(pnl);
           setCashFlowTemplates(cashFlow);
         }
@@ -247,17 +240,13 @@ function CompanyAdminDashboard() {
   };
 
   const fetchFinancialStatements = async (companyId: string) => {
-    console.log('Fetching financial statements for company:', companyId);
     setLoadingStatements(true);
     try {
       // Check for active configurations (Live API approach)
       const response = await fetch(`/api/configurations?companyId=${companyId}`);
-      console.log('Response status:', response.status);
-      console.log('Response URL:', response.url);
       
       if (response.ok) {
         const result = await response.json();
-        console.log('Active configurations:', result);
         
         if (result.success && Array.isArray(result.data)) {
           const configurations = result.data;
@@ -290,8 +279,6 @@ function CompanyAdminDashboard() {
           
           setPnlStatements(pnlData);
           setCashFlowStatements(cashFlowData);
-          console.log('Set P&L statements:', pnlData.length, 'records (from live configurations)');
-          console.log('Set Cash Flow statements:', cashFlowData.length, 'records (from live configurations)');
           
           // Set template names for configuration-based data
           if (pnlData.length > 0) {
@@ -301,12 +288,10 @@ function CompanyAdminDashboard() {
             setCashFlowTemplateName('Live Cash Flow Configuration');
           }
         } else {
-          console.log('No active configurations found for this company');
           setPnlStatements([]);
           setCashFlowStatements([]);
         }
       } else {
-        console.log('Failed to fetch configurations:', response.status);
         setPnlStatements([]);
         setCashFlowStatements([]);
       }
@@ -587,7 +572,6 @@ function CompanyAdminDashboard() {
                       </div>
                     </div>
                   </div>
-
 
                   {/* Primary Action Grid with Enhanced Descriptions */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

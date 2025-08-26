@@ -116,8 +116,6 @@ export async function DELETE(
       );
     }
 
-    console.log(`✅ File deleted: ${deletedFile[0].originalFilename} by ${payload.email}`);
-
     return NextResponse.json({
       success: true,
       message: 'File deleted successfully'

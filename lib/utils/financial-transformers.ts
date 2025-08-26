@@ -2,45 +2,22 @@ import { Period, PnLData, YTDMetrics } from '@/types/financial';
 
 // Transform configuration-based API data to P&L Dashboard format
 function transformConfigurationBasedData(apiData: any): PnLData | null {
-  console.log('🎯 [TRANSFORMER] transformConfigurationBasedData CALLED - THIS IS OUR ENHANCED TRANSFORMER!');
-  console.log('🔍 [TRANSFORMER] Raw apiData structure:', apiData);
-  console.log('🔍 [TRANSFORMER] apiData.data:', apiData?.data);
   
   if (!apiData?.data) {
-    console.log('❌ [TRANSFORMER] No apiData.data found');
     return null;
   }
   
   const { periods, dataRows, categories, rawExcelData, processedData, worksheet, periodMapping } = apiData.data;
   
-  console.log('🔍 [TRANSFORMER] Extracted from apiData.data:');
-  console.log('- periods:', periods);
-  console.log('- dataRows:', dataRows);
-  console.log('- categories:', categories);
-  console.log('- rawExcelData:', rawExcelData ? 'Present' : 'Not present');
-  console.log('- processedData:', processedData ? 'Present' : 'Not present');
-  console.log('🔍 [TRANSFORMER] Full apiData.data keys:', Object.keys(apiData.data));
-  
   // DEBUG: Check COGS categories specifically
-  console.log('🔍 [COGS DEBUG] categories.cogs exists:', !!categories?.cogs);
   if (categories?.cogs) {
-    console.log('🔍 [COGS DEBUG] COGS category keys:', Object.keys(categories.cogs));
     Object.entries(categories.cogs).forEach(([categoryName, categoryData]: [string, any]) => {
-      console.log(`🔍 [COGS DEBUG] ${categoryName}:`, {
-        hasValues: !!categoryData.values,
-        valuesLength: categoryData.values?.length,
-        firstThreeValues: categoryData.values?.slice(0, 3),
-        label: categoryData.label
-      });
     });
   }
-  console.log('🔍 [COGS DEBUG] categories.cogs keys:', categories?.cogs ? Object.keys(categories.cogs) : 'N/A');
   
   // Debug dataRows structure in detail
-  console.log('🔍 [TRANSFORMER] DataRows detailed structure:');
   if (dataRows) {
     Object.keys(dataRows).forEach(key => {
-      console.log(`- ${key}:`, dataRows[key]);
     });
   }
   
@@ -48,7 +25,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   const toNumber = (value: any): number => {
     // Handle configuration-based format: {label, values, total}
     if (value && typeof value === 'object' && 'total' in value) {
-      console.log('🔍 [TRANSFORMER] Extracting from object with total:', value.total);
       return typeof value.total === 'number' ? value.total : 0;
     }
     
@@ -63,12 +39,9 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   // Helper function to get value for a period (define early)
   const getValueForPeriod = (fieldData: any, periodIndex: number): number => {
     if (fieldData && fieldData.values && Array.isArray(fieldData.values)) {
-      console.log(`🔍 [TRANSFORMER] getValueForPeriod: period ${periodIndex}, values array:`, fieldData.values);
       const periodValue = fieldData.values[periodIndex];
-      console.log(`🔍 [TRANSFORMER] getValueForPeriod: period ${periodIndex}, extracted value:`, periodValue, 'from index:', periodIndex);
       return toNumber(periodValue);
     }
-    console.log(`🔍 [TRANSFORMER] getValueForPeriod: period ${periodIndex}, no values array, fieldData structure:`, fieldData);
     return toNumber(fieldData);
   };
 
@@ -92,20 +65,11 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   const transformCOGSCategories = (processedCogsData: any, currentPeriodIndex: number): any[] => {
     if (!processedCogsData) return [];
     
-    console.log('🏭 [COGS] Transforming COGS categories for period index:', currentPeriodIndex);
-    console.log('🏭 [COGS] COGS categories to process:', Object.keys(processedCogsData));
-    
     // Get total COGS for percentage calculation
     const totalCOGS = dataRows?.cogs ? Math.abs(getValueForPeriod(dataRows.cogs, currentPeriodIndex)) : 0;
-    console.log('🏭 [COGS] Total COGS amount:', totalCOGS);
     
     const cogsCategories = Object.entries(processedCogsData)
       .map(([categoryName, categoryData]: [string, any]) => {
-        console.log(`🏭 [COGS] Processing category: ${categoryName}`, {
-          hasValues: !!categoryData.values,
-          valuesLength: categoryData.values?.length,
-          label: categoryData.label
-        });
         
         let categoryAmount = 0;
         let rawValue: any = null;
@@ -115,12 +79,9 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
           if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
             rawValue = categoryData.values[currentPeriodIndex];
             categoryAmount = Math.abs(Number(rawValue) || 0);
-            console.log(`🏭 [COGS] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
           } else {
-            console.log(`🏭 [COGS] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
           }
         } else {
-          console.log(`🏭 [COGS] No values array found for ${categoryName}`);
         }
         
         // Calculate percentage of total COGS
@@ -145,7 +106,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
                        category.rawValue !== '';
         
         if (!isValid) {
-          console.log(`🏭 [COGS] Filtering out category: ${category.category} (amount: ${category.amount}, raw: ${category.rawValue})`);
         }
         return isValid;
       })
@@ -154,13 +114,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
         const { rawValue, ...cleanCategory } = category;
         return cleanCategory;
       });
-    
-    console.log('🏭 [COGS] Final COGS categories after filtering:', cogsCategories.map(c => ({
-      name: c.category,
-      amount: c.amount,
-      percentage: c.percentage
-    })));
-    console.log(`🏭 [COGS] Filtered result: ${cogsCategories.length} valid categories out of ${Object.keys(processedCogsData).length} total`);
     return cogsCategories;
   };
 
@@ -168,20 +121,11 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   const transformOpexCategories = (processedOpexData: any, currentPeriodIndex: number): any[] => {
     if (!processedOpexData) return [];
     
-    console.log('💼 [OPEX] Transforming Operating Expenses for period index:', currentPeriodIndex);
-    console.log('💼 [OPEX] OPEX categories to process:', Object.keys(processedOpexData));
-    
     // Get total OPEX for percentage calculation
     const totalOpex = dataRows?.totalOpex ? Math.abs(getValueForPeriod(dataRows.totalOpex, currentPeriodIndex)) : 0;
-    console.log('💼 [OPEX] Total Operating Expenses:', totalOpex);
     
     const opexCategories = Object.entries(processedOpexData)
       .map(([categoryName, categoryData]: [string, any]) => {
-        console.log(`💼 [OPEX] Processing category: ${categoryName}`, {
-          hasValues: !!categoryData.values,
-          valuesLength: categoryData.values?.length,
-          label: categoryData.label
-        });
         
         let categoryAmount = 0;
         let rawValue: any = null;
@@ -191,12 +135,9 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
           if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
             rawValue = categoryData.values[currentPeriodIndex];
             categoryAmount = Math.abs(Number(rawValue) || 0);
-            console.log(`💼 [OPEX] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
           } else {
-            console.log(`💼 [OPEX] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
           }
         } else {
-          console.log(`💼 [OPEX] No values array found for ${categoryName}`);
         }
         
         // Calculate percentage of total OPEX
@@ -221,7 +162,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
                        category.rawValue !== '';
         
         if (!isValid) {
-          console.log(`💼 [OPEX] Filtering out category: ${category.category} (amount: ${category.amount}, raw: ${category.rawValue})`);
         }
         return isValid;
       })
@@ -230,13 +170,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
         const { rawValue, ...cleanCategory } = category;
         return cleanCategory;
       });
-    
-    console.log('💼 [OPEX] Final OPEX categories after filtering:', opexCategories.map(c => ({
-      name: c.category,
-      amount: c.amount,
-      percentage: c.percentage
-    })));
-    console.log(`💼 [OPEX] Filtered result: ${opexCategories.length} valid categories out of ${Object.keys(processedOpexData).length} total`);
     return opexCategories;
   };
 
@@ -244,19 +177,11 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   const transformTaxCategories = (processedTaxData: any, currentPeriodIndex: number): any[] => {
     if (!processedTaxData) return [];
     
-    console.log('🏛️ [TAX] Transforming Tax categories for period index:', currentPeriodIndex);
-    console.log('🏛️ [TAX] Tax categories to process:', Object.keys(processedTaxData));
-    
     // Calculate total taxes by summing all tax categories for this period
     let totalTaxes = 0;
     
     let taxCategories = Object.entries(processedTaxData)
       .map(([categoryName, categoryData]: [string, any]) => {
-        console.log(`🏛️ [TAX] Processing category: ${categoryName}`, {
-          hasValues: !!categoryData.values,
-          valuesLength: categoryData.values?.length,
-          label: categoryData.label
-        });
         
         let categoryAmount = 0;
         let rawValue: any = null;
@@ -266,12 +191,9 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
           if (currentPeriodIndex >= 0 && currentPeriodIndex < categoryData.values.length) {
             rawValue = categoryData.values[currentPeriodIndex];
             categoryAmount = Math.abs(Number(rawValue) || 0);
-            console.log(`🏛️ [TAX] ${categoryName} period ${currentPeriodIndex}: raw value = ${rawValue}, amount = ${categoryAmount}`);
           } else {
-            console.log(`🏛️ [TAX] Period index ${currentPeriodIndex} out of range for ${categoryName} (length: ${categoryData.values.length})`);
           }
         } else {
-          console.log(`🏛️ [TAX] No values array found for ${categoryName}`);
         }
         
         // Add to total taxes
@@ -299,7 +221,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
                        category.rawValue !== '';
         
         if (!isValid) {
-          console.log(`🏛️ [TAX] Filtering out category: ${category.category} (amount: ${category.amount}, raw: ${category.rawValue})`);
         }
         return isValid;
       })
@@ -315,14 +236,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
       ...cat,
       percentage: filteredTotal > 0 ? Math.round((cat.amount / filteredTotal) * 10000) / 100 : 0
     }));
-    
-    console.log('🏛️ [TAX] Final Tax categories after filtering:', taxCategories.map(c => ({
-      name: c.category,
-      amount: c.amount,
-      percentage: c.percentage
-    })));
-    console.log(`🏛️ [TAX] Filtered result: ${taxCategories.length} valid categories out of ${Object.keys(processedTaxData).length} total`);
-    console.log(`🏛️ [TAX] Total taxes for period ${currentPeriodIndex}: ${filteredTotal}`);
     return taxCategories;
   };
 
@@ -331,7 +244,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   // Note: taxCategories will be transformed after currentPeriodIndex is defined
   
   if (!periods || !Array.isArray(periods) || periods.length === 0) {
-    console.log('❌ [TRANSFORMER] No valid periods found');
     return null;
   }
 
@@ -363,16 +275,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
 
   // Create periods array with proper structure
   const transformedPeriods: Period[] = periods.map((periodName: string, index: number) => {
-    console.log(`🔍 [TRANSFORMER] Processing period ${index}: "${periodName}"`);
-    console.log(`🔍 [TRANSFORMER] Available dataRows keys:`, Object.keys(dataRows || {}));
-    console.log(`🔍 [TRANSFORMER] DETAILED totalRevenue structure:`, dataRows?.totalRevenue);
-    console.log(`🔍 [TRANSFORMER] Sample dataRows values:`, {
-      totalRevenue: dataRows?.totalRevenue,
-      cogs: dataRows?.cogs,
-      grossProfit: dataRows?.grossProfit,
-      totalOpex: dataRows?.totalOpex,
-      netIncome: dataRows?.netIncome
-    });
     
     // getValueForPeriod is now defined at the top of the function
     
@@ -393,8 +295,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     }
     
     if (index === 0) {
-      console.log('🏛️ [TAXES DEBUG] Tax categories:', categories?.taxes);
-      console.log('🏛️ [TAXES DEBUG] Period 0 total taxes (sum of all categories):', taxes);
     }
     const ebitda = getValueForPeriod(dataRows?.ebitda, index);
     const earningsBeforeTaxes = getValueForPeriod(dataRows?.earningsBeforeTaxes, index);
@@ -413,11 +313,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const operatingMargin = revenue > 0 ? ((operatingIncome / revenue) * 100) : 0;
     const earningsBeforeTax = earningsBeforeTaxes > 0 ? earningsBeforeTaxes : (netIncome + taxes);
     const earningsBeforeTaxMargin = revenue > 0 ? ((earningsBeforeTax / revenue) * 100) : 0;
-    
-    console.log(`🔍 [TRANSFORMER] Period ${index} final values:`, {
-      revenue, cogs, grossProfit, operatingExpenses, netIncome, taxes, grossMargin,
-      operatingIncome, cogsPercentage, opexPercentage, netMargin
-    });
     
     // Extract year from period name "Ene 2025" -> 2025
     const parts = periodName.trim().split(' ');
@@ -450,11 +345,8 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   // Find the last period with actual data (revenue > 0) as current period
   let currentPeriod = transformedPeriods[0]; // fallback to first
   let previousPeriod: Period | undefined = undefined;
-  
-  console.log('🔍 [TRANSFORMER] Searching for current period with data:');
   transformedPeriods.forEach((period, i) => {
     const hasData = period.revenue > 0 || period.cogs > 0 || period.operatingExpenses > 0;
-    console.log(`- Period ${i}: ${period.month} ${period.year}, hasData: ${hasData}, revenue: ${period.revenue}, cogs: ${period.cogs}, opex: ${period.operatingExpenses}`);
   });
   
   // Find last period with data
@@ -465,18 +357,13 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
       if (i > 0) {
         previousPeriod = transformedPeriods[i - 1];
       }
-      console.log(`🔍 [TRANSFORMER] Selected period ${i} as current: ${currentPeriod.month} ${currentPeriod.year}`);
       break;
     }
   }
   
-  console.log('🔍 [TRANSFORMER] Selected current period:', currentPeriod.month, currentPeriod.year);
-  console.log('🔍 [TRANSFORMER] Selected previous period:', previousPeriod?.month, previousPeriod?.year);
-  
   // Create YTD metrics - Sum all periods from beginning to current period
   // For YTD, we sum up values from all periods up to current period index
   const currentPeriodIndex = transformedPeriods.findIndex(p => p === currentPeriod);
-  console.log('🏭 [COGS] Current period index for COGS calculation:', currentPeriodIndex);
   
   // Transform COGS categories with real Excel data using current period
   // If no COGS categories are configured, create a default one from total COGS
@@ -491,7 +378,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   // Fallback: If no configured COGS categories and we have COGS data, create a default category
   if ((!categories?.cogs || Object.keys(categories.cogs).length === 0) && dataRows?.cogs) {
     const totalCOGS = Math.abs(getValueForPeriod(dataRows.cogs, currentPeriodIndex));
-    console.log('🏭 [COGS] No configured COGS categories, creating fallback with total COGS:', totalCOGS);
     
     if (totalCOGS > 0) {
       cogsCategories = [{
@@ -505,11 +391,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   }
   
   // Log all transformed categories now that cogsCategories is available
-  console.log('🔍 [TRANSFORMER] Transformed categories:');
-  console.log('- Revenue categories:', revenueCategories.length);
-  console.log('- COGS categories:', cogsCategories.length);
-  console.log('- OpEx categories:', operatingExpenses.length);
-  console.log('- Tax categories:', taxCategories.length);
   
   const ytdPeriods = transformedPeriods.slice(0, currentPeriodIndex + 1);
   
@@ -519,8 +400,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
   const ytdOperatingExpenses = ytdPeriods.reduce((sum, p) => sum + p.operatingExpenses, 0);
   const ytdNetIncome = ytdPeriods.reduce((sum, p) => sum + p.netIncome, 0);
   const ytdTaxes = ytdPeriods.reduce((sum, p) => sum + p.taxes, 0);
-  console.log('🏛️ [YTD TAXES] Individual period taxes:', ytdPeriods.map(p => ({ period: p.month, taxes: p.taxes })));
-  console.log('🏛️ [YTD TAXES] Total YTD taxes:', ytdTaxes);
   const ytdEbitda = ytdPeriods.reduce((sum, p) => sum + p.ebitda, 0);
   const ytdOperatingIncome = ytdGrossProfit - ytdOperatingExpenses;
   
@@ -530,10 +409,6 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const periodTotalOutcome = p.cogs + p.operatingExpenses + p.taxes;
     return sum + periodTotalOutcome;
   }, 0);
-  
-  console.log('🔍 [TRANSFORMER] YTD values:', {
-    ytdRevenue, ytdCogs, ytdGrossProfit, ytdOperatingExpenses, ytdNetIncome, ytdTaxes, ytdExpenses
-  });
   
   const yearToDate: YTDMetrics = {
     revenue: ytdRevenue,
@@ -569,17 +444,13 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
 
 // Transform API response to P&L Dashboard format
 export function transformToPnLData(apiData: any): PnLData | null {
-  console.log('🎯 [TRANSFORMER] transformToPnLData CALLED with data:', { hasData: !!apiData });
   
   if (!apiData) return null;
 
   // Handle new configuration-based API format
   if (apiData.data && apiData.data.periods && apiData.data.dataRows) {
-    console.log('🎯 [TRANSFORMER] Taking configuration-based path');
     return transformConfigurationBasedData(apiData);
   }
-  
-  console.log('🎯 [TRANSFORMER] Taking legacy format path');
 
   // Handle legacy format
   const { currentMonth, previousMonth, yearToDate, categories, trends, chartData, comparisonData, comparisonPeriod } = apiData;
@@ -730,12 +601,6 @@ export function transformToPnLData(apiData: any): PnLData | null {
       .filter((item: any) => {
         // Validate period data
         if (!item.month || !item.year || item.month === 'undefined' || item.month === 'Unknown') {
-          console.warn('❌ Filtering out invalid period data:', {
-            month: item.month,
-            year: item.year,
-            revenue: item.revenue,
-            id: item.id
-          });
           return false;
         }
         
@@ -753,12 +618,6 @@ export function transformToPnLData(apiData: any): PnLData | null {
         // Skip future periods
         const monthIndex = getMonthIndexFromName(item.month);
         if (monthIndex === -1 || isNaN(year)) {
-          console.warn('Invalid month name or year:', { 
-            month: item.month, 
-            year: item.year, 
-            parsedYear: year,
-            monthIndex 
-          });
           return false;
         }
         
@@ -869,7 +728,6 @@ export function transformToPnLData(apiData: any): PnLData | null {
     // Skip invalid periods
     if (!period.month || period.month === 'undefined' || period.month === 'Unknown' || 
         !period.year || isNaN(period.year)) {
-      console.warn('Skipping invalid period in transformer:', period);
       return;
     }
     
@@ -877,7 +735,6 @@ export function transformToPnLData(apiData: any): PnLData | null {
     if (!uniquePeriods.has(key)) {
       uniquePeriods.set(key, period);
     } else {
-      console.warn('Removing duplicate period in frontend transformer:', period.month, period.year);
     }
   });
   
@@ -888,8 +745,6 @@ export function transformToPnLData(apiData: any): PnLData | null {
     const monthB = monthOrder.indexOf(b.month);
     return monthA - monthB;
   });
-
-  console.log('Final periods after deduplication:', finalPeriods.map(p => `${p.month} ${p.year}`).join(', '));
   
   // Debug: Check for any undefined or invalid months
   finalPeriods.forEach((period, index) => {

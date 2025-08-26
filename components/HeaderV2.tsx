@@ -64,7 +64,6 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleNotificationClick = (notification: any) => {
-    console.log('🔔 Notification clicked:', notification.title);
     
     // Mark notification as read
     setNotifications(prev => 
@@ -76,16 +75,13 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
     // Handle different notification actions
     switch (notification.action) {
       case 'view_companies':
-        console.log('🔔 Navigating to companies page');
         router.push('/dashboard/org-admin');
         break;
       case 'view_updates':
-        console.log('🔔 System update notification clicked');
         // For now just show an alert, later this could navigate to changelog
         alert('System update: Performance improvements and bug fixes applied successfully!');
         break;
       default:
-        console.log('🔔 Default notification action:', notification.title);
     }
 
     // Close notifications dropdown
@@ -361,7 +357,6 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
                   )}
                 </div>
               )}
-
 
               {/* User menu */}
               {isAuthenticated && user ? (

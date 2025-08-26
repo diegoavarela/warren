@@ -87,8 +87,6 @@ export function MappingPanel({
   const handleApplyMapping = () => {
     const field = selectedField || fieldOptions.find(opt => opt.value === detection.detectedType)?.value || 'unmapped';
     const dataType = selectedDataType || fieldOptions.find(opt => opt.value === field)?.dataType || 'text';
-    
-    console.log('MappingPanel - Apply mapping:', { selectedColumn, field, dataType, selectedField, selectedDataType });
     onMappingUpdate(selectedColumn, field, dataType);
   };
 

@@ -15,7 +15,6 @@ class FinancialDataLoader {
   private loadedCompanies: Set<string> = new Set();
 
   private constructor() {
-    console.log('📥 FinancialDataLoader initialized');
   }
 
   public static getInstance(): FinancialDataLoader {
@@ -31,19 +30,16 @@ class FinancialDataLoader {
   public async loadCompanyData(companyId: string): Promise<boolean> {
     // Check if already loaded to avoid unnecessary database queries
     if (this.loadedCompanies.has(companyId)) {
-      console.log(`📋 Company ${companyId} data already loaded in memory`);
       return true;
     }
 
     // Check if data exists in memory
     if (financialDataService.hasCompanyData(companyId)) {
       this.loadedCompanies.add(companyId);
-      console.log(`📋 Company ${companyId} data found in memory`);
       return true;
     }
 
     try {
-      console.log(`📥 Loading financial data for company ${companyId} from database...`);
 
       // Get company information
       const companyInfo = await db
@@ -53,7 +49,6 @@ class FinancialDataLoader {
         .limit(1);
 
       if (companyInfo.length === 0) {
-        console.log(`❌ Company ${companyId} not found in database`);
         return false;
       }
 
@@ -65,11 +60,8 @@ class FinancialDataLoader {
         .orderBy(desc(financialStatements.periodStart));
 
       if (statements.length === 0) {
-        console.log(`📋 No financial statements found for company ${companyId}`);
         return false;
       }
-
-      console.log(`📊 Found ${statements.length} financial statements for company ${companyId}`);
 
       // Get all line items for these statements
       const statementIds = statements.map((s: any) => s.id);
@@ -77,13 +69,10 @@ class FinancialDataLoader {
       // Get items for each statement individually to avoid complex IN queries
       const allLineItems: any[] = [];
       for (const statement of statements) {
-        console.log(`📋 Loading line items for statement: ${statement.id}`);
         const items = await db
           .select()
           .from(financialLineItems)
           .where(eq(financialLineItems.statementId, statement.id));
-        
-        console.log(`📋 Found ${items.length} line items for statement ${statement.id}`);
         
         allLineItems.push(...items.map((item: any) => ({
           ...item,
@@ -92,11 +81,8 @@ class FinancialDataLoader {
       }
 
       if (allLineItems.length === 0) {
-        console.log(`📋 No line items found for company ${companyId}`);
         return false;
       }
-
-      console.log(`💾 Processing ${allLineItems.length} line items for memory storage...`);
 
       // Convert database items to ProcessedFinancialItem format
       const processedItems: ProcessedFinancialItem[] = allLineItems.map((item, index) => {
@@ -109,7 +95,6 @@ class FinancialDataLoader {
           try {
             accountName = decrypt(item.accountName);
           } catch (decryptError) {
-            console.warn(`Failed to decrypt account name for item ${index}: ${decryptError}`);
             accountName = `Encrypted_Account_${index}`;
           }
         }
@@ -171,14 +156,6 @@ class FinancialDataLoader {
       financialDataService.storeCompanyData(companyId, companyFinancialData);
       this.loadedCompanies.add(companyId);
 
-      console.log(`✅ Successfully loaded financial data for ${companyName}:`, {
-        companyId,
-        dataPoints: processedItems.length,
-        periods: periods.length,
-        currency,
-        statements: statements.length
-      });
-
       return true;
 
     } catch (error) {
@@ -206,12 +183,6 @@ class FinancialDataLoader {
       }
     }
 
-    console.log(`📊 Bulk load complete:`, {
-      requested: companyIds.length,
-      loaded: loaded.length,
-      failed: failed.length
-    });
-
     return { loaded, failed };
   }
 
@@ -226,7 +197,6 @@ class FinancialDataLoader {
    * Force reload of company data (clears cache and reloads from database)
    */
   public async forceReloadCompanyData(companyId: string): Promise<boolean> {
-    console.log(`🔄 Force reloading data for company: ${companyId}`);
     
     // Clear both loader cache and service cache
     this.loadedCompanies.delete(companyId);

@@ -118,7 +118,6 @@ export function COGSHorizontalStackedChart({
 
   // Process data for horizontal stacked chart - one bar per category with subcategories stacked
   const chartData = useMemo(() => {
-    console.log('Processing COGS data:', data);
     
     const processedData = data.map((item, categoryIndex) => {
       const categoryName = cleanCategoryName(item.category);
@@ -140,12 +139,8 @@ export function COGSHorizontalStackedChart({
         // Single segment for the entire category if no subcategories
         categoryData['Main Amount'] = item.amount;
       }
-
-      console.log(`Category ${categoryName} data:`, categoryData);
       return categoryData;
     });
-
-    console.log('Final chart data:', processedData);
     return processedData;
   }, [data]);
 
@@ -159,14 +154,11 @@ export function COGSHorizontalStackedChart({
         }
       });
     });
-    console.log('All subcategory keys:', Array.from(keys));
     
     // Filter keys that have at least one non-zero value
     const activeKeys = Array.from(keys).filter(key => {
       return chartData.some(categoryData => categoryData[key] > 0);
     });
-    
-    console.log('Active subcategory keys (with non-zero values):', activeKeys);
     return activeKeys.sort();
   }, [chartData]);
 
@@ -232,7 +224,6 @@ export function COGSHorizontalStackedChart({
 
   // Handle bar click
   const handleBarClick = (chartData: any) => {
-    console.log('COGS Bar clicked:', chartData);
     const originalCategory = chartData.payload?.originalCategory;
     const originalData = originalCategory ? 
       data.find((item: ExpenseData) => item.category === originalCategory) : null;
@@ -318,7 +309,6 @@ export function COGSHorizontalStackedChart({
               cursor="pointer"
               radius={[0, 2, 2, 0]}
               onClick={(barData: any) => {
-                console.log('Bar clicked:', barData);
                 const categoryData = barData?.payload || barData;
                 const originalData = data.find(item => item.category === categoryData?.originalCategory);
                 if (originalData && onCategoryClick) {
@@ -370,3 +360,5 @@ export function COGSHorizontalStackedChart({
     </div>
   );
 }
+
+export default COGSHorizontalStackedChart;

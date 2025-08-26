@@ -202,6 +202,8 @@ export function SheetSelector({ sheets, onSheetSelected, isLoading = false }: Sh
   );
 }
 
+export default SheetSelector;
+
 function detectSheetType(sheetName: string): string[] {
   const name = sheetName.toLowerCase();
   const types: string[] = [];

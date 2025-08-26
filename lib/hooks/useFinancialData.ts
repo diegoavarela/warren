@@ -75,8 +75,6 @@ export function useFinancialData(options: UseFinancialDataOptions) {
         params.toString() ? `?${params.toString()}` : ''
       }`;
       
-      console.log('Fetching financial data from:', analyticsUrl);
-      
       const response = await fetch(analyticsUrl, {
         signal: abortControllerRef.current.signal
       });
@@ -87,11 +85,8 @@ export function useFinancialData(options: UseFinancialDataOptions) {
 
       const result: FinancialDataResponse = await response.json();
       
-      console.log('Financial data response:', result);
-      
       if (result.success && result.data) {
         setData(result.data);
-        console.log('Current month data:', result.data.currentMonth);
         // Update exchange rates if needed
         await currencyService.fetchLatestRates();
       } else {
@@ -100,7 +95,6 @@ export function useFinancialData(options: UseFinancialDataOptions) {
     } catch (err) {
       // Don't set error state if request was aborted
       if (err instanceof Error && err.name === 'AbortError') {
-        console.log('Request aborted:', err.message);
         return;
       }
       console.error('Error fetching financial data:', err);

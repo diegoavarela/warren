@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { KPICard } from './KPICard';
 import { WarrenChart, CHART_CONFIGS } from '../charts/WarrenChart';
 import { MetricCard } from './MetricCard';
-import { HeatmapChart } from './HeatmapChart';
-import { HorizontalStackedChart } from './HorizontalStackedChart';
-import { ExpenseDetailModal } from './ExpenseDetailModal';
+// Lazy load heavy components for better initial load performance
+import { HeatmapChart, HorizontalStackedChart, ExpenseDetailModal } from '../LazyComponents';
 import { KeyInsights } from './KeyInsights';
 import { PersonnelCostsWidget } from './PersonnelCostsWidget';
 import { RevenueGrowthAnalysis } from './RevenueGrowthAnalysis';
@@ -149,7 +148,7 @@ interface PnLDashboardProps {
   onPeriodChange?: (period: string, lastUpdate: Date | null) => void;
 }
 
-export function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, hybridParserData, onPeriodChange }: PnLDashboardProps) {
+const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, hybridParserData, onPeriodChange }: PnLDashboardProps) {
   const { t } = useTranslation(locale);
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
   const [comparisonPeriod, setComparisonPeriod] = useState<'lastMonth' | 'lastQuarter' | 'lastYear'>('lastMonth');
@@ -171,8 +170,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     try {
       setApiLoading(true);
       setError(null);
-      
-      console.log('🔍 Fetching live P&L data for company:', companyId);
       
       // Add timestamp to prevent caching and ensure fresh data
       const timestamp = new Date().getTime();
@@ -198,11 +195,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       }
       
       const result = await response.json();
-      console.log('✅ Live P&L API response received:', result);
       
       if (result.success && result.data) {
         // Validate data structure before setting
-        console.log('🔍 P&L Dashboard: Validating API data structure:', result.data);
         
         if (!result.data.data || !result.data.periods) {
           throw new Error('Invalid data structure received from P&L API');
@@ -220,8 +215,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         if (validPeriods.length === 0) {
           throw new Error('Invalid period data detected. The P&L configuration may have incorrect row mappings. Please check your configuration.');
         }
-        
-        console.log('✅ P&L Dashboard: Data validation passed, valid periods:', validPeriods.length);
         setApiData(result.data);
         setError(null);
       } else {
@@ -262,26 +255,17 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       
       // Set display units from API
       if ((apiData as any).displayUnits) {
-        console.log('🔧 API Units Response:', {
-          apiDisplayUnits: (apiData as any).displayUnits,
-          currentOriginalUnits: originalUnits,
-          currentDisplayUnits: displayUnits
-        });
         
         setOriginalUnits((apiData as any).displayUnits);
         // Convert displayUnits to the format used in the UI
         if ((apiData as any).displayUnits === 'thousands') {
           setDisplayUnits('K');
-          console.log('✅ Set display units to K (thousands)');
         } else if ((apiData as any).displayUnits === 'millions') {
           setDisplayUnits('M');
-          console.log('✅ Set display units to M (millions)');
         } else {
           setDisplayUnits('normal');
-          console.log('✅ Set display units to normal');
         }
       } else {
-        console.log('❌ No displayUnits found in API response');
       }
     }
   }, [apiData]);
@@ -289,33 +273,14 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   // Transform API data to dashboard format or use mock data
   const [mockData, setMockData] = useState<PnLData | null>(null);
   
-  // Transform API data to dashboard format
-  const transformedData = apiData ? transformToPnLData(apiData) : null;
-  console.log('🔧 [DASHBOARD] useMockData:', useMockData);
-  console.log('🔧 [DASHBOARD] companyId:', companyId);
-  console.log('🔧 [DASHBOARD] hasApiData:', !!apiData);
-  console.log('🔧 [DASHBOARD] hasTransformedData:', !!transformedData);
+  // Transform API data to dashboard format - memoized for performance
+  const transformedData = useMemo(() => {
+    return apiData ? transformToPnLData(apiData) : null;
+  }, [apiData]);
   if (apiData) {
-    console.log('🔧 [DASHBOARD] Raw API data structure:', {
-      hasData: !!apiData.data,
-      hasPeriods: !!apiData.data?.periods,
-      periodsArray: apiData.data?.periods,
-      hasProcessedData: !!apiData.data?.data,
-      processedDataKeys: apiData.data?.data ? Object.keys(apiData.data.data) : null,
-      currency: apiData.data?.currency,
-      displayUnits: apiData.data?.displayUnits
-    });
   }
   if (transformedData) {
-    console.log('🔧 [DASHBOARD] transformedData structure:', {
-      hasPeriods: !!transformedData.periods,
-      periodsCount: transformedData.periods?.length,
-      hasCurrentPeriod: !!transformedData.currentPeriod,
-      hasCategories: !!transformedData.categories,
-      hasYearToDate: !!transformedData.yearToDate
-    });
   } else {
-    console.log('❌ [DASHBOARD] transformedData is null/undefined - transformer expects different format');
   }
   
   const data = useMockData || !companyId ? mockData : transformedData;
@@ -397,17 +362,10 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   useEffect(() => {
     if (transformedData && originalUnits && !userHasOverriddenUnits) {
       const optimalUnits = analyzeOptimalDisplayUnits(transformedData, originalUnits);
-      console.log('🎯 Smart Units Analysis:', {
-        originalUnits,
-        analyzedOptimalUnits: optimalUnits,
-        userHasOverridden: userHasOverriddenUnits,
-        currentDisplayUnits: displayUnits
-      });
       
       // Only update if the optimal units are different from current
       if (optimalUnits !== displayUnits) {
         setDisplayUnits(optimalUnits);
-        console.log(`✅ Smart Units: Auto-selected ${optimalUnits} for optimal display`);
       }
     }
   }, [transformedData, originalUnits, userHasOverriddenUnits, displayUnits]);
@@ -429,7 +387,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     });
     setEditingRates(editRates);
   };
-
 
   const getMockPnLData = (): PnLData => {
     const currentMonth = {
@@ -655,40 +612,19 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     setEditingRates(prev => ({ ...prev, [currency]: rates[currency].toString() }));
   };
 
-  const formatValue = (value: number): string => {
+  const formatValue = useCallback((value: number): string => {
     // 🔍 ULTRA-DEBUG: Log every formatting operation
-    console.log('💰 FORMAT VALUE DEBUG:', {
-      inputValue: value,
-      originalUnits,
-      displayUnits,
-      originalCurrency,
-      selectedCurrency,
-      timestamp: new Date().toISOString()
-    });
     
     // Handle edge cases
     if (!value || isNaN(value)) {
-      console.log('⚠️ FORMAT WARNING: Invalid value:', value);
       return '0';
     }
     
     let actualValue = value;
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
     
-    console.log('💱 CURRENCY CONVERSION:', {
-      original: actualValue,
-      converted: convertedValue,
-      rate: `${originalCurrency} -> ${selectedCurrency}`
-    });
-    
     // First, normalize the value to base units based on what unit the data comes in (originalUnits)
     let normalizedValue = convertedValue;
-    
-    console.log('🔧 NORMALIZATION STEP:', {
-      beforeNormalization: convertedValue,
-      originalUnits,
-      willMultiplyBy: originalUnits === 'thousands' ? '1000' : originalUnits === 'millions' ? '1000000' : 'none'
-    });
     
     if (originalUnits === 'thousands') {
       normalizedValue = convertedValue * 1000; // Convert from thousands to normal
@@ -697,17 +633,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     }
     // If originalUnits is 'normal' or 'units', no conversion needed
     
-    console.log('✅ NORMALIZED VALUE:', normalizedValue);
-    
     // Now apply the display units conversion from the normalized value
     let displayValue = normalizedValue;
     let suffix = '';
-    
-    console.log('🎯 DISPLAY UNITS CONVERSION:', {
-      normalizedValue,
-      displayUnits,
-      willDivideBy: displayUnits === 'K' ? '1000' : displayUnits === 'M' ? '1000000' : 'none'
-    });
     
     if (displayUnits === 'K') {
       // Convert to thousands
@@ -721,12 +649,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       // Keep as normal (base units)
       displayValue = normalizedValue;
     }
-    
-    console.log('📊 FINAL DISPLAY VALUE:', {
-      displayValue,
-      suffix,
-      willFormat: `${displayValue} with suffix "${suffix}"`
-    });
     
     // NO AUTO-SCALING: Use only the centrally determined displayUnits for consistency
     // The Smart Units Analysis system determines the optimal unit for ALL components
@@ -788,40 +710,25 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
     const currencyWithSpace = currencySymbol.length > 1 ? `${currencySymbol} ` : currencySymbol;
     
     return `${currencyWithSpace}${formattedNumber}${suffixWithSpace}`;
-  };
+  }, [selectedCurrency, originalCurrency, displayUnits, originalUnits, data?.metadata?.numberFormat]);
 
-  const formatPercentage = (value: number): string => {
+  const formatPercentage = useCallback((value: number): string => {
     // For whole numbers, don't show decimal
     if (value % 1 === 0) {
       return `${value.toFixed(0)}%`;
     }
     return `${value.toFixed(1)}%`;
-  };
+  }, []);
 
   // Smart Units Analysis: Determine optimal display unit for ALL dashboard values
   const analyzeOptimalDisplayUnits = (data: any, originalUnits: string): 'normal' | 'K' | 'M' => {
-    console.log('🔍 SMART UNITS ANALYSIS START:', {
-      hasData: !!data,
-      hasPeriod: !!data?.currentPeriod,
-      originalUnits,
-      timestamp: new Date().toISOString()
-    });
     
     if (!data || !data.currentPeriod) {
-      console.log('❌ ANALYSIS ABORTED: No data or current period');
       return 'normal';
     }
 
     // Collect ALL financial values that will be displayed on the dashboard
     const allValues: number[] = [];
-    
-    console.log('📊 RAW DATA VALUES:', {
-      currentRevenue: data.currentPeriod.revenue,
-      currentCogs: data.currentPeriod.cogs,
-      currentNetIncome: data.currentPeriod.netIncome,
-      ytdRevenue: data.yearToDate?.revenue,
-      ytdNetIncome: data.yearToDate?.netIncome
-    });
     
     // Current period values
     const current = data.currentPeriod;
@@ -904,14 +811,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
 
     // Find the maximum value to determine optimal unit
     const maxValue = Math.max(...normalizedValues);
-    
-    console.log('🎯 ANALYSIS RESULTS:', {
-      totalValues: validValues.length,
-      maxNormalizedValue: maxValue,
-      sampleValues: normalizedValues.slice(0, 5),
-      threshold100K: maxValue >= 100000,
-      threshold100M: maxValue >= 100000000
-    });
 
     // Determine optimal unit based on comfort thresholds
     // These thresholds ensure values fit comfortably in cards
@@ -927,17 +826,8 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       selectedUnit = 'normal';
     }
     
-    console.log('✅ SMART UNITS DECISION:', {
-      selectedUnit,
-      maxValue,
-      reasoning: selectedUnit === 'M' ? 'Max value >= 100M' : 
-                 selectedUnit === 'K' ? 'Max value >= 100K' : 
-                 'Max value < 100K'
-    });
-    
     // 🚨 DETECT MIXED UNITS: Check if user chose 'normal' but system suggests different
     if (displayUnits === 'normal' && selectedUnit !== 'normal' && userHasOverriddenUnits) {
-      console.log('⚠️ MIXED UNITS DETECTED: User chose normal but optimal is', selectedUnit);
       setShowUnitsNotification(true);
       setSuggestedUnit(selectedUnit as 'K' | 'M');
     } else {
@@ -1032,38 +922,15 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
   // Use comparison data if available (for lastQuarter, lastYear comparisons)
   if ((data as any).comparisonData && comparisonPeriod !== 'lastMonth') {
     previous = (data as any).comparisonData;
-    console.log('🔄 Using comparison data for period:', {
-      comparisonPeriod,
-      comparisonMonth: (data as any).comparisonData.month,
-      previousMonth: data.previousPeriod?.month
-    });
   } else if (comparisonPeriod !== 'lastMonth' && !(data as any).comparisonData) {
     // No comparison data available for the requested period
     previous = undefined;
-    console.log('❌ No comparison data available for period:', {
-      comparisonPeriod,
-      requestedPeriod: comparisonPeriod === 'lastQuarter' ? '3 months ago' : '1 year ago',
-      fallbackToPrevious: false
-    });
   }
-  
-  console.log('🔍 Period Comparison Debug:', {
-    selectedPeriod,
-    comparisonPeriod,
-    dataCurrentPeriod: data.currentPeriod?.month,
-    dataPreviousPeriod: data.previousPeriod?.month,
-    periodsAvailable: data.periods?.map((p: any) => ({ id: p.id, month: p.month, revenue: p.revenue })),
-    periodsLength: data.periods?.length
-  });
   
   // Handle period selection
   if (selectedPeriod && selectedPeriod !== 'current') {
     // When a specific month is selected, use that period's data
     const selectedPeriodData = data.periods.find(p => p.id === selectedPeriod);
-    console.log('📊 Period Selection Debug:', {
-      selectedPeriod,
-      foundSelectedPeriod: selectedPeriodData?.month
-    });
     
     if (selectedPeriodData) {
       current = selectedPeriodData;
@@ -1077,38 +944,17 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         p.month === selectedPeriodData.month && p.year === selectedPeriodData.year
       );
       
-      console.log('🔢 Index Debug (Fixed):', {
-        currentIndex,
-        totalSortedPeriods: sortedPeriods.length,
-        sortedPeriodsOrder: sortedPeriods.map((p, idx) => ({ idx, month: p.month, year: p.year, id: p.id })),
-        selectedPeriodData: { month: selectedPeriodData.month, year: selectedPeriodData.year }
-      });
-      
       if (currentIndex >= 0 && currentIndex < sortedPeriods.length - 1) {
         // Only use sorted periods for lastMonth comparison, preserve comparison data for others
         if (comparisonPeriod === 'lastMonth') {
           previous = sortedPeriods[currentIndex + 1] as any; // periods are sorted newest to oldest, so previous (older) is at currentIndex + 1
         }
         // else: keep the comparison data that was set earlier for lastQuarter/lastYear
-        
-        console.log('✅ Found previous period:', {
-          currentPeriod: current.month,
-          previousPeriod: previous?.month,
-          currentRevenue: current.revenue,
-          previousRevenue: previous?.revenue,
-          comparisonPeriod: comparisonPeriod,
-          usingComparisonData: comparisonPeriod !== 'lastMonth'
-        });
       } else {
         if (comparisonPeriod === 'lastMonth') {
           previous = undefined;
         }
         // else: keep the comparison data that was set earlier (could be null if no data available)
-        console.log('❌ No previous period available:', {
-          reason: currentIndex === -1 ? 'Period not found in sorted array' : 'This is the oldest period in sorted array',
-          currentIndex,
-          sortedPeriodsLength: sortedPeriods.length
-        });
       }
     }
   }
@@ -1775,7 +1621,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
             displayUnits={displayUnits}
             locale={locale}
             formatValue={formatValue}
-            onCategoryClick={(expense) => {
+            onCategoryClick={(expense: { category: string; amount: number; percentage: number; subcategory?: string; items?: Array<{accountName: string; amount: number; percentage: number}> }) => {
               setSelectedExpense(expense);
               setIsExpenseModalOpen(true);
             }}
@@ -1844,8 +1690,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     formatValue={formatValue}
                     title={t('metrics.cogsAnalysis')}
                     subtitle={t('heatmap.cogsSubtitle')}
-                    onCategoryClick={(expense) => {
-                      console.log('PnL Dashboard - COGS expense clicked:', expense);
+                    onCategoryClick={(expense: { category: string; amount: number; percentage: number; subcategory?: string; items?: Array<{accountName: string; amount: number; percentage: number}> }) => {
                       setSelectedExpense(expense);
                       setIsExpenseModalOpen(true);
                     }}
@@ -1906,11 +1751,9 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                     formatValue={formatValue}
                     title={t('metrics.opexAnalysis')}
                     subtitle={t('heatmap.opexSubtitle')}
-                    onCategoryClick={(expense) => {
-                      console.log('PnL Dashboard - OpEx expense clicked:', expense);
+                    onCategoryClick={(expense: { category: string; amount: number; percentage: number; subcategory?: string; items?: Array<{accountName: string; amount: number; percentage: number}> }) => {
                       setSelectedExpense(expense);
                       setIsExpenseModalOpen(true);
-                      console.log('PnL Dashboard - modal state set to true');
                     }}
                   />
               </div>
@@ -1918,7 +1761,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
           </div>
         </div>
       )}
-
 
       {/* Revenue Growth Analysis */}
       <div className="mb-8">
@@ -1983,9 +1825,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                         const taxTotal = 'taxes' in data.categories && data.categories.taxes && data.categories.taxes.length > 0
                           ? data.categories.taxes.reduce((sum: number, tax: any) => sum + (tax.amount || 0), 0)
                           : current.taxes;
-                        console.log('🏛️ [PERIOD TAX] Tax categories:', 'taxes' in data.categories ? data.categories.taxes : 'none');
-                        console.log('🏛️ [PERIOD TAX] Calculated total:', taxTotal);
-                        console.log('🏛️ [PERIOD TAX] current.taxes fallback:', current.taxes);
                         return formatValue(taxTotal);
                       })()}
                     </div>
@@ -2010,12 +1849,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                       {(() => {
                         // Use the actual YTD taxes from the transformer
                         const ytdTaxTotal = ytd.taxes || 0;
-                        
-                        console.log('🏛️ [TAX SUMMARY] YTD Debug:', {
-                          ytdRevenue: ytd.revenue,
-                          ytdTaxTotal: ytdTaxTotal,
-                          percentage: ytd.revenue > 0 ? (ytdTaxTotal / ytd.revenue) * 100 : 0
-                        });
                         return ytd.revenue > 0 ? `${formatPercentage((ytdTaxTotal / ytd.revenue) * 100)} of YTD revenue` : '';
                       })()}
                     </div>
@@ -2026,9 +1859,6 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
                       // The transformer already calculates YTD by summing all periods' taxes
                       // We just need to use that value directly
                       const ytdTaxTotal = ytd.taxes || 0;
-                      
-                      console.log('🏛️ [YTD TAX] Using actual YTD taxes from transformer:', ytdTaxTotal);
-                      console.log('🏛️ [YTD TAX] This is the sum of all tax categories (rows 76-80) for all periods Jan-Current');
                       
                       return formatValue(ytdTaxTotal);
                     })()}
@@ -2107,12 +1937,7 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
         </div>
       </div>
 
-
-
       {/* Additional Sections */}
-      
-
-
 
       {/* Performance Overview */}
       <div className="mb-8">
@@ -2461,4 +2286,10 @@ export function PnLDashboard({ companyId, statementId, currency = '$', locale = 
       />
     </div>
   );
-}
+};
+
+// Memoized export for performance optimization
+export const PnLDashboard = memo(PnLDashboardComponent);
+
+// Also export as default for compatibility
+export default PnLDashboard;

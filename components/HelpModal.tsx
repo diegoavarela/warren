@@ -181,7 +181,6 @@ export function HelpModal({ isOpen, onClose, topic, defaultCategory = 'general' 
                       className="text-sm text-blue-600 hover:text-blue-700 hover:underline block text-left"
                       onClick={() => {
                         // TODO: Load related topic
-                        console.log('Load topic:', relatedId);
                       }}
                     >
                       {t(titleKey)}

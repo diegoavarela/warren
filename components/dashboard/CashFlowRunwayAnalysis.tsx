@@ -497,3 +497,5 @@ export function CashFlowRunwayAnalysis({
     </div>
   );
 }
+
+export default CashFlowRunwayAnalysis;

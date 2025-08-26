@@ -416,7 +416,6 @@ export default function CompaniesPage() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    console.log('Delete company:', company.id);
                                   }}
                                   className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                                 >

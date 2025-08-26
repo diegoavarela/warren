@@ -82,13 +82,6 @@ export async function PUT(request: NextRequest) {
 
     // In a real implementation, you would store these in a user_preferences table
     // For now, we'll just return success
-    console.log('Notification preferences updated for user:', payload.userId);
-    console.log('New preferences:', {
-      emailNotifications,
-      pushNotifications,
-      reportFrequency,
-      digestTime
-    });
 
     return NextResponse.json({
       success: true,

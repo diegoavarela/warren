@@ -155,7 +155,6 @@ function UploadDataPage() {
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          console.log('File selected:', file.name, 'Config:', selectedConfiguration.name);
                           
                           try {
                             // Convert file to base64
@@ -180,7 +179,6 @@ function UploadDataPage() {
                               
                               if (uploadResponse.ok) {
                                 const uploadResult = await uploadResponse.json();
-                                console.log('✅ File uploaded:', uploadResult);
                                 
                                 // Show success and navigate to dashboard
                                 toast.success(locale?.startsWith('es') 

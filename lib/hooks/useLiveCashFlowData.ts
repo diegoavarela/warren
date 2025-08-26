@@ -89,8 +89,6 @@ export function useLiveCashFlowData(options: UseLiveCashFlowDataOptions): UseLiv
       setLoading(true);
       setError(null);
 
-      console.log('🔍 useLiveCashFlowData: Fetching LIVE data for company', options.companyId);
-
       const url = `/api/cashflow-live/${options.companyId}`;
       
       const response = await fetch(url, {
@@ -111,9 +109,6 @@ export function useLiveCashFlowData(options: UseLiveCashFlowDataOptions): UseLiv
       if (!result.success) {
         throw new Error(result.data ? 'Invalid response format' : 'API returned failure');
       }
-
-      console.log(`✅ useLiveCashFlowData: Successfully fetched LIVE data with ${result.metadata.periodCount} periods`);
-      console.log(`🔧 Configuration: ${result.metadata.configurationName} (${result.metadata.configurationId})`);
       
       setData(result);
       setLastUpdated(new Date());

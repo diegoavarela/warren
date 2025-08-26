@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, SparklesIcon } from '@heroicons/react/24/solid';
 
 interface KPICardProps {
@@ -53,7 +53,7 @@ const colorClasses = {
   }
 };
 
-export function KPICard({
+const KPICardComponent = function KPICard({
   title,
   value,
   previousValue,
@@ -142,4 +142,10 @@ export function KPICard({
       <div className={`absolute inset-0 ${colors.bg} opacity-5 rounded-2xl pointer-events-none`} />
     </div>
   );
-}
+};
+
+// Memoized export for performance optimization
+export const KPICard = memo(KPICardComponent);
+
+// Also export as default for compatibility
+export default KPICard;

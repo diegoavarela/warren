@@ -114,12 +114,8 @@ export default function EditConfigurationPage() {
   const handleSheetChange = async (newSheet: string) => {
     // Prevent empty/invalid sheet changes
     if (!newSheet || !newSheet.trim()) {
-      console.warn('⚠️ [SHEET CHANGE] Ignoring empty sheet selection:', newSheet);
       return;
     }
-    
-    console.log('🔄 [SHEET CHANGE] Changing sheet from', selectedSheet, 'to', newSheet);
-    console.log('🔄 [SHEET CHANGE] Current configData metadata:', configData?.metadata);
     
     setSelectedSheet(newSheet);
     setSheetInitialized(true); // Mark as manually initialized to prevent auto-reset
@@ -135,10 +131,8 @@ export default function EditConfigurationPage() {
           lastSheetUpdate: new Date().toISOString()
         }
       };
-      console.log('📄 [SHEET CHANGE] Updated config metadata:', updatedConfig.metadata);
       setConfigData(updatedConfig);
       setHasUnsavedChanges(true);
-      console.log('📄 [SHEET CHANGE] Sheet selection saved to configuration. hasUnsavedChanges:', true);
     } else {
       console.error('❌ [SHEET CHANGE] No configData available to save sheet selection!');
     }
@@ -168,39 +162,20 @@ export default function EditConfigurationPage() {
 
   // Initialize selected sheet when excel data loads (only once)
   useEffect(() => {
-    console.log('📄 [SHEET INIT] Effect triggered. Conditions:', {
-      hasExcelSheet: !!excelData?.preview?.sheetName,
-      selectedSheet: selectedSheet,
-      sheetInitialized: sheetInitialized,
-      savedSheet: configData?.metadata?.selectedSheet
-    });
     
     if (excelData?.preview?.sheetName && !selectedSheet && !sheetInitialized && configData) {
       // First priority: Use saved sheet from configuration metadata
       const savedSheet = configData?.metadata?.selectedSheet;
-      console.log('📄 [SHEET INIT] Saved sheet in metadata:', savedSheet);
-      console.log('📄 [SHEET INIT] Available sheets:', excelData.preview.availableSheets);
-      console.log('📄 [SHEET INIT] Detected sheet:', excelData.preview.sheetName);
       
       if (savedSheet && excelData.preview.availableSheets?.includes(savedSheet)) {
         setSelectedSheet(savedSheet);
         setSheetInitialized(true);
-        console.log('✅ [SHEET INIT] Restored saved sheet selection:', savedSheet);
       } else {
         // Fallback: Use detected sheet
         setSelectedSheet(excelData.preview.sheetName);
         setSheetInitialized(true);
-        console.log('🔄 [SHEET INIT] Using auto-detected sheet (no valid saved sheet):', excelData.preview.sheetName);
-        console.log('🔄 [SHEET INIT] Reason: savedSheet not found in available sheets or not set');
       }
     } else {
-      console.log('📄 [SHEET INIT] Skipping initialization - conditions not met');
-      console.log('📄 [SHEET INIT] Missing conditions:', {
-        hasExcelData: !!excelData?.preview?.sheetName,
-        noSelectedSheet: !selectedSheet,
-        notInitialized: !sheetInitialized,
-        hasConfigData: !!configData
-      });
     }
   }, [excelData?.preview?.sheetName, excelData?.preview?.availableSheets, selectedSheet, sheetInitialized, configData]);
 
@@ -225,8 +200,6 @@ export default function EditConfigurationPage() {
   // SINGLE SOURCE OF TRUTH: Sync JSON editor when configData changes
   useEffect(() => {
     if (configData) {
-      console.log('🔄 [SINGLE SOURCE] Syncing JSON editor with configData:', configData);
-      console.log('🔍 [SINGLE SOURCE] Period mapping in configData:', configData.structure?.periodMapping);
       const formattedJson = JSON.stringify(configData, null, 2);
       setEditedJsonText(formattedJson);
       setRawJson(formattedJson);
@@ -237,7 +210,6 @@ export default function EditConfigurationPage() {
   // PHASE 3: Bidirectional sync - Update formData when configData changes (from JSON edits)
   useEffect(() => {
     if (configData) {
-      console.log('🔄 [BIDIRECTIONAL SYNC] Syncing formData with configData changes');
       setFormData(prev => ({
         ...prev,
         name: configData.name || prev.name,
@@ -343,9 +315,6 @@ export default function EditConfigurationPage() {
       setFormData(initialFormData);
       
       // SINGLE SOURCE OF TRUTH: Set the configuration data for editing
-      console.log('📁 [SINGLE SOURCE] Loaded configuration from API:', config.configJson);
-      console.log('🔍 [SINGLE SOURCE] Period mappings in loaded config:', config.configJson?.structure?.periodMapping);
-      console.log('🔍 [SINGLE SOURCE] Full loaded structure:', config.configJson?.structure);
       
       // Ensure the loaded config becomes the single source of truth
       const loadedConfig = config.configJson as CashFlowConfiguration | PLConfiguration;
@@ -571,7 +540,6 @@ export default function EditConfigurationPage() {
               [numberFormatField]: value as any
             }
           };
-          console.log('📝 [SINGLE SOURCE] Updated configData numberFormat:', updatedConfigData.metadata.numberFormat);
           setConfigData(updatedConfigData);
         }
       } else {
@@ -591,7 +559,6 @@ export default function EditConfigurationPage() {
             ...updatedConfigData.metadata,
             [fieldPath]: value as any
           };
-          console.log('📝 [SINGLE SOURCE] Updated configData metadata:', updatedConfigData.metadata);
           setConfigData(updatedConfigData);
         }
       }
@@ -605,7 +572,6 @@ export default function EditConfigurationPage() {
       if (configData && (field === 'name' || field === 'description')) {
         const updatedConfigData = JSON.parse(JSON.stringify(configData));
         (updatedConfigData as any)[field] = value;
-        console.log(`📝 [SINGLE SOURCE] Updated configData ${field}:`, value);
         setConfigData(updatedConfigData);
       }
     }
@@ -613,16 +579,12 @@ export default function EditConfigurationPage() {
 
   // Function to clean optional fields with zero values from P&L configuration
   const cleanOptionalFields = (config: CashFlowConfiguration | PLConfiguration): CashFlowConfiguration | PLConfiguration => {
-    console.log('🧹 [CLEAN] Starting clean for config type:', config.type);
     if (config.type !== 'pnl') {
-      console.log('🧹 [CLEAN] Not P&L, skipping clean');
       return config; // Only clean P&L configurations
     }
 
     const cleanedConfig = { ...config };
     const dataRows = { ...config.structure.dataRows };
-
-    console.log('🧹 [CLEAN] Original dataRows:', dataRows);
 
     // Optional fields that should be removed if they have value 0
     const optionalFields = [
@@ -633,14 +595,10 @@ export default function EditConfigurationPage() {
 
     optionalFields.forEach(field => {
       const value = (dataRows as any)[field];
-      console.log(`🧹 [CLEAN] Field ${field}: ${value} (${typeof value})`);
       if (value === 0) {
-        console.log(`🧹 [CLEAN] Deleting field ${field} with value 0`);
         delete (dataRows as any)[field];
       }
     });
-
-    console.log('🧹 [CLEAN] Cleaned dataRows:', dataRows);
 
     cleanedConfig.structure = {
       ...cleanedConfig.structure,
@@ -653,23 +611,14 @@ export default function EditConfigurationPage() {
   // Autosave function - saves without redirecting
   const performAutoSave = async () => {
     if (!hasUnsavedChanges || !configData || isAutoSaving || saving) {
-      console.log('💾 [AUTOSAVE] Skipping autosave:', { 
-        hasUnsavedChanges, 
-        hasConfigData: !!configData, 
-        isAutoSaving, 
-        saving 
-      });
       return;
     }
 
     try {
       setIsAutoSaving(true);
-      console.log('💾 [AUTOSAVE] Starting autosave...');
       
       // Clean optional fields with zero values before saving
-      console.log('💾 [AUTOSAVE] Original dataRows:', configData.structure?.dataRows);
       const cleanedConfigData = cleanOptionalFields(configData);
-      console.log('💾 [AUTOSAVE] Cleaned dataRows:', cleanedConfigData.structure?.dataRows);
       
       const finalConfigJson = {
         ...cleanedConfigData,
@@ -698,11 +647,6 @@ export default function EditConfigurationPage() {
         lastModifiedMethod: 'manual' // Schema only allows 'wizard' or 'manual'
       };
       
-      console.log('💾 [AUTOSAVE] Payload being sent:');
-      console.log('🔍 [AUTOSAVE] Payload lastActualPeriod:', 
-        payload.configJson.type === 'cashflow' ? (payload.configJson.structure as any).lastActualPeriod : 'N/A (P&L config)');
-      console.log(JSON.stringify(payload, null, 2));
-      
       const response = await fetch(`/api/configurations/${configId}`, {
         method: 'PUT',
         headers: {
@@ -729,7 +673,6 @@ export default function EditConfigurationPage() {
       }
 
       const result = await response.json();
-      console.log('✅ [AUTOSAVE] Configuration autosaved successfully');
       
       setLastAutoSaveAt(new Date());
       setHasUnsavedChanges(false);
@@ -774,7 +717,6 @@ export default function EditConfigurationPage() {
     
     // Prevent double submission
     if (saving || isAutoSaving) {
-      console.log('⚠️ Save already in progress, ignoring duplicate submission');
       return;
     }
     
@@ -797,10 +739,6 @@ export default function EditConfigurationPage() {
     try {
       setSaving(true);
       
-      console.log('💾 [SINGLE SOURCE] Starting configuration save process...');
-      console.log('💾 [SINGLE SOURCE] Using configData as single source:', configData);
-      console.log('💾 [SINGLE SOURCE] Period mappings to save:', configData.structure?.periodMapping);
-      
       // Use configData directly (it's already up to date from all editors)
       // Clean optional fields with zero values before saving
       const cleanedConfigData = cleanOptionalFields(configData);
@@ -812,10 +750,6 @@ export default function EditConfigurationPage() {
       };
       
       // Debug: Check if period mapping and lastActualPeriod are included
-      console.log('🔍 [SINGLE SOURCE] Period mappings in final config:', finalConfigJson.structure?.periodMapping);
-      console.log('🔍 [SINGLE SOURCE] Last actual period in final config:', 
-        finalConfigJson.type === 'cashflow' ? (finalConfigJson.structure as any).lastActualPeriod : 'N/A (P&L config)');
-      console.log('🔍 [SINGLE SOURCE] Full final structure:', finalConfigJson.structure);
       
       const payload = {
         name: formData.name,
@@ -832,11 +766,6 @@ export default function EditConfigurationPage() {
         },
         lastModifiedMethod: 'wizard'
       };
-      
-      console.log('💾 [SINGLE SOURCE] Final payload:', payload);
-      console.log('🔍 [SINGLE SOURCE] Payload period mappings:', payload.configJson.structure?.periodMapping);
-      console.log('🔍 [SINGLE SOURCE] Payload lastActualPeriod:', 
-        payload.configJson.type === 'cashflow' ? (payload.configJson.structure as any).lastActualPeriod : 'N/A (P&L config)');
       
       const response = await fetch(`/api/configurations/${configId}`, {
         method: 'PUT',
@@ -855,11 +784,9 @@ export default function EditConfigurationPage() {
       }
 
       const result = await response.json();
-      console.log('✅ Configuration saved successfully:', result);
       
       toast.success(t('config.success.updated'));
-      
-      
+
       // PHASE 4: Reset unsaved changes tracking after successful save
       setLastSavedAt(new Date());
       setOriginalConfigData(JSON.parse(JSON.stringify(configData)));
@@ -875,40 +802,22 @@ export default function EditConfigurationPage() {
       const uploadedFilename = sessionStorage.getItem('excel_uploaded_filename');
       
       if (uploadSession && uploadedFilename && configData?.structure?.categories) {
-        console.log('🔄 [AUTO-PROCESS] Configuration has Excel data and mappings, attempting auto-process...');
-        console.log('📊 [AUTO-PROCESS] Upload session:', uploadSession);
-        console.log('📁 [AUTO-PROCESS] Uploaded filename:', uploadedFilename);
         
         try {
           // Get files from the current upload session
           const filesResponse = await fetch(`/api/files?companyId=${selectedCompany.id}&limit=10`);
           if (filesResponse.ok) {
             const filesData = await filesResponse.json();
-            console.log('📁 [AUTO-PROCESS] Available files:', filesData.data?.map((f: any) => ({
-              id: f.fileId,
-              originalFilename: f.originalFilename,
-              uploadSession: f.uploadSession,
-              uploadedAt: f.uploadedAt
-            })));
             
             // Find file by upload session (most reliable) or filename match
             const matchingFile = filesData.data?.find((file: any) => {
               const sessionMatch = file.uploadSession === uploadSession;
               const filenameMatch = file.originalFilename === uploadedFilename;
               
-              console.log('🔍 [AUTO-PROCESS] Checking file:', {
-                fileId: file.fileId,
-                originalFilename: file.originalFilename,
-                uploadSession: file.uploadSession,
-                sessionMatch,
-                filenameMatch
-              });
-              
               return sessionMatch || filenameMatch;
             });
             
             if (matchingFile) {
-              console.log('✅ [AUTO-PROCESS] Found matching file:', matchingFile.fileId);
               
               // Process the file with the newly saved configuration
               const processResponse = await fetch('/api/files/process', {
@@ -923,7 +832,6 @@ export default function EditConfigurationPage() {
               
               if (processResponse.ok) {
                 const processResult = await processResponse.json();
-                console.log('🎉 [AUTO-PROCESS] Processing completed successfully!', processResult);
                 
                 // Clear the upload session data since we've processed it
                 sessionStorage.removeItem('excel_upload_session');
@@ -942,26 +850,20 @@ export default function EditConfigurationPage() {
                 toast.warning(`Configuration saved, but auto-processing failed: ${errorData.message || 'Unknown error'}`);
               }
             } else {
-              console.warn('⚠️ [AUTO-PROCESS] No matching file found for session:', uploadSession);
               toast.info('Configuration saved. Upload the Excel file through "Procesar Archivos".');
             }
           } else {
             console.error('❌ [AUTO-PROCESS] Failed to fetch files:', filesResponse.status);
           }
         } catch (autoProcessError) {
-          console.warn('⚠️ [AUTO-PROCESS] Auto-processing failed:', autoProcessError);
           toast.warning('Configuration saved, but auto-processing encountered an error.');
         }
       } else {
-        console.log('ℹ️ [AUTO-PROCESS] Skipping auto-process - no upload session or missing categories');
-        console.log('  - Upload session:', !!uploadSession);
-        console.log('  - Uploaded filename:', !!uploadedFilename);
-        console.log('  - Has categories:', !!configData?.structure?.categories);
       }
       
       // Force refresh of processed data cache after configuration changes
       await fetch(`/api/processed-data/${selectedCompany.id}/invalidate`, { method: 'POST' })
-        .catch(err => console.warn('⚠️ Could not invalidate cache:', err));
+        .catch(err => console.error('Cache invalidation failed:', err));
       
       // Navigate back to the configurations list
       router.push('/dashboard/company-admin/configurations');
@@ -983,7 +885,6 @@ export default function EditConfigurationPage() {
       }
     } finally {
       setSaving(false);
-      console.log('💾 Save process completed');
     }
   };
 
@@ -1431,29 +1332,23 @@ export default function EditConfigurationPage() {
                   configurationType={configData.type}
                   lastActualPeriod={configData.type === 'cashflow' ? configData.structure.lastActualPeriod : undefined}
                   onChange={(mapping) => {
-                    console.log('📝 [SINGLE SOURCE] Received period mapping onChange:', mapping);
                     if (configData) {
                       // Deep clone to avoid mutation issues
                       const updatedConfig = JSON.parse(JSON.stringify(configData));
                       updatedConfig.structure.periodMapping = mapping;
-                      console.log('📝 [SINGLE SOURCE] Updated config with period mapping:', updatedConfig.structure.periodMapping);
-                      console.log('📝 [SINGLE SOURCE] Full updated config:', updatedConfig);
                       setConfigData(updatedConfig);
                     }
                   }}
                   onLastActualPeriodChange={(period) => {
-                    console.log('📝 [SINGLE SOURCE] Received lastActualPeriod onChange:', period);
                     if (configData) {
                       // Deep clone to avoid mutation issues
                       const updatedConfig = JSON.parse(JSON.stringify(configData));
                       updatedConfig.structure.lastActualPeriod = period;
-                      console.log('📝 [SINGLE SOURCE] Updated config with lastActualPeriod:', updatedConfig.structure.lastActualPeriod);
                       setConfigData(updatedConfig);
                     }
                   }}
                   onValidate={(isValid, errors) => {
                     if (!isValid) {
-                      console.warn('Period mapping validation failed:', errors);
                     }
                   }}
                   locale={currentLocale}

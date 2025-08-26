@@ -236,7 +236,6 @@ export async function POST(
         .limit(1);
 
       if (companyResult.length === 0) {
-        console.warn(`Company ${access.companyId} not found or doesn't belong to organization ${organizationId}`);
         continue;
       }
 
@@ -279,15 +278,12 @@ export async function POST(
 
     // Auto-grant access to all companies for organization admins
     if (organizationRole === 'admin') {
-      console.log(`🔐 Auto-granting company access to organization admin: ${targetUser.email}`);
       
       // Get all companies in the organization
       const orgCompanies = await db
         .select({ id: companies.id, name: companies.name })
         .from(companies)
         .where(eq(companies.organizationId, organizationId));
-      
-      console.log(`📦 Found ${orgCompanies.length} companies in organization ${organizationId}`);
       
       // Grant access to each company
       for (const company of orgCompanies) {
@@ -314,7 +310,6 @@ export async function POST(
               eq(companyUsers.companyId, company.id),
               eq(companyUsers.userId, targetUser.id)
             ));
-          console.log(`✅ Updated access for company: ${company.name}`);
         } else {
           // Create new access
           await db
@@ -326,14 +321,9 @@ export async function POST(
               isActive: true,
               invitedBy: payload.userId
             });
-          console.log(`✅ Granted access to company: ${company.name}`);
         }
       }
-      
-      console.log(`🎉 Organization admin ${targetUser.email} now has access to all ${orgCompanies.length} companies`);
     }
-
-    console.log(`✅ User ${targetUser.email} invited to organization ${organizationId} as ${organizationRole}`);
 
     const response: any = {
       success: true,

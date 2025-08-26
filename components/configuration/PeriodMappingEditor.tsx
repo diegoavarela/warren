@@ -48,12 +48,6 @@ export function PeriodMappingEditor({
   // Get Excel preview data to determine available columns
   const { excelData, loading: excelLoading } = useExcelPreview(configurationId);
 
-  console.log('📥 [PERIOD EDITOR] Received currentMapping:', currentMapping);
-  console.log('📥 [PERIOD EDITOR] Initialized state:', initialized);
-  console.log('📥 [PERIOD EDITOR] Configuration type:', configurationType);
-  console.log('📥 [PERIOD EDITOR] Last actual period:', lastActualPeriod);
-  console.log('📥 [PERIOD EDITOR] Has onChange callback:', !!onLastActualPeriodChange);
-
   // Generate Excel column letters (A, B, C, ..., Z, AA, AB, etc.)
   const getColumnLetter = (index: number): string => {
     let result = '';
@@ -73,7 +67,6 @@ export function PeriodMappingEditor({
     
     // Priority 2: ALWAYS use totalCols if available (this is the actual column count)
     if (excelData?.preview?.totalCols) {
-      console.log('📊 [PERIOD MAPPER] Generating columns from totalCols:', excelData.preview.totalCols);
       const columns: string[] = [];
       for (let i = 0; i < excelData.preview.totalCols; i++) {
         columns.push(getColumnLetter(i));
@@ -83,7 +76,6 @@ export function PeriodMappingEditor({
     
     // Priority 3: Fallback to columnHeaders (might be capped)
     if (excelData?.preview?.columnHeaders && excelData.preview.columnHeaders.length > 0) {
-      console.log('⚠️ [PERIOD MAPPER] Using columnHeaders (might be capped):', excelData.preview.columnHeaders.length);
       return excelData.preview.columnHeaders;
     }
     
@@ -109,12 +101,6 @@ export function PeriodMappingEditor({
   };
 
   const columns = getAvailableColumns();
-  
-  console.log('📊 [PERIOD MAPPER] Excel data available:', !!excelData);
-  console.log('📊 [PERIOD MAPPER] Column headers from Excel:', excelData?.preview?.columnHeaders);
-  console.log('📊 [PERIOD MAPPER] Total cols from Excel:', excelData?.preview?.totalCols);
-  console.log('📊 [PERIOD MAPPER] Available columns determined:', columns);
-  console.log('📊 [PERIOD MAPPER] Column count:', columns.length);
 
   // Toggle voided columns
   const toggleVoidedColumn = (column: string) => {
@@ -156,7 +142,6 @@ export function PeriodMappingEditor({
           label: `${[t('periodMapping.months.short.jan'), t('periodMapping.months.short.feb'), t('periodMapping.months.short.mar'), t('periodMapping.months.short.apr'), t('periodMapping.months.short.may'), t('periodMapping.months.short.jun'), t('periodMapping.months.short.jul'), t('periodMapping.months.short.aug'), t('periodMapping.months.short.sep'), t('periodMapping.months.short.oct'), t('periodMapping.months.short.nov'), t('periodMapping.months.short.dec')][index % 12]} 2025`
         }
       }));
-      console.log('🔧 [PERIOD EDITOR] Initializing default period mapping:', defaultMapping);
       setInitialized(true);
       onChange(defaultMapping); // This will update the parent's configData
     }
@@ -176,8 +161,6 @@ export function PeriodMappingEditor({
         const period = newMapping[columnIndex].period;
         newMapping[columnIndex].period.label = generateLabel(period);
       }
-      
-      console.log('🔄 [PERIOD EDITOR] Period mapping updated:', newMapping);
       onChange(newMapping); // This will update parent's configData
       validateMapping(newMapping);
     }
@@ -225,7 +208,6 @@ export function PeriodMappingEditor({
     if (excelData?.preview?.rowData && excelData.preview.rowData.length > 0) {
       // Look at first few rows for potential date headers
       const headerRows = excelData.preview.rowData.slice(0, 5);
-      console.log('🔍 [AUTO-DETECT] Analyzing header rows:', headerRows);
       
       // Try to find a row with date-like values
       for (const row of headerRows) {
@@ -342,7 +324,6 @@ export function PeriodMappingEditor({
         // If we found valid dates in this row, use them
         if (hasValidDates && detectedPeriods.length > 0) {
           autoMapping = detectedPeriods;
-          console.log('✅ [AUTO-DETECT] Found date patterns in row:', detectedPeriods);
           break;
         }
       }
@@ -373,13 +354,10 @@ export function PeriodMappingEditor({
           columnsToVoid.delete(column);
         }
       });
-      
-      console.log('📊 [AUTO-DETECT] Columns with numeric data:', Array.from(columnsWithData));
     }
     
     // If we couldn't detect from headers, fall back to intelligent defaults
     if (autoMapping.length === 0) {
-      console.log('⚠️ [AUTO-DETECT] No date patterns found, using intelligent defaults');
       
       // Only map columns that aren't marked for voiding
       const columnsToMap = allColumns.filter(col => !columnsToVoid.has(col));
@@ -451,9 +429,6 @@ export function PeriodMappingEditor({
         columnsToVoid.add(col);
       }
     });
-    
-    console.log('🎯 Auto-detected period mapping:', autoMapping);
-    console.log('❌ Columns to void:', Array.from(columnsToVoid));
     
     // Set the voided columns
     setVoidedColumns(columnsToVoid);
@@ -632,7 +607,6 @@ export function PeriodMappingEditor({
           </Alert>
         )}
 
-
         <div className="space-y-4 relative" style={{ contain: 'layout' }}>
           <div className="grid grid-cols-6 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
             <div>{t('periodMapping.table.excelColumn')}</div>
@@ -652,8 +626,7 @@ export function PeriodMappingEditor({
             // Determine if this period is actual or projected (for cash flow)
             const isActual = configurationType === 'cashflow' && columnMapping && isPeriodActual(columnMapping);
             const isProjected = configurationType === 'cashflow' && columnMapping && !isPeriodActual(columnMapping);
-            
-            
+
             return (
               <div key={column} className={`grid grid-cols-6 gap-4 items-center relative transition-colors duration-200 ${isVoided ? 'opacity-50' : ''} ${
                 isActual ? 'bg-green-50' : 
@@ -772,7 +745,6 @@ export function PeriodMappingEditor({
                             e.preventDefault();
                             e.stopPropagation();
                             if (!onLastActualPeriodChange) {
-                              console.warn('⚠️ onLastActualPeriodChange callback not provided');
                               return;
                             }
                             onLastActualPeriodChange(columnMapping.period);

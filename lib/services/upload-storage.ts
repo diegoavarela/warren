@@ -42,7 +42,6 @@ class UploadStorageService {
 
     expiredSessions.forEach(session => {
       this.uploads.delete(session);
-      console.log(`Cleaned up expired upload session: ${session}`);
     });
   }
 

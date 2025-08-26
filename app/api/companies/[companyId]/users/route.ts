@@ -174,8 +174,6 @@ export async function POST(
         });
     }
 
-    console.log(`✅ User ${targetUser.email} assigned to company ${company.name} as ${role}`);
-
     const response: any = {
       success: true,
       message: `User assigned to company successfully`,

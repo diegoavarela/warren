@@ -30,19 +30,16 @@ interface LocaleProviderProps {
 }
 
 export function LocaleProvider({ children }: LocaleProviderProps) {
-  // Initialize with browser's language or English (never Mexico)
-  const [locale, setLocaleState] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return getUserLocale();
-    }
-    return 'en-US';
-  });
+  // Always start with en-US to prevent hydration mismatch
+  const [locale, setLocaleState] = useState<string>('en-US');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Detect and set initial locale if not already set
-    const detectedLocale = getUserLocale();
-    setLocaleState(detectedLocale);
+    // Only detect and set locale on client-side after mount
+    if (typeof window !== 'undefined') {
+      const detectedLocale = getUserLocale();
+      setLocaleState(detectedLocale);
+    }
     setIsLoading(false);
   }, []);
 

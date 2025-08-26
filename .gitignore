@@ -106,3 +106,12 @@ real_financial_data_*.json
 *.bak
 *.old
 *.copy
+
+# Performance monitoring files
+/performance-reports
+bundle-analysis.json
+webpack-bundle-analyzer-report.html
+
+# Bundle analyzer outputs
+.next/analyze/
+analyze-output/

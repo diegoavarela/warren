@@ -198,11 +198,6 @@ export function ExcelGrid({
 
   // Debug column detection (only in development)
   if (process.env.NODE_ENV === 'development' && columnTypes.length > 0) {
-    console.log('🔍 Column type analysis:', columnTypes.map((type, index) => ({
-      column: columnHeaders[index] || `Col${index}`,
-      type,
-      isDescription: type === 'text'
-    })));
   }
 
   // Generate Excel column letters (A, B, C, etc.)

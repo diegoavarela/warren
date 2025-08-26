@@ -64,7 +64,6 @@ export function filterValidPeriods(periods: any[]): PeriodData[] {
     
     // Skip invalid periods
     if (!validated.isValid) {
-      console.warn(`Invalid period:`, period, validated.errors);
       return;
     }
     

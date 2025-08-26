@@ -461,3 +461,5 @@ export function CashFlowHeatmap({
     </div>
   );
 }
+
+export default CashFlowHeatmap;

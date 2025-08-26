@@ -160,7 +160,6 @@ function LandingContent() {
                 variant="outline"
                 size="xl"
                 onClick={() => {
-                  console.log('Login button clicked, navigating to /login');
                   window.location.href = '/login';
                 }}
                 className="px-8"
@@ -338,7 +337,6 @@ function LandingContent() {
               variant="outline"
               size="xl"
               onClick={() => {
-                console.log('Bottom login button clicked, navigating to /login');
                 window.location.href = '/login';
               }}
               className="text-white border-white hover:bg-white hover:text-blue-600 px-8"
