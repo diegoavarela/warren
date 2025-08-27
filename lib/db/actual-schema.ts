@@ -26,6 +26,12 @@ export const organizations = pgTable("organizations", {
   timezone: varchar("timezone", { length: 50 }).default("UTC"),
   fiscalYearStart: integer("fiscal_year_start").default(1),
   isActive: boolean("is_active").default(true),
+  // Security settings
+  requireTwoFactor: boolean("require_two_factor").default(false),
+  sessionTimeout: integer("session_timeout").default(86400), // 24 hours in seconds
+  // Notification settings  
+  notifyNewUsers: boolean("notify_new_users").default(true),
+  notifyNewCompanies: boolean("notify_new_companies").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -54,9 +60,16 @@ export const companies = pgTable("companies", {
   name: varchar("name", { length: 255 }).notNull(),
   taxId: varchar("tax_id", { length: 100 }),
   industry: varchar("industry", { length: 100 }),
+  country: varchar("country", { length: 100 }),
   locale: varchar("locale", { length: 5 }),
   baseCurrency: varchar("base_currency", { length: 3 }),
+  timezone: varchar("timezone", { length: 50 }),
   fiscalYearStart: integer("fiscal_year_start"),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  address: text("address"),
+  website: varchar("website", { length: 255 }),
+  displayUnits: varchar("display_units", { length: 20 }).default("normal"),
   cashflowDirectMode: boolean("cashflow_direct_mode").notNull().default(false),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -391,6 +404,44 @@ export const userSettings = pgTable("user_settings", {
   uniqueUserKey: unique().on(table.userId, table.key),
 }));
 
+// Copy History table for tracking data copying operations
+export const copyHistory = pgTable("copy_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sourceCompanyId: uuid("source_company_id").references(() => companies.id).notNull(),
+  targetCompanyId: uuid("target_company_id").references(() => companies.id).notNull(),
+  copiedBy: uuid("copied_by").references(() => users.id),
+  itemsCopied: jsonb("items_copied").notNull().default([]),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Two-Factor Authentication tables
+export const user2faSettings = pgTable("user_2fa_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  secret: varchar("secret", { length: 255 }).notNull(),
+  backupCodes: jsonb("backup_codes").notNull().default([]),
+  enabled: boolean("enabled").default(false),
+  enabledAt: timestamp("enabled_at"),
+  lastUsed: timestamp("last_used"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueUser2fa: unique().on(table.userId),
+}));
+
+export const user2faAttempts = pgTable("user_2fa_attempts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  attemptType: varchar("attempt_type", { length: 20 }).notNull(),
+  success: boolean("success").notNull().default(false),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  attemptedAt: timestamp("attempted_at").defaultNow(),
+});
+
 // Export new types
 export type CompanyConfiguration = typeof companyConfigurations.$inferSelect;
 export type NewCompanyConfiguration = typeof companyConfigurations.$inferInsert;
@@ -406,3 +457,13 @@ export type CompanySetting = typeof companySettings.$inferSelect;
 export type NewCompanySetting = typeof companySettings.$inferInsert;
 export type UserSetting = typeof userSettings.$inferSelect;
 export type NewUserSetting = typeof userSettings.$inferInsert;
+
+// Copy History types
+export type CopyHistory = typeof copyHistory.$inferSelect;
+export type NewCopyHistory = typeof copyHistory.$inferInsert;
+
+// Two-Factor Authentication types
+export type User2faSettings = typeof user2faSettings.$inferSelect;
+export type NewUser2faSettings = typeof user2faSettings.$inferInsert;
+export type User2faAttempts = typeof user2faAttempts.$inferSelect;
+export type NewUser2faAttempts = typeof user2faAttempts.$inferInsert;
