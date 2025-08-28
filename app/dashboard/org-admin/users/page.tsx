@@ -128,9 +128,9 @@ function OrgUsersPage() {
 
   const getRoleLabel = (role: string) => {
     const roleLabels: Record<string, string> = {
-      [ROLES.SUPER_ADMIN]: locale?.startsWith('es') ? 'Super Admin' : 'Super Admin',
-      [ROLES.ORG_ADMIN]: locale?.startsWith('es') ? 'Admin de Organización' : 'Organization Admin',
-      [ROLES.COMPANY_ADMIN]: locale?.startsWith('es') ? 'Admin de Empresa' : 'Company Admin',
+      [ROLES.PLATFORM_ADMIN]: locale?.startsWith('es') ? 'Super Admin' : 'Super Admin',
+      [ROLES.ORGANIZATION_ADMIN]: locale?.startsWith('es') ? 'Admin de Organización' : 'Organization Admin',
+      [ROLES.USER]: locale?.startsWith('es') ? 'Admin de Empresa' : 'Company Admin',
       [ROLES.COMPANY_USER]: locale?.startsWith('es') ? 'Usuario' : 'User',
       [ROLES.COMPANY_VIEWER]: locale?.startsWith('es') ? 'Solo Lectura' : 'Viewer'
     };
@@ -139,12 +139,12 @@ function OrgUsersPage() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case ROLES.SUPER_ADMIN:
+      case ROLES.PLATFORM_ADMIN:
         return 'bg-purple-100 text-purple-800';
-      case ROLES.ORG_ADMIN:
-      case 'admin':
+      case ROLES.ORGANIZATION_ADMIN:
+      case 'organization_admin':
         return 'bg-blue-100 text-blue-800';
-      case ROLES.COMPANY_ADMIN:
+      case ROLES.USER:
         return 'bg-green-100 text-green-800';
       case ROLES.COMPANY_USER:
       case 'user':
@@ -454,7 +454,7 @@ function OrgUsersPage() {
 
 export default function OrgUsersPageWrapper() {
   return (
-    <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <OrgUsersPage />
     </ProtectedRoute>
   );

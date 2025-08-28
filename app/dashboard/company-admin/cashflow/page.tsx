@@ -132,7 +132,7 @@ export default function CashFlowDashboardPage() {
   }, [selectedCompanyId]);
 
   return (
-    <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.COMPANY_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.ORGANIZATION_ADMIN, ROLES.USER, ROLES.PLATFORM_ADMIN]}>
       <AppLayout>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
           {/* Company Context Bar */}

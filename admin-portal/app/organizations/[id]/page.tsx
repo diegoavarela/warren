@@ -52,12 +52,24 @@ interface Organization {
 interface Company {
   id: string;
   name: string;
+  organizationId: string;
+  taxId: string | null;
   industry: string | null;
   country: string | null;
-  baseCurrency: string;
-  fiscalYearStart: number;
+  locale: string | null;
+  timezone: string | null;
+  baseCurrency: string | null;
+  fiscalYearStart: number | null;
+  displayUnits: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  address: string | null;
+  website: string | null;
+  cashflowDirectMode: boolean;
   isActive: boolean;
-  createdAt: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  // Added by API
   userCount: number;
   pnlConfigCount: number;
   cashflowConfigCount: number;
@@ -66,14 +78,17 @@ interface Company {
 interface User {
   id: string;
   email: string;
+  passwordHash: string;
   firstName: string;
   lastName: string;
+  organizationId: string;
   role: string;
-  locale: string;
+  locale: string | null;
   isActive: boolean;
   isEmailVerified: boolean;
-  lastLoginAt: string | null;
-  createdAt: string;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export default function OrganizationDetailPage() {
@@ -482,7 +497,7 @@ export default function OrganizationDetailPage() {
     {
       key: 'actions',
       label: 'Actions',
-      render: (_, row: User) => (
+      render: (_: any, row: User) => (
         <div className="flex space-x-2">
           <button
             onClick={(e) => {

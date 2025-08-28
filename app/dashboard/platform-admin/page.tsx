@@ -319,7 +319,7 @@ function PlatformAdminDashboard() {
 
 export default function PlatformAdminPage() {
   return (
-    <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.PLATFORM_ADMIN]}>
       <PlatformAdminDashboard />
     </ProtectedRoute>
   );

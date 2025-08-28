@@ -26,8 +26,8 @@ export async function POST(
     // Verify JWT
     const payload = await verifyJWT(token);
     
-    // Only org admins and super admins can reset passwords
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN && payload.role !== 'admin') {
+    // Only org admins and platform admins can reset passwords
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only organization admins can reset user passwords.' },
         { status: 403 }
@@ -36,8 +36,8 @@ export async function POST(
 
     const { id: organizationId, userId } = params;
 
-    // Verify the requesting user belongs to this organization (except super admins)
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.organizationId !== organizationId) {
+    // Verify the requesting user belongs to this organization (except platform admins)
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.organizationId !== organizationId) {
       return NextResponse.json(
         { error: 'Access denied. You can only reset passwords for users in your own organization.' },
         { status: 403 }

@@ -199,7 +199,7 @@ export default function OrganizationsPage() {
     {
       key: 'actions',
       label: 'Actions',
-      render: (_, row: Organization) => (
+      render: (_: any, row: Organization) => (
         <div className="flex space-x-2">
           <button
             onClick={(e) => {

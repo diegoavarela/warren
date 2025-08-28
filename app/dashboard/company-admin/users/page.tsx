@@ -352,7 +352,7 @@ function UserManagementPage() {
 
 export default function UserManagementPageWrapper() {
   return (
-    <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.USER, ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <UserManagementPage />
     </ProtectedRoute>
   );

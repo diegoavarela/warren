@@ -26,8 +26,8 @@ export async function POST(
     // Verify JWT
     const payload = await verifyJWT(token);
     
-    // Only org admins, super admins, and company admins can assign users to companies
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN && payload.role !== ROLES.COMPANY_ADMIN && payload.role !== 'admin') {
+    // Only organization admins and platform admins can assign users to companies
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only organization and company admins can assign users to companies.' },
         { status: 403 }

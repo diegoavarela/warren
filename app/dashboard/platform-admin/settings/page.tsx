@@ -563,7 +563,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.PLATFORM_ADMIN]}>
       <AppLayout showFooter={true}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
           <div className="container mx-auto px-4 py-6">

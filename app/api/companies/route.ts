@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     // Verify JWT and check permissions
     const payload = await verifyJWT(token);
     
-    // Check if user can create companies (super_admin, org_admin)
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN) {
+    // Check if user can create companies (platform_admin, organization_admin)
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only platform and organization admins can create companies.' },
         { status: 403 }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const organization = orgQuery[0];
 
     // Check if user has access to this organization
-    if (payload.role === ROLES.ORG_ADMIN && payload.organizationId !== organizationId) {
+    if (payload.role === ROLES.ORGANIZATION_ADMIN && payload.organizationId !== organizationId) {
       return NextResponse.json(
         { error: 'You can only create companies within your organization' },
         { status: 403 }
@@ -197,8 +197,8 @@ export async function GET(request: NextRequest) {
     
     let companyList;
     
-    // Super admins and org admins can see all companies in their organization
-    if (payload.role === ROLES.SUPER_ADMIN || payload.role === ROLES.ORG_ADMIN) {
+    // Platform admins and organization admins can see all companies in their organization
+    if (payload.role === ROLES.PLATFORM_ADMIN || payload.role === ROLES.ORGANIZATION_ADMIN) {
       // Get user's organization
       const userResult = await db
         .select()
@@ -219,7 +219,14 @@ export async function GET(request: NextRequest) {
       const { searchParams } = new URL(request.url);
       const includeInactive = searchParams.get('includeInactive') === 'true';
       
-      let query = db
+      let conditions = [eq(companies.organizationId, user.organizationId)];
+      
+      // Filter active companies unless includeInactive is requested
+      if (!includeInactive) {
+        conditions.push(eq(companies.isActive, true));
+      }
+      
+      const query = db
         .select({
           id: companies.id,
           name: companies.name,
@@ -233,12 +240,7 @@ export async function GET(request: NextRequest) {
           createdAt: companies.createdAt
         })
         .from(companies)
-        .where(eq(companies.organizationId, user.organizationId));
-      
-      // Filter active companies unless includeInactive is requested
-      if (!includeInactive) {
-        query = query.where(eq(companies.isActive, true));
-      }
+        .where(and(...conditions));
       
       companyList = await query.orderBy(companies.createdAt);
     } else {

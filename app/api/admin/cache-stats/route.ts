@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Authorization - only platform admins can view cache stats
-    if (user.role !== ROLES.SUPER_ADMIN) {
+    if (user.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -53,7 +53,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Authorization - only platform admins can clear cache
-    if (user.role !== ROLES.SUPER_ADMIN) {
+    if (user.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

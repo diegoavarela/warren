@@ -21,8 +21,8 @@ export async function GET(
 
     const payload = await verifyJWT(token);
     
-    // Only super_admin can view organization details
-    if (payload.role !== ROLES.SUPER_ADMIN) {
+    // Only platform_admin can view organization details
+    if (payload.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
@@ -73,8 +73,8 @@ export async function PUT(
 
     const payload = await verifyJWT(token);
     
-    // Only super_admin can update organizations
-    if (payload.role !== ROLES.SUPER_ADMIN) {
+    // Only platform_admin can update organizations
+    if (payload.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
@@ -146,8 +146,8 @@ export async function DELETE(
 
     const payload = await verifyJWT(token);
     
-    // Only super_admin can delete organizations
-    if (payload.role !== ROLES.SUPER_ADMIN) {
+    // Only platform_admin can delete organizations
+    if (payload.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }

@@ -3,16 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, companyUsers, companies, users, eq } from '@/lib/db';
 import { verifyJWT } from './jwt';
 
-// Role definitions
+// Role definitions - Simplified to 3 roles
 export const ROLES = {
-  // Organization level roles
-  SUPER_ADMIN: 'super_admin',
-  ORG_ADMIN: 'admin',
-  
-  // Company level roles
-  COMPANY_ADMIN: 'company_admin',
-  COMPANY_USER: 'user',
-  COMPANY_VIEWER: 'viewer'
+  PLATFORM_ADMIN: 'platform_admin',    // Can manage everything across all organizations
+  ORGANIZATION_ADMIN: 'organization_admin', // Can manage their organization and its companies
+  USER: 'user'                         // Can access companies they're assigned to
 } as const;
 
 export type Role = typeof ROLES[keyof typeof ROLES];
@@ -37,9 +32,10 @@ export const PERMISSIONS = {
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
-// Role-Permission mapping
+// Role-Permission mapping - Simplified to 3 roles
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  [ROLES.SUPER_ADMIN]: [
+  [ROLES.PLATFORM_ADMIN]: [
+    // Platform admin has all permissions
     PERMISSIONS.CREATE_COMPANY,
     PERMISSIONS.DELETE_COMPANY,
     PERMISSIONS.MANAGE_ORGANIZATION,
@@ -52,7 +48,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.MANAGE_COMPANY_USERS,
     PERMISSIONS.VIEW_AUDIT_LOGS
   ],
-  [ROLES.ORG_ADMIN]: [
+  [ROLES.ORGANIZATION_ADMIN]: [
+    // Org admin can manage their organization and companies within it
     PERMISSIONS.CREATE_COMPANY,
     PERMISSIONS.DELETE_COMPANY,
     PERMISSIONS.MANAGE_ORGANIZATION,
@@ -65,22 +62,11 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.MANAGE_COMPANY_USERS,
     PERMISSIONS.VIEW_AUDIT_LOGS
   ],
-  [ROLES.COMPANY_ADMIN]: [
-    PERMISSIONS.MANAGE_COMPANY,
-    PERMISSIONS.UPLOAD_FILES,
-    PERMISSIONS.VIEW_FINANCIAL_DATA,
-    PERMISSIONS.EDIT_FINANCIAL_DATA,
-    PERMISSIONS.DELETE_FINANCIAL_DATA,
-    PERMISSIONS.MANAGE_COMPANY_USERS,
-    PERMISSIONS.VIEW_AUDIT_LOGS
-  ],
-  [ROLES.COMPANY_USER]: [
+  [ROLES.USER]: [
+    // Regular users can access assigned companies with limited permissions
     PERMISSIONS.UPLOAD_FILES,
     PERMISSIONS.VIEW_FINANCIAL_DATA,
     PERMISSIONS.EDIT_FINANCIAL_DATA
-  ],
-  [ROLES.COMPANY_VIEWER]: [
-    PERMISSIONS.VIEW_FINANCIAL_DATA
   ]
 };
 
@@ -121,12 +107,12 @@ export function hasPermission(user: UserContext, permission: Permission, company
 
 // Get user's accessible companies
 export function getAccessibleCompanies(user: UserContext): string[] {
-  if (user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ORG_ADMIN) {
-    // Org admins can access all companies in their organization
+  if (user.role === ROLES.PLATFORM_ADMIN || user.role === ROLES.ORGANIZATION_ADMIN) {
+    // Platform and org admins can access all companies (platform admin = all orgs, org admin = their org)
     return ['*']; // Wildcard for all companies
   }
   
-  // Return specific companies user has access to
+  // Regular users return specific companies they have access to
   return user.companyAccess?.map(access => access.companyId) || [];
 }
 
@@ -224,12 +210,12 @@ export async function withRBAC(
         id: 'clz1234567890abcdef', // CUID2 format
         email: 'platform@warren.com', 
         organizationId: 'clz1234567890abcdef', // Use same ID to avoid FK constraint
-        role: ROLES.SUPER_ADMIN,
+        role: ROLES.PLATFORM_ADMIN,
         companyAccess: [
           // Add explicit company access for the test company
           {
             companyId: 'b1dea3ff-cac4-45cc-be78-5488e612c2a8', // VTEX Solutions SRL
-            role: ROLES.SUPER_ADMIN,
+            role: ROLES.PLATFORM_ADMIN,
             permissions: [
               PERMISSIONS.VIEW_FINANCIAL_DATA,
               PERMISSIONS.EDIT_FINANCIAL_DATA,
@@ -298,8 +284,8 @@ export async function hasCompanyAccess(
     
     const user = userResult[0];
     
-    // Organization admins have access to all companies in their organization
-    if (user.role === 'admin' || user.role === 'super_admin') {
+    // Platform and organization admins have access to companies
+    if (user.role === 'organization_admin' || user.role === 'platform_admin') {
       // Check if the company belongs to the user's organization
       const companyResult = await db.select({
         organizationId: companies.organizationId
@@ -308,13 +294,13 @@ export async function hasCompanyAccess(
       if (companyResult.length > 0) {
         const company = companyResult[0];
         
-        // Super admins have access to all companies
-        if (user.role === 'super_admin') {
+        // Platform admins have access to all companies
+        if (user.role === 'platform_admin') {
           return true;
         }
         
         // Organization admins have access to companies in their organization
-        if (user.role === 'admin' && company.organizationId === user.organizationId) {
+        if (user.role === 'organization_admin' && company.organizationId === user.organizationId) {
           return true;
         }
       }

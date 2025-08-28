@@ -47,7 +47,7 @@ export default function UploadsHistoryPage() {
   };
 
   return (
-    <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.COMPANY_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.ORGANIZATION_ADMIN, ROLES.USER]}>
       <AppLayout showFooter={true}>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
           <div className="container mx-auto px-4 py-8">

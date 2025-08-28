@@ -341,7 +341,7 @@ export function Header() {
                 </div>
 
                 {/* Quick Access Grid */}
-                {(user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ORG_ADMIN) && (
+                {(user.role === ROLES.PLATFORM_ADMIN || user.role === ROLES.ORGANIZATION_ADMIN) && (
                   <button
                     className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
                     onClick={() => router.push('/dashboard/platform-admin')}
@@ -398,8 +398,8 @@ export function Header() {
                       <p className="text-xs text-gray-500">{user.email}</p>
                       <div className="mt-2">
                         <p className="text-xs text-gray-400">
-                          {user.role === 'super_admin' && (locale?.startsWith('es') ? 'Administrador de Plataforma' : 'Platform Administrator')}
-                          {user.role === 'admin' && (
+                          {user.role === 'platform_admin' && (locale?.startsWith('es') ? 'Administrador de Plataforma' : 'Platform Administrator')}
+                          {user.role === 'organization_admin' && (
                             <>
                               {locale?.startsWith('es') ? 'Administrador de Organización' : 'Organization Administrator'}
                               {organization && (
@@ -433,10 +433,10 @@ export function Header() {
                       <UserCircleIcon className="w-4 h-4" />
                       <span>{locale?.startsWith('es') ? 'Mi Perfil' : 'My Profile'}</span>
                     </button>
-                    {(user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ORG_ADMIN || user.role === 'admin') && (
+                    {(user.role === ROLES.PLATFORM_ADMIN || user.role === ROLES.ORGANIZATION_ADMIN || user.role === 'organization_admin') && (
                       <button
                         onClick={() => {
-                          if (user.role === ROLES.SUPER_ADMIN) {
+                          if (user.role === ROLES.PLATFORM_ADMIN) {
                             router.push('/dashboard/platform-admin/settings');
                           } else {
                             router.push('/dashboard/org-admin/settings');

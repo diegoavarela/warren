@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     // Verify JWT and check permissions
     const payload = await verifyJWT(token);
     
-    // Only super_admin can create organizations
-    if (payload.role !== ROLES.SUPER_ADMIN) {
+    // Only platform_admin can create organizations
+    if (payload.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only platform admins can create organizations.' },
         { status: 403 }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         firstName: adminFirstName,
         lastName: adminLastName,
         organizationId: newOrganization.id,
-        role: ROLES.ORG_ADMIN,
+        role: ROLES.ORGANIZATION_ADMIN,
         isActive: true,
         isEmailVerified: true
       })
@@ -163,8 +163,8 @@ export async function GET(request: NextRequest) {
     // Verify JWT and check permissions
     const payload = await verifyJWT(token);
     
-    // Only super_admin can list all organizations
-    if (payload.role !== ROLES.SUPER_ADMIN) {
+    // Only platform_admin can list all organizations
+    if (payload.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }

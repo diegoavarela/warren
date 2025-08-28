@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN, ROLES.ORG_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.PLATFORM_ADMIN, ROLES.ORGANIZATION_ADMIN]}>
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header />
         

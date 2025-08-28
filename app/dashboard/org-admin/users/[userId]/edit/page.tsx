@@ -121,7 +121,7 @@ function UserEditPage({ params }: { params: { userId: string } }) {
 
   const organizationRoles = [
     { value: 'user', label: locale?.startsWith('es') ? 'Usuario' : 'User' },
-    { value: 'admin', label: locale?.startsWith('es') ? 'Administrador de Organización' : 'Organization Admin' }
+    { value: 'organization_admin', label: locale?.startsWith('es') ? 'Administrador de Organización' : 'Organization Admin' }
   ];
 
   const companyRoles = [
@@ -462,7 +462,7 @@ function UserEditPage({ params }: { params: { userId: string } }) {
 
 export default function UserEditPageWrapper({ params }: { params: { userId: string } }) {
   return (
-    <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <UserEditPage params={params} />
     </ProtectedRoute>
   );

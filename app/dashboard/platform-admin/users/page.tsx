@@ -48,7 +48,7 @@ function UsersPageContent() {
       email: 'admin@demo.com',
       firstName: 'Carlos',
       lastName: 'Administrador',
-      role: 'admin',
+      role: 'organization_admin',
       organizationId: 'org-1',
       organizationName: 'Demo Organization',
       companies: ['Empresa Demo SA de CV', 'Comercializadora XYZ'],
@@ -90,7 +90,7 @@ function UsersPageContent() {
       email: 'platform@warren.com',
       firstName: 'Platform',
       lastName: 'Admin',
-      role: 'super_admin',
+      role: 'platform_admin',
       organizationId: null,
       organizationName: 'Warren Platform',
       companies: [],
@@ -156,7 +156,7 @@ function UsersPageContent() {
   };
 
   return (
-    <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN, ROLES.ORG_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.PLATFORM_ADMIN, ROLES.ORGANIZATION_ADMIN]}>
       <AppLayout showFooter={true}>
         <div className="container mx-auto px-4 py-8">
           {/* Page Header */}
@@ -221,7 +221,7 @@ function UsersPageContent() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    {users.filter(u => u.role.includes('admin')).length}
+                    {users.filter(u => u.role.includes('organization_admin')).length}
                   </p>
                   <p className="text-sm text-gray-600">
                     {locale?.startsWith('es') ? 'Administradores' : 'Admins'}

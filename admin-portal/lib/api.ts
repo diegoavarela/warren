@@ -8,7 +8,7 @@ export async function apiRequest(url: string, options: RequestInit = {}) {
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
   return fetch(url, {

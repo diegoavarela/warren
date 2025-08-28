@@ -450,7 +450,7 @@ function OrgAdminDashboard() {
                           {user.firstName} {user.lastName}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {user.email} • {user.organizationRole === 'admin' 
+                          {user.email} • {user.organizationRole === 'organization_admin' 
                             ? (locale?.startsWith('es') ? 'Admin' : 'Admin')
                             : (locale?.startsWith('es') ? 'Usuario' : 'User')
                           }
@@ -556,7 +556,7 @@ export default function OrgAdminPage() {
 
   // Redirect if not org admin
   useEffect(() => {
-    if (user && user.role !== ROLES.ORG_ADMIN && user.role !== 'admin') {
+    if (user && user.role !== ROLES.ORGANIZATION_ADMIN && user.role !== 'organization_admin') {
       router.replace('/dashboard');
     }
   }, [user, router]);

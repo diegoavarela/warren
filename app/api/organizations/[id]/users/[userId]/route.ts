@@ -25,8 +25,8 @@ export async function DELETE(
     // Verify JWT
     const payload = await verifyJWT(token);
     
-    // Only org admins and super admins can delete users
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN && payload.role !== 'admin') {
+    // Only org admins and platform admins can delete users
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only organization admins can delete users.' },
         { status: 403 }
@@ -35,8 +35,8 @@ export async function DELETE(
 
     const { id: organizationId, userId } = params;
 
-    // Verify the requesting user belongs to this organization (except super admins)
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.organizationId !== organizationId) {
+    // Verify the requesting user belongs to this organization (except platform admins)
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.organizationId !== organizationId) {
       return NextResponse.json(
         { error: 'Access denied. You can only delete users from your own organization.' },
         { status: 403 }
@@ -116,8 +116,8 @@ export async function PUT(
     // Verify JWT
     const payload = await verifyJWT(token);
     
-    // Only org admins and super admins can edit users
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN && payload.role !== 'admin') {
+    // Only org admins and platform admins can edit users
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only organization admins can edit users.' },
         { status: 403 }
@@ -126,8 +126,8 @@ export async function PUT(
 
     const { id: organizationId, userId } = params;
 
-    // Verify the requesting user belongs to this organization (except super admins)
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.organizationId !== organizationId) {
+    // Verify the requesting user belongs to this organization (except platform admins)
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.organizationId !== organizationId) {
       return NextResponse.json(
         { error: 'Access denied. You can only edit users from your own organization.' },
         { status: 403 }
@@ -156,10 +156,10 @@ export async function PUT(
 
     // Validate organization role if provided
     if (organizationRole) {
-      const validOrgRoles = ['user', 'admin'];
+      const validOrgRoles = ['user', 'organization_admin'];
       if (!validOrgRoles.includes(organizationRole)) {
         return NextResponse.json(
-          { error: 'Invalid organization role. Must be one of: user, admin' },
+          { error: 'Invalid organization role. Must be one of: user, organization_admin' },
           { status: 400 }
         );
       }

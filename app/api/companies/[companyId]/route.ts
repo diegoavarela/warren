@@ -22,8 +22,8 @@ export async function DELETE(
     // Verify JWT and check permissions
     const payload = await verifyJWT(token);
     
-    // Only super_admin and org_admin can delete companies
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN) {
+    // Only platform_admin and organization_admin can delete companies
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only platform and organization admins can delete companies.' },
         { status: 403 }
@@ -56,7 +56,7 @@ export async function DELETE(
     const company = companyQuery[0];
 
     // Check if org admin is trying to delete company outside their organization
-    if (payload.role === ROLES.ORG_ADMIN && payload.organizationId !== company.organizationId) {
+    if (payload.role === ROLES.ORGANIZATION_ADMIN && payload.organizationId !== company.organizationId) {
       return NextResponse.json(
         { error: 'You can only delete companies within your organization' },
         { status: 403 }
@@ -179,9 +179,9 @@ export async function GET(
     const company = companyQuery[0];
 
     // Check permissions based on user role
-    if (payload.role === ROLES.SUPER_ADMIN) {
-      // Super admin can access any company
-    } else if (payload.role === ROLES.ORG_ADMIN) {
+    if (payload.role === ROLES.PLATFORM_ADMIN) {
+      // Platform admin can access any company
+    } else if (payload.role === ROLES.ORGANIZATION_ADMIN) {
       // Org admin can only access companies in their organization
       if (payload.organizationId !== company.organizationId) {
         return NextResponse.json(
@@ -251,8 +251,8 @@ export async function PATCH(
     // Verify JWT and check permissions
     const payload = await verifyJWT(token);
     
-    // Only super_admin and org_admin can modify companies
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN) {
+    // Only platform_admin and organization_admin can modify companies
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN) {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only platform and organization admins can modify companies.' },
         { status: 403 }
@@ -279,7 +279,7 @@ export async function PATCH(
     const company = companyQuery[0];
 
     // Check if org admin is trying to modify company outside their organization
-    if (payload.role === ROLES.ORG_ADMIN && payload.organizationId !== company.organizationId) {
+    if (payload.role === ROLES.ORGANIZATION_ADMIN && payload.organizationId !== company.organizationId) {
       return NextResponse.json(
         { error: 'You can only modify companies within your organization' },
         { status: 403 }

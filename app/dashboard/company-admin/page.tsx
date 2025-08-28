@@ -141,7 +141,7 @@ function CompanyAdminDashboard() {
       
       // Only clear the stored value if user is org admin (they selected the company)
       // For company employees, keep it so they stay locked to their company
-      const isOrgAdmin = user?.role === ROLES.ORG_ADMIN || user?.role === 'admin';
+      const isOrgAdmin = user?.role === ROLES.ORGANIZATION_ADMIN || user?.role === 'organization_admin';
       if (isOrgAdmin) {
         sessionStorage.removeItem('selectedCompanyId');
       }
@@ -388,7 +388,7 @@ function CompanyAdminDashboard() {
           </div>
 
           {/* Companies Table - Only show for org admins without selected company */}
-          {!selectedCompanyId && (user?.role === ROLES.ORG_ADMIN || user?.role === 'admin') ? (
+          {!selectedCompanyId && (user?.role === ROLES.ORGANIZATION_ADMIN || user?.role === 'organization_admin') ? (
             <Card className="mb-8">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -465,7 +465,7 @@ function CompanyAdminDashboard() {
                 </div>
               </CardBody>
             </Card>
-          ) : !selectedCompanyId && (user?.role !== ROLES.ORG_ADMIN && user?.role !== 'admin') ? (
+          ) : !selectedCompanyId && (user?.role !== ROLES.ORGANIZATION_ADMIN && user?.role !== 'organization_admin') ? (
             <Card className="mb-8">
               <CardBody className="text-center py-12">
                 <BuildingOfficeIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -485,7 +485,7 @@ function CompanyAdminDashboard() {
                 </Button>
               </CardBody>
             </Card>
-          ) : selectedCompanyId && (user?.role === ROLES.ORG_ADMIN || user?.role === 'admin') ? (
+          ) : selectedCompanyId && (user?.role === ROLES.ORGANIZATION_ADMIN || user?.role === 'organization_admin') ? (
             <div className="mb-4">
               <Button
                 variant="ghost"
@@ -801,7 +801,7 @@ function CompanyAdminDashboard() {
 
 export default function CompanyAdminPage() {
   return (
-    <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.USER, ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <CompanyAdminDashboard />
     </ProtectedRoute>
   );

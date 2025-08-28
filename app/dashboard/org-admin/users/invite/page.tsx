@@ -81,7 +81,7 @@ function OrgUserInvitePage() {
 
   const organizationRoles = [
     { value: 'user', label: locale?.startsWith('es') ? 'Usuario' : 'User' },
-    { value: 'admin', label: locale?.startsWith('es') ? 'Administrador de Organización' : 'Organization Admin' }
+    { value: 'organization_admin', label: locale?.startsWith('es') ? 'Administrador de Organización' : 'Organization Admin' }
   ];
 
   const companyRoles = [
@@ -443,7 +443,7 @@ function OrgUserInvitePage() {
 
 export default function OrgUserInvitePageWrapper() {
   return (
-    <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <OrgUserInvitePage />
     </ProtectedRoute>
   );

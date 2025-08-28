@@ -128,7 +128,7 @@ export default function CompaniesPage() {
     {
       key: 'actions',
       label: 'Actions',
-      render: (_, row: Company) => (
+      render: (_: any, row: Company) => (
         <div className="flex space-x-2">
           <button
             onClick={(e) => {

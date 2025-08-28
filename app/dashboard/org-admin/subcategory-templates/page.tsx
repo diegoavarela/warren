@@ -1070,7 +1070,7 @@ function OrganizationSubcategoryTemplatesPage() {
 
 export default function OrganizationSubcategoryTemplatesPageWrapper() {
   return (
-    <ProtectedRoute requireRole={[ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <OrganizationSubcategoryTemplatesPage />
     </ProtectedRoute>
   );

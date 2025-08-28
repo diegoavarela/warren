@@ -560,7 +560,7 @@ function TemplateManagePage({ params }: { params: { templateId: string } }) {
 
 export default function TemplateManagePageWrapper({ params }: { params: { templateId: string } }) {
   return (
-    <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.USER, ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <TemplateManagePage params={params} />
     </ProtectedRoute>
   );

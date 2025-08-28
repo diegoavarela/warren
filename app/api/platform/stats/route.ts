@@ -5,7 +5,7 @@ import { db, organizations, companies, users, financialStatements, mappingTempla
 export async function GET(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
     // Only platform admins can access platform stats
-    if (user.role !== ROLES.SUPER_ADMIN) {
+    if (user.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }

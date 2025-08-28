@@ -136,9 +136,9 @@ export default function ProfilePage() {
 
   const getRoleName = (role: string) => {
     switch (role) {
-      case 'super_admin':
+      case 'platform_admin':
         return locale?.startsWith('es') ? 'Administrador de Plataforma' : 'Platform Administrator';
-      case 'admin':
+      case 'organization_admin':
         return locale?.startsWith('es') ? 'Administrador de Organización' : 'Organization Administrator';
       case 'user':
       case 'viewer':

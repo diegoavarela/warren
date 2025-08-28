@@ -7,7 +7,7 @@ type HealthStatus = 'operational' | 'degraded' | 'down';
 export async function GET(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
     // Only platform admins can access system health
-    if (user.role !== ROLES.SUPER_ADMIN) {
+    if (user.role !== ROLES.PLATFORM_ADMIN) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }

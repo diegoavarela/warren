@@ -26,8 +26,8 @@ export async function GET(
     // Verify JWT
     const payload = await verifyJWT(token);
     
-    // Only org admins and super admins can view organization users
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN && payload.role !== 'admin') {
+    // Only organization admins and platform admins can view organization users
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN && payload.role !== 'organization_admin') {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only organization admins can view organization users.' },
         { status: 403 }
@@ -36,8 +36,8 @@ export async function GET(
 
     const { id: organizationId } = params;
 
-    // Verify the requesting user belongs to this organization (except super admins)
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.organizationId !== organizationId) {
+    // Verify the requesting user belongs to this organization (except platform admins)
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.organizationId !== organizationId) {
       return NextResponse.json(
         { error: 'Access denied. You can only view users from your own organization.' },
         { status: 403 }
@@ -120,8 +120,8 @@ export async function POST(
     // Verify JWT
     const payload = await verifyJWT(token);
     
-    // Only org admins and super admins can invite users to organizations
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.role !== ROLES.ORG_ADMIN && payload.role !== 'admin') {
+    // Only organization admins and platform admins can invite users to organizations
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.role !== ROLES.ORGANIZATION_ADMIN && payload.role !== 'organization_admin') {
       return NextResponse.json(
         { error: 'Insufficient permissions. Only organization admins can invite users.' },
         { status: 403 }
@@ -130,8 +130,8 @@ export async function POST(
 
     const { id: organizationId } = params;
 
-    // Verify the requesting user belongs to this organization (except super admins)
-    if (payload.role !== ROLES.SUPER_ADMIN && payload.organizationId !== organizationId) {
+    // Verify the requesting user belongs to this organization (except platform admins)
+    if (payload.role !== ROLES.PLATFORM_ADMIN && payload.organizationId !== organizationId) {
       return NextResponse.json(
         { error: 'Access denied. You can only invite users to your own organization.' },
         { status: 403 }

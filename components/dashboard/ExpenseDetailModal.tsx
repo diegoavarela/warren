@@ -162,7 +162,7 @@ export function ExpenseDetailModal({
           return 'Salary Payment';
         } else if (parentCategory.includes('professional') || parentCategory.includes('service')) {
           return 'Professional Service';
-        } else if (parentCategory.includes('office') || parentCategory.includes('admin')) {
+        } else if (parentCategory.includes('office') || parentCategory.includes('organization_admin')) {
           return 'Administrative Expense';
         } else if (parentCategory.includes('marketing') || parentCategory.includes('advertising')) {
           return 'Marketing Expense';

@@ -14,15 +14,15 @@ function DashboardRouter({ user }: { user: any }) {
       
       // First check organization-level roles (these take priority)
       switch (user.role) {
-        case ROLES.ORG_ADMIN:
-        case 'admin':
+        case ROLES.ORGANIZATION_ADMIN:
+        case 'organization_admin':
           // Clear company context for org admins
           sessionStorage.removeItem('selectedCompanyId');
           sessionStorage.removeItem('selectedCompanyName');
           router.replace('/dashboard/org-admin');
           return;
-        case ROLES.SUPER_ADMIN:
-        case 'super_admin':
+        case ROLES.PLATFORM_ADMIN:
+        case 'platform_admin':
           // Clear company context for platform admins
           sessionStorage.removeItem('selectedCompanyId');
           sessionStorage.removeItem('selectedCompanyName');
@@ -38,14 +38,8 @@ function DashboardRouter({ user }: { user: any }) {
         const companyId = user.companyAccess[0].companyId;
         
         switch (primaryCompanyRole) {
-          case ROLES.COMPANY_ADMIN:
-          case 'company_admin':
-            router.replace('/dashboard/company-admin');
-            break;
-          case ROLES.COMPANY_USER:
+          case ROLES.USER:
           case 'user':
-          case ROLES.COMPANY_VIEWER:
-          case 'viewer':
             // For company employees, automatically set company context and redirect to company admin view
             if (companyId) {
               sessionStorage.setItem('selectedCompanyId', companyId);
@@ -60,10 +54,8 @@ function DashboardRouter({ user }: { user: any }) {
       } else {
         // No company access, check user role
         switch (user.role) {
-          case ROLES.COMPANY_USER:
+          case ROLES.USER:
           case 'user':
-          case ROLES.COMPANY_VIEWER:
-          case 'viewer':
             router.replace('/dashboard/user');
             break;
           default:
@@ -88,7 +80,7 @@ function MainDashboard({ user }: { user: any }) {
   
   useEffect(() => {
     // Platform admin should be redirected to their dedicated dashboard
-    if (user?.role === ROLES.SUPER_ADMIN || user?.role === 'super_admin') {
+    if (user?.role === ROLES.PLATFORM_ADMIN || user?.role === 'platform_admin') {
       // Clear company context for platform admins
       sessionStorage.removeItem('selectedCompanyId');
       sessionStorage.removeItem('selectedCompanyName');
@@ -97,7 +89,7 @@ function MainDashboard({ user }: { user: any }) {
   }, [user, router]);
 
   // For platform admin, show loading while redirecting
-  if (user?.role === ROLES.SUPER_ADMIN || user?.role === 'super_admin') {
+  if (user?.role === ROLES.PLATFORM_ADMIN || user?.role === 'platform_admin') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

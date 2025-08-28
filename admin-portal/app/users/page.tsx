@@ -289,7 +289,7 @@ export default function UsersPage() {
     {
       key: 'actions',
       label: 'Actions',
-      render: (_, row: User) => (
+      render: (_: any, row: User) => (
         <div className="flex space-x-2">
           <button
             onClick={(e) => {

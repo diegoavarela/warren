@@ -176,7 +176,7 @@ export default function CompaniesPage() {
   };
 
   return (
-    <ProtectedRoute requireRole={[ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.PLATFORM_ADMIN]}>
       <AppLayout showFooter={true}>
         <div className="container mx-auto px-4 py-8">
           {/* Page Header */}

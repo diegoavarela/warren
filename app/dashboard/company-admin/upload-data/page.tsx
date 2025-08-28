@@ -104,7 +104,7 @@ function UploadDataPage() {
   if (step === 'upload' && selectedConfiguration) {
     // TODO: Implement actual file upload component with configuration
     return (
-      <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+      <ProtectedRoute requireRole={[ROLES.USER, ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
         <AppLayout>
           <ToastContainer 
             toasts={toast.toasts} 
@@ -224,7 +224,7 @@ function UploadDataPage() {
   }
 
   return (
-    <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.USER, ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <AppLayout>
         <ToastContainer 
           toasts={toast.toasts} 

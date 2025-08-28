@@ -215,7 +215,7 @@ function FinancialChatPage() {
 
 export default function FinancialChatPageRoute() {
   return (
-    <ProtectedRoute requireRole={[ROLES.COMPANY_ADMIN, ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN]}>
+    <ProtectedRoute requireRole={[ROLES.USER, ROLES.ORGANIZATION_ADMIN, ROLES.PLATFORM_ADMIN]}>
       <FinancialChatPage />
     </ProtectedRoute>
   );
