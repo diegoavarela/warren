@@ -130,9 +130,7 @@ function OrgUsersPage() {
     const roleLabels: Record<string, string> = {
       [ROLES.PLATFORM_ADMIN]: locale?.startsWith('es') ? 'Super Admin' : 'Super Admin',
       [ROLES.ORGANIZATION_ADMIN]: locale?.startsWith('es') ? 'Admin de Organización' : 'Organization Admin',
-      [ROLES.USER]: locale?.startsWith('es') ? 'Admin de Empresa' : 'Company Admin',
-      [ROLES.COMPANY_USER]: locale?.startsWith('es') ? 'Usuario' : 'User',
-      [ROLES.COMPANY_VIEWER]: locale?.startsWith('es') ? 'Solo Lectura' : 'Viewer'
+      [ROLES.USER]: locale?.startsWith('es') ? 'Usuario' : 'User'
     };
     return roleLabels[role] || role;
   };
@@ -145,12 +143,8 @@ function OrgUsersPage() {
       case 'organization_admin':
         return 'bg-blue-100 text-blue-800';
       case ROLES.USER:
-        return 'bg-green-100 text-green-800';
-      case ROLES.COMPANY_USER:
       case 'user':
-        return 'bg-gray-100 text-gray-800';
-      case ROLES.COMPANY_VIEWER:
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

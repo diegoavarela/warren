@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withRBAC, hasPermission, PERMISSIONS } from "@/lib/auth/rbac";
+import { withRBAC, hasPermission, PERMISSIONS, ROLES } from "@/lib/auth/rbac";
 import { db, subcategoryTemplates, eq, and } from "@/lib/db";
 
 export async function GET(
@@ -19,7 +19,7 @@ export async function GET(
     }
     
     // Additional check: ensure user belongs to this organization
-    if (user.role === 'admin' && user.organizationId !== organizationId) {
+    if (user.role === ROLES.ORGANIZATION_ADMIN && user.organizationId !== organizationId) {
       return NextResponse.json(
         { error: "Access denied: User does not belong to this organization" },
         { status: 403 }
@@ -68,7 +68,7 @@ export async function POST(
     }
     
     // Additional check: ensure user belongs to this organization
-    if (user.role === 'admin' && user.organizationId !== organizationId) {
+    if (user.role === ROLES.ORGANIZATION_ADMIN && user.organizationId !== organizationId) {
       return NextResponse.json(
         { error: "Access denied: User does not belong to this organization" },
         { status: 403 }
