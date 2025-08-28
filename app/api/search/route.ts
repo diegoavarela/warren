@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, organizations, companies, users, mappingTemplates, eq, like, or } from '@/lib/db';
-import { withRBAC, hasPermission, PERMISSIONS } from '@/lib/auth/rbac';
+import { withRBAC, hasPermission, PERMISSIONS, ROLES } from '@/lib/auth/rbac';
 
 export async function GET(request: NextRequest) {
   return withRBAC(request, async (req, user) => {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // Search organizations (platform admin only)
-      if ((type === 'all' || type === 'organizations') && user.role === 'super_admin') {
+      if ((type === 'all' || type === 'organizations') && user.role === ROLES.PLATFORM_ADMIN) {
         const orgResults = await db
           .select({
             id: organizations.id,
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
       // Search users (admins only)
       if ((type === 'all' || type === 'users') && 
-          (user.role === 'super_admin' || user.role === 'admin')) {
+          (user.role === ROLES.PLATFORM_ADMIN || user.role === ROLES.ORGANIZATION_ADMIN)) {
         const usersQuery = db
           .select({
             id: users.id,
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
           .limit(5);
 
         // If org admin, filter by organization
-        if (user.role === 'admin') {
+        if (user.role === ROLES.ORGANIZATION_ADMIN) {
           usersQuery.where(eq(users.organizationId, user.organizationId));
         }
 
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
             id: u.id,
             title: `${u.firstName} ${u.lastName}`,
             subtitle: `User • ${u.email} • ${u.role}`,
-            url: user.role === 'super_admin' 
+            url: user.role === ROLES.PLATFORM_ADMIN 
               ? `/dashboard/platform-admin/users?userId=${u.id}`
               : `/dashboard/org-admin/users/${u.id}`
           });
