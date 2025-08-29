@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleContext';
+import { useFeatures } from '@/contexts/FeaturesContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/Button';
@@ -117,6 +118,7 @@ function CompanyAdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
   const { locale } = useLocale();
+  const { hasFeature } = useFeatures();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [pnlStatements, setPnlStatements] = useState<any[]>([]);
@@ -557,17 +559,28 @@ function CompanyAdminDashboard() {
 
                         {/* AI Chat Button */}
                         <Button
-                          variant="primary"
+                          variant={hasFeature('AI_CHAT') ? "primary" : "secondary"}
                           onClick={() => {
-                            sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                            sessionStorage.setItem('selectedCompanyName', getSelectedCompany()?.name || '');
-                            router.push('/dashboard/company-admin/financial-chat');
+                            if (hasFeature('AI_CHAT')) {
+                              sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                              sessionStorage.setItem('selectedCompanyName', getSelectedCompany()?.name || '');
+                              router.push('/dashboard/company-admin/financial-chat');
+                            } else {
+                              router.push('/premium');
+                            }
                           }}
                           leftIcon={<ChatBubbleBottomCenterTextIcon className="w-4 h-4" />}
-                          disabled={!selectedCompanyId || (pnlStatements.length === 0 && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode)}
-                          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          disabled={hasFeature('AI_CHAT') && (!selectedCompanyId || (pnlStatements.length === 0 && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode))}
+                          className={`${
+                            hasFeature('AI_CHAT')
+                              ? 'bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+                              : 'bg-orange-500 hover:bg-orange-600 text-white'
+                          }`}
                         >
-                          ✨ {locale?.startsWith('es') ? 'Chat IA Financiero' : 'AI Financial Chat'}
+                          {hasFeature('AI_CHAT') 
+                            ? `✨ ${locale?.startsWith('es') ? 'Chat IA Financiero' : 'AI Financial Chat'}`
+                            : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`
+                          }
                         </Button>
                       </div>
                     </div>
@@ -621,19 +634,34 @@ function CompanyAdminDashboard() {
                       </div>
                       
                       <Button
-                        variant={pnlStatements.length > 0 ? "primary" : "secondary"}
+                        variant={
+                          hasFeature('pnl_dashboard') 
+                            ? (pnlStatements.length > 0 ? "primary" : "secondary")
+                            : "secondary"
+                        }
                         onClick={() => {
-                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                          router.push('/dashboard/company-admin/pnl');
+                          if (hasFeature('pnl_dashboard')) {
+                            sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                            router.push('/dashboard/company-admin/pnl');
+                          } else {
+                            router.push('/premium');
+                          }
                         }}
-                        disabled={pnlStatements.length === 0}
+                        disabled={hasFeature('pnl_dashboard') && pnlStatements.length === 0}
                         className={`w-full ${
-                          pnlStatements.length > 0 
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                          hasFeature('pnl_dashboard')
+                            ? (pnlStatements.length > 0 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                : 'bg-gray-100 text-gray-500 cursor-not-allowed')
+                            : 'bg-orange-500 hover:bg-orange-600 text-white'
                         }`}
                       >
-                        {locale?.startsWith('es') ? 'Ver Dashboard P&L' : 'View P&L Dashboard'}
+                        {hasFeature('pnl_dashboard')
+                          ? (pnlStatements.length > 0 
+                              ? (locale?.startsWith('es') ? 'Ver Dashboard P&L' : 'View P&L Dashboard')
+                              : (locale?.startsWith('es') ? 'Sin datos P&L' : 'No P&L data'))
+                          : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`
+                        }
                       </Button>
                     </div>
 
@@ -687,19 +715,34 @@ function CompanyAdminDashboard() {
                       </div>
                       
                       <Button
-                        variant={(cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? "primary" : "secondary"}
+                        variant={
+                          hasFeature('cashflow_dashboard') 
+                            ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? "primary" : "secondary")
+                            : "secondary"
+                        }
                         onClick={() => {
-                          sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
-                          router.push('/dashboard/company-admin/cashflow');
+                          if (hasFeature('cashflow_dashboard')) {
+                            sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                            router.push('/dashboard/company-admin/cashflow');
+                          } else {
+                            router.push('/premium');
+                          }
                         }}
-                        disabled={cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode}
+                        disabled={hasFeature('cashflow_dashboard') && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode}
                         className={`w-full ${
-                          (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
-                            ? 'bg-green-600 hover:bg-green-700 text-white' 
-                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                          hasFeature('cashflow_dashboard')
+                            ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
+                                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                : 'bg-gray-100 text-gray-500 cursor-not-allowed')
+                            : 'bg-orange-500 hover:bg-orange-600 text-white'
                         }`}
                       >
-                        {locale?.startsWith('es') ? 'Ver Dashboard Flujo de Caja' : 'View Cash Flow Dashboard'}
+                        {hasFeature('cashflow_dashboard')
+                          ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
+                              ? (locale?.startsWith('es') ? 'Ver Dashboard Flujo de Caja' : 'View Cash Flow Dashboard')
+                              : (locale?.startsWith('es') ? 'Sin datos Flujo de Caja' : 'No Cash Flow data'))
+                          : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`
+                        }
                       </Button>
                     </div>
                   </div>
