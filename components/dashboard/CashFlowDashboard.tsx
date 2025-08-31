@@ -875,6 +875,7 @@ function CashFlowDashboardContent({
                   <option value="M">{t('dashboard.pnl.millions')}</option>
                 </select>
               </div>
+
             </div>
           </div>
         </div>
@@ -1431,7 +1432,7 @@ const CashFlowDashboardComponent = function CashFlowDashboard({
     if (isDirectMode && companyId && companyId !== '') {
       const loadRegularData = async () => {
         try {
-          const response = await fetch(`/api/processed-data/cashflow/${companyId}`);
+          const response = await fetch(`/api/cashflow-live/${companyId}`);
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.data) {

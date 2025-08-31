@@ -690,9 +690,9 @@ export class ProfessionalPDFExportService {
     this.drawProfessionalBarChart(
       pdf, 
       [
-        { label: 'Entradas', values: data.totalInflows.values, color: secondaryColor },
-        { label: 'Salidas', values: data.totalOutflows.values.map((v: number) => Math.abs(v)), color: dangerColor },
-        { label: 'Generación', values: data.monthlyGeneration.values, color: successColor }
+        { label: data.locale?.startsWith('es') ? 'Entradas' : 'Inflows', values: data.totalInflows.values, color: '#10B981' }, // Emerald green for consistency
+        { label: data.locale?.startsWith('es') ? 'Salidas' : 'Outflows', values: data.totalOutflows.values.map((v: number) => Math.abs(v)), color: '#EF4444' }, // Red for outflows
+        { label: data.locale?.startsWith('es') ? 'Generación' : 'Generation', values: data.monthlyGeneration.values, color: '#06B6D4' } // Cyan for generation
       ],
       data.periods,
       margin,
@@ -1985,8 +1985,8 @@ export class ProfessionalPDFExportService {
     // Draw legend at top
     this.drawLegend(pdf, chartX, y + chartPadding + 5, series, textColor);
     
-    // Draw grid lines
-    this.drawGridLines(pdf, chartX, chartY, chartWidth, chartHeight, gridColor, 4);
+    // Draw professional grid lines
+    this.drawGridLines(pdf, chartX, chartY, chartWidth, chartHeight, gridColor, 5);
     
     // Calculate bar dimensions
     const displayLabels = labels.slice(-6);
@@ -2031,14 +2031,25 @@ export class ProfessionalPDFExportService {
         pdf.setLineWidth(0.3);
         pdf.rect(barX, barY, barWidth, barHeight, 'S');
         
-        // Value labels on bars (if space allows)
-        if (barHeight > 8) {
+        // Value labels on bars (if space allows) - improved visibility
+        if (barHeight > 12) {
           pdf.setTextColor(255, 255, 255); // White text
-          pdf.setFontSize(6);
+          pdf.setFontSize(7);
           pdf.setFont('helvetica', 'bold');
-          const formattedValue = this.formatCurrency(value, locale, currency)
-            .replace('ARS', '').replace('USD', '').replace('$', '');
-          pdf.text(formattedValue, barX + barWidth/2, barY + barHeight/2 + 1, { align: 'center' });
+          
+          // Better currency formatting
+          let formattedValue: string;
+          const absValue = Math.abs(value);
+          
+          if (absValue >= 1000000) {
+            formattedValue = `${(absValue / 1000000).toFixed(1)}M`;
+          } else if (absValue >= 1000) {
+            formattedValue = `${(absValue / 1000).toFixed(0)}K`;
+          } else {
+            formattedValue = absValue.toFixed(0);
+          }
+          
+          pdf.text(formattedValue, barX + barWidth/2, barY + barHeight/2 + 2, { align: 'center' });
         }
       }
     }
@@ -2052,41 +2063,72 @@ export class ProfessionalPDFExportService {
     for (let i = 0; i < displayLabels.length; i++) {
       const labelX = chartX + i * barGroupWidth + barGroupWidth/2;
       
-      // Apply same date formatting as line charts
-      let periodLabel = displayLabels[i];
+      // Apply same date formatting as other charts for consistency
+      let periodLabel = displayLabels[i] || '';
       
-      // Convert "julio 2025" to "Jul 25", etc.
-      if (periodLabel.includes(' 2025')) {
-        const monthMap: { [key: string]: string } = {
-          'julio': 'Jul', 'agosto': 'Ago', 'septiembre': 'Sep',
-          'octubre': 'Oct', 'noviembre': 'Nov', 'diciembre': 'Dic',
-          'enero': 'Ene', 'febrero': 'Feb', 'marzo': 'Mar',
-          'abril': 'Abr', 'mayo': 'May', 'junio': 'Jun'
-        };
+      if (locale?.startsWith('es')) {
+        // Convert Spanish month names to short form with correct year
+        periodLabel = periodLabel
+          .replace('enero', 'Ene')
+          .replace('febrero', 'Feb')
+          .replace('marzo', 'Mar')
+          .replace('abril', 'Abr')
+          .replace('mayo', 'May')
+          .replace('junio', 'Jun')
+          .replace('julio', 'Jul')
+          .replace('agosto', 'Ago')
+          .replace('septiembre', 'Sep')
+          .replace('octubre', 'Oct')
+          .replace('noviembre', 'Nov')
+          .replace('diciembre', 'Dic');
         
-        for (const [full, short] of Object.entries(monthMap)) {
-          if (periodLabel.toLowerCase().includes(full)) {
-            periodLabel = `${short} 25`;
-            break;
-          }
-        }
-      }
-      
-      // Final truncation if still too long
-      if (periodLabel.length > 6) {
-        periodLabel = periodLabel.substring(0, 6);
+        // Extract just the month part (first 3 chars)
+        periodLabel = periodLabel.split(' ')[0];
+      } else {
+        // English month names
+        periodLabel = periodLabel
+          .replace('January', 'Jan')
+          .replace('February', 'Feb')
+          .replace('March', 'Mar')
+          .replace('April', 'Apr')
+          .replace('May', 'May')
+          .replace('June', 'Jun')
+          .replace('July', 'Jul')
+          .replace('August', 'Aug')
+          .replace('September', 'Sep')
+          .replace('October', 'Oct')
+          .replace('November', 'Nov')
+          .replace('December', 'Dec');
+        
+        // Extract just the month part (first 3 chars)
+        periodLabel = periodLabel.split(' ')[0];
       }
       
       pdf.text(periodLabel, labelX, chartY + chartHeight + 10, { align: 'center' });
     }
     
-    // Y-axis labels
+    // Y-axis labels with better alignment and formatting
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    
     for (let i = 0; i <= 4; i++) {
       const value = (maxVal / 4) * i;
       const labelY = chartY + chartHeight - (i * chartHeight / 4);
-      const formattedValue = this.formatCurrency(value, locale, currency)
-        .replace('ARS', '').replace('USD', '').replace('$', '');
-      pdf.text(formattedValue, chartX - 5, labelY + 1, { align: 'right' });
+      
+      // Format currency values with proper abbreviations
+      let formattedValue: string;
+      const absValue = Math.abs(value);
+      
+      if (absValue >= 1000000) {
+        formattedValue = `${currency}${(absValue / 1000000).toFixed(1)}M`;
+      } else if (absValue >= 1000) {
+        formattedValue = `${currency}${(absValue / 1000).toFixed(1)}K`;
+      } else {
+        formattedValue = `${currency}${absValue.toFixed(0)}`;
+      }
+      
+      // Better positioning - align to right edge of chart area
+      pdf.text(formattedValue, chartX - 8, labelY + 2, { align: 'right' });
     }
   }
 
