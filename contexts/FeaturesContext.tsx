@@ -145,9 +145,19 @@ export function FeaturesProvider({ children }: FeaturesProviderProps) {
 
     const intervalId = setInterval(() => {
       refreshFeatures();
-    }, 30000); // Refresh every 30 seconds
+    }, 2000); // Refresh every 2 seconds for real-time updates
 
-    return () => clearInterval(intervalId);
+    // Also refresh when window gains focus (switching between admin and main app)
+    const handleFocus = () => {
+      refreshFeatures();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [isAuthenticated, organization?.id]);
 
   const hasFeature = (featureKey: string): boolean => {
