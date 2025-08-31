@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, featureFlags, organizationFeatures, eq, and, sql } from '@/shared/db';
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 
 // GET /api/organizations/[id]/features - Get all features for an organization
 export async function GET(
@@ -8,8 +10,8 @@ export async function GET(
 ) {
   try {
     const organizationId = params.id;
-
-    // Get all public features with organization access status using direct SQL for accuracy
+    
+    // Get all features for an organization with proper visibility and enabled status
     const features = await db.execute(sql`
       SELECT 
         f.id,
@@ -26,22 +28,25 @@ export async function GET(
         f.icon,
         CASE 
           WHEN f.is_baseline = true THEN true
-          WHEN of.enabled = true THEN true
+          WHEN of.enabled IS NOT NULL AND of.enabled = true THEN true
           ELSE false
         END as enabled,
         of.enabled_at as "enabledAt"
       FROM feature_flags f
       LEFT JOIN organization_features of ON f.id = of.feature_id 
-        AND of.organization_id = ${organizationId}
-      WHERE f.is_public = true
+        AND of.organization_id = ${organizationId}::uuid
+      WHERE (
+        f.is_baseline = true OR 
+        f.is_public = true OR 
+        (f.is_public = false AND of.enabled IS NOT NULL AND of.enabled = true)
+      )
       ORDER BY f.is_baseline DESC, f.name ASC
     `);
 
-    const processedFeatures = features.rows;
 
     return NextResponse.json({
       success: true,
-      features: processedFeatures
+      features: features.rows
     });
   } catch (error) {
     console.error('Error fetching organization features:', error);

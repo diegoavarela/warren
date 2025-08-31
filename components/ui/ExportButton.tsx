@@ -7,6 +7,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/translations';
 import { Button } from './Button';
+import { FeatureTooltip } from './FeatureTooltip';
 import { FEATURE_KEYS } from '@/lib/constants/features';
 import { 
   DocumentArrowDownIcon,
@@ -33,13 +34,18 @@ export function ExportButton({
   filters,
   className = ''
 }: ExportButtonProps) {
-  const { hasFeature, isFeatureVisible } = useFeatures();
+  const { hasFeature, isFeatureVisible, getFeature } = useFeatures();
   const { locale } = useLocale();
   const { user } = useAuth();
   const { t } = useTranslation(locale || 'en-US');
   const router = useRouter();
 
   const featureKey = FEATURE_KEYS.ADVANCED_EXPORT;
+  const rawFeature = getFeature ? getFeature(featureKey) : null;
+  // TEMPORARY: Fix misleading description until database replication catches up
+  const feature = rawFeature?.description?.includes('PowerBI') || rawFeature?.description?.includes('Tableau') 
+    ? null // Force fallback to be used
+    : rawFeature;
   
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<'pdf' | 'ppt' | null>(null);
@@ -144,16 +150,25 @@ export function ExportButton({
   const isPremium = hasFeature(featureKey);
 
   if (!isPremium) {
-    // Show premium button
+    // Show premium button with feature info
+    const featureName = feature?.name || (locale?.startsWith('es') ? 'Exportar Avanzado' : 'Advanced Export');
+    const featureDescription = feature?.description || (locale?.startsWith('es') ? 'Exportar a PDF y PowerPoint' : 'Export to PDF and PowerPoint');
+    
     return (
-      <Button
-        variant="secondary"
-        onClick={handleExportClick}
-        className={`${className} bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 whitespace-nowrap flex items-center`}
+      <FeatureTooltip 
+        title={featureName}
+        description={featureDescription}
+        position="top"
+        className={className}
       >
-        <DocumentArrowDownIcon className="w-4 h-4 mr-2 flex-shrink-0" />
-        🔒 {locale?.startsWith('es') ? 'Premium' : 'Premium'}
-      </Button>
+        <Button
+          variant="secondary"
+          onClick={handleExportClick}
+          className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 whitespace-nowrap flex items-center text-sm px-3 py-2"
+        >
+          🔒 Export
+        </Button>
+      </FeatureTooltip>
     );
   }
 
