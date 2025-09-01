@@ -111,7 +111,6 @@ export const loadXLSXProcessor = async () => {
 // Image processing - only load when needed
 export const loadImageProcessor = async () => {
   // If we add image processing libraries later
-  console.log('Loading image processor...');
   return null;
 };
 
@@ -119,7 +118,6 @@ export const loadImageProcessor = async () => {
 export const loadAnalytics = async () => {
   // Google Analytics or other tracking
   if (typeof window !== 'undefined') {
-    console.log('Loading analytics...');
   }
   return null;
 };
@@ -128,7 +126,6 @@ export const loadAnalytics = async () => {
 const trackDynamicImportTime = (importName: string, startTime: number) => {
   if (process.env.NODE_ENV === 'development') {
     const loadTime = Date.now() - startTime;
-    console.log(`📦 Dynamic import: ${importName} loaded in ${loadTime}ms`);
   }
 };
 

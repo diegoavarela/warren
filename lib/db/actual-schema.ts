@@ -442,6 +442,62 @@ export const user2faAttempts = pgTable("user_2fa_attempts", {
   attemptedAt: timestamp("attempted_at").defaultNow(),
 });
 
+// Feature Flags System Tables
+export const featureFlags = pgTable("feature_flags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }).default("General"),
+  priceMonthly: decimal("price_monthly", { precision: 10, scale: 2 }),
+  priceDisplay: varchar("price_display", { length: 100 }),
+  isPublic: boolean("is_public").default(true),
+  isBaseline: boolean("is_baseline").default(false),
+  isActive: boolean("is_active").default(true),
+  requirements: text("requirements"),
+  setupTime: varchar("setup_time", { length: 100 }),
+  icon: varchar("icon", { length: 50 }),
+  screenshots: jsonb("screenshots"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdBy: uuid("created_by"),
+});
+
+export const organizationFeatures = pgTable("organization_features", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  featureId: uuid("feature_id").references(() => featureFlags.id, { onDelete: 'cascade' }).notNull(),
+  enabled: boolean("enabled").default(false),
+  enabledAt: timestamp("enabled_at"),
+  enabledBy: uuid("enabled_by"),
+  expiresAt: timestamp("expires_at"),
+  configuration: jsonb("configuration"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueOrgFeature: unique().on(table.organizationId, table.featureId),
+}));
+
+export const featureRequests = pgTable("feature_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  featureId: uuid("feature_id").references(() => featureFlags.id, { onDelete: 'cascade' }).notNull(),
+  requestedBy: uuid("requested_by").references(() => users.id).notNull(),
+  status: varchar("status", { length: 50 }).default("pending"),
+  priority: varchar("priority", { length: 20 }).default("medium"),
+  businessJustification: text("business_justification"),
+  response: text("response"),
+  message: text("message"),
+  adminNotes: text("admin_notes"),
+  requestedAt: timestamp("requested_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+  processedAt: timestamp("processed_at"),
+  processedBy: uuid("processed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Export new types
 export type CompanyConfiguration = typeof companyConfigurations.$inferSelect;
 export type NewCompanyConfiguration = typeof companyConfigurations.$inferInsert;
@@ -467,3 +523,11 @@ export type User2faSettings = typeof user2faSettings.$inferSelect;
 export type NewUser2faSettings = typeof user2faSettings.$inferInsert;
 export type User2faAttempts = typeof user2faAttempts.$inferSelect;
 export type NewUser2faAttempts = typeof user2faAttempts.$inferInsert;
+
+// Feature Flags types
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type NewFeatureFlag = typeof featureFlags.$inferInsert;
+export type OrganizationFeature = typeof organizationFeatures.$inferSelect;
+export type NewOrganizationFeature = typeof organizationFeatures.$inferInsert;
+export type FeatureRequest = typeof featureRequests.$inferSelect;
+export type NewFeatureRequest = typeof featureRequests.$inferInsert;

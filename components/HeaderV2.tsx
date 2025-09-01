@@ -17,6 +17,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useFeatures } from "@/contexts/FeaturesContext";
 import { useTranslation } from "@/lib/translations";
 import { Button } from "./ui/Button";
 import { ROLES } from "@/lib/auth/rbac";
@@ -30,6 +31,7 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
   const pathname = usePathname();
   const { user, organization, isAuthenticated, logout } = useAuth();
   const { locale, setLocale } = useLocale();
+  const { enabledFeatures, hasFeature } = useFeatures();
   const { t } = useTranslation(locale || 'en-US');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -151,8 +153,13 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
     
     // Add Dashboard as the root only if not in financial dashboards
     if (!isFinancialDashboard) {
+      // For org admins, use org-admin as the dashboard root instead of generic dashboard
+      const dashboardPath = (user?.role === ROLES.ORGANIZATION_ADMIN || user?.role === 'organization_admin') 
+        ? '/dashboard/org-admin' 
+        : '/dashboard';
+      
       breadcrumbs.push({ 
-        path: '/dashboard', 
+        path: dashboardPath, 
         label: locale?.startsWith('es') ? 'Panel' : 'Dashboard' 
       });
     }
@@ -266,8 +273,14 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
                   <span className="text-white font-bold text-sm">W</span>
                 </div>
-                <div className="hidden sm:block">
+                <div className="hidden sm:flex items-center">
                   <h1 className="text-xl font-bold text-gray-900">Warren</h1>
+                  {/* Premium Badge */}
+                  {isAuthenticated && enabledFeatures.some(f => !f.isBaseline) && (
+                    <div className="ml-2 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full">
+                      <span className="text-xs font-bold text-white">PREMIUM</span>
+                    </div>
+                  )}
                 </div>
               </button>
 
@@ -400,6 +413,23 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
                         <CogIcon className="w-4 h-4" />
                         <span>{locale?.startsWith('es') ? 'Configuración' : 'Settings'}</span>
                       </button>
+                      {/* Premium Features */}
+                      {isAuthenticated && (
+                        <button
+                          onClick={() => {
+                            router.push('/premium');
+                            setShowUserMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-orange-50 flex items-center space-x-2 transition-all duration-200"
+                        >
+                          <div className="w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-white">★</span>
+                          </div>
+                          <span className="bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent font-medium">
+                            {locale?.startsWith('es') ? 'Características Premium' : 'Premium Features'}
+                          </span>
+                        </button>
+                      )}
                       <div className="border-t border-gray-100 mt-1"></div>
                       <button
                         onClick={handleLogout}

@@ -1,0 +1,87 @@
+{
+  "title": "Export Options",
+  "pdf": "Export as PDF",
+  "ppt": "Export as PowerPoint", 
+  "png": "Copy as Image",
+  "generating": "Generating export...",
+  "success": "Export successful",
+  "error": "Export failed",
+  "timeout": "Export timed out. Please try again.",
+  "networkError": "Network error during export",
+  "serverError": "Server error during export",
+  "downloading": "Preparing download...",
+  "report": {
+    "pnl_title": "Profit & Loss Statement",
+    "cashflow_title": "Cash Flow Analysis",
+    "chat_title": "AI Financial Analysis Report", 
+    "generated": "Generated on",
+    "period": "Period",
+    "company": "Company",
+    "confidential": "Confidential - Internal Use Only",
+    "page": "Page",
+    "of": "of",
+    "exportedBy": "Exported by Warren Financial Analytics",
+    "disclaimer": "This report contains confidential financial information. Unauthorized distribution is prohibited."
+  },
+  "cashflow": {
+    "currentMonthSummary": "Cash Flow Summary",
+    "balanceInicial": "Initial Balance",
+    "entradasTotales": "Total Inflows",
+    "salidasTotales": "Total Outflows",
+    "balanceFinal": "Final Balance",
+    "generacionMensual": "Monthly Generation",
+    "ytdSummary": "Year-to-Date Summary",
+    "entradasYTD": "Inflows YTD",
+    "salidasYTD": "Outflows YTD",
+    "flujoNetoYTD": "Net Cash Flow YTD",
+    "generacionPromMensual": "Avg Monthly Generation",
+    "annualProjections": "Annual Projections",
+    "entradasProyectadas": "Projected Annual Inflows",
+    "salidasProyectadas": "Projected Annual Outflows",
+    "flujoNetoProyectado": "Projected Annual Net Flow",
+    "generacionPromProyectada": "Projected Avg Monthly Generation",
+    "charts": {
+      "growthAnalysis": "Cash Flow Growth Analysis",
+      "balanceTrends": "Balance Trends and Forecast",
+      "composition": "Cash Flow Composition",
+      "compositionGeneral": "General",
+      "compositionEntradas": "Inflows",
+      "compositionSalidas": "Outflows",
+      "monthlyPerformance": "Monthly Cash Flow Performance",
+      "flujoNeto": "Net Flow",
+      "soloEntradas": "Inflows Only",
+      "soloSalidas": "Outflows Only"
+    },
+    "table": {
+      "periodo": "Period",
+      "balanceInicial": "Initial Balance",
+      "entradas": "Inflows",
+      "salidas": "Outflows",
+      "balanceFinal": "Final Balance",
+      "generacion": "Generation",
+      "crecimiento": "Growth",
+      "status": "Status"
+    }
+  },
+  "buttons": {
+    "exportPdf": "📄 Export PDF",
+    "exportPpt": "📊 Export PowerPoint",
+    "copyImage": "🖼️ Copy Image",
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "formats": {
+    "pdf": {
+      "name": "PDF Document",
+      "description": "Professional report with charts and data"
+    },
+    "ppt": {
+      "name": "PowerPoint Presentation", 
+      "description": "Slides with individual charts and sections"
+    },
+    "png": {
+      "name": "PNG Image",
+      "description": "High-resolution image for sharing"
+    }
+  }
+}

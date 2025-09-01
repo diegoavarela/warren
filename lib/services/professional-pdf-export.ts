@@ -1749,88 +1749,6 @@ export class ProfessionalPDFExportService {
     return svg;
   }
 
-  private async generateChartWithPuppeteer(
-    data: ComprehensiveExportData,
-    title: string,
-    currency: string,
-    locale: string,
-    width: number,
-    height: number
-  ): Promise<string> {
-    const puppeteer = await import('puppeteer');
-    
-    // Launch browser with high DPI settings
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--hide-scrollbars',
-        '--disable-web-security',
-        '--force-device-scale-factor=3', // High DPI for crisp output
-      ]
-    });
-    
-    try {
-      const page = await browser.newPage();
-      
-      // Set proper viewport - no device scale factor confusion
-      await page.setViewport({
-        width: 1200, // Standard width for chart container
-        height: 700,  // Standard height for chart container
-        deviceScaleFactor: 2 // 2x resolution for crisp output
-      });
-      
-      // Generate HTML for the chart
-      const chartHTML = await this.generateChartHTML(data, title, currency, locale);
-      
-      // Set content and wait for chart to render
-      await page.setContent(chartHTML, { 
-        waitUntil: ['load', 'networkidle0'] 
-      });
-
-      // Debug: Save HTML to file for inspection
-      if (process.env.NODE_ENV === 'development') {
-        const fs = await import('fs');
-        await fs.promises.writeFile('/tmp/chart-debug.html', chartHTML);
-        console.log('🔍 Chart HTML saved to /tmp/chart-debug.html for debugging');
-        console.log('📐 Viewport dimensions:', { width: 1200, height: 700, deviceScaleFactor: 2 });
-        console.log('📊 Chart title:', title);
-      }
-      
-      // Wait for Chart.js to finish rendering
-      await page.waitForFunction(() => {
-        return (window as any).chartReady === true;
-      }, { timeout: 10000 });
-      
-      // Take screenshot of the entire viewport
-      const screenshot = await page.screenshot({
-        type: 'png',
-        fullPage: false, // Use viewport size
-        omitBackground: false
-        // Note: quality parameter is not supported for PNG, only JPEG
-      });
-      
-      // Debug: Save screenshot to file for inspection
-      if (process.env.NODE_ENV === 'development') {
-        const fs = await import('fs');
-        await fs.promises.writeFile('/tmp/chart-debug.png', screenshot);
-        console.log('📸 Chart screenshot saved to /tmp/chart-debug.png for quality inspection');
-        console.log('📏 Screenshot size:', screenshot.length, 'bytes');
-      }
-      
-      // Convert buffer to base64 data URL
-      const base64 = (screenshot as Buffer).toString('base64');
-      return `data:image/png;base64,${base64}`;
-      
-    } finally {
-      if (browser) {
-        await browser.close();
-      }
-    }
-  }
 
   private async drawCombinedBarLineChart(
     pdf: jsPDF,
@@ -1859,50 +1777,25 @@ export class ProfessionalPDFExportService {
       console.log('✅ SVG chart generated successfully');
       
     } catch (svgError) {
-      console.log('⚠️ SVG generation failed, trying Puppeteer fallback:', svgError);
+      console.error('❌ SVG chart generation failed:', svgError);
       
-      try {
-        // Fallback to Puppeteer if SVG fails
-        const chartImage = await this.generateChartWithPuppeteer(data, title, currency, locale, 
-          1200, // Standard width
-          700   // Standard height
-        );
-        
-        // Add the image to PDF
-        pdf.addImage(
-          chartImage,
-          'PNG',
-          x,
-          y,
-          width,
-          height,
-          undefined,
-          'NONE' // No compression for maximum quality
-        );
-        
-        console.log('✅ Puppeteer chart generated as fallback');
-        
-      } catch (puppeteerError) {
-        console.error('❌ Both SVG and Puppeteer chart generation failed:', puppeteerError);
-        
-        // Fallback to text if both methods fail
-        pdf.setFillColor(252, 252, 253);
-        pdf.rect(x, y, width, height, 'F');
-        
-        pdf.setDrawColor(203, 213, 225);
-        pdf.setLineWidth(0.8);
-        pdf.rect(x, y, width, height, 'S');
-        
-        pdf.setFontSize(11);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(title, x + 10, y + 12);
-        
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(107, 114, 128);
-        pdf.text('Chart generation failed - check server logs', x + 10, y + height / 2);
-      }
+      // Fallback to text if chart generation fails
+      pdf.setFillColor(252, 252, 253);
+      pdf.rect(x, y, width, height, 'F');
+      
+      pdf.setDrawColor(203, 213, 225);
+      pdf.setLineWidth(0.8);
+      pdf.rect(x, y, width, height, 'S');
+      
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(title, x + 10, y + 12);
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Chart generation failed - check server logs', x + 10, y + height / 2);
     }
   }
 

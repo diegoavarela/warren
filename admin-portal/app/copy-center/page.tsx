@@ -228,8 +228,6 @@ export default function CopyCenterPage() {
         selectedConfigIds: Array.from(selectedConfigIds),
       };
       
-      console.log('Sending preview request:', requestData);
-      
       const response = await apiRequest('/api/copy-center/preview', {
         method: 'POST',
         body: JSON.stringify(requestData),

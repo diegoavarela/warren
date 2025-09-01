@@ -65,14 +65,6 @@ export function BundleMonitor({ enabled = false, showDebugInfo = false }: Bundle
         });
 
         // Log to console for debugging
-        console.log('📊 Bundle Performance Metrics:', {
-          pageLoadTime: `${pageLoadTime}ms`,
-          bundleSize: `${Math.round(bundleSize / 1024)}KB`,
-          chunkCount,
-          cacheHitRate: `${Math.round(cacheHitRate * 100)}%`,
-          connectionType,
-          deviceMemory: deviceMemory ? `${deviceMemory}GB` : 'unknown',
-        });
 
       } catch (error) {
         console.error('Bundle monitor error:', error);

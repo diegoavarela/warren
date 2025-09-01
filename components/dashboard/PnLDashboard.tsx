@@ -1224,6 +1224,7 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
                 <option value="M">{t('dashboard.pnl.millions')}</option>
               </select>
             </div>
+
           </div>
         </div>
       </div>

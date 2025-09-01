@@ -9,6 +9,7 @@ interface Column {
   label: string;
   render?: (value: any, row: any) => React.ReactNode;
   sortable?: boolean;
+  width?: string;
 }
 
 interface DataTableProps {
@@ -122,6 +123,7 @@ export function DataTable({
                     "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
                     column.sortable && "cursor-pointer hover:bg-gray-100"
                   )}
+                  style={column.width ? { width: column.width } : {}}
                   onClick={() => handleSort(column.key)}
                 >
                   <div className="flex items-center space-x-1">
@@ -153,16 +155,21 @@ export function DataTable({
                   <tr
                     key={rowIndex}
                     className={clsx(
-                      "hover:bg-gray-50",
+                      "hover:bg-gray-50 transition-all duration-150",
                       isSelected && "bg-blue-50 border-l-4 border-blue-500",
-                      onRowClick && "cursor-pointer"
+                      onRowClick && "cursor-pointer hover:bg-blue-50 hover:shadow-sm active:bg-blue-100"
                     )}
-                    onClick={() => onRowClick?.(row)}
+                    onClick={() => {
+                      if (onRowClick) {
+                        onRowClick(row);
+                      }
+                    }}
                   >
                     {columns.map((column) => (
                       <td
                         key={column.key}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                        className="px-6 py-4 text-sm text-gray-900"
+                        style={column.width ? { width: column.width } : {}}
                       >
                         {column.render
                           ? column.render(row[column.key], row)

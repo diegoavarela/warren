@@ -123,7 +123,6 @@ export const InviteUserPage = (props: any) => (
 // Helper function for performance monitoring
 export const trackLazyLoad = (componentName: string, loadTime: number) => {
   if (process.env.NODE_ENV === 'development') {
-    console.log(`📊 Lazy loaded ${componentName} in ${loadTime}ms`);
   }
   
   // Could send to analytics in production

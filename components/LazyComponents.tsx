@@ -179,6 +179,5 @@ export const SheetSelector = (props: any) => (
 // Performance monitoring for lazy loading
 export const logLazyLoadTime = (componentName: string) => {
   if (process.env.NODE_ENV === 'development') {
-    console.log(`🚀 Lazy loaded: ${componentName} at ${new Date().toISOString()}`);
   }
 };

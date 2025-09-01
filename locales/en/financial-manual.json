@@ -1,0 +1,334 @@
+{
+  "title": "Financial Manual",
+  "subtitle": "Understanding Your Financial Data and Making Better Business Decisions",
+  "navigation": {
+    "pnl": "Profit & Loss",
+    "cashflow": "Cash Flow",
+    "aichat": "AI Assistant",
+    "backToDashboard": "Back to Dashboard"
+  },
+  "pnl": {
+    "title": "Profit & Loss Analysis",
+    "subtitle": "Understanding revenue, costs, and profitability",
+    "sections": {
+      "revenue": {
+        "title": "Revenue Analysis",
+        "description": "Learn how to analyze your income streams and growth patterns",
+        "content": [
+          {
+            "title": "What is Revenue?",
+            "description": "Revenue is the total amount of money your business earns from sales before any deductions.",
+            "example": "If you sold $50,000 worth of products this month, that's your revenue."
+          },
+          {
+            "title": "Revenue Growth",
+            "description": "Track how your revenue changes over time to understand business performance.",
+            "example": "A 10% month-over-month growth means your business is expanding."
+          },
+          {
+            "title": "Revenue Streams",
+            "description": "Different sources of income help diversify your business risk.",
+            "example": "Product sales, service fees, subscription revenue, licensing."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Revenue is declining",
+            "action": "Investigate causes: market changes, competition, product issues",
+            "timeframe": "Immediate"
+          },
+          {
+            "scenario": "Strong revenue growth",
+            "action": "Consider scaling operations, hiring, or expanding to new markets",
+            "timeframe": "3-6 months"
+          }
+        ]
+      },
+      "costs": {
+        "title": "Cost Management",
+        "description": "Understanding and controlling your business expenses",
+        "content": [
+          {
+            "title": "Fixed vs Variable Costs",
+            "description": "Fixed costs stay the same regardless of sales volume, variable costs change with production.",
+            "example": "Rent (fixed) vs raw materials (variable)"
+          },
+          {
+            "title": "Cost Structure",
+            "description": "The proportion of different cost types affects your business flexibility.",
+            "example": "High fixed costs require consistent sales to break even."
+          },
+          {
+            "title": "Cost per Unit",
+            "description": "How much it costs to produce or deliver one unit of your product/service.",
+            "example": "If total costs are $30,000 and you sold 1,000 units, cost per unit is $30."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Rising costs eating into profits",
+            "action": "Identify cost reduction opportunities or consider price increases",
+            "timeframe": "1-2 months"
+          },
+          {
+            "scenario": "Cost per unit is too high",
+            "action": "Look for efficiency improvements, bulk purchasing, or automation",
+            "timeframe": "3-6 months"
+          }
+        ]
+      },
+      "profitability": {
+        "title": "Profitability Metrics",
+        "description": "Key indicators of business financial health",
+        "content": [
+          {
+            "title": "Gross Profit",
+            "description": "Revenue minus direct costs of producing your product or service.",
+            "example": "$50,000 revenue - $20,000 cost of goods = $30,000 gross profit"
+          },
+          {
+            "title": "Net Profit",
+            "description": "What remains after all expenses, taxes, and costs are deducted.",
+            "example": "$30,000 gross profit - $15,000 operating expenses = $15,000 net profit"
+          },
+          {
+            "title": "Profit Margins",
+            "description": "Percentage of revenue that becomes profit, indicates efficiency.",
+            "example": "30% gross margin means you keep $0.30 of every dollar in revenue."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Low profit margins",
+            "action": "Reduce costs, increase prices, or improve operational efficiency",
+            "timeframe": "2-4 months"
+          },
+          {
+            "scenario": "Negative net profit",
+            "action": "Urgent cost reduction or revenue improvement needed",
+            "timeframe": "Immediate"
+          }
+        ]
+      }
+    }
+  },
+  "cashflow": {
+    "title": "Cash Flow Management",
+    "subtitle": "Understanding your money movement and liquidity",
+    "sections": {
+      "basics": {
+        "title": "Cash Flow Basics",
+        "description": "Understanding how money moves in and out of your business",
+        "content": [
+          {
+            "title": "What is Cash Flow?",
+            "description": "The movement of money into and out of your business over a specific period.",
+            "example": "You might be profitable on paper but lack cash to pay bills."
+          },
+          {
+            "title": "Operating Cash Flow",
+            "description": "Cash generated from core business operations.",
+            "example": "Customer payments minus supplier payments and salaries."
+          },
+          {
+            "title": "Free Cash Flow",
+            "description": "Cash available after necessary capital expenditures.",
+            "example": "Operating cash flow minus equipment purchases and facility improvements."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Negative cash flow",
+            "action": "Speed up collections, delay non-essential payments, secure financing",
+            "timeframe": "Immediate"
+          },
+          {
+            "scenario": "Excess cash accumulating",
+            "action": "Consider investments, debt reduction, or growth initiatives",
+            "timeframe": "1-3 months"
+          }
+        ]
+      },
+      "runway": {
+        "title": "Cash Runway Analysis",
+        "description": "How long your business can operate with current cash levels",
+        "content": [
+          {
+            "title": "Burn Rate",
+            "description": "How much cash your business uses each month.",
+            "example": "If you spend $10,000 monthly and earn $8,000, burn rate is $2,000."
+          },
+          {
+            "title": "Runway Calculation",
+            "description": "Current cash divided by monthly burn rate.",
+            "example": "$50,000 cash ÷ $2,000 burn rate = 25 months runway"
+          },
+          {
+            "title": "Break-even Point",
+            "description": "When your monthly income equals monthly expenses.",
+            "example": "Need to increase revenue by $2,000 or reduce costs by $2,000."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Short runway (< 6 months)",
+            "action": "Immediate action needed: reduce costs, increase sales, or raise funds",
+            "timeframe": "Immediate"
+          },
+          {
+            "scenario": "Comfortable runway (> 12 months)",
+            "action": "Consider strategic investments in growth or market expansion",
+            "timeframe": "3-6 months"
+          }
+        ]
+      },
+      "forecasting": {
+        "title": "Cash Flow Forecasting",
+        "description": "Predicting future cash needs and planning accordingly",
+        "content": [
+          {
+            "title": "Revenue Projections",
+            "description": "Estimating future income based on trends and pipeline.",
+            "example": "If growing 5% monthly, expect $52,500 next month from $50,000 this month."
+          },
+          {
+            "title": "Seasonal Patterns",
+            "description": "Many businesses have predictable cash flow cycles.",
+            "example": "Retail businesses often see higher cash flow during holiday seasons."
+          },
+          {
+            "title": "Scenario Planning",
+            "description": "Preparing for best case, worst case, and most likely scenarios.",
+            "example": "Plan for 20% revenue drop to ensure business continuity."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Forecasting cash shortage",
+            "action": "Arrange credit line, accelerate collections, or delay payments",
+            "timeframe": "1-2 months ahead"
+          },
+          {
+            "scenario": "Expecting cash surplus",
+            "action": "Plan strategic investments, debt reduction, or expansion",
+            "timeframe": "2-3 months ahead"
+          }
+        ]
+      }
+    }
+  },
+  "aichat": {
+    "title": "AI Financial Assistant",
+    "subtitle": "Maximizing insights from your AI-powered financial advisor",
+    "sections": {
+      "effective-questions": {
+        "title": "Asking Effective Questions",
+        "description": "How to get the most valuable insights from AI analysis",
+        "content": [
+          {
+            "title": "Be Specific",
+            "description": "Ask targeted questions about specific metrics or time periods.",
+            "example": "Instead of 'How's my business?', ask 'Why did my gross margin decline in Q2?'"
+          },
+          {
+            "title": "Provide Context",
+            "description": "Share relevant business context to get more accurate insights.",
+            "example": "'We launched a new product line in March' helps AI understand revenue changes."
+          },
+          {
+            "title": "Ask Follow-up Questions",
+            "description": "Dig deeper into AI recommendations for actionable insights.",
+            "example": "'What specific steps should I take to improve cash flow?'"
+          }
+        ]
+      },
+      "interpreting-insights": {
+        "title": "Understanding AI Recommendations",
+        "description": "How to evaluate and act on AI-generated insights",
+        "content": [
+          {
+            "title": "Confidence Levels",
+            "description": "AI provides confidence indicators for its analysis and predictions.",
+            "example": "High confidence recommendations are safer to act on immediately."
+          },
+          {
+            "title": "Data Dependencies",
+            "description": "AI insights are only as good as the data you provide.",
+            "example": "Incomplete data may lead to inaccurate recommendations."
+          },
+          {
+            "title": "Business Logic Check",
+            "description": "Always validate AI suggestions against your business knowledge.",
+            "example": "AI might not know about seasonal factors specific to your industry."
+          }
+        ]
+      },
+      "decision-validation": {
+        "title": "Validating Decisions",
+        "description": "Using AI to test your business decisions before implementation",
+        "content": [
+          {
+            "title": "Scenario Testing",
+            "description": "Ask AI to model the impact of potential decisions.",
+            "example": "'What happens to cash flow if I hire 3 new employees?'"
+          },
+          {
+            "title": "Risk Assessment",
+            "description": "Get AI analysis of potential risks and mitigation strategies.",
+            "example": "'What are the risks of expanding to a new market?'"
+          },
+          {
+            "title": "Alternative Options",
+            "description": "Explore different approaches to achieve your goals.",
+            "example": "'What are 3 ways to increase revenue by 20%?'"
+          }
+        ]
+      }
+    },
+    "best-practices": [
+      "Start with overview questions, then drill down into specifics",
+      "Cross-reference AI insights with your own business knowledge",
+      "Use AI for data analysis, but make decisions based on complete context",
+      "Ask for multiple scenarios when planning major changes",
+      "Regularly validate AI recommendations against actual results"
+    ],
+    "sample-questions": [
+      "What trends do you see in my revenue over the past 6 months?",
+      "Which expense categories are growing fastest?",
+      "How does my cash flow compare to industry benchmarks?",
+      "What would happen if I increased my prices by 10%?",
+      "When should I consider hiring additional staff?",
+      "What are the early warning signs I should watch for?"
+    ]
+  },
+  "glossary": {
+    "title": "Financial Glossary",
+    "terms": [
+      {
+        "term": "Accounts Receivable",
+        "definition": "Money owed to your business by customers for goods or services delivered.",
+        "example": "Outstanding invoices that haven't been paid yet."
+      },
+      {
+        "term": "Accounts Payable",
+        "definition": "Money your business owes to suppliers or vendors.",
+        "example": "Bills you've received but haven't paid yet."
+      },
+      {
+        "term": "Working Capital",
+        "definition": "The difference between current assets and current liabilities.",
+        "example": "Cash and inventory minus bills due within a year."
+      },
+      {
+        "term": "EBITDA",
+        "definition": "Earnings Before Interest, Taxes, Depreciation, and Amortization.",
+        "example": "A measure of operating performance excluding financing and accounting decisions."
+      },
+      {
+        "term": "Burn Rate",
+        "definition": "The rate at which a company spends its available cash.",
+        "example": "If you have $100,000 and spend $10,000/month, burn rate is $10,000/month."
+      }
+    ]
+  }
+}

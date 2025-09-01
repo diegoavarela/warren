@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { FeaturesProvider } from "@/contexts/FeaturesContext";
 import { GlobalHelpSystem } from "@/components/GlobalHelpSystem";
 import "@/lib/utils/chartSetup"; // Initialize Chart.js
 
@@ -42,10 +43,12 @@ export default function RootLayout({
       <body className={`${inter.className} h-full antialiased`}>
         <LocaleProvider>
           <AuthProvider>
-            <div className="min-h-full bg-gray-50">
-              {children}
-            </div>
-            <GlobalHelpSystem />
+            <FeaturesProvider>
+              <div className="min-h-full bg-gray-50">
+                {children}
+              </div>
+              <GlobalHelpSystem />
+            </FeaturesProvider>
           </AuthProvider>
         </LocaleProvider>
         

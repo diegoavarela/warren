@@ -79,8 +79,6 @@ class BackgroundProcessorService {
     if (!this.isProcessing) {
       this.startProcessing();
     }
-
-    console.log(`📋 Added Excel processing job: ${jobId}`);
     return jobId;
   }
 
@@ -112,7 +110,6 @@ class BackgroundProcessorService {
     if (this.isProcessing) return;
     
     this.isProcessing = true;
-    console.log('🚀 Background processor started');
 
     while (this.processingQueue.length > 0 && this.activeJobs < this.maxConcurrentJobs) {
       const job = this.processingQueue.shift();
@@ -126,7 +123,6 @@ class BackgroundProcessorService {
       setTimeout(() => this.startProcessing(), 1000);
     } else {
       this.isProcessing = false;
-      console.log('✅ Background processor finished');
     }
   }
 
@@ -137,7 +133,6 @@ class BackgroundProcessorService {
     this.activeJobs++;
     
     try {
-      console.log(`🔄 Processing job: ${job.id}`);
       
       // Update job status
       job.status = 'processing';
@@ -163,8 +158,6 @@ class BackgroundProcessorService {
       job.progress = 100;
       job.completedAt = new Date();
       this.updateJob(job);
-      
-      console.log(`✅ Job completed: ${job.id}`);
 
     } catch (error) {
       console.error(`❌ Job failed: ${job.id}`, error);
@@ -329,7 +322,6 @@ class BackgroundProcessorService {
     // In a real implementation, you might emit WebSocket events here
     // or store job status in database for persistence across server restarts
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📊 Job ${job.id}: ${job.status} (${job.progress}%) - ${job.metadata?.stage || ''}`);
     }
   }
 
@@ -377,7 +369,6 @@ class BackgroundProcessorService {
     });
 
     if (jobsToRemove.length > 0) {
-      console.log(`🧹 Cleaned up ${jobsToRemove.length} old jobs`);
     }
   }
 

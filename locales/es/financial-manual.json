@@ -1,0 +1,334 @@
+{
+  "title": "Manual Financiero",
+  "subtitle": "Comprende Tus Datos Financieros y Toma Mejores Decisiones de Negocio",
+  "navigation": {
+    "pnl": "Estado de Resultados",
+    "cashflow": "Flujo de Caja",
+    "aichat": "Asistente IA",
+    "backToDashboard": "Volver al Panel"
+  },
+  "pnl": {
+    "title": "Análisis de Estado de Resultados",
+    "subtitle": "Comprende ingresos, costos y rentabilidad",
+    "sections": {
+      "revenue": {
+        "title": "Análisis de Ingresos",
+        "description": "Aprende a analizar tus fuentes de ingresos y patrones de crecimiento",
+        "content": [
+          {
+            "title": "¿Qué son los Ingresos?",
+            "description": "Los ingresos son la cantidad total de dinero que tu negocio gana por ventas antes de cualquier deducción.",
+            "example": "Si vendiste $50,000 en productos este mes, esos son tus ingresos."
+          },
+          {
+            "title": "Crecimiento de Ingresos",
+            "description": "Rastrea cómo cambian tus ingresos con el tiempo para entender el rendimiento del negocio.",
+            "example": "Un crecimiento del 10% mes a mes significa que tu negocio está expandiéndose."
+          },
+          {
+            "title": "Fuentes de Ingresos",
+            "description": "Diferentes fuentes de ingresos ayudan a diversificar el riesgo de tu negocio.",
+            "example": "Ventas de productos, tarifas de servicios, ingresos por suscripción, licencias."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Los ingresos están disminuyendo",
+            "action": "Investigar causas: cambios de mercado, competencia, problemas de producto",
+            "timeframe": "Inmediato"
+          },
+          {
+            "scenario": "Fuerte crecimiento de ingresos",
+            "action": "Considerar escalar operaciones, contratar personal o expandir a nuevos mercados",
+            "timeframe": "3-6 meses"
+          }
+        ]
+      },
+      "costs": {
+        "title": "Gestión de Costos",
+        "description": "Entender y controlar los gastos de tu negocio",
+        "content": [
+          {
+            "title": "Costos Fijos vs Variables",
+            "description": "Los costos fijos se mantienen igual independientemente del volumen de ventas, los costos variables cambian con la producción.",
+            "example": "Alquiler (fijo) vs materias primas (variable)"
+          },
+          {
+            "title": "Estructura de Costos",
+            "description": "La proporción de diferentes tipos de costos afecta la flexibilidad de tu negocio.",
+            "example": "Costos fijos altos requieren ventas consistentes para alcanzar el punto de equilibrio."
+          },
+          {
+            "title": "Costo por Unidad",
+            "description": "Cuánto cuesta producir o entregar una unidad de tu producto/servicio.",
+            "example": "Si los costos totales son $30,000 y vendiste 1,000 unidades, el costo por unidad es $30."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Costos crecientes reducen las ganancias",
+            "action": "Identificar oportunidades de reducción de costos o considerar aumentos de precios",
+            "timeframe": "1-2 meses"
+          },
+          {
+            "scenario": "El costo por unidad es muy alto",
+            "action": "Buscar mejoras de eficiencia, compras al por mayor o automatización",
+            "timeframe": "3-6 meses"
+          }
+        ]
+      },
+      "profitability": {
+        "title": "Métricas de Rentabilidad",
+        "description": "Indicadores clave de la salud financiera del negocio",
+        "content": [
+          {
+            "title": "Ganancia Bruta",
+            "description": "Ingresos menos costos directos de producir tu producto o servicio.",
+            "example": "$50,000 ingresos - $20,000 costo de bienes = $30,000 ganancia bruta"
+          },
+          {
+            "title": "Ganancia Neta",
+            "description": "Lo que queda después de deducir todos los gastos, impuestos y costos.",
+            "example": "$30,000 ganancia bruta - $15,000 gastos operativos = $15,000 ganancia neta"
+          },
+          {
+            "title": "Márgenes de Ganancia",
+            "description": "Porcentaje de ingresos que se convierte en ganancia, indica eficiencia.",
+            "example": "30% margen bruto significa que conservas $0.30 de cada dólar en ingresos."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Márgenes de ganancia bajos",
+            "action": "Reducir costos, aumentar precios o mejorar eficiencia operativa",
+            "timeframe": "2-4 meses"
+          },
+          {
+            "scenario": "Ganancia neta negativa",
+            "action": "Se necesita reducción urgente de costos o mejora de ingresos",
+            "timeframe": "Inmediato"
+          }
+        ]
+      }
+    }
+  },
+  "cashflow": {
+    "title": "Gestión de Flujo de Caja",
+    "subtitle": "Comprende el movimiento de dinero y liquidez",
+    "sections": {
+      "basics": {
+        "title": "Conceptos Básicos de Flujo de Caja",
+        "description": "Entender cómo se mueve el dinero dentro y fuera de tu negocio",
+        "content": [
+          {
+            "title": "¿Qué es el Flujo de Caja?",
+            "description": "El movimiento de dinero hacia dentro y fuera de tu negocio durante un período específico.",
+            "example": "Puedes ser rentable en papel pero carecer de efectivo para pagar facturas."
+          },
+          {
+            "title": "Flujo de Caja Operativo",
+            "description": "Efectivo generado por las operaciones principales del negocio.",
+            "example": "Pagos de clientes menos pagos a proveedores y salarios."
+          },
+          {
+            "title": "Flujo de Caja Libre",
+            "description": "Efectivo disponible después de gastos de capital necesarios.",
+            "example": "Flujo de caja operativo menos compras de equipos y mejoras de instalaciones."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Flujo de caja negativo",
+            "action": "Acelerar cobranzas, retrasar pagos no esenciales, asegurar financiamiento",
+            "timeframe": "Inmediato"
+          },
+          {
+            "scenario": "Exceso de efectivo acumulándose",
+            "action": "Considerar inversiones, reducción de deuda o iniciativas de crecimiento",
+            "timeframe": "1-3 meses"
+          }
+        ]
+      },
+      "runway": {
+        "title": "Análisis de Pista de Efectivo",
+        "description": "Por cuánto tiempo tu negocio puede operar con los niveles actuales de efectivo",
+        "content": [
+          {
+            "title": "Tasa de Quema",
+            "description": "Cuánto efectivo usa tu negocio cada mes.",
+            "example": "Si gastas $10,000 mensuales y ganas $8,000, la tasa de quema es $2,000."
+          },
+          {
+            "title": "Cálculo de Pista",
+            "description": "Efectivo actual dividido por tasa de quema mensual.",
+            "example": "$50,000 efectivo ÷ $2,000 tasa de quema = 25 meses de pista"
+          },
+          {
+            "title": "Punto de Equilibrio",
+            "description": "Cuando tus ingresos mensuales igualan los gastos mensuales.",
+            "example": "Necesitas aumentar ingresos $2,000 o reducir costos $2,000."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Pista corta (< 6 meses)",
+            "action": "Acción inmediata necesaria: reducir costos, aumentar ventas o conseguir fondos",
+            "timeframe": "Inmediato"
+          },
+          {
+            "scenario": "Pista cómoda (> 12 meses)",
+            "action": "Considerar inversiones estratégicas en crecimiento o expansión de mercado",
+            "timeframe": "3-6 meses"
+          }
+        ]
+      },
+      "forecasting": {
+        "title": "Pronóstico de Flujo de Caja",
+        "description": "Predecir futuras necesidades de efectivo y planificar en consecuencia",
+        "content": [
+          {
+            "title": "Proyecciones de Ingresos",
+            "description": "Estimar ingresos futuros basados en tendencias y pipeline.",
+            "example": "Si creces 5% mensual, espera $52,500 el próximo mes de $50,000 este mes."
+          },
+          {
+            "title": "Patrones Estacionales",
+            "description": "Muchos negocios tienen ciclos predecibles de flujo de caja.",
+            "example": "Los negocios minoristas suelen ver mayor flujo de caja durante temporadas festivas."
+          },
+          {
+            "title": "Planificación de Escenarios",
+            "description": "Prepararse para el mejor caso, peor caso y escenarios más probables.",
+            "example": "Planifica para una caída del 20% en ingresos para asegurar continuidad del negocio."
+          }
+        ],
+        "decisions": [
+          {
+            "scenario": "Pronosticando escasez de efectivo",
+            "action": "Arreglar línea de crédito, acelerar cobranzas o retrasar pagos",
+            "timeframe": "1-2 meses antes"
+          },
+          {
+            "scenario": "Esperando excedente de efectivo",
+            "action": "Planificar inversiones estratégicas, reducción de deuda o expansión",
+            "timeframe": "2-3 meses antes"
+          }
+        ]
+      }
+    }
+  },
+  "aichat": {
+    "title": "Asistente Financiero IA",
+    "subtitle": "Maximiza los insights de tu asesor financiero impulsado por IA",
+    "sections": {
+      "effective-questions": {
+        "title": "Hacer Preguntas Efectivas",
+        "description": "Cómo obtener los insights más valiosos del análisis de IA",
+        "content": [
+          {
+            "title": "Sé Específico",
+            "description": "Haz preguntas dirigidas sobre métricas específicas o períodos de tiempo.",
+            "example": "En lugar de '¿Cómo va mi negocio?', pregunta '¿Por qué disminuyó mi margen bruto en Q2?'"
+          },
+          {
+            "title": "Proporciona Contexto",
+            "description": "Comparte contexto relevante del negocio para obtener insights más precisos.",
+            "example": "'Lanzamos una nueva línea de productos en marzo' ayuda a la IA a entender cambios en ingresos."
+          },
+          {
+            "title": "Haz Preguntas de Seguimiento",
+            "description": "Profundiza en las recomendaciones de IA para obtener insights accionables.",
+            "example": "'¿Qué pasos específicos debo tomar para mejorar el flujo de caja?'"
+          }
+        ]
+      },
+      "interpreting-insights": {
+        "title": "Entender Recomendaciones de IA",
+        "description": "Cómo evaluar y actuar sobre insights generados por IA",
+        "content": [
+          {
+            "title": "Niveles de Confianza",
+            "description": "La IA proporciona indicadores de confianza para su análisis y predicciones.",
+            "example": "Las recomendaciones de alta confianza son más seguras para actuar inmediatamente."
+          },
+          {
+            "title": "Dependencias de Datos",
+            "description": "Los insights de IA son tan buenos como los datos que proporcionas.",
+            "example": "Datos incompletos pueden llevar a recomendaciones inexactas."
+          },
+          {
+            "title": "Verificación de Lógica de Negocio",
+            "description": "Siempre valida las sugerencias de IA contra tu conocimiento del negocio.",
+            "example": "La IA podría no conocer factores estacionales específicos de tu industria."
+          }
+        ]
+      },
+      "decision-validation": {
+        "title": "Validar Decisiones",
+        "description": "Usar IA para probar tus decisiones de negocio antes de implementarlas",
+        "content": [
+          {
+            "title": "Prueba de Escenarios",
+            "description": "Pide a la IA que modele el impacto de decisiones potenciales.",
+            "example": "'¿Qué pasa con el flujo de caja si contrato 3 nuevos empleados?'"
+          },
+          {
+            "title": "Evaluación de Riesgos",
+            "description": "Obtén análisis de IA sobre riesgos potenciales y estrategias de mitigación.",
+            "example": "'¿Cuáles son los riesgos de expandir a un nuevo mercado?'"
+          },
+          {
+            "title": "Opciones Alternativas",
+            "description": "Explora diferentes enfoques para lograr tus objetivos.",
+            "example": "'¿Cuáles son 3 formas de aumentar ingresos en 20%?'"
+          }
+        ]
+      }
+    },
+    "best-practices": [
+      "Comienza con preguntas generales, luego profundiza en específicos",
+      "Cruza referencias de insights de IA con tu propio conocimiento del negocio",
+      "Usa IA para análisis de datos, pero toma decisiones basadas en contexto completo",
+      "Pide múltiples escenarios al planificar cambios mayores",
+      "Regularmente valida recomendaciones de IA contra resultados reales"
+    ],
+    "sample-questions": [
+      "¿Qué tendencias ves en mis ingresos durante los últimos 6 meses?",
+      "¿Qué categorías de gastos están creciendo más rápido?",
+      "¿Cómo se compara mi flujo de caja con benchmarks de la industria?",
+      "¿Qué pasaría si aumento mis precios en 10%?",
+      "¿Cuándo debo considerar contratar personal adicional?",
+      "¿Cuáles son las señales de alerta temprana que debo vigilar?"
+    ]
+  },
+  "glossary": {
+    "title": "Glosario Financiero",
+    "terms": [
+      {
+        "term": "Cuentas por Cobrar",
+        "definition": "Dinero que clientes deben a tu negocio por bienes o servicios entregados.",
+        "example": "Facturas pendientes que aún no han sido pagadas."
+      },
+      {
+        "term": "Cuentas por Pagar",
+        "definition": "Dinero que tu negocio debe a proveedores o vendedores.",
+        "example": "Facturas que has recibido pero aún no has pagado."
+      },
+      {
+        "term": "Capital de Trabajo",
+        "definition": "La diferencia entre activos corrientes y pasivos corrientes.",
+        "example": "Efectivo e inventario menos facturas que vencen dentro de un año."
+      },
+      {
+        "term": "EBITDA",
+        "definition": "Ganancias Antes de Intereses, Impuestos, Depreciación y Amortización.",
+        "example": "Una medida de rendimiento operativo excluyendo decisiones financieras y contables."
+      },
+      {
+        "term": "Tasa de Quema",
+        "definition": "La tasa a la cual una empresa gasta su efectivo disponible.",
+        "example": "Si tienes $100,000 y gastas $10,000/mes, la tasa de quema es $10,000/mes."
+      }
+    ]
+  }
+}

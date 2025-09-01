@@ -9,6 +9,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { PnLDashboard } from '@/components/dashboard/PnLDashboard';
 import { CompanyContextBar } from '@/components/dashboard/CompanyContextBar';
+import { ExportButton } from '@/components/ui/ExportButton';
 import { ROLES } from '@/lib/auth/rbac';
 
 export default function PnLDashboardPage() {
@@ -139,7 +140,7 @@ export default function PnLDashboardPage() {
                     }
                   </p>
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex items-center space-x-4">
                   {!hybridParserData && hasCashflowConfig && (
                     <button
                       onClick={() => router.push('/dashboard/company-admin/cashflow')}
@@ -148,6 +149,12 @@ export default function PnLDashboardPage() {
                       {t('dashboard.pnl.viewCashFlow')}
                     </button>
                   )}
+                  <ExportButton
+                    dashboardType="pnl"
+                    companyId={selectedCompanyId}
+                    companyName="Company Name" // TODO: Get from company context
+                    period={currentPeriod || ''}
+                  />
                 </div>
               </div>
             </div>

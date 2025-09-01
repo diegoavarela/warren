@@ -48,6 +48,9 @@ let organizationSubcategories: any;
 let companySubcategories: any;
 let subcategoryTemplates: any;
 let companySubcategoryTemplates: any;
+let featureFlags: any;
+let organizationFeatures: any;
+let featureRequests: any;
 let eq: any;
 let desc: any;
 let count: any;
@@ -71,6 +74,13 @@ if (!isServer) {
   parsingLogs = null;
   processingJobs = null;
   systemSettings = null;
+  organizationSubcategories = null;
+  companySubcategories = null;
+  subcategoryTemplates = null;
+  companySubcategoryTemplates = null;
+  featureFlags = null;
+  organizationFeatures = null;
+  featureRequests = null;
   eq = () => {};
   desc = () => {};
   count = () => {};
@@ -116,6 +126,9 @@ if (!isServer) {
   companySubcategories = schema.companySubcategories;
   subcategoryTemplates = schema.subcategoryTemplates;
   companySubcategoryTemplates = schema.companySubcategoryTemplates;
+  featureFlags = schema.featureFlags;
+  organizationFeatures = schema.organizationFeatures;
+  featureRequests = schema.featureRequests;
   eq = realEq;
   desc = realDesc;
   count = realCount;
@@ -142,6 +155,9 @@ export {
   companySubcategories,
   subcategoryTemplates,
   companySubcategoryTemplates,
+  featureFlags,
+  organizationFeatures,
+  featureRequests,
   eq,
   desc,
   count,

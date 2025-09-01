@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { CashFlowDashboard } from '@/components/dashboard/CashFlowDashboard';
 import { CompanyContextBar } from '@/components/dashboard/CompanyContextBar';
+import { ExportButton } from '@/components/ui/ExportButton';
 import { ROLES } from '@/lib/auth/rbac';
 
 export default function CashFlowDashboardPage() {
@@ -156,7 +157,7 @@ export default function CashFlowDashboardPage() {
                       : 'Analysis of inflows, outflows, and cash position'}
                   </p>
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex items-center space-x-4">
                   {hasPnlConfig && (
                     <button
                       onClick={() => router.push('/dashboard/company-admin/pnl')}
@@ -165,6 +166,12 @@ export default function CashFlowDashboardPage() {
                       {locale?.startsWith('es') ? 'Ver P&L' : 'View P&L'}
                     </button>
                   )}
+                  <ExportButton
+                    dashboardType="cashflow"
+                    companyId={selectedCompanyId}
+                    companyName="Company Name" // TODO: Get from company context
+                    period={currentPeriod || ''}
+                  />
                 </div>
               </div>
             </div>

@@ -111,3 +111,13 @@ venv/
 
 # Admin portal - deployed separately
 /admin-portal
+
+# Test images and exports
+*.png
+*.pdf
+/scripts/test-*.js
+/scripts/smoke-test-*
+*.sql
+
+# Environment backups
+.env.local.*

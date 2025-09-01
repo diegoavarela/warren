@@ -17,13 +17,6 @@ export const POST = requireAuth(async (request: NextRequest) => {
     const { sourceCompanyId, targetCompanyId, selectedConfigIds } = await request.json();
     
     // Debug logging
-    console.log('Preview API received:', { 
-      sourceCompanyId, 
-      targetCompanyId, 
-      selectedConfigIds,
-      selectedConfigIdsType: typeof selectedConfigIds,
-      selectedConfigIdsLength: selectedConfigIds?.length 
-    });
 
     if (!sourceCompanyId || !targetCompanyId) {
       return NextResponse.json(

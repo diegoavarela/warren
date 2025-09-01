@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     try {
       const apiUrl = dashboardType === 'cashflow' 
         ? `/api/cashflow-live/${companyId}?limit=12`
-        : `/api/processed-data/pnl/${companyId}`;
+        : `/api/pnl-live/${companyId}`;
       
       // Make internal API call with same authentication
       const dataResponse = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:4000'}${apiUrl}`, {
@@ -139,62 +139,122 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Calculate comprehensive metrics from dashboard data
-    const periods = dashboardData?.data?.periods || [];
-    const dataRows = dashboardData?.data?.data?.dataRows || {};
+    // Handle different data structures for Cash Flow vs P&L
+    let periods, dataRows, financialMetrics;
     
-    // Get financial data arrays
-    const totalInflows = dataRows.totalInflows?.values || [];
-    const totalOutflows = dataRows.totalOutflows?.values || [];
-    const netCashFlow = dataRows.netCashFlow?.values || [];
-    const initialBalance = dataRows.initialBalance?.values || [];
-    const finalBalance = dataRows.finalBalance?.values || [];
-    const monthlyGeneration = dataRows.monthlyGeneration?.values || [];
+    if (dashboardType === 'cashflow') {
+      // Cash Flow data structure
+      periods = dashboardData?.data?.periods || [];
+      dataRows = dashboardData?.data?.data?.dataRows || {};
+      
+      financialMetrics = {
+        totalInflows: dataRows.totalInflows?.values || [],
+        totalOutflows: dataRows.totalOutflows?.values || [],
+        netCashFlow: dataRows.netCashFlow?.values || [],
+        initialBalance: dataRows.initialBalance?.values || [],
+        finalBalance: dataRows.finalBalance?.values || [],
+        monthlyGeneration: dataRows.monthlyGeneration?.values || []
+      };
+    } else {
+      // P&L data structure
+      periods = dashboardData?.data?.periods || [];
+      dataRows = dashboardData?.data?.dataRows || {};
+      
+      financialMetrics = {
+        totalRevenues: dataRows.totalRevenues?.values || [],
+        totalCosts: dataRows.totalCosts?.values || [],
+        grossProfit: dataRows.grossProfit?.values || [],
+        operatingExpenses: dataRows.operatingExpenses?.values || [],
+        netIncome: dataRows.netIncome?.values || [],
+        ebitda: dataRows.ebitda?.values || []
+      };
+    }
     
     // Find current period index
     const currentPeriodIndex = periods.findIndex((p: string) => p === currentPeriod);
     const currentIndex = currentPeriodIndex >= 0 ? currentPeriodIndex : periods.length - 1;
     
-    // Current Month Summary
-    const currentMonthSummary = {
-      balanceInicial: currentIndex >= 0 ? (initialBalance[currentIndex] || 0) : 0,
-      entradasTotales: currentIndex >= 0 ? (totalInflows[currentIndex] || 0) : 0,
-      salidasTotales: currentIndex >= 0 ? Math.abs(totalOutflows[currentIndex] || 0) : 0,
-      balanceFinal: currentIndex >= 0 ? (finalBalance[currentIndex] || 0) : 0,
-      generacionMensual: currentIndex >= 0 ? (monthlyGeneration[currentIndex] || 0) : 0
-    };
+    // Create summaries based on dashboard type
+    let currentMonthSummary, ytdSummary, annualProjections, growthTrends;
     
-    // YTD Summary (sum up to current period)
-    const ytdEndIndex = currentIndex >= 0 ? currentIndex + 1 : periods.length;
-    const ytdSummary = {
-      entradasYTD: totalInflows.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
-      salidasYTD: totalOutflows.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + Math.abs(val || 0), 0),
-      flujoNetoYTD: netCashFlow.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
-      generacionPromMensual: ytdEndIndex > 0 ? 
-        monthlyGeneration.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0) / ytdEndIndex : 0
-    };
-    
-    // Annual Projections (based on YTD averages)
-    const monthsInYear = 12;
-    const actualMonths = ytdEndIndex;
-    const avgInflowPerMonth = actualMonths > 0 ? ytdSummary.entradasYTD / actualMonths : 0;
-    const avgOutflowPerMonth = actualMonths > 0 ? ytdSummary.salidasYTD / actualMonths : 0;
-    const avgNetFlowPerMonth = actualMonths > 0 ? ytdSummary.flujoNetoYTD / actualMonths : 0;
-    
-    const annualProjections = {
-      entradasProyectadas: avgInflowPerMonth * monthsInYear,
-      salidasProyectadas: avgOutflowPerMonth * monthsInYear,
-      flujoNetoProyectado: avgNetFlowPerMonth * monthsInYear,
-      generacionPromProyectada: ytdSummary.generacionPromMensual
-    };
-    
-    // Calculate growth trends for charts
-    const growthTrends = periods.map((_: string, index: number) => {
-      if (index === 0) return 0;
-      const current = netCashFlow[index] || 0;
-      const previous = netCashFlow[index - 1] || 0;
-      return previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : 0;
-    });
+    if (dashboardType === 'cashflow') {
+      // Cash Flow summaries
+      currentMonthSummary = {
+        balanceInicial: currentIndex >= 0 ? (financialMetrics.initialBalance[currentIndex] || 0) : 0,
+        entradasTotales: currentIndex >= 0 ? (financialMetrics.totalInflows[currentIndex] || 0) : 0,
+        salidasTotales: currentIndex >= 0 ? Math.abs(financialMetrics.totalOutflows[currentIndex] || 0) : 0,
+        balanceFinal: currentIndex >= 0 ? (financialMetrics.finalBalance[currentIndex] || 0) : 0,
+        generacionMensual: currentIndex >= 0 ? (financialMetrics.monthlyGeneration[currentIndex] || 0) : 0
+      };
+      
+      const ytdEndIndex = currentIndex >= 0 ? currentIndex + 1 : periods.length;
+      ytdSummary = {
+        entradasYTD: financialMetrics.totalInflows.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
+        salidasYTD: financialMetrics.totalOutflows.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + Math.abs(val || 0), 0),
+        flujoNetoYTD: financialMetrics.netCashFlow.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
+        generacionPromMensual: ytdEndIndex > 0 ? 
+          financialMetrics.monthlyGeneration.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0) / ytdEndIndex : 0
+      };
+      
+      const monthsInYear = 12;
+      const actualMonths = ytdEndIndex;
+      const avgInflowPerMonth = actualMonths > 0 ? ytdSummary.entradasYTD / actualMonths : 0;
+      const avgOutflowPerMonth = actualMonths > 0 ? ytdSummary.salidasYTD / actualMonths : 0;
+      const avgNetFlowPerMonth = actualMonths > 0 ? ytdSummary.flujoNetoYTD / actualMonths : 0;
+      
+      annualProjections = {
+        entradasProyectadas: avgInflowPerMonth * monthsInYear,
+        salidasProyectadas: avgOutflowPerMonth * monthsInYear,
+        flujoNetoProyectado: avgNetFlowPerMonth * monthsInYear,
+        generacionPromProyectada: ytdSummary.generacionPromMensual
+      };
+      
+      growthTrends = periods.map((_: string, index: number) => {
+        if (index === 0) return 0;
+        const current = financialMetrics.netCashFlow[index] || 0;
+        const previous = financialMetrics.netCashFlow[index - 1] || 0;
+        return previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : 0;
+      });
+    } else {
+      // P&L summaries
+      currentMonthSummary = {
+        totalRevenues: currentIndex >= 0 ? (financialMetrics.totalRevenues[currentIndex] || 0) : 0,
+        totalCosts: currentIndex >= 0 ? (financialMetrics.totalCosts[currentIndex] || 0) : 0,
+        grossProfit: currentIndex >= 0 ? (financialMetrics.grossProfit[currentIndex] || 0) : 0,
+        operatingExpenses: currentIndex >= 0 ? (financialMetrics.operatingExpenses[currentIndex] || 0) : 0,
+        netIncome: currentIndex >= 0 ? (financialMetrics.netIncome[currentIndex] || 0) : 0
+      };
+      
+      const ytdEndIndex = currentIndex >= 0 ? currentIndex + 1 : periods.length;
+      ytdSummary = {
+        revenuesYTD: financialMetrics.totalRevenues.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
+        costsYTD: financialMetrics.totalCosts.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
+        grossProfitYTD: financialMetrics.grossProfit.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
+        netIncomeYTD: financialMetrics.netIncome.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0),
+        avgMonthlyRevenue: ytdEndIndex > 0 ? 
+          financialMetrics.totalRevenues.slice(0, ytdEndIndex).reduce((sum: number, val: number) => sum + (val || 0), 0) / ytdEndIndex : 0
+      };
+      
+      const monthsInYear = 12;
+      const actualMonths = ytdEndIndex;
+      const avgRevenuePerMonth = actualMonths > 0 ? ytdSummary.revenuesYTD / actualMonths : 0;
+      const avgCostsPerMonth = actualMonths > 0 ? ytdSummary.costsYTD / actualMonths : 0;
+      const avgNetIncomePerMonth = actualMonths > 0 ? ytdSummary.netIncomeYTD / actualMonths : 0;
+      
+      annualProjections = {
+        revenuesProyectadas: avgRevenuePerMonth * monthsInYear,
+        costsProyectadas: avgCostsPerMonth * monthsInYear,
+        netIncomeProyectado: avgNetIncomePerMonth * monthsInYear,
+        grossMarginProjected: avgRevenuePerMonth > 0 ? ((avgRevenuePerMonth - avgCostsPerMonth) / avgRevenuePerMonth) * 100 : 0
+      };
+      
+      growthTrends = periods.map((_: string, index: number) => {
+        if (index === 0) return 0;
+        const current = financialMetrics.netIncome[index] || 0;
+        const previous = financialMetrics.netIncome[index - 1] || 0;
+        return previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : 0;
+      });
+    }
     
     // Transform dashboard data for comprehensive export
     const exportData = {
@@ -216,14 +276,23 @@ export async function POST(request: NextRequest) {
       generatedAt: new Date().toISOString(),
       lastUpdate: dashboardData?.data?.lastUpdated || new Date().toISOString(),
       
-      // Financial Data Arrays
+      // Financial Data Arrays (depends on dashboard type)
       periods,
-      totalInflows: { values: totalInflows },
-      totalOutflows: { values: totalOutflows },
-      netCashFlow: { values: netCashFlow },
-      initialBalance: { values: initialBalance },
-      finalBalance: { values: finalBalance },
-      monthlyGeneration: { values: monthlyGeneration },
+      ...(dashboardType === 'cashflow' ? {
+        totalInflows: { values: financialMetrics.totalInflows },
+        totalOutflows: { values: financialMetrics.totalOutflows },
+        netCashFlow: { values: financialMetrics.netCashFlow },
+        initialBalance: { values: financialMetrics.initialBalance },
+        finalBalance: { values: financialMetrics.finalBalance },
+        monthlyGeneration: { values: financialMetrics.monthlyGeneration }
+      } : {
+        totalRevenues: { values: financialMetrics.totalRevenues },
+        totalCosts: { values: financialMetrics.totalCosts },
+        grossProfit: { values: financialMetrics.grossProfit },
+        operatingExpenses: { values: financialMetrics.operatingExpenses },
+        netIncome: { values: financialMetrics.netIncome },
+        ebitda: { values: financialMetrics.ebitda }
+      }),
       
       // Calculated Summaries
       currentMonthSummary,

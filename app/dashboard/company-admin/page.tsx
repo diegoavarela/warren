@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleContext';
@@ -30,7 +30,8 @@ import {
   ChevronDownIcon,
   ArrowDownTrayIcon,
   DocumentArrowDownIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
 import { validatePeriods, getPeriodValidationStatus } from '@/lib/utils/period-validation';
@@ -118,7 +119,7 @@ function CompanyAdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
   const { locale } = useLocale();
-  const { hasFeature } = useFeatures();
+  const { hasFeature, isFeatureVisible } = useFeatures();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [pnlStatements, setPnlStatements] = useState<any[]>([]);
@@ -558,6 +559,7 @@ function CompanyAdminDashboard() {
                         </div>
 
                         {/* AI Chat Button */}
+                        {isFeatureVisible('AI_CHAT') && (
                         <Button
                           variant={hasFeature('AI_CHAT') ? "primary" : "secondary"}
                           onClick={() => {
@@ -582,12 +584,26 @@ function CompanyAdminDashboard() {
                             : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`
                           }
                         </Button>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* Primary Action Grid with Enhanced Descriptions */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className={`grid gap-4 mb-4 ${
+                    // Calculate visible cards count for responsive grid
+                    (() => {
+                      const visibleCards = [
+                        true, // P&L always visible
+                        true, // Cash Flow always visible  
+                        isFeatureVisible('FINANCIAL_MANUAL') // Financial Manual conditionally visible
+                      ].filter(Boolean).length;
+                      
+                      if (visibleCards === 1) return 'grid-cols-1';
+                      if (visibleCards === 2) return 'grid-cols-1 md:grid-cols-2';
+                      return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+                    })()
+                  }`}>
                     {/* P&L Dashboard Card */}
                     <div className={`border rounded-lg p-4 ${
                       pnlStatements.length > 0 ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'
@@ -745,6 +761,76 @@ function CompanyAdminDashboard() {
                         }
                       </Button>
                     </div>
+
+                    {/* Financial Manual Card */}
+                    {isFeatureVisible('FINANCIAL_MANUAL') && (
+                    <div className={`border rounded-lg p-4 ${
+                      hasFeature('FINANCIAL_MANUAL') ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 bg-gray-50'
+                    }`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <BookOpenIcon className={`w-6 h-6 ${
+                            hasFeature('FINANCIAL_MANUAL') ? 'text-indigo-600' : 'text-gray-400'
+                          }`} />
+                          <h3 className="font-semibold text-gray-900">
+                            {locale?.startsWith('es') ? 'Manual Financiero' : 'Financial Manual'}
+                          </h3>
+                        </div>
+                        {hasFeature('FINANCIAL_MANUAL') && (
+                          <Badge className="bg-indigo-100 text-indigo-700">
+                            {locale?.startsWith('es') ? 'Disponible' : 'Available'}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-3">
+                        {locale?.startsWith('es') 
+                          ? 'Aprende a interpretar datos y tomar decisiones'
+                          : 'Learn to interpret data and make decisions'}
+                      </p>
+                      
+                      <div className="space-y-1 mb-4">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Conceptos financieros explicados' : 'Financial concepts explained'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Guías de toma de decisiones' : 'Decision-making guides'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Casos de uso y ejemplos' : 'Use cases and examples'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>•</span>
+                          <span>{locale?.startsWith('es') ? 'Glosario de términos' : 'Glossary of terms'}</span>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        variant={hasFeature('FINANCIAL_MANUAL') ? "primary" : "secondary"}
+                        onClick={() => {
+                          if (hasFeature('FINANCIAL_MANUAL')) {
+                            sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                            router.push('/dashboard/company-admin/financial-manual');
+                          } else {
+                            router.push('/premium');
+                          }
+                        }}
+                        className={`w-full ${
+                          hasFeature('FINANCIAL_MANUAL')
+                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                        }`}
+                      >
+                        {hasFeature('FINANCIAL_MANUAL')
+                          ? (locale?.startsWith('es') ? 'Abrir Manual' : 'Open Manual')
+                          : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`
+                        }
+                      </Button>
+                    </div>
+                    )}
                   </div>
 
                   {/* Configurations and Actions Section */}

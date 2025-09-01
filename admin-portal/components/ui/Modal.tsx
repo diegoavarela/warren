@@ -73,15 +73,15 @@ export function Modal({
         {/* Modal content */}
         <div
           className={clsx(
-            "relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 w-full",
+            "relative transform rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 w-full max-h-[90vh] flex flex-col",
             sizeClasses[size]
           )}
         >
-          {/* Header */}
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          {/* Header - Fixed */}
+          <div className="flex-shrink-0 bg-white px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-4 border-b border-gray-200 rounded-t-lg">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium leading-6 text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-medium leading-6 text-gray-900 truncate">
                   {title}
                 </h3>
                 {description && (
@@ -93,7 +93,7 @@ export function Modal({
                   variant="outline"
                   size="sm"
                   onClick={onClose}
-                  className="!p-2"
+                  className="!p-2 ml-3 flex-shrink-0"
                 >
                   <XMarkIcon className="h-4 w-4" />
                 </Button>
@@ -101,8 +101,8 @@ export function Modal({
             </div>
           </div>
 
-          {/* Content */}
-          <div className="px-4 pb-4 sm:px-6 sm:pb-6">
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
             {children}
           </div>
         </div>

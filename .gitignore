@@ -115,3 +115,24 @@ webpack-bundle-analyzer-report.html
 # Bundle analyzer outputs
 .next/analyze/
 analyze-output/
+
+# Export test files
+*.png
+*.pdf
+dashboard-*.png
+dashboard-*.pdf
+warren-*.pdf
+admin-*.png
+
+# Environment backups
+.env.local.*
+.env.*.backup
+
+# Migration scripts (completed)
+/scripts/migrate-*.js
+/scripts/rollback-*.js
+/scripts/MIGRATION_*.md
+
+# Test exports
+*-export-*.pdf
+*-screenshot-*.png

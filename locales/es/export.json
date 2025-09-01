@@ -1,0 +1,87 @@
+{
+  "title": "Opciones de Exportación",
+  "pdf": "Exportar como PDF",
+  "ppt": "Exportar como PowerPoint",
+  "png": "Copiar como Imagen",
+  "generating": "Generando exportación...",
+  "success": "Exportación exitosa",
+  "error": "Error en exportación",
+  "timeout": "Tiempo de exportación agotado. Inténtelo de nuevo.",
+  "networkError": "Error de red durante la exportación",
+  "serverError": "Error del servidor durante la exportación",
+  "downloading": "Preparando descarga...",
+  "report": {
+    "pnl_title": "Estado de Resultados",
+    "cashflow_title": "Análisis de Flujo de Caja",
+    "chat_title": "Reporte de Análisis Financiero IA",
+    "generated": "Generado el",
+    "period": "Período",
+    "company": "Empresa",
+    "confidential": "Confidencial - Uso Interno Únicamente",
+    "page": "Página",
+    "of": "de",
+    "exportedBy": "Exportado por Warren Financial Analytics",
+    "disclaimer": "Este reporte contiene información financiera confidencial. La distribución no autorizada está prohibida."
+  },
+  "cashflow": {
+    "currentMonthSummary": "Resumen de Cash Flow",
+    "balanceInicial": "Balance Inicial",
+    "entradasTotales": "Entradas Totales",
+    "salidasTotales": "Salidas Totales",
+    "balanceFinal": "Balance Final",
+    "generacionMensual": "Generación Mensual",
+    "ytdSummary": "Resumen Anual Acumulado",
+    "entradasYTD": "Entradas YTD",
+    "salidasYTD": "Salidas YTD",
+    "flujoNetoYTD": "Flujo Neto YTD",
+    "generacionPromMensual": "Generación Prom. Mensual",
+    "annualProjections": "Proyectado Anual Acumulado",
+    "entradasProyectadas": "Entradas Proyectadas Anuales",
+    "salidasProyectadas": "Salidas Proyectadas Anuales",
+    "flujoNetoProyectado": "Flujo Neto Proyectado Anual",
+    "generacionPromProyectada": "Generación Prom. Mensual Proyectada",
+    "charts": {
+      "growthAnalysis": "Análisis de Crecimiento del Cash Flow",
+      "balanceTrends": "Tendencias de Balance Final y Pronóstico",
+      "composition": "Composición Cash Flow",
+      "compositionGeneral": "General",
+      "compositionEntradas": "Entradas",
+      "compositionSalidas": "Salidas",
+      "monthlyPerformance": "Rendimiento Mensual de Flujo de Caja",
+      "flujoNeto": "Flujo Neto",
+      "soloEntradas": "Solo Entradas",
+      "soloSalidas": "Solo Salidas"
+    },
+    "table": {
+      "periodo": "Período",
+      "balanceInicial": "Balance Inicial",
+      "entradas": "Entradas",
+      "salidas": "Salidas",
+      "balanceFinal": "Balance Final",
+      "generacion": "Generación",
+      "crecimiento": "Crecimiento",
+      "status": "Estado"
+    }
+  },
+  "buttons": {
+    "exportPdf": "📄 Exportar PDF",
+    "exportPpt": "📊 Exportar PowerPoint", 
+    "copyImage": "🖼️ Copiar Imagen",
+    "cancel": "Cancelar",
+    "close": "Cerrar"
+  },
+  "formats": {
+    "pdf": {
+      "name": "Documento PDF",
+      "description": "Reporte profesional con gráficos y datos"
+    },
+    "ppt": {
+      "name": "Presentación PowerPoint",
+      "description": "Diapositivas con gráficos y secciones individuales"
+    },
+    "png": {
+      "name": "Imagen PNG",
+      "description": "Imagen de alta resolución para compartir"
+    }
+  }
+}
