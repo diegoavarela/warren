@@ -12,8 +12,8 @@ import { FEATURE_KEYS } from '@/lib/constants/features';
 import { 
   DocumentArrowDownIcon,
   DocumentTextIcon,
-  PresentationChartBarIcon,
-  PhotoIcon,
+  CodeBracketIcon,
+  TableCellsIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
@@ -48,7 +48,7 @@ export function ExportButton({
     : rawFeature;
   
   const [isExporting, setIsExporting] = useState(false);
-  const [exportType, setExportType] = useState<'pdf' | 'ppt' | null>(null);
+  const [exportType, setExportType] = useState<'pdf' | 'json' | 'csv' | null>(null);
   const [showOptions, setShowOptions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +63,8 @@ export function ExportButton({
     const fallbacks: Record<string, string> = {
       'title': locale?.startsWith('es') ? 'Exportar' : 'Export',  // Shorter text
       'pdf': locale?.startsWith('es') ? 'Exportar como PDF' : 'Export as PDF',
-      'ppt': locale?.startsWith('es') ? 'Exportar como PowerPoint' : 'Export as PowerPoint',
+      'json': locale?.startsWith('es') ? 'Exportar como JSON' : 'Export as JSON',
+      'csv': locale?.startsWith('es') ? 'Exportar como CSV' : 'Export as CSV',
       'generating': locale?.startsWith('es') ? 'Generando exportación...' : 'Generating export...',
       'success': locale?.startsWith('es') ? 'Exportación exitosa' : 'Export successful',
       'error': locale?.startsWith('es') ? 'Error en exportación' : 'Export failed'
@@ -82,7 +83,7 @@ export function ExportButton({
     setShowOptions(true);
   };
 
-  const handleExport = async (format: 'pdf' | 'ppt') => {
+  const handleExport = async (format: 'pdf' | 'json' | 'csv') => {
     if (!hasFeature(featureKey)) return;
     
     setIsExporting(true);
@@ -152,7 +153,7 @@ export function ExportButton({
   if (!isPremium) {
     // Show premium button with feature info
     const featureName = feature?.name || (locale?.startsWith('es') ? 'Exportar Avanzado' : 'Advanced Export');
-    const featureDescription = feature?.description || (locale?.startsWith('es') ? 'Exportar a PDF y PowerPoint' : 'Export to PDF and PowerPoint');
+    const featureDescription = feature?.description || (locale?.startsWith('es') ? 'Exportar a PDF, JSON y CSV' : 'Export to PDF, JSON, and CSV formats');
     
     return (
       <FeatureTooltip 
@@ -233,19 +234,38 @@ export function ExportButton({
         </button>
 
         <button
-          onClick={() => handleExport('ppt')}
+          onClick={() => handleExport('json')}
           className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center transition-colors"
           disabled={isExporting}
         >
-          <PresentationChartBarIcon className="w-5 h-5 mr-3 text-blue-500" />
+          <CodeBracketIcon className="w-5 h-5 mr-3 text-blue-500" />
           <div>
             <div className="font-medium text-gray-900 text-sm">
-              {getExportTranslation('ppt')}
+              {getExportTranslation('json')}
             </div>
             <div className="text-xs text-gray-500">
               {locale?.startsWith('es')
-                ? 'Diapositivas con gráficos individuales'
-                : 'Slides with individual charts and sections'
+                ? 'Datos estructurados para APIs e integraciones'
+                : 'Structured data for APIs and integrations'
+              }
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleExport('csv')}
+          className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center transition-colors"
+          disabled={isExporting}
+        >
+          <TableCellsIcon className="w-5 h-5 mr-3 text-green-500" />
+          <div>
+            <div className="font-medium text-gray-900 text-sm">
+              {getExportTranslation('csv')}
+            </div>
+            <div className="text-xs text-gray-500">
+              {locale?.startsWith('es')
+                ? 'Formato universal para hojas de cálculo'
+                : 'Universal format for spreadsheets and analysis'
               }
             </div>
           </div>

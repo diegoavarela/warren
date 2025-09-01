@@ -20,7 +20,6 @@ export async function GET(
     // Force completely fresh connection by adding timestamp to connection
     const connectionString = `${process.env.DATABASE_URL}?bust=${Date.now()}`;
     const neonSql = neon(connectionString, {
-      fetchConnectionCache: false, // Disable caching for real-time updates
       fullResults: false,
       arrayMode: false
     });

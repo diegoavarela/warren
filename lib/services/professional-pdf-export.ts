@@ -21,33 +21,27 @@ export interface ComprehensiveExportData {
   
   // Financial Data Arrays
   periods: string[];
-  totalInflows: { values: number[] };
-  totalOutflows: { values: number[] };
-  netCashFlow: { values: number[] };
-  initialBalance: { values: number[] };
-  finalBalance: { values: number[] };
-  monthlyGeneration: { values: number[] };
   
-  // Calculated Summaries
-  currentMonthSummary: {
-    balanceInicial: number;
-    entradasTotales: number;
-    salidasTotales: number;
-    balanceFinal: number;
-    generacionMensual: number;
-  };
-  ytdSummary: {
-    entradasYTD: number;
-    salidasYTD: number;
-    flujoNetoYTD: number;
-    generacionPromMensual: number;
-  };
-  annualProjections: {
-    entradasProyectadas: number;
-    salidasProyectadas: number;
-    flujoNetoProyectado: number;
-    generacionPromProyectada: number;
-  };
+  // Cash Flow specific (optional)
+  totalInflows?: { values: number[] };
+  totalOutflows?: { values: number[] };
+  netCashFlow?: { values: number[] };
+  initialBalance?: { values: number[] };
+  finalBalance?: { values: number[] };
+  monthlyGeneration?: { values: number[] };
+  
+  // P&L specific (optional)
+  totalRevenues?: { values: number[] };
+  totalCosts?: { values: number[] };
+  grossProfit?: { values: number[] };
+  operatingExpenses?: { values: number[] };
+  netIncome?: { values: number[] };
+  ebitda?: { values: number[] };
+  
+  // Calculated Summaries - flexible for both report types
+  currentMonthSummary: any;
+  ytdSummary: any;
+  annualProjections: any;
   growthTrends: number[];
   
   // Enhanced Data
@@ -492,17 +486,17 @@ export class ProfessionalPDFExportService {
       }
       
       const period = data.periods[i];
-      const inflow = data.totalInflows.values[i] || 0;
-      const outflow = Math.abs(data.totalOutflows.values[i] || 0);
-      const net = data.netCashFlow.values[i] || 0;
-      const initialBal = data.initialBalance.values[i] || 0;
-      const finalBal = data.finalBalance.values[i] || 0;
-      const generation = data.monthlyGeneration.values[i] || 0;
+      const inflow = data.totalInflows?.values[i] || 0;
+      const outflow = Math.abs(data.totalOutflows?.values[i] || 0);
+      const net = data.netCashFlow?.values[i] || 0;
+      const initialBal = data.initialBalance?.values[i] || 0;
+      const finalBal = data.finalBalance?.values[i] || 0;
+      const generation = data.monthlyGeneration?.values[i] || 0;
       
       // Calculate growth
       let growth = 0;
       if (i > 0) {
-        const previousGen = data.monthlyGeneration.values[i-1] || 0;
+        const previousGen = data.monthlyGeneration?.values[i-1] || 0;
         if (previousGen !== 0) {
           growth = ((generation - previousGen) / Math.abs(previousGen)) * 100;
         }
@@ -690,9 +684,9 @@ export class ProfessionalPDFExportService {
     this.drawProfessionalBarChart(
       pdf, 
       [
-        { label: data.locale?.startsWith('es') ? 'Entradas' : 'Inflows', values: data.totalInflows.values, color: '#10B981' }, // Emerald green for consistency
-        { label: data.locale?.startsWith('es') ? 'Salidas' : 'Outflows', values: data.totalOutflows.values.map((v: number) => Math.abs(v)), color: '#EF4444' }, // Red for outflows
-        { label: data.locale?.startsWith('es') ? 'Generación' : 'Generation', values: data.monthlyGeneration.values, color: '#06B6D4' } // Cyan for generation
+        { label: data.locale?.startsWith('es') ? 'Entradas' : 'Inflows', values: data.totalInflows?.values || [], color: '#10B981' }, // Emerald green for consistency
+        { label: data.locale?.startsWith('es') ? 'Salidas' : 'Outflows', values: (data.totalOutflows?.values || []).map((v: number) => Math.abs(v)), color: '#EF4444' }, // Red for outflows
+        { label: data.locale?.startsWith('es') ? 'Generación' : 'Generation', values: data.monthlyGeneration?.values || [], color: '#06B6D4' } // Cyan for generation
       ],
       data.periods,
       margin,
@@ -1103,9 +1097,9 @@ export class ProfessionalPDFExportService {
       }
       
       periods.push(periodLabel);
-      inflows.push(data.totalInflows.values[i] || 0);
-      outflows.push(Math.abs(data.totalOutflows.values[i]) || 0);
-      balances.push(data.finalBalance.values[i] || 0);
+      inflows.push(data.totalInflows?.values[i] || 0);
+      outflows.push(Math.abs(data.totalOutflows?.values[i] || 0));
+      balances.push(data.finalBalance?.values[i] || 0);
     }
 
     // Create chart data with actual vs forecast distinction
@@ -1580,9 +1574,9 @@ export class ProfessionalPDFExportService {
       }
       
       periods.push(periodLabel);
-      inflows.push(data.totalInflows.values[i] || 0);
-      outflows.push(Math.abs(data.totalOutflows.values[i]) || 0);
-      balances.push(data.finalBalance.values[i] || 0);
+      inflows.push(data.totalInflows?.values[i] || 0);
+      outflows.push(Math.abs(data.totalOutflows?.values[i] || 0));
+      balances.push(data.finalBalance?.values[i] || 0);
     }
 
     // Calculate dimensions and scales
