@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/shared/db';
+import { db } from '@/lib/db';
 import { 
   companies, 
   organizations, 
@@ -7,7 +7,7 @@ import {
   financialDataFiles,
   processedFinancialData,
   users 
-} from '@/shared/db';
+} from '@/lib/db';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 

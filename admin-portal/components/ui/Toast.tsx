@@ -9,6 +9,14 @@ import {
   XMarkIcon 
 } from '@heroicons/react/24/outline';
 
+export type ToastPosition = 
+  | 'top-right' 
+  | 'top-left' 
+  | 'bottom-right' 
+  | 'bottom-left' 
+  | 'top-center' 
+  | 'bottom-center';
+
 const toastVariants = cva(
   'pointer-events-auto flex items-center gap-3 w-full max-w-md rounded-lg p-4 shadow-2xl transition-all duration-300 ease-in-out transform',
   {
@@ -40,6 +48,7 @@ export interface ToastProps extends VariantProps<typeof toastVariants> {
   title: string;
   description?: string;
   duration?: number;
+  position?: ToastPosition;
   onClose: (id: string) => void;
 }
 
@@ -125,14 +134,6 @@ export interface ToastData {
   variant?: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
 }
-
-export type ToastPosition = 
-  | 'top-right' 
-  | 'top-left' 
-  | 'bottom-right' 
-  | 'bottom-left' 
-  | 'top-center' 
-  | 'bottom-center';
 
 const positionClasses: Record<ToastPosition, string> = {
   'top-right': 'top-0 right-0',

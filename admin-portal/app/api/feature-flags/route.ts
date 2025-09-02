@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, featureFlags, organizationFeatures, eq, count, sql } from '@/shared/db';
+import { db, featureFlags, organizationFeatures, eq, count, sql } from '@/lib/db';
 
 // GET /api/feature-flags - List all feature flags with usage statistics
 // Query parameters:

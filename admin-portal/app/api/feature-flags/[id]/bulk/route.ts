@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, featureFlags, organizationFeatures, organizations, eq, sql } from '@/shared/db';
+import { db, featureFlags, organizationFeatures, organizations, eq, sql } from '@/lib/db';
 
 // POST /api/feature-flags/[id]/bulk - Enable/disable feature for all organizations
 export async function POST(

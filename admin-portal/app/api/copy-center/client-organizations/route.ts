@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/shared/db';
-import { organizations, companies } from '@/shared/db';
+import { db } from '@/lib/db';
+import { organizations, companies } from '@/lib/db';
 import { eq, and, sql, ne } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 

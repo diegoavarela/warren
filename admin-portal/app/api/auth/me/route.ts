@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/shared/db';
-import { users, organizations } from '@/shared/db';
+import { db } from '@/lib/db';
+import { users, organizations } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 

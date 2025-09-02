@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, featureFlags, organizationFeatures, eq, and, sql } from '@/shared/db';
+import { db, featureFlags, organizationFeatures, eq, and, sql } from '@/lib/db';
 
 // PUT /api/feature-flags/[id] - Update feature flag
 export async function PUT(

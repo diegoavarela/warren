@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, featureFlags, organizationFeatures, organizations, eq, sql } from '@/shared/db';
+import { db, featureFlags, organizationFeatures, organizations, eq, sql } from '@/lib/db';
 
 // GET /api/feature-flags/[id]/organizations - Get all organizations and their access status for this feature
 export async function GET(

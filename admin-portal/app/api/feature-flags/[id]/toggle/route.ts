@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, featureFlags, organizationFeatures, eq, and } from '@/shared/db';
+import { db, featureFlags, organizationFeatures, eq, and } from '@/lib/db';
 
 // POST /api/feature-flags/[id]/toggle - Toggle feature for specific organization
 export async function POST(

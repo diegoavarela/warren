@@ -20,7 +20,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@/shared/*": ["../shared/*"]
+      "@/shared/*": ["../shared/*"],
+      "drizzle-orm": ["../shared/node_modules/drizzle-orm"],
+      "drizzle-orm/*": ["../shared/node_modules/drizzle-orm/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../shared/**/*.ts"],

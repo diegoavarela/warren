@@ -11,11 +11,17 @@ const nextConfig = {
     config.resolve.modules = config.resolve.modules || []
     config.resolve.modules.unshift(require('path').resolve(__dirname, '../warren/node_modules'))
     
+    // Handle ESM packages
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'drizzle-orm'];
+    }
+    
     return config;
   },
   // Production optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', '@heroicons/react'],
+    serverComponentsExternalPackages: ['drizzle-orm'],
   },
   // Vercel deployment settings
   output: 'standalone',
