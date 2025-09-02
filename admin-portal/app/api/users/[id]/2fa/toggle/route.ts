@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/shared/db';
-import { users, user2faSettings, user2faAttempts } from '@/shared/db/actual-schema';
+import { users, user2faSettings, user2faAttempts } from '@/shared/db';
 import { eq, and, gte } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 import { verifyTOTP, verifyBackupCode, removeUsedBackupCode } from '@/lib/totp-utils';

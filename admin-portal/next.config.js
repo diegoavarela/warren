@@ -8,6 +8,40 @@ const nextConfig = {
     config.resolve.symlinks = false;
     return config;
   },
+  // Production optimizations
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@heroicons/react'],
+  },
+  // Vercel deployment settings
+  output: 'standalone',
+  poweredByHeader: false,
+  compress: true,
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

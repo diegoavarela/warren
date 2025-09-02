@@ -7,7 +7,7 @@ import {
   financialDataFiles,
   processedFinancialData,
   users 
-} from '@/shared/db/actual-schema';
+} from '@/shared/db';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/shared/db';
-import { users, user2faSettings } from '@/shared/db/actual-schema';
+import { users, user2faSettings } from '@/shared/db';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 import { generateSecret, generateQRCodeURL, generateBackupCodes } from '@/lib/totp-utils';

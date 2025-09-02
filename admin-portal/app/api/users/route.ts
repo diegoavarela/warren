@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/shared/db';
-import { users, organizations, companies } from '@/shared/db/actual-schema';
+import { users, organizations, companies } from '@/shared/db';
 import { eq, ilike, or } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 import bcrypt from 'bcryptjs';
