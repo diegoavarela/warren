@@ -27,9 +27,9 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "3. Installing admin-portal dependencies..."
-cd ../admin-portal && npm install --legacy-peer-deps
+cd ../admin-portal && npm ci --legacy-peer-deps
 if [ $? -ne 0 ]; then
-    echo "❌ Admin-portal npm install failed"
+    echo "❌ Admin-portal npm ci failed"
     exit 1
 fi
 

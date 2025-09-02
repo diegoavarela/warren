@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd ../warren && npm install && cd ../shared && npm install && cd ../admin-portal && npm install --legacy-peer-deps && npm run build:standalone",
-  "installCommand": "npm install --legacy-peer-deps"
+  "buildCommand": "cd ../warren && npm install && cd ../shared && npm install && cd ../admin-portal && npm ci --legacy-peer-deps && npm run build:standalone",
+  "installCommand": "npm ci --legacy-peer-deps"
 }
