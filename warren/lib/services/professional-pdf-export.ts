@@ -82,7 +82,7 @@ export class ProfessionalPDFExportService {
   private async getTranslations(locale: string, reportType: string) {
     try {
       const langCode = locale.startsWith('es') ? 'es' : 'en';
-      const translations = await import(`/Users/diegovarela/AI Agents/warren-v2/locales/${langCode}/export.json`);
+      const translations = await import(`../../locales/${langCode}/export.json`);
       
       const t = translations.default;
       return {

@@ -5,7 +5,7 @@
   "description": "Warren Platform Admin Portal",
   "scripts": {
     "dev": "next dev -p 3500",
-    "build": "NODE_PATH=../node_modules next build",
+    "build": "NODE_PATH=../warren/node_modules ../warren/node_modules/.bin/next build",
     "start": "next start -p 3500",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
