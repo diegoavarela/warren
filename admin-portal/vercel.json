@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd ../warren && npm install && cd ../shared && npm install && cd ../admin-portal && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm ls --depth=0 | grep tailwind && npm run build:standalone",
-  "installCommand": "echo 'Skipping initial install - will install in build command'"
+  "buildCommand": "cd ../warren && npm install && cd ../shared && npm install && cd ../admin-portal && rm -rf node_modules && npm install --legacy-peer-deps && npm ls --depth=0 | grep tailwind && npm run build:standalone",
+  "installCommand": "npm install --legacy-peer-deps next react react-dom"
 }

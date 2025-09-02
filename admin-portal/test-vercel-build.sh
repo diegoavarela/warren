@@ -26,16 +26,23 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "3. Fresh install admin-portal dependencies..."
-cd ../admin-portal && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps
+echo "3. Minimal install for Next.js detection..."
+cd ../admin-portal && npm install --legacy-peer-deps next react react-dom
+if [ $? -ne 0 ]; then
+    echo "❌ Admin-portal minimal install failed"
+    exit 1
+fi
+
+echo "4. Fresh full install admin-portal dependencies..."
+rm -rf node_modules && npm install --legacy-peer-deps
 if [ $? -ne 0 ]; then
     echo "❌ Admin-portal npm install failed"
     exit 1
 fi
 
-echo "4. Debug: Check admin-portal dependencies..."
+echo "5. Debug: Check admin-portal dependencies..."
 npm ls --depth=0 | grep tailwind
-echo "5. Running admin-portal standalone build..."
+echo "6. Running admin-portal standalone build..."
 npm run build:standalone
 if [ $? -eq 0 ]; then
     echo "✅ Vercel build simulation PASSED"
