@@ -18,6 +18,7 @@
       }
     ],
     "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types", "./types", "../warren/node_modules/@types"],
     "paths": {
       "@/*": ["./*"],
       "@/shared/*": ["../shared/*"],
@@ -25,6 +26,6 @@
       "drizzle-orm/*": ["../shared/node_modules/drizzle-orm/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../shared/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../shared/**/*.ts", "types/**/*.d.ts"],
   "exclude": ["node_modules"]
 }
