@@ -173,10 +173,13 @@ export default function LoginPage() {
 
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                {locale?.startsWith('es') ? '¿No tienes cuenta?' : "Don't have an account?"}{' '}
-                <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500 transition">
-                  {locale?.startsWith('es') ? 'Crear cuenta' : 'Sign up'}
-                </Link>
+                {locale?.startsWith('es') ? '¿Necesitas acceso?' : "Need access?"}{' '}
+                <button 
+                  onClick={() => window.open('mailto:contact@warren.com?subject=Request Access to Warren Platform', '_blank')}
+                  className="font-medium text-blue-600 hover:text-blue-500 transition"
+                >
+                  {locale?.startsWith('es') ? 'Solicitar acceso' : 'Request access'}
+                </button>
               </p>
             </div>
           </form>
@@ -189,19 +192,17 @@ export default function LoginPage() {
               </p>
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Admin Plataforma:' : 'Platform Admin:'}</span>
-                  <span className="font-mono text-gray-700">platform@warren.com / platform123</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Admin Empresa:' : 'Company Admin:'}</span>
+                  <span className="text-gray-500 flex items-center">
+                    {locale?.startsWith('es') ? 'Admin Empresa:' : 'Company Admin:'} 
+                    <span className="ml-1 text-[10px] text-gray-400">(Full access)</span>
+                  </span>
                   <span className="font-mono text-gray-700">companyadmin@demo.com / company123</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Admin Org:' : 'Org Admin:'}</span>
-                  <span className="font-mono text-gray-700">admin@demo.com / admin123</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500">{locale?.startsWith('es') ? 'Usuario:' : 'User:'}</span>
+                  <span className="text-gray-500 flex items-center">
+                    {locale?.startsWith('es') ? 'Usuario:' : 'User:'} 
+                    <span className="ml-1 text-[10px] text-gray-400">(View dashboards)</span>
+                  </span>
                   <span className="font-mono text-gray-700">demo@warren.com / demo123</span>
                 </div>
               </div>
@@ -220,13 +221,13 @@ export default function LoginPage() {
           <div className="max-w-lg">
             <h2 className="text-4xl font-bold text-white mb-6">
               {locale?.startsWith('es') 
-                ? 'Análisis financiero inteligente para LATAM'
-                : 'Intelligent financial analysis for LATAM'}
+                ? 'Transforma datos financieros en insights accionables'
+                : 'Transform Financial Data into Actionable Insights'}
             </h2>
             <p className="text-xl text-blue-100 mb-8">
               {locale?.startsWith('es')
-                ? 'Procesa estados financieros en Excel con detección automática de formatos y mapeo visual interactivo.'
-                : 'Process financial statements in Excel with automatic format detection and interactive visual mapping.'}
+                ? 'Procesa estados financieros con detección inteligente y visualizaciones interactivas.'
+                : 'Process financial statements with intelligent detection and interactive visualizations.'}
             </p>
             <div className="space-y-4">
               <div className="flex items-center">
@@ -234,7 +235,7 @@ export default function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-white">
-                  {locale?.startsWith('es') ? 'Soporte completo para formatos LATAM' : 'Full support for LATAM formats'}
+                  {locale?.startsWith('es') ? 'Detección inteligente de estados P&L y Flujo de Caja' : 'AI-powered P&L and Cash Flow statement detection'}
                 </span>
               </div>
               <div className="flex items-center">
@@ -242,7 +243,7 @@ export default function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-white">
-                  {locale?.startsWith('es') ? 'Detección inteligente con IA' : 'AI-powered smart detection'}
+                  {locale?.startsWith('es') ? 'Dashboards de P&L y Flujo de Caja en tiempo real' : 'Real-time P&L and Cash Flow dashboards'}
                 </span>
               </div>
               <div className="flex items-center">
@@ -250,7 +251,15 @@ export default function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-white">
-                  {locale?.startsWith('es') ? 'Mapeo visual interactivo' : 'Interactive visual mapping'}
+                  {locale?.startsWith('es') ? 'Procesamiento basado en configuración' : 'Configuration-based data processing'}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <svg className="w-6 h-6 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-white">
+                  {locale?.startsWith('es') ? 'Capacidades de exportación profesional' : 'Professional export capabilities'}
                 </span>
               </div>
             </div>

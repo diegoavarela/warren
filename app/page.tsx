@@ -13,7 +13,9 @@ import {
   ShieldCheckIcon,
   CurrencyDollarIcon,
   GlobeAltIcon,
-  SparklesIcon
+  SparklesIcon,
+  DocumentTextIcon,
+  CogIcon
 } from "@heroicons/react/24/outline";
 
 function LandingContent() {
@@ -67,62 +69,62 @@ function LandingContent() {
   const features = [
     {
       icon: SparklesIcon,
-      title: isSpanish ? 'Análisis con IA' : 'AI-Powered Analysis',
+      title: isSpanish ? 'Procesamiento Inteligente de Excel' : 'Smart Excel Processing',
       description: isSpanish 
-        ? 'Detección automática de estados financieros y mapeo inteligente de columnas'
-        : 'Automatic financial statement detection and intelligent column mapping'
-    },
-    {
-      icon: GlobeAltIcon,
-      title: isSpanish ? 'Soporte LATAM' : 'LATAM Support',
-      description: isSpanish
-        ? 'Formatos nativos de fecha DD/MM, decimales con coma y términos en español'
-        : 'Native DD/MM date formats, comma decimals and Spanish terminology'
+        ? 'Detección automática de estados P&L y Flujo de Caja con mapeo inteligente de columnas'
+        : 'Auto-detect P&L and Cash Flow statements with intelligent column mapping'
     },
     {
       icon: DocumentDuplicateIcon,
-      title: isSpanish ? 'Plantillas Reutilizables' : 'Reusable Templates',
+      title: isSpanish ? 'Plantillas de Configuración' : 'Configuration Templates',
       description: isSpanish
-        ? 'Guarda y comparte plantillas de mapeo entre tu equipo'
-        : 'Save and share mapping templates across your team'
-    },
-    {
-      icon: ShieldCheckIcon,
-      title: isSpanish ? 'Seguridad Empresarial' : 'Enterprise Security',
-      description: isSpanish
-        ? 'Multi-tenancy con aislamiento completo de datos por empresa'
-        : 'Multi-tenancy with complete data isolation per company'
+        ? 'Crea plantillas reutilizables para procesamiento consistente de datos'
+        : 'Create reusable templates for consistent data processing'
     },
     {
       icon: ChartBarIcon,
-      title: isSpanish ? 'Visualización Interactiva' : 'Interactive Visualization',
+      title: isSpanish ? 'Dashboards Interactivos' : 'Interactive Dashboards',
       description: isSpanish
-        ? 'Interfaz tipo Excel con indicadores de confianza por colores'
-        : 'Excel-like interface with color-coded confidence indicators'
+        ? 'Visualizaciones de P&L y Flujo de Caja con comparaciones de períodos'
+        : 'P&L and Cash Flow visualizations with period comparisons'
     },
     {
-      icon: CurrencyDollarIcon,
-      title: isSpanish ? 'Multi-moneda' : 'Multi-currency',
+      icon: DocumentTextIcon,
+      title: isSpanish ? 'Capacidades de Exportación' : 'Export Capabilities',
       description: isSpanish
-        ? 'Soporte para múltiples monedas con conversión automática'
-        : 'Support for multiple currencies with automatic conversion'
+        ? 'Genera reportes profesionales en PDF, JSON y CSV'
+        : 'Generate professional reports in PDF, JSON, and CSV formats'
+    },
+    {
+      icon: CogIcon,
+      title: isSpanish ? 'Mapeo Visual' : 'Visual Mapping',
+      description: isSpanish
+        ? 'Interfaz tipo Excel con indicadores de confianza y vista previa en vivo'
+        : 'Excel-like interface with confidence scoring and live preview'
+    },
+    {
+      icon: ShieldCheckIcon,
+      title: isSpanish ? 'Listo para Empresas' : 'Enterprise Ready',
+      description: isSpanish
+        ? 'Multi-tenant, acceso basado en roles, aislamiento seguro de datos'
+        : 'Multi-tenant, role-based access, secure data isolation'
     }
   ];
 
   const testimonials = [
     {
-      name: "María González",
-      company: "CFO, TechCorp Americas",
+      name: "Financial Team",
+      company: "Mid-size Manufacturing Company",
       quote: isSpanish
-        ? "Warren ha transformado completamente nuestro proceso de análisis financiero. Lo que antes tomaba días, ahora lo hacemos en minutos."
-        : "Warren has completely transformed our financial analysis process. What used to take days, we now do in minutes."
+        ? "Warren ha simplificado nuestro análisis de estados financieros. La interfaz visual hace que el mapeo de datos sea intuitivo y preciso."
+        : "Warren has simplified our financial statement analysis. The visual interface makes data mapping intuitive and accurate."
     },
     {
-      name: "Carlos Rodríguez",
-      company: "Director Financiero, Grupo Industrial SA",
+      name: "Accounting Department",
+      company: "Professional Services Firm",
       quote: isSpanish
-        ? "La detección automática y el soporte nativo para formatos LATAM nos ha ahorrado incontables horas de trabajo manual."
-        : "The automatic detection and native support for LATAM formats has saved us countless hours of manual work."
+        ? "Las plantillas configurables nos permiten procesar múltiples formatos de estados financieros de manera consistente."
+        : "The configurable templates allow us to process multiple financial statement formats consistently."
     }
   ];
 
@@ -132,45 +134,48 @@ function LandingContent() {
       
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-green-50 opacity-70"></div>
-        <div className="relative container mx-auto px-4 py-20 md:py-32">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/20 to-violet-500/30"></div>
+        <div className="absolute inset-0 bg-grid-white/10 opacity-20"></div>
+        <div className="relative container mx-auto px-4 py-24 md:py-40">
+          <div className="text-center max-w-5xl mx-auto">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-sm">
               {isSpanish 
-                ? 'Análisis Financiero Inteligente para LATAM'
-                : 'Intelligent Financial Analysis for LATAM'
+                ? 'Plataforma de Análisis Financiero Inteligente'
+                : 'Intelligent Financial Analysis Platform'
               }
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8">
+            <p className="text-xl md:text-2xl text-blue-100 mb-8 drop-shadow-sm">
               {isSpanish
-                ? 'Transforma tus archivos Excel en insights accionables con IA especializada en formatos financieros latinoamericanos'
-                : 'Transform your Excel files into actionable insights with AI specialized in Latin American financial formats'
+                ? 'Transforma datos de Excel en insights poderosos con procesamiento impulsado por IA y dashboards interactivos'
+                : 'Transform Excel data into powerful insights with AI-driven processing and interactive dashboards'
               }
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                variant="gradient"
+                variant="secondary"
                 size="xl"
-                onClick={() => router.push('/signup')}
-                className="px-8"
+                onClick={() => {
+                  // Open request access modal or redirect to contact
+                  window.open('mailto:contact@warren.com?subject=Request Access to Warren Platform', '_blank');
+                }}
+                className="bg-white text-indigo-600 hover:bg-gray-100 px-8 shadow-lg"
               >
-                {isSpanish ? 'Crear Cuenta Gratis' : 'Create Free Account'}
+                {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
               </Button>
-              <Button
-                variant="outline"
-                size="xl"
+              <button
                 onClick={() => {
                   window.location.href = '/login';
                 }}
-                className="px-8"
+                className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-transparent border-2 border-white rounded-xl hover:bg-white hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 ease-in-out"
               >
                 {isSpanish ? 'Iniciar Sesión' : 'Sign In'}
-              </Button>
+              </button>
             </div>
-            <p className="text-sm text-gray-500 mt-4">
+            <p className="text-sm text-blue-200 mt-4">
               {isSpanish 
-                ? '30 días de prueba gratis • Sin tarjeta de crédito'
-                : '30-day free trial • No credit card required'
+                ? 'Acceso inmediato • Configuración rápida'
+                : 'Instant access • Quick setup'
               }
             </p>
           </div>
@@ -189,22 +194,22 @@ function LandingContent() {
             </h2>
             <p className="text-xl text-gray-600">
               {isSpanish
-                ? 'Diseñado específicamente para empresas latinoamericanas'
-                : 'Designed specifically for Latin American companies'
+                ? 'Herramientas poderosas para empresas de todos los tamaños'
+                : 'Powerful tools for businesses of all sizes'
               }
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {features.map((feature, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardBody className="p-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-white" />
+              <Card key={index} className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <CardBody className="p-8">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+                    <feature.icon className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 leading-relaxed">
                     {feature.description}
                   </p>
                 </CardBody>
@@ -230,31 +235,31 @@ function LandingContent() {
               {[
                 {
                   step: '1',
-                  title: isSpanish ? 'Sube tu archivo' : 'Upload your file',
+                  title: isSpanish ? 'Sube archivo Excel' : 'Upload Excel file',
                   description: isSpanish
-                    ? 'Arrastra tu archivo Excel con estados financieros'
-                    : 'Drag and drop your Excel file with financial statements'
+                    ? 'Arrastra tu archivo Excel con datos financieros'
+                    : 'Drag and drop your Excel file with financial data'
                 },
                 {
                   step: '2',
-                  title: isSpanish ? 'Detección automática' : 'Automatic detection',
+                  title: isSpanish ? 'Selecciona configuración' : 'Select configuration',
                   description: isSpanish
-                    ? 'Nuestra IA identifica el tipo de estado financiero y mapea las columnas'
-                    : 'Our AI identifies the statement type and maps the columns'
+                    ? 'Elige o crea una plantilla de configuración para el procesamiento'
+                    : 'Choose or create a configuration template for processing'
                 },
                 {
                   step: '3',
-                  title: isSpanish ? 'Revisa y ajusta' : 'Review and adjust',
+                  title: isSpanish ? 'Mapea con interfaz visual' : 'Map with visual interface',
                   description: isSpanish
-                    ? 'Verifica el mapeo y realiza ajustes si es necesario'
-                    : 'Verify the mapping and make adjustments if needed'
+                    ? 'Usa la interfaz de mapeo visual para verificar y ajustar columnas'
+                    : 'Use the visual mapping interface to verify and adjust columns'
                 },
                 {
                   step: '4',
-                  title: isSpanish ? 'Obtén insights' : 'Get insights',
+                  title: isSpanish ? 'Ve dashboards interactivos' : 'View interactive dashboards',
                   description: isSpanish
-                    ? 'Accede a análisis detallados y visualizaciones interactivas'
-                    : 'Access detailed analysis and interactive visualizations'
+                    ? 'Accede a dashboards de P&L y Flujo de Caja con insights detallados'
+                    : 'Access P&L and Cash Flow dashboards with detailed insights'
                 }
               ].map((item, index) => (
                 <div key={index} className="flex gap-4">
@@ -320,18 +325,20 @@ function LandingContent() {
           </h2>
           <p className="text-xl text-blue-100 mb-8">
             {isSpanish
-              ? 'Únete a cientos de empresas que ya confían en Warren'
-              : 'Join hundreds of companies that already trust Warren'
+              ? 'Comienza a transformar tus datos financieros hoy mismo'
+              : 'Start transforming your financial data today'
             }
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               variant="secondary"
               size="xl"
-              onClick={() => router.push('/signup')}
+              onClick={() => {
+                window.open('mailto:contact@warren.com?subject=Request Access to Warren Platform', '_blank');
+              }}
               className="bg-white text-blue-600 hover:bg-gray-100 px-8"
             >
-              {isSpanish ? 'Comenzar Gratis' : 'Start Free'}
+              {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
             </Button>
             <Button
               variant="outline"
