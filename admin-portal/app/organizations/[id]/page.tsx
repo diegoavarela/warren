@@ -1121,7 +1121,7 @@ export default function OrganizationDetailPage() {
             size="md"
           >
             <UserEditForm
-              user={selectedUser}
+              user={selectedUser as any}
               organizationId={orgId}
               onSubmit={handleEditUser}
               onCancel={() => {
@@ -1172,7 +1172,7 @@ export default function OrganizationDetailPage() {
           >
             <CompanyEditForm
               company={selectedCompany}
-              onSubmit={handleEditCompany}
+              onSubmit={handleEditCompany as any}
               onCancel={() => {
                 setShowEditCompanyModal(false);
                 setSelectedCompany(null);

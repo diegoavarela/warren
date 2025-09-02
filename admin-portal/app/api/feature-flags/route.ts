@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
 
       // Enable for all organizations
       if (organizations.length > 0) {
-        const orgFeatures = organizations.map(org => ({
+        const orgFeatures = organizations.map((org: any) => ({
           organizationId: org.id,
           featureId: newFeature.id,
           enabled: true,

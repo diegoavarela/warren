@@ -27,7 +27,7 @@ export const GET = requireAuth(async (request: NextRequest) => {
 
     // Get counts for each organization
     const orgsWithStats = await Promise.all(
-      orgList.map(async (org) => {
+      orgList.map(async (org: any) => {
         const [userCount] = await db
           .select({ count: count() })
           .from(users)

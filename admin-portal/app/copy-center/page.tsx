@@ -198,7 +198,7 @@ export default function CopyCenterPage() {
       if (result.success) {
         setAvailableConfigurations(result.data);
         // Auto-select all configurations by default
-        const allConfigIds = new Set(result.data.map((config: Configuration) => config.id));
+        const allConfigIds = new Set(result.data.map((config: Configuration) => config.id)) as Set<string>;
         setSelectedConfigIds(allConfigIds);
       }
     } catch (error) {
@@ -357,20 +357,21 @@ export default function CopyCenterPage() {
 
   return (
     <DashboardLayout
-      title={
-        <div className="flex items-center">
-          <span>Copy Center</span>
-          <button
-            onClick={() => setShowHelpModal(true)}
-            className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <QuestionMarkCircleIcon className="h-5 w-5" />
-          </button>
-        </div>
-      }
+      title="Copy Center"
       description="Copy configurations and data between companies across organizations"
     >
       <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            Copy Center
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <QuestionMarkCircleIcon className="h-5 w-5" />
+            </button>
+          </h1>
+        </div>
 
         {/* Source Companies */}
         <div className="space-y-4">

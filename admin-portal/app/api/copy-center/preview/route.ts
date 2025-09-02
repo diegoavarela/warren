@@ -76,7 +76,7 @@ export const POST = requireAuth(async (request: NextRequest) => {
         configWhere = and(
           eq(companyConfigurations.companyId, sourceCompanyId),
           inArray(companyConfigurations.id, validConfigIds)
-        );
+        )!;
       }
     }
 
@@ -116,7 +116,7 @@ export const POST = requireAuth(async (request: NextRequest) => {
         processedDataWhere = and(
           eq(processedFinancialData.companyId, sourceCompanyId),
           inArray(processedFinancialData.configId, validConfigIds)
-        );
+        )!;
       }
     }
 
@@ -139,7 +139,7 @@ export const POST = requireAuth(async (request: NextRequest) => {
       .orderBy(processedFinancialData.processedAt);
 
     // Calculate estimated size
-    const totalFileSize = dataFiles.reduce((sum, file) => sum + (file.fileSize || 0), 0);
+    const totalFileSize = dataFiles.reduce((sum: number, file: any) => sum + (file.fileSize || 0), 0);
     const estimatedSize = formatFileSize(totalFileSize);
 
     // Check for potential conflicts
@@ -163,13 +163,13 @@ export const POST = requireAuth(async (request: NextRequest) => {
     }
 
     // Check for naming conflicts
-    const configNames = configurations.map(c => c.name);
+    const configNames = configurations.map((c: any) => c.name);
     if (configNames.length !== new Set(configNames).size) {
       conflicts.push('Source company has duplicate configuration names that need to be resolved');
     }
 
     // Check for large file sizes
-    const largeFiles = dataFiles.filter(f => f.fileSize > 50 * 1024 * 1024); // > 50MB
+    const largeFiles = dataFiles.filter((f: any) => f.fileSize > 50 * 1024 * 1024); // > 50MB
     if (largeFiles.length > 0) {
       conflicts.push(`${largeFiles.length} files are larger than 50MB and may take time to copy`);
     }

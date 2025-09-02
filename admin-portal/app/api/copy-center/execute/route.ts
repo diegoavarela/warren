@@ -71,7 +71,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
         configWhere = and(
           eq(companyConfigurations.companyId, sourceCompanyId),
           inArray(companyConfigurations.id, validConfigIds)
-        );
+        )!;
       }
     }
 
@@ -162,7 +162,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
         processedDataWhere = and(
           eq(processedFinancialData.companyId, sourceCompanyId),
           inArray(processedFinancialData.configId, validConfigIds)
-        );
+        )!;
       }
     }
 

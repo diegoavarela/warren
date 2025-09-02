@@ -45,7 +45,7 @@ export function SafeDeleteModal({
   if (!isOpen) return null;
 
   return (
-    <Modal title={title} onClose={handleClose} size="medium">
+    <Modal isOpen={isOpen} title={title} onClose={handleClose} size="md">
       <div className="space-y-4">
         {/* Warning Icon */}
         <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full">

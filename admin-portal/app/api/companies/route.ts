@@ -22,7 +22,7 @@ export const GET = requireAuth(async (request: NextRequest) => {
 
     // Add configuration counts for each company
     const companiesWithCounts = await Promise.all(
-      companiesList.map(async (company) => {
+      companiesList.map(async (company: any) => {
         // Count P&L configurations
         const [pnlCount] = await db
           .select({ count: count() })

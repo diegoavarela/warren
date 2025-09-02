@@ -33,7 +33,7 @@ interface Company {
 export default function EditCompanyPage() {
   const params = useParams();
   const router = useRouter();
-  const { toast } = useToast();
+  const toast = useToast();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

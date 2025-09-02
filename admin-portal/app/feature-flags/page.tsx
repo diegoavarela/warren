@@ -202,7 +202,7 @@ export default function FeatureFlagsPage() {
       
     } catch (error) {
       console.error('Error in handleEdit:', error);
-      alert('Error opening edit modal: ' + error.message);
+      alert('Error opening edit modal: ' + (error as Error).message);
     }
   };
 
@@ -251,7 +251,7 @@ export default function FeatureFlagsPage() {
       setSelectedFeature(null);
     } catch (error) {
       console.error('Error saving feature:', error);
-      alert(error.message || 'Failed to save feature');
+      alert((error as Error).message || 'Failed to save feature');
     } finally {
       setFormLoading(false);
     }
@@ -625,9 +625,10 @@ export default function FeatureFlagsPage() {
         {/* Organizations Modal */}
         {showOrganizationsModal && selectedFeature && (
           <Modal
+            isOpen={showOrganizationsModal}
             title={`Organizations using "${selectedFeature.name}"`}
             onClose={() => setShowOrganizationsModal(false)}
-            size="large"
+            size="lg"
           >
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-4 border-b">
@@ -721,12 +722,13 @@ export default function FeatureFlagsPage() {
         {/* Old Delete Confirmation Modal - keeping for now */}
         {showDeleteModal && selectedFeature && (
           <ConfirmModal
+            isOpen={showDeleteModal}
             title="Delete Feature"
             message={`Are you sure you want to delete "${selectedFeature.name}"? This will remove the feature and all organization access. This action cannot be undone.`}
-            confirmLabel="Delete Feature"
+            confirmText="Delete Feature"
             confirmVariant="danger"
             onConfirm={handleDeleteConfirm}
-            onCancel={() => {
+            onClose={() => {
               setShowDeleteModal(false);
               setSelectedFeature(null);
             }}

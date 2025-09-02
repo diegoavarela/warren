@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/shared/db';
 import { users, organizations, companies } from '@/shared/db';
-import { eq, ilike, or } from 'drizzle-orm';
+import { eq, ilike, or, and } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 import bcrypt from 'bcryptjs';
 
@@ -55,8 +55,7 @@ export const GET = requireAuth(async (request: NextRequest) => {
 
     if (conditions.length > 0) {
       query = query.where(
-        conditions.length === 1 ? conditions[0] : 
-        conditions.reduce((acc, condition) => eq(acc, condition))
+        conditions.length === 1 ? conditions[0] : and(...conditions)!
       );
     }
 

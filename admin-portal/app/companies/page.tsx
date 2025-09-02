@@ -34,7 +34,7 @@ interface Organization {
 
 export default function CompaniesPage() {
   const router = useRouter();
-  const { toast } = useToast();
+  const toast = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -199,7 +199,7 @@ export default function CompaniesPage() {
           loading={deleteLoading}
         />
         
-        <ToastContainer />
+        <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
       </div>
     </DashboardLayout>
   );

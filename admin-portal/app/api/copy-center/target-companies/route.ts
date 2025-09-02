@@ -19,17 +19,17 @@ export const GET = requireAuth(async (request: NextRequest) => {
         eq(companies.isActive, true),
         ne(companies.id, excludeCompanyId),
         eq(companies.organizationId, organizationId)
-      );
+      )!;
     } else if (excludeCompanyId) {
       whereClause = and(
         eq(companies.isActive, true),
         ne(companies.id, excludeCompanyId)
-      );
+      )!;
     } else if (organizationId) {
       whereClause = and(
         eq(companies.isActive, true),
         eq(companies.organizationId, organizationId)
-      );
+      )!;
     }
 
     // Get companies as potential targets

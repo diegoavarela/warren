@@ -1,4 +1,4 @@
 {
-  "buildCommand": "npm run build",
-  "installCommand": "npm install"
+  "buildCommand": "cd .. && npm install && cd admin-portal && NODE_PATH=../node_modules npm run build",
+  "installCommand": "cd .. && npm install"
 }

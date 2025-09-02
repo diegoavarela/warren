@@ -50,7 +50,7 @@ export const GET = requireAuth(async (request: NextRequest) => {
 
     // Format the response with proper null handling and sort by total data
     const formattedList = sourceCompaniesList
-      .map(row => ({
+      .map((row: any) => ({
         id: row.id,
         name: row.name,
         organizationId: row.organizationId,
@@ -61,7 +61,7 @@ export const GET = requireAuth(async (request: NextRequest) => {
         processedDataCount: Number(row.processedDataCount) || 0,
         lastProcessedAt: row.lastProcessedAt,
       }))
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         const totalA = a.configurationsCount + a.dataFilesCount + a.processedDataCount;
         const totalB = b.configurationsCount + b.dataFilesCount + b.processedDataCount;
         return totalB - totalA; // Descending order
