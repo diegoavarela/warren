@@ -4,6 +4,8 @@ import { companies, organizations, companyConfigurations, financialDataFiles, pr
 import { eq, sql, and } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/copy-center/source-companies - Get all companies that can be used as sources for copying
 export const GET = requireAuth(async (request: NextRequest) => {
   try {

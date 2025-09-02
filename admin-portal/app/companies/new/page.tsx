@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -9,7 +9,7 @@ import { useToast, ToastContainer } from '@/components/ui/Toast';
 import CompanyForm, { CompanyFormData } from '@/shared/components/CompanyForm';
 import { ArrowLeftIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 
-export default function NewCompanyPage() {
+function NewCompanyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -116,5 +116,13 @@ export default function NewCompanyPage() {
         />
       </DashboardLayout>
     </ProtectedRoute>
+  );
+}
+
+export default function NewCompanyPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64">Loading...</div>}>
+      <NewCompanyContent />
+    </Suspense>
   );
 }

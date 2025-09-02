@@ -4,6 +4,8 @@ import { organizations, companies } from '@/lib/db';
 import { eq, and, sql, ne } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/copy-center/client-organizations - Get client organizations for copying
 export const GET = requireAuth(async (request: NextRequest) => {
   try {

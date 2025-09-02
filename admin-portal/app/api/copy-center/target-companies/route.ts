@@ -4,6 +4,8 @@ import { companies, organizations } from '@/lib/db';
 import { eq, ne, and } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/copy-center/target-companies - Get all companies that can be used as targets for copying
 export const GET = requireAuth(async (request: NextRequest) => {
   try {

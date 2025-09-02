@@ -4,6 +4,8 @@ import { companies, organizations } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/companies/[id] - Get company details
 export const GET = requireAuth(async (request: NextRequest, user, { params }: { params: { id: string } }) => {
   try {
