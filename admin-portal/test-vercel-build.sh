@@ -33,8 +33,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "4. Running admin-portal build with NODE_PATH..."
-NODE_PATH=../warren/node_modules npm run build
+echo "4. Running admin-portal standalone build..."
+npm run build:standalone
 if [ $? -eq 0 ]; then
     echo "✅ Vercel build simulation PASSED"
 else

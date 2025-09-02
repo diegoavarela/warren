@@ -18,7 +18,7 @@
       }
     ],
     "baseUrl": ".",
-    "typeRoots": ["./node_modules/@types", "./types", "../warren/node_modules/@types"],
+    "typeRoots": ["./node_modules/@types", "./types"],
     "paths": {
       "@/*": ["./*"],
       "@/shared/*": ["../shared/*"],
