@@ -26,15 +26,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "3. Installing admin-portal dependencies..."
-cd ../admin-portal && npm ci --legacy-peer-deps
+echo "3. Fresh install admin-portal dependencies..."
+cd ../admin-portal && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps
 if [ $? -ne 0 ]; then
-    echo "❌ Admin-portal npm ci failed"
+    echo "❌ Admin-portal npm install failed"
     exit 1
 fi
 
 echo "4. Debug: Check admin-portal dependencies..."
-ls -la node_modules | head -10
 npm ls --depth=0 | grep tailwind
 echo "5. Running admin-portal standalone build..."
 npm run build:standalone
