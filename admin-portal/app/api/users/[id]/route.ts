@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users, organizations } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // GET /api/users/[id] - Get user details
 export const GET = requireAuth(async (request: NextRequest, user, { params }: { params: { id: string } }) => {

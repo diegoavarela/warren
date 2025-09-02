@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { generateTempPassword, validatePassword, hashPassword } from '@/lib/password-utils';
 
 // POST /api/users/[id]/reset-password - Reset user password
