@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd ../warren && npm install && cd ../shared && npm install && cd ../admin-portal && NODE_PATH=../warren/node_modules npm run build",
-  "installCommand": "cd ../warren && npm install"
+  "buildCommand": "cd ../warren && npm install && cd ../shared && npm install && cd ../admin-portal && npm install && NODE_PATH=../warren/node_modules npm run build",
+  "installCommand": "npm install"
 }
