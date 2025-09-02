@@ -33,7 +33,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "4. Running admin-portal standalone build..."
+echo "4. Running admin-portal standalone build (without redundant install)..."
 npm run build:standalone
 if [ $? -eq 0 ]; then
     echo "✅ Vercel build simulation PASSED"
