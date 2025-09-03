@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Attempting login with:', { email, passwordLength: password.length });
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -74,20 +75,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await response.json();
+      console.log('Login response:', { status: response.status, data });
 
       if (response.ok && data.success) {
         // Check if user is platform admin
         if (data.user.role !== 'platform_admin') {
+          console.log('Role check failed:', data.user.role);
           return {
             success: false,
             error: 'Access denied. Admin role required.'
           };
         }
 
+        console.log('Login successful, setting user and token');
         setUser(data.user);
         localStorage.setItem('admin-token', data.token);
+        
+        // Also set token in cookies for middleware
+        document.cookie = `admin-token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
+        
         return { success: true };
       } else {
+        console.log('Login failed:', data);
         return {
           success: false,
           error: data.error || 'Login failed'
@@ -104,6 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('admin-token');
+    // Clear cookie
+    document.cookie = 'admin-token=; path=/; max-age=0';
     window.location.href = '/login';
   };
 
