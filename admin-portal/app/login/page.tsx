@@ -28,7 +28,12 @@ export default function LoginPage() {
       
       if (result.success) {
         console.log('Redirecting to dashboard...');
+        // Try both methods
         router.push('/dashboard');
+        setTimeout(() => {
+          console.log('Using window.location as fallback...');
+          window.location.href = '/dashboard';
+        }, 1000);
       } else {
         console.log('Login failed with error:', result.error);
         setError(result.error || 'Login failed');
