@@ -69,10 +69,29 @@ export function LocaleProvider({ children }: LocaleProviderProps) {
 }
 
 export function useLocale() {
-  const context = useContext(LocaleContext);
-  if (!context) {
-    // Provide a fallback during SSR or when context is not available
-    console.warn('useLocale called outside of LocaleProvider, using defaults');
+  // Check if we're in a React context at all
+  try {
+    const context = useContext(LocaleContext);
+    if (!context) {
+      // Provide a fallback during SSR or when context is not available
+      console.warn('useLocale called outside of LocaleProvider, using defaults');
+      return {
+        locale: 'en-US',
+        setLocale: () => {},
+        localeInfo: null,
+        currency: 'USD',
+        numberFormat: {
+          decimalSeparator: '.',
+          thousandsSeparator: ',',
+          currencySymbol: '$',
+        },
+        isLoading: false
+      };
+    }
+    return context;
+  } catch (error) {
+    // If useContext fails entirely, provide safe defaults
+    console.warn('useLocale failed to access React context, using defaults:', error);
     return {
       locale: 'en-US',
       setLocale: () => {},
@@ -86,5 +105,4 @@ export function useLocale() {
       isLoading: false
     };
   }
-  return context;
 }
