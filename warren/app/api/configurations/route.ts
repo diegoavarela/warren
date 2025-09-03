@@ -3,6 +3,7 @@ import { configurationService } from '@/lib/services/configuration-service';
 import { CompanyConfigurationCreateSchema } from '@/lib/validation/configuration-schemas';
 import { getCurrentUser } from '@/lib/auth/server-auth';
 import { hasCompanyAccess } from '@/lib/auth/rbac';
+import { logConfigurationAction } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +50,20 @@ export async function POST(req: NextRequest) {
 
       // Create the configuration
       const configuration = await configurationService.createConfiguration(data, user.id);
+
+      // Log configuration creation
+      await logConfigurationAction(
+        'create_configuration',
+        configuration.id,
+        data.companyId,
+        user.id,
+        req,
+        {
+          name: configuration.name,
+          type: configuration.type,
+          uploadSession
+        }
+      );
 
       return NextResponse.json({
         success: true,

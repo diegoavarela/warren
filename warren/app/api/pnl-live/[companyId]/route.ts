@@ -12,6 +12,7 @@ import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { configurationService } from '@/lib/services/configuration-service';
 import { excelProcessingService } from '@/lib/services/excel-processing-service';
 import { cacheService } from '@/lib/services/cache-service';
+import { logDashboardView } from '@/lib/audit';
 
 export async function GET(
   request: NextRequest,
@@ -136,6 +137,21 @@ export async function GET(
         configurationName: pnlConfig.name
       }
     };
+
+    // Log P&L dashboard view
+    await logDashboardView(
+      'pnl',
+      params.companyId,
+      user.id,
+      request,
+      {
+        configurationId: pnlConfig.id,
+        configurationName: pnlConfig.name,
+        periodCount: processedData.periods?.length || 0,
+        currency: pnlConfig.configJson?.metadata?.currency || 'USD',
+        fromCache: !!cachedData
+      }
+    );
 
     // Cache the response for 5 minutes
     cacheService.set(cacheKey, response);

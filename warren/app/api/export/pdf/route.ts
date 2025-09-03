@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProfessionalPDFExportService } from '@/lib/services/professional-pdf-export';
 import { getCurrentUser } from '@/lib/auth/server-auth';
+import { logExportAction } from '@/lib/audit';
 
 // Load translations
 async function loadExportTranslations(locale: string) {
@@ -326,6 +327,22 @@ export async function POST(request: NextRequest) {
     const filename = dashboardType === 'cashflow' 
       ? (locale.startsWith('es') ? `flujo-caja-${date}.pdf` : `cash-flow-${date}.pdf`)
       : (locale.startsWith('es') ? `estado-resultados-${date}.pdf` : `profit-loss-${date}.pdf`);
+
+    // Log export action
+    await logExportAction(
+      'pdf',
+      dashboardType,
+      companyId,
+      user.id,
+      request,
+      {
+        filename,
+        fileSize: pdfBuffer.length,
+        companyName: companyData?.companyName || companyName,
+        currentPeriod,
+        locale
+      }
+    );
 
     // Return PDF with proper headers
     return new Response(pdfBuffer, {

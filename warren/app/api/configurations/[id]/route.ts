@@ -3,6 +3,7 @@ import { configurationService } from '@/lib/services/configuration-service';
 import { CompanyConfigurationUpdateSchema } from '@/lib/validation/configuration-schemas';
 import { getCurrentUser } from '@/lib/auth/server-auth';
 import { hasCompanyAccess } from '@/lib/auth/rbac';
+import { logConfigurationAction } from '@/lib/audit';
 
 interface RouteParams {
   params: {
@@ -98,6 +99,20 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     // Update the configuration
     const updatedConfiguration = await configurationService.updateConfiguration(configId, data, ''); // Empty userId for now
+
+    // Log configuration update
+    await logConfigurationAction(
+      'update_configuration',
+      configId,
+      updatedConfiguration.companyId,
+      user.id,
+      req,
+      {
+        name: updatedConfiguration.name,
+        type: updatedConfiguration.type,
+        changes: data
+      }
+    );
 
     return NextResponse.json({
       success: true,

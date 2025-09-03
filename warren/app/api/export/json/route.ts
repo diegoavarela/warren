@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { JsonExportService } from '@/lib/services/json-export-service';
 import { getCurrentUser } from '@/lib/auth/server-auth';
+import { logExportAction } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -312,6 +313,22 @@ export async function POST(request: NextRequest) {
     const filename = dashboardType === 'cashflow' 
       ? (locale.startsWith('es') ? `flujo-caja-${date}.json` : `cash-flow-${date}.json`)
       : (locale.startsWith('es') ? `estado-resultados-${date}.json` : `profit-loss-${date}.json`);
+
+    // Log export action
+    await logExportAction(
+      'json',
+      dashboardType,
+      companyId,
+      user.id,
+      request,
+      {
+        filename,
+        fileSize: jsonBuffer.length,
+        companyName: companyData?.companyName || companyName,
+        currentPeriod,
+        locale
+      }
+    );
 
     // Return JSON with proper headers
     return new Response(jsonBuffer, {

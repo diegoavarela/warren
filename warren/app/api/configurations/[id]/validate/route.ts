@@ -5,6 +5,7 @@ import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { logConfigurationAction } from '@/lib/audit';
 
 interface RouteParams {
   params: {
@@ -99,6 +100,20 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       // Structure-only validation (new functionality)
       // TODO: Implement validateConfigurationStructure method in ConfigurationService
       const validationResult = { success: true, message: 'Structure validation temporarily disabled' };
+
+      // Log configuration validation
+      await logConfigurationAction(
+        'validate_configuration',
+        configId,
+        configuration.companyId,
+        user.id,
+        req,
+        {
+          name: configuration.name,
+          type: configuration.type,
+          validationResult
+        }
+      );
 
       return NextResponse.json({
         success: true,

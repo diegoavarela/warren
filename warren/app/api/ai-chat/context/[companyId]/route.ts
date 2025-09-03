@@ -11,6 +11,7 @@ import { getCurrentUser } from '@/lib/auth/server-auth';
 import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { configurationService } from '@/lib/services/configuration-service';
 import { excelProcessingService } from '@/lib/services/excel-processing-service';
+import { logAIInteraction } from '@/lib/audit';
 
 interface FinancialContext {
   companyId: string;
@@ -224,6 +225,24 @@ export async function GET(
       periodsWithData,
       totalPeriods
     };
+
+    // Log AI context loading
+    await logAIInteraction(
+      'ai_analysis',
+      params.companyId,
+      user.id,
+      request,
+      {
+        companyName: context.companyName,
+        pnlAvailable: context.pnl.available,
+        cashflowAvailable: context.cashflow.available,
+        periodsWithData: context.metadata.dataQuality.periodsWithData,
+        totalPeriods: context.metadata.dataQuality.totalPeriods,
+        completeness: context.metadata.dataQuality.completeness,
+        currency: context.metadata.currency,
+        units: context.metadata.units
+      }
+    );
 
     return NextResponse.json(context);
 

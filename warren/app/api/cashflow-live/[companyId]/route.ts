@@ -12,6 +12,7 @@ import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { configurationService } from '@/lib/services/configuration-service';
 import { excelProcessingService } from '@/lib/services/excel-processing-service';
 import { cacheService } from '@/lib/services/cache-service';
+import { logDashboardView } from '@/lib/audit';
 
 export async function GET(
   request: NextRequest,
@@ -176,6 +177,21 @@ export async function GET(
           Object.values(processedData.periodMetadata).filter((meta: any) => meta?.isProjected).length : 0
       }
     };
+    
+    // Log Cash Flow dashboard view
+    await logDashboardView(
+      'cashflow',
+      params.companyId,
+      user.id,
+      request,
+      {
+        configurationId: cashFlowConfig.id,
+        configurationName: cashFlowConfig.name,
+        periodCount: processedData.periods?.length || 0,
+        currency: cashFlowConfig.configJson?.metadata?.currency || 'USD',
+        fromCache: !!cachedData
+      }
+    );
     
     // Cache the response for 5 minutes
     cacheService.set(cacheKey, response);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CsvExportService } from '@/lib/services/csv-export-service';
 import { getCurrentUser } from '@/lib/auth/server-auth';
+import { logExportAction } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -298,6 +299,22 @@ export async function POST(request: NextRequest) {
     const filename = dashboardType === 'cashflow' 
       ? (locale.startsWith('es') ? `flujo-caja-${date}.csv` : `cash-flow-${date}.csv`)
       : (locale.startsWith('es') ? `estado-resultados-${date}.csv` : `profit-loss-${date}.csv`);
+
+    // Log export action
+    await logExportAction(
+      'csv',
+      dashboardType,
+      companyId,
+      user.id,
+      request,
+      {
+        filename,
+        fileSize: csvBuffer.length,
+        companyName: companyData?.companyName || companyName,
+        currentPeriod,
+        locale
+      }
+    );
 
     // Return CSV with proper headers
     return new Response(csvBuffer, {

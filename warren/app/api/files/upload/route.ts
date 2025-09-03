@@ -3,6 +3,7 @@ import { excelProcessingService } from '@/lib/services/excel-processing-service'
 import { getCurrentUser } from '@/lib/auth/server-auth';
 import { hasCompanyAccess } from '@/lib/auth/rbac';
 import crypto from 'crypto';
+import { logDataProcessing } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -91,6 +92,21 @@ export async function POST(req: NextRequest) {
         user.id,
         uploadSession,
         fileHash
+      );
+
+      // Log file upload
+      await logDataProcessing(
+        'upload_file',
+        fileRecord.id,
+        companyId,
+        user.id,
+        req,
+        {
+          filename: fileRecord.originalFilename,
+          fileSize: fileRecord.fileSize,
+          uploadSession,
+          fileHash
+        }
       );
 
       return NextResponse.json({

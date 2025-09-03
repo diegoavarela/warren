@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getCurrentUser } from '@/lib/auth/server-auth';
+import { logAIInteraction } from '@/lib/audit';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -592,6 +593,24 @@ When providing insights, base them solely on the available data.`;
 
     // Generate smart question suggestions
     const suggestions = generateSmartQuestions(context);
+
+    // Log AI chat interaction
+    await logAIInteraction(
+      'use_ai_chat',
+      companyId,
+      user.id,
+      request,
+      {
+        message: message.substring(0, 200) + (message.length > 200 ? '...' : ''), // Truncate for audit log
+        companyName: context.companyName,
+        responseType: chartConfig ? 'chart' : insight ? 'insight' : 'text',
+        hasChart: !!chartConfig,
+        hasInsight: !!insight,
+        suggestionsCount: suggestions.length,
+        currency: context.metadata.currency,
+        units: context.metadata.units
+      }
+    );
 
     const response = {
       message: responseMessage.content || (chartConfig ? 'Here is your chart:' : 'Here is your analysis:'),

@@ -5,6 +5,7 @@ import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { db, financialDataFiles, companyConfigurations } from '@/lib/db';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { logDataProcessing } from '@/lib/audit';
 
 // Request validation schema
 const ProcessFileRequestSchema = z.object({
@@ -116,6 +117,24 @@ export async function POST(req: NextRequest) {
         fileId,
         processingResult.data,
         user.id
+      );
+
+      // Log data processing
+      await logDataProcessing(
+        'process_data',
+        processedRecord.id,
+        companyId,
+        user.id,
+        req,
+        {
+          fileId: fileRecord.id,
+          fileName: fileRecord.originalFilename,
+          configId: configId,
+          configName: configResult[0].name,
+          processingStatus: processedRecord.processingStatus,
+          currency: processedRecord.currency,
+          units: processedRecord.units
+        }
       );
 
       return NextResponse.json({
