@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3001',
@@ -6,6 +8,13 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     // Handle symlinks for shared modules
     config.resolve.symlinks = false;
+    
+    // Explicit path aliases for better resolution
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname),
+      '@/shared': path.resolve(__dirname, '../shared'),
+    };
     
     // Handle ESM packages
     if (isServer) {
