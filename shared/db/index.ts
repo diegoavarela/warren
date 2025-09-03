@@ -1,7 +1,6 @@
 // Database connection with fallback to mock for local development
 // IMPORTANT: Using actual-schema.ts which matches the real database structure
 import * as schema from "./actual-schema";
-import { auditLogs as auditLogsTable } from "./actual-schema";
 
 // Ensure .env.local is loaded (Next.js should handle this, but let's be explicit)
 if (typeof window === 'undefined') {
@@ -83,6 +82,7 @@ if (!isServer) {
   featureFlags = null;
   organizationFeatures = null;
   featureRequests = null;
+  auditLogs = null;
   eq = () => {};
   desc = () => {};
   count = () => {};
@@ -131,7 +131,7 @@ if (!isServer) {
   featureFlags = schema.featureFlags;
   organizationFeatures = schema.organizationFeatures;
   featureRequests = schema.featureRequests;
-  auditLogs = auditLogsTable;
+  auditLogs = schema.auditLogs;
   eq = realEq;
   desc = realDesc;
   count = realCount;
