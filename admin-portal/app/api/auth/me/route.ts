@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, organizations } from '@/lib/db';
 import { eq } from 'drizzle-orm';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,11 +20,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify JWT token
+    // Verify JWT token using jose (consistent with middleware)
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+      const { payload } = await jwtVerify(token, secret);
+      decoded = payload;
     } catch (jwtError) {
+      console.log('JWT verification failed in /api/auth/me:', jwtError);
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
@@ -38,7 +41,12 @@ export async function GET(request: NextRequest) {
       .where(eq(users.id, decoded.userId))
       .limit(1);
 
-    if (!user || !user.is_active || user.role !== 'platform_admin') {
+    if (!user || !user.isActive || user.role !== 'platform_admin') {
+      console.log('User validation failed:', { 
+        userExists: !!user, 
+        isActive: user?.isActive, 
+        role: user?.role 
+      });
       return NextResponse.json(
         { error: 'User not found or unauthorized' },
         { status: 401 }
