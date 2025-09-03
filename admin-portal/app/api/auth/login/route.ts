@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is active and has admin role
-    if (!user.is_active) {
+    if (!user.isActive) {
       return NextResponse.json(
         { success: false, error: 'Account is deactivated' },
         { status: 401 }
