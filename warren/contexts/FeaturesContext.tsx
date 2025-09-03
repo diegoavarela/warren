@@ -259,15 +259,18 @@ export function useFeatures() {
     // Provide a fallback during SSR or when context is not available
     console.warn('useFeatures called outside of FeaturesProvider, using defaults');
     return {
-      features: [],
-      hasFeature: () => false,
-      isFeatureVisible: () => false,
+      availableFeatures: [],
+      enabledFeatures: [],
+      isLoading: false,
       featureRequests: [],
-      submitFeatureRequest: async () => ({ success: false, error: 'Features context not available' }),
-      loadFeatures: () => {},
-      loadFeatureRequests: () => {},
-      enableFeature: async () => {},
-      disableFeature: async () => {},
+      requestsLoading: false,
+      hasFeature: () => false,
+      getFeature: () => undefined,
+      isFeatureVisible: () => false,
+      getVisibleFeatures: () => [],
+      requestFeature: async () => ({ success: false, error: 'Features context not available' }),
+      refreshFeatures: async () => {},
+      refreshRequests: async () => {},
     };
   }
   return context;

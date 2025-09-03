@@ -178,7 +178,9 @@ export function useAuth() {
       isAuthenticated: false,
       isLoading: false,
       login: async () => ({ success: false, error: 'Auth context not available' }),
-      logout: () => {},
+      signup: async () => ({ success: false, error: 'Auth context not available' }),
+      logout: async () => {},
+      refreshUser: async () => {},
     };
   }
   return context;
