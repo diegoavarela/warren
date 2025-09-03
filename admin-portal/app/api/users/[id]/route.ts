@@ -4,6 +4,7 @@ import { users, organizations } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 import bcrypt from 'bcryptjs';
+import { logUserAction, extractAuditUser } from '@/lib/audit';
 
 // GET /api/users/[id] - Get user details
 export const GET = requireAuth(async (request: NextRequest, user, { params }: { params: { id: string } }) => {
@@ -123,6 +124,20 @@ export const PUT = requireAuth(async (request: NextRequest, user, { params }: { 
     // Return user without password hash
     const { passwordHash: _, ...userResponse } = updatedUser;
 
+    // Log user update
+    const auditUser = extractAuditUser(request);
+    await logUserAction(
+      'update',
+      userId,
+      auditUser.userId || user?.id || 'system',
+      request,
+      {
+        updatedFields: Object.keys(updateData).filter(key => key !== 'updatedAt'),
+        userEmail: updatedUser.email,
+        userName: `${updatedUser.firstName} ${updatedUser.lastName}`
+      }
+    );
+
     return NextResponse.json({
       success: true,
       data: userResponse,
@@ -178,6 +193,20 @@ export const DELETE = requireAuth(async (request: NextRequest, user, { params }:
       })
       .where(eq(users.id, userId))
       .returning();
+
+    // Log user deactivation
+    const auditUser = extractAuditUser(request);
+    await logUserAction(
+      'deactivate',
+      userId,
+      auditUser.userId || user?.id || 'system',
+      request,
+      {
+        userEmail: existingUser.email,
+        userName: `${existingUser.firstName} ${existingUser.lastName}`,
+        previouslyActive: existingUser.isActive
+      }
+    );
 
     return NextResponse.json({
       success: true,

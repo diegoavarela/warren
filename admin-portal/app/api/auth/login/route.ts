@@ -3,6 +3,7 @@ import { db, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { logAuthentication } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,12 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!user) {
+      // Log failed login attempt
+      await logAuthentication('failed_login', null, request, { 
+        email, 
+        reason: 'user_not_found' 
+      });
+      
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -31,6 +38,12 @@ export async function POST(request: NextRequest) {
 
     // Check if user is active and has admin role
     if (!user.isActive) {
+      // Log failed login attempt
+      await logAuthentication('failed_login', user.id, request, { 
+        email, 
+        reason: 'account_deactivated' 
+      });
+      
       return NextResponse.json(
         { success: false, error: 'Account is deactivated' },
         { status: 401 }
@@ -38,6 +51,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (user.role !== 'platform_admin') {
+      // Log failed login attempt
+      await logAuthentication('failed_login', user.id, request, { 
+        email, 
+        reason: 'insufficient_privileges',
+        userRole: user.role 
+      });
+      
       return NextResponse.json(
         { success: false, error: 'Access denied. Platform admin role required.' },
         { status: 403 }
@@ -47,6 +67,12 @@ export async function POST(request: NextRequest) {
     // Verify password
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatch) {
+      // Log failed login attempt
+      await logAuthentication('failed_login', user.id, request, { 
+        email, 
+        reason: 'invalid_password' 
+      });
+      
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -80,6 +106,12 @@ export async function POST(request: NextRequest) {
       role: user.role,
       organizationId: user.organizationId,
     };
+
+    // Log successful login
+    await logAuthentication('login', user.id, request, {
+      email: user.email,
+      organizationId: user.organizationId
+    });
 
     return NextResponse.json({
       success: true,

@@ -3,7 +3,7 @@
 
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { eq, desc, count, and, gte, like, or, sql } from "drizzle-orm";
+import { eq, desc, count, and, gte, like, or, sql, ilike } from "drizzle-orm";
 import * as schema from "@/shared/db/actual-schema";
 
 // Check if we have a real database URL
@@ -54,7 +54,8 @@ export {
   gte,
   like,
   or,
-  sql
+  sql,
+  ilike
 };
 
 // Export all schema tables

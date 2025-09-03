@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { organizations, users, companies } from '@/lib/db';
 import { eq, count } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logOrganizationAction, extractAuditUser } from '@/lib/audit';
 
 // GET /api/organizations/[id] - Get organization details
 export const GET = requireAuth(async (request: NextRequest, user, { params }: { params: { id: string } }) => {
@@ -127,6 +128,19 @@ export const PUT = requireAuth(async (request: NextRequest, user, { params }: { 
       .where(eq(organizations.id, orgId))
       .returning();
 
+    // Log organization update
+    const auditUser = extractAuditUser(request);
+    await logOrganizationAction(
+      'update',
+      orgId,
+      auditUser.userId || user?.id || 'system',
+      request,
+      {
+        updatedFields: Object.keys(updateData).filter(key => key !== 'updatedAt'),
+        organizationName: updatedOrg.name
+      }
+    );
+
     return NextResponse.json({
       success: true,
       data: updatedOrg,
@@ -172,6 +186,19 @@ export const DELETE = requireAuth(async (request: NextRequest, user, { params }:
       })
       .where(eq(organizations.id, orgId))
       .returning();
+
+    // Log organization deactivation
+    const auditUser = extractAuditUser(request);
+    await logOrganizationAction(
+      'deactivate',
+      orgId,
+      auditUser.userId || user?.id || 'system',
+      request,
+      {
+        organizationName: existingOrg.name,
+        previouslyActive: existingOrg.isActive
+      }
+    );
 
     return NextResponse.json({
       success: true,

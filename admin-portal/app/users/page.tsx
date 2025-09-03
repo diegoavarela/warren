@@ -6,6 +6,7 @@ import { apiRequest } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
+import { useToast, ToastContainer } from '@/components/ui/Toast';
 import { PlusIcon, PencilIcon, TrashIcon, KeyIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 interface User {
@@ -31,6 +32,7 @@ interface Organization {
 }
 
 export default function UsersPage() {
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ export default function UsersPage() {
 
   const handleCreate = async () => {
     if (!formData.email || !formData.firstName || !formData.lastName || !formData.organizationId) {
-      alert('All fields are required');
+      toast.error('Validation Error', 'All fields are required');
       return;
     }
 
@@ -120,10 +122,10 @@ export default function UsersPage() {
         setTempPassword(result.data.tempPassword);
         setShowTempPasswordModal(true);
       } else {
-        alert(result.error || 'Failed to create user');
+        toast.error('Creation Failed', result.error || 'Failed to create user');
       }
     } catch (error) {
-      alert('Failed to create user');
+      toast.error('Creation Failed', 'Failed to create user');
     } finally {
       setFormLoading(false);
     }
@@ -131,7 +133,7 @@ export default function UsersPage() {
 
   const handleEdit = async () => {
     if (!selectedUser || !formData.email || !formData.firstName || !formData.lastName) {
-      alert('All fields are required');
+      toast.error('Validation Error', 'All fields are required');
       return;
     }
 
@@ -151,10 +153,10 @@ export default function UsersPage() {
         resetForm();
         fetchUsers();
       } else {
-        alert(result.error || 'Failed to update user');
+        toast.error('Update Failed', result.error || 'Failed to update user');
       }
     } catch (error) {
-      alert('Failed to update user');
+      toast.error('Update Failed', 'Failed to update user');
     } finally {
       setFormLoading(false);
     }
@@ -176,10 +178,10 @@ export default function UsersPage() {
         setSelectedUser(null);
         fetchUsers();
       } else {
-        alert(result.error || 'Failed to deactivate user');
+        toast.error('Deactivation Failed', result.error || 'Failed to deactivate user');
       }
     } catch (error) {
-      alert('Failed to deactivate user');
+      toast.error('Deactivation Failed', 'Failed to deactivate user');
     } finally {
       setFormLoading(false);
     }
@@ -203,10 +205,10 @@ export default function UsersPage() {
         setTempPassword(result.data.tempPassword);
         setShowTempPasswordModal(true);
       } else {
-        alert(result.error || 'Failed to reset password');
+        toast.error('Password Reset Failed', result.error || 'Failed to reset password');
       }
     } catch (error) {
-      alert('Failed to reset password');
+      toast.error('Password Reset Failed', 'Failed to reset password');
     } finally {
       setFormLoading(false);
     }

@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { organizations, users, companies } from '@/lib/db';
 import { eq, count, sql } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logOrganizationAction, extractAuditUser } from '@/lib/audit';
 
 // GET /api/organizations - List all organizations with stats
 export const GET = requireAuth(async (request: NextRequest) => {
@@ -101,6 +102,22 @@ export const POST = requireAuth(async (request: NextRequest) => {
         isActive: true,
       })
       .returning();
+
+    // Log organization creation
+    const auditUser = extractAuditUser(request);
+    await logOrganizationAction(
+      'create',
+      newOrg.id,
+      auditUser.userId || 'system',
+      request,
+      {
+        organizationName: name,
+        subdomain: subdomain,
+        tier: tier || 'starter',
+        locale: locale || 'en-US',
+        baseCurrency: baseCurrency || 'USD'
+      }
+    );
 
     return NextResponse.json({
       success: true,

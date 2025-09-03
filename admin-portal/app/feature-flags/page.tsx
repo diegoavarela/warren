@@ -11,6 +11,7 @@ import { SafeDeleteModal } from '@/components/ui/SafeDeleteModal';
 import { ContextMenu } from '@/components/ui/ContextMenu';
 import { Card, CardBody } from '@/shared/components/ui/Card';
 import { FeatureFormTabs } from '@/components/ui/FeatureFormTabs';
+import { useToast, ToastContainer } from '@/components/ui/Toast';
 import { 
   PlusIcon, 
   PencilIcon, 
@@ -50,6 +51,7 @@ interface OrganizationFeature {
 
 export default function FeatureFlagsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [features, setFeatures] = useState<FeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -202,7 +204,7 @@ export default function FeatureFlagsPage() {
       
     } catch (error) {
       console.error('Error in handleEdit:', error);
-      alert('Error opening edit modal: ' + (error as Error).message);
+      toast.error('Error', 'Error opening edit modal: ' + (error as Error).message);
     }
   };
 
@@ -251,7 +253,7 @@ export default function FeatureFlagsPage() {
       setSelectedFeature(null);
     } catch (error) {
       console.error('Error saving feature:', error);
-      alert((error as Error).message || 'Failed to save feature');
+      toast.error('Save Failed', (error as Error).message || 'Failed to save feature');
     } finally {
       setFormLoading(false);
     }
@@ -262,7 +264,7 @@ export default function FeatureFlagsPage() {
     
     // Prevent deletion of baseline features
     if (selectedFeature.isBaseline) {
-      alert('Baseline features cannot be deleted');
+      toast.error('Deletion Not Allowed', 'Baseline features cannot be deleted');
       return;
     }
     
@@ -279,7 +281,7 @@ export default function FeatureFlagsPage() {
       setSelectedFeature(null);
     } catch (error) {
       console.error('Error deleting feature:', error);
-      alert('Failed to delete feature');
+      toast.error('Delete Failed', 'Failed to delete feature');
     } finally {
       setDeleteLoading(false);
     }
@@ -303,7 +305,7 @@ export default function FeatureFlagsPage() {
       }
     } catch (error) {
       console.error('Error toggling feature:', error);
-      alert('Failed to toggle feature');
+      toast.error('Toggle Failed', 'Failed to toggle feature');
     }
   };
 
@@ -323,7 +325,7 @@ export default function FeatureFlagsPage() {
       await fetchFeatures();
     } catch (error) {
       console.error(`Error ${enable ? 'enabling' : 'disabling'} feature:`, error);
-      alert(`Failed to ${enable ? 'enable' : 'disable'} feature`);
+      toast.error('Operation Failed', `Failed to ${enable ? 'enable' : 'disable'} feature`);
     }
   };
 
@@ -370,7 +372,7 @@ export default function FeatureFlagsPage() {
       );
     } catch (error) {
       console.error('Error toggling feature:', error);
-      alert('Failed to toggle feature');
+      toast.error('Toggle Failed', 'Failed to toggle feature');
     }
   };
 
@@ -416,7 +418,7 @@ export default function FeatureFlagsPage() {
       await fetchFeatures();
     } catch (error) {
       console.error(`Error ${enable ? 'enabling' : 'disabling'} feature:`, error);
-      alert(`Failed to ${enable ? 'enable' : 'disable'} feature`);
+      toast.error('Operation Failed', `Failed to ${enable ? 'enable' : 'disable'} feature`);
     }
   };
 
@@ -735,6 +737,12 @@ export default function FeatureFlagsPage() {
           />
         )}
       </div>
+      
+      <ToastContainer
+        toasts={toast.toasts}
+        onClose={toast.removeToast}
+        position="top-right"
+      />
     </DashboardLayout>
   );
 }

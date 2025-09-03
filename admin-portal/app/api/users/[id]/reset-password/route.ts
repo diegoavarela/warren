@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 import bcrypt from 'bcryptjs';
 import { generateTempPassword, validatePassword, hashPassword } from '@/lib/password-utils';
+import { logUserAction, extractAuditUser } from '@/lib/audit';
 
 // POST /api/users/[id]/reset-password - Reset user password
 export const POST = requireAuth(async (request: NextRequest, adminUser, { params }: { params: { id: string } }) => {
@@ -73,6 +74,21 @@ export const POST = requireAuth(async (request: NextRequest, adminUser, { params
         updatedAt: new Date()
       })
       .where(eq(users.id, userId));
+
+    // Log password reset action
+    const auditUser = extractAuditUser(request);
+    await logUserAction(
+      'reset_password',
+      userId,
+      auditUser.userId || adminUser?.id || 'system',
+      request,
+      {
+        userEmail: existingUser.email,
+        userName: `${existingUser.firstName} ${existingUser.lastName}`,
+        isGeneratedPassword: !newPassword,
+        emailVerificationReset: true
+      }
+    );
 
     return NextResponse.json({
       success: true,

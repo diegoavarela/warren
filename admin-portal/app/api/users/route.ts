@@ -4,6 +4,7 @@ import { users, organizations, companies } from '@/lib/db';
 import { eq, ilike, or, and } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth-middleware';
 import bcrypt from 'bcryptjs';
+import { logUserAction, extractAuditUser } from '@/lib/audit';
 
 // GET /api/users - List all users with organization and company info
 export const GET = requireAuth(async (request: NextRequest) => {
@@ -136,6 +137,22 @@ export const POST = requireAuth(async (request: NextRequest) => {
 
     // Return user without password hash
     const { passwordHash: _, ...userResponse } = newUser;
+
+    // Log user creation
+    const auditUser = extractAuditUser(request);
+    await logUserAction(
+      'create',
+      newUser.id,
+      auditUser.userId || 'system',
+      request,
+      {
+        userEmail: email,
+        userName: `${firstName} ${lastName}`,
+        organizationId,
+        role,
+        locale: locale || 'en-US'
+      }
+    );
 
     return NextResponse.json({
       success: true,

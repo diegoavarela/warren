@@ -498,6 +498,31 @@ export const featureRequests = pgTable("feature_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Audit Logs table - Track all admin actions and system events
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  action: varchar("action", { length: 50 }).notNull(), // create, update, delete, login, logout, invite, etc.
+  resource: varchar("resource", { length: 50 }).notNull(), // user, company, organization, feature, etc.
+  resourceId: varchar("resource_id", { length: 255 }), // ID of the affected resource
+  userId: uuid("user_id").references(() => users.id), // Who performed the action
+  organizationId: uuid("organization_id").references(() => organizations.id), // Which organization context
+  companyId: uuid("company_id").references(() => companies.id), // Which company context (if applicable)
+  metadata: jsonb("metadata"), // Additional context data (old/new values, etc.)
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv4 or IPv6
+  userAgent: text("user_agent"), // Browser/client information
+  sessionId: varchar("session_id", { length: 100 }), // Session identifier
+  success: boolean("success").default(true), // Whether the action succeeded
+  errorMessage: text("error_message"), // Error details if action failed
+  severity: varchar("severity", { length: 20 }).default("info"), // info, warning, error, critical
+  source: varchar("source", { length: 50 }).default("admin-portal"), // admin-portal, api, webhook, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Indexes for common queries
+  userIdx: unique().on(table.userId, table.createdAt),
+  orgIdx: unique().on(table.organizationId, table.createdAt),
+  actionIdx: unique().on(table.action, table.createdAt),
+}));
+
 // Export new types
 export type CompanyConfiguration = typeof companyConfigurations.$inferSelect;
 export type NewCompanyConfiguration = typeof companyConfigurations.$inferInsert;
@@ -531,3 +556,7 @@ export type OrganizationFeature = typeof organizationFeatures.$inferSelect;
 export type NewOrganizationFeature = typeof organizationFeatures.$inferInsert;
 export type FeatureRequest = typeof featureRequests.$inferSelect;
 export type NewFeatureRequest = typeof featureRequests.$inferInsert;
+
+// Audit Logs types
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;

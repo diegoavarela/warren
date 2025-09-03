@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { Card, CardBody } from '@/shared/components/ui/Card';
+import { useToast, ToastContainer } from '@/components/ui/Toast';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 interface Organization {
@@ -28,6 +29,7 @@ interface Organization {
 
 export default function OrganizationsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -92,10 +94,10 @@ export default function OrganizationsPage() {
         resetForm();
         fetchOrganizations();
       } else {
-        alert(result.error || 'Failed to create organization');
+        toast.error('Creation Failed', result.error || 'Failed to create organization');
       }
     } catch (error) {
-      alert('Failed to create organization');
+      toast.error('Creation Failed', 'Failed to create organization');
     } finally {
       setFormLoading(false);
     }
@@ -120,10 +122,10 @@ export default function OrganizationsPage() {
         resetForm();
         fetchOrganizations();
       } else {
-        alert(result.error || 'Failed to update organization');
+        toast.error('Update Failed', result.error || 'Failed to update organization');
       }
     } catch (error) {
-      alert('Failed to update organization');
+      toast.error('Update Failed', 'Failed to update organization');
     } finally {
       setFormLoading(false);
     }
@@ -145,10 +147,10 @@ export default function OrganizationsPage() {
         setSelectedOrg(null);
         fetchOrganizations();
       } else {
-        alert(result.error || 'Failed to deactivate organization');
+        toast.error('Deactivation Failed', result.error || 'Failed to deactivate organization');
       }
     } catch (error) {
-      alert('Failed to deactivate organization');
+      toast.error('Deactivation Failed', 'Failed to deactivate organization');
     } finally {
       setFormLoading(false);
     }
@@ -433,6 +435,12 @@ export default function OrganizationsPage() {
           loading={formLoading}
         />
       </div>
+      
+      <ToastContainer
+        toasts={toast.toasts}
+        onClose={toast.removeToast}
+        position="top-right"
+      />
     </DashboardLayout>
   );
 }
