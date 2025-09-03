@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiRequest('/api/auth/me');
       if (response.ok) {
         const userData = await response.json();
-        // Only allow admins
-        if (['platform_admin', 'super_admin'].includes(userData.role)) {
-          setUser(userData);
+        // Only allow platform admins
+        if (userData.user && userData.user.role === 'platform_admin') {
+          setUser(userData.user);
         } else {
           setUser(null);
           localStorage.removeItem('admin-token');
@@ -76,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Check if user is admin
-        if (!['platform_admin', 'super_admin'].includes(data.user.role)) {
+        // Check if user is platform admin
+        if (data.user.role !== 'platform_admin') {
           return {
             success: false,
             error: 'Access denied. Admin role required.'

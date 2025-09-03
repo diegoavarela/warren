@@ -30,16 +30,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is active and has admin role
-    if (!user.isActive) {
+    if (!user.is_active) {
       return NextResponse.json(
         { success: false, error: 'Account is deactivated' },
         { status: 401 }
       );
     }
 
-    if (!['platform_admin', 'organization_admin'].includes(user.role)) {
+    if (user.role !== 'platform_admin') {
       return NextResponse.json(
-        { success: false, error: 'Access denied. Admin role required.' },
+        { success: false, error: 'Access denied. Platform admin role required.' },
         { status: 403 }
       );
     }
