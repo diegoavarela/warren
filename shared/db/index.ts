@@ -51,6 +51,7 @@ let companySubcategoryTemplates: any;
 let featureFlags: any;
 let organizationFeatures: any;
 let featureRequests: any;
+let auditLogs: any;
 let eq: any;
 let desc: any;
 let count: any;
@@ -129,6 +130,7 @@ if (!isServer) {
   featureFlags = schema.featureFlags;
   organizationFeatures = schema.organizationFeatures;
   featureRequests = schema.featureRequests;
+  auditLogs = schema.auditLogs;
   eq = realEq;
   desc = realDesc;
   count = realCount;
@@ -158,6 +160,7 @@ export {
   featureFlags,
   organizationFeatures,
   featureRequests,
+  auditLogs,
   eq,
   desc,
   count,
