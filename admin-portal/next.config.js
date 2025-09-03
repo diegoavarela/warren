@@ -7,10 +7,6 @@ const nextConfig = {
     // Handle symlinks for shared modules
     config.resolve.symlinks = false;
     
-    // Resolve shared dependencies from warren's node_modules
-    config.resolve.modules = config.resolve.modules || []
-    config.resolve.modules.unshift(require('path').resolve(__dirname, '../warren/node_modules'))
-    
     // Handle ESM packages
     if (isServer) {
       config.externals = [...(config.externals || []), 'drizzle-orm'];
