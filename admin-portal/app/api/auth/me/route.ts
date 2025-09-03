@@ -35,10 +35,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get fresh user data from database
+    const userId = decoded.userId as string;
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.id, decoded.userId))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (!user || !user.isActive || user.role !== 'platform_admin') {
