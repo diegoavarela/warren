@@ -71,7 +71,20 @@ export function LocaleProvider({ children }: LocaleProviderProps) {
 export function useLocale() {
   const context = useContext(LocaleContext);
   if (!context) {
-    throw new Error('useLocale must be used within a LocaleProvider');
+    // Provide a fallback during SSR or when context is not available
+    console.warn('useLocale called outside of LocaleProvider, using defaults');
+    return {
+      locale: 'en-US',
+      setLocale: () => {},
+      localeInfo: null,
+      currency: 'USD',
+      numberFormat: {
+        decimalSeparator: '.',
+        thousandsSeparator: ',',
+        currencySymbol: '$',
+      },
+      isLoading: false
+    };
   }
   return context;
 }
