@@ -170,7 +170,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Provide a fallback during SSR or when context is not available
+    console.warn('useAuth called outside of AuthProvider, using defaults');
+    return {
+      user: null,
+      organization: null,
+      isAuthenticated: false,
+      isLoading: false,
+      login: async () => ({ success: false, error: 'Auth context not available' }),
+      logout: () => {},
+    };
   }
   return context;
 }

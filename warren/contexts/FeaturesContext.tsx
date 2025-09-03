@@ -256,7 +256,19 @@ export function FeaturesProvider({ children }: FeaturesProviderProps) {
 export function useFeatures() {
   const context = useContext(FeaturesContext);
   if (!context) {
-    throw new Error('useFeatures must be used within a FeaturesProvider');
+    // Provide a fallback during SSR or when context is not available
+    console.warn('useFeatures called outside of FeaturesProvider, using defaults');
+    return {
+      features: [],
+      hasFeature: () => false,
+      isFeatureVisible: () => false,
+      featureRequests: [],
+      submitFeatureRequest: async () => ({ success: false, error: 'Features context not available' }),
+      loadFeatures: () => {},
+      loadFeatureRequests: () => {},
+      enableFeature: async () => {},
+      disableFeature: async () => {},
+    };
   }
   return context;
 }
