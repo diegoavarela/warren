@@ -77,6 +77,7 @@ export const {
   featureFlags,
   organizationFeatures,
   featureRequests,
+  auditLogs,
   user2faSettings,
   user2faAttempts,
   companyConfigurations,

@@ -15,6 +15,8 @@ interface AuditLog {
   userName: string;
   organizationId: string;
   organizationName: string;
+  companyId: string;
+  companyName: string;
   metadata: any;
   timestamp: string;
   ipAddress: string;
@@ -380,6 +382,11 @@ export default function AuditLogsPage() {
                           <div className="truncate max-w-[120px]" title={log.organizationName}>
                             {log.organizationName}
                           </div>
+                          {log.companyName && (
+                            <div className="text-gray-500 truncate max-w-[120px]" title={log.companyName}>
+                              {log.companyName}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500">
                           {log.ipAddress}

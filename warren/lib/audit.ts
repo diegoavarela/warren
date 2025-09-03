@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db, auditLogs, type NewAuditLog } from '@/shared/db';
+import { db, auditLogs, companies, eq, type NewAuditLog } from '@/shared/db';
 
 // Import types from admin portal
 export type AuditAction = 
@@ -65,6 +65,24 @@ export interface AuditContext {
 }
 
 /**
+ * Get organization ID from company ID
+ */
+async function getOrganizationIdFromCompany(companyId: string): Promise<string | null> {
+  try {
+    const result = await db
+      .select({ organizationId: companies.organizationId })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1);
+    
+    return result[0]?.organizationId || null;
+  } catch (error) {
+    console.error('Failed to get organization ID from company:', error);
+    return null;
+  }
+}
+
+/**
  * Get client IP address from request
  */
 function getClientIP(request: NextRequest): string | null {
@@ -87,12 +105,19 @@ export async function logAudit(
   context: AuditContext = {}
 ): Promise<void> {
   try {
+    // If company ID is provided but organization ID is not, try to get it from company
+    let organizationId = data.organizationId;
+    if (!organizationId && data.companyId) {
+      const orgId = await getOrganizationIdFromCompany(data.companyId);
+      organizationId = orgId || undefined;
+    }
+
     const auditEntry: NewAuditLog = {
       action: data.action,
       resource: data.resource,
       resourceId: data.resourceId,
       userId: data.userId,
-      organizationId: data.organizationId,
+      organizationId: organizationId,
       companyId: data.companyId,
       metadata: data.metadata ? JSON.stringify(data.metadata) : null,
       success: data.success ?? true,

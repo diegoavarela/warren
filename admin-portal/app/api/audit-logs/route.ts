@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, auditLogs, users, organizations, eq, and, gte, sql, or, ilike } from '@/lib/db';
+import { db, auditLogs, users, organizations, companies, eq, and, gte, sql, or, ilike } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,8 +89,10 @@ export async function GET(request: NextRequest) {
           ELSE ${users.email}
         END`,
         organizationId: auditLogs.organizationId,
-        organizationName: organizations.name,
+        organizationName: sql<string>`COALESCE(${organizations.name}, org_via_company.name)`,
+        organizationIdResolved: sql<string>`COALESCE(${auditLogs.organizationId}, ${companies.organizationId})::text`,
         companyId: auditLogs.companyId,
+        companyName: companies.name,
         metadata: auditLogs.metadata,
         timestamp: auditLogs.createdAt,
         ipAddress: auditLogs.ipAddress,
@@ -104,6 +106,8 @@ export async function GET(request: NextRequest) {
       .from(auditLogs)
       .leftJoin(users, eq(auditLogs.userId, users.id))
       .leftJoin(organizations, eq(auditLogs.organizationId, organizations.id))
+      .leftJoin(companies, eq(auditLogs.companyId, companies.id))
+      .leftJoin(sql`organizations org_via_company`, eq(companies.organizationId, sql`org_via_company.id`))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(sql`${auditLogs.createdAt} DESC`)
       .limit(limit)
@@ -127,7 +131,9 @@ export async function GET(request: NextRequest) {
       userName: log.userName || 'System',
       organizationId: log.organizationId,
       organizationName: log.organizationName || 'N/A',
+      organizationIdResolved: log.organizationIdResolved,
       companyId: log.companyId,
+      companyName: log.companyName || null,
       metadata: typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata,
       timestamp: log.timestamp?.toISOString(),
       ipAddress: log.ipAddress,
