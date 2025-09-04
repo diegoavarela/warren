@@ -125,10 +125,10 @@ export async function GET(request: NextRequest) {
 
     // Get organization names for companies that don't have direct organization associations
     const companyOrgIds = logs
-      .filter(log => !log.organizationId && log.companyOrganizationId)
-      .map(log => log.companyOrganizationId);
+      .filter((log: any) => !log.organizationId && log.companyOrganizationId)
+      .map((log: any) => log.companyOrganizationId);
     
-    const uniqueCompanyOrgIds = [...new Set(companyOrgIds)];
+    const uniqueCompanyOrgIds = Array.from(new Set(companyOrgIds.filter(Boolean))) as string[];
     
     let companyOrganizations: Record<string, string> = {};
     if (uniqueCompanyOrgIds.length > 0) {
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
         .where(inArray(organizations.id, uniqueCompanyOrgIds));
       
       companyOrganizations = Object.fromEntries(
-        orgResults.map(org => [org.id, org.name])
+        orgResults.map((org: any) => [org.id, org.name])
       );
     }
 
