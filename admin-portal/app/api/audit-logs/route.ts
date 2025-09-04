@@ -89,10 +89,10 @@ export async function GET(request: NextRequest) {
           ELSE ${users.email}
         END`,
         organizationId: auditLogs.organizationId,
-        organizationName: sql<string>`COALESCE(${organizations.name}, org_via_company.name)`,
-        organizationIdResolved: sql<string>`COALESCE(${auditLogs.organizationId}, ${companies.organizationId})::text`,
+        organizationName: organizations.name,
         companyId: auditLogs.companyId,
         companyName: companies.name,
+        companyOrganizationId: companies.organizationId,
         metadata: auditLogs.metadata,
         timestamp: auditLogs.createdAt,
         ipAddress: auditLogs.ipAddress,
@@ -107,43 +107,78 @@ export async function GET(request: NextRequest) {
       .leftJoin(users, eq(auditLogs.userId, users.id))
       .leftJoin(organizations, eq(auditLogs.organizationId, organizations.id))
       .leftJoin(companies, eq(auditLogs.companyId, companies.id))
-      .leftJoin(sql`organizations org_via_company`, eq(companies.organizationId, sql`org_via_company.id`))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(sql`${auditLogs.createdAt} DESC`)
       .limit(limit)
       .offset(offset);
 
-    // Get total count for pagination
+    // Get total count for pagination (simplified for search functionality)
     const totalQuery = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(auditLogs)
+      .leftJoin(users, eq(auditLogs.userId, users.id))
+      .leftJoin(organizations, eq(auditLogs.organizationId, organizations.id))
+      .leftJoin(companies, eq(auditLogs.companyId, companies.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined);
     
     const total = totalQuery[0]?.count || 0;
 
+    // Get organization names for companies that don't have direct organization associations
+    const companyOrgIds = logs
+      .filter(log => !log.organizationId && log.companyOrganizationId)
+      .map(log => log.companyOrganizationId);
+    
+    const uniqueCompanyOrgIds = [...new Set(companyOrgIds)];
+    
+    let companyOrganizations: Record<string, string> = {};
+    if (uniqueCompanyOrgIds.length > 0) {
+      const orgResults = await db
+        .select({
+          id: organizations.id,
+          name: organizations.name
+        })
+        .from(organizations)
+        .where(sql`${organizations.id} = ANY(${uniqueCompanyOrgIds})`);
+      
+      companyOrganizations = Object.fromEntries(
+        orgResults.map(org => [org.id, org.name])
+      );
+    }
+
     // Transform the data to match the expected format
-    const transformedLogs = logs.map((log: any) => ({
-      id: log.id,
-      action: log.action,
-      resource: log.resource,
-      resourceId: log.resourceId,
-      userId: log.userId,
-      userName: log.userName || 'System',
-      organizationId: log.organizationId,
-      organizationName: log.organizationName || 'N/A',
-      organizationIdResolved: log.organizationIdResolved,
-      companyId: log.companyId,
-      companyName: log.companyName || null,
-      metadata: typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata,
-      timestamp: log.timestamp?.toISOString(),
-      ipAddress: log.ipAddress,
-      userAgent: log.userAgent,
-      sessionId: log.sessionId,
-      success: log.success,
-      errorMessage: log.errorMessage,
-      severity: log.severity,
-      source: log.source
-    }));
+    const transformedLogs = logs.map((log: any) => {
+      // Resolve organization name: direct organization or company's organization
+      let organizationName = log.organizationName;
+      let organizationId = log.organizationId;
+      
+      if (!organizationName && log.companyOrganizationId) {
+        organizationName = companyOrganizations[log.companyOrganizationId];
+        organizationId = log.companyOrganizationId;
+      }
+      
+      return {
+        id: log.id,
+        action: log.action,
+        resource: log.resource,
+        resourceId: log.resourceId,
+        userId: log.userId,
+        userName: log.userName || 'System',
+        organizationId: organizationId,
+        organizationName: organizationName || 'N/A',
+        organizationIdResolved: organizationId || log.organizationId,
+        companyId: log.companyId,
+        companyName: log.companyName || null,
+        metadata: typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata,
+        timestamp: log.timestamp?.toISOString(),
+        ipAddress: log.ipAddress,
+        userAgent: log.userAgent,
+        sessionId: log.sessionId,
+        success: log.success,
+        errorMessage: log.errorMessage,
+        severity: log.severity,
+        source: log.source
+      };
+    });
 
     return NextResponse.json({
       success: true,
