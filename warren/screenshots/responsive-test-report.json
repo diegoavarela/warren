@@ -1,0 +1,268 @@
+{
+  "timestamp": "2025-09-04T15:34:13.424Z",
+  "totalScreenshots": 20,
+  "errors": [
+    "Login failed: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button[type=\"submit\"], .submit-btn, button:contains(\"Login\"), button:contains(\"Sign In\")' is not a valid selector.",
+    "Login failed: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button[type=\"submit\"], .submit-btn, button:contains(\"Login\"), button:contains(\"Sign In\")' is not a valid selector.",
+    "Login failed: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button[type=\"submit\"], .submit-btn, button:contains(\"Login\"), button:contains(\"Sign In\")' is not a valid selector.",
+    "Login failed: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button[type=\"submit\"], .submit-btn, button:contains(\"Login\"), button:contains(\"Sign In\")' is not a valid selector.",
+    "Login failed: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button[type=\"submit\"], .submit-btn, button:contains(\"Login\"), button:contains(\"Sign In\")' is not a valid selector.",
+    "Login failed: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button[type=\"submit\"], .submit-btn, button:contains(\"Login\"), button:contains(\"Sign In\")' is not a valid selector."
+  ],
+  "summary": {
+    "landing-page": {
+      "url": "/",
+      "needsAuth": false,
+      "screenshots": {
+        "mobile-se": {
+          "viewport": {
+            "width": 375,
+            "height": 667,
+            "description": "iPhone SE"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_mobile-se_375x667.png",
+            "filepath": "screenshots/landing-page_mobile-se_375x667.png"
+          }
+        },
+        "mobile-12": {
+          "viewport": {
+            "width": 390,
+            "height": 844,
+            "description": "iPhone 12"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_mobile-12_390x844.png",
+            "filepath": "screenshots/landing-page_mobile-12_390x844.png"
+          }
+        },
+        "mobile-14": {
+          "viewport": {
+            "width": 430,
+            "height": 932,
+            "description": "iPhone 14 Pro"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_mobile-14_430x932.png",
+            "filepath": "screenshots/landing-page_mobile-14_430x932.png"
+          }
+        },
+        "tablet": {
+          "viewport": {
+            "width": 768,
+            "height": 1024,
+            "description": "iPad"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_tablet_768x1024.png",
+            "filepath": "screenshots/landing-page_tablet_768x1024.png"
+          }
+        },
+        "tablet-air": {
+          "viewport": {
+            "width": 820,
+            "height": 1180,
+            "description": "iPad Air"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_tablet-air_820x1180.png",
+            "filepath": "screenshots/landing-page_tablet-air_820x1180.png"
+          }
+        },
+        "tablet-landscape": {
+          "viewport": {
+            "width": 1024,
+            "height": 768,
+            "description": "Tablet Landscape"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_tablet-landscape_1024x768.png",
+            "filepath": "screenshots/landing-page_tablet-landscape_1024x768.png"
+          }
+        },
+        "desktop-small": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "description": "Small Desktop"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_desktop-small_1366x768.png",
+            "filepath": "screenshots/landing-page_desktop-small_1366x768.png"
+          }
+        },
+        "desktop-fhd": {
+          "viewport": {
+            "width": 1920,
+            "height": 1080,
+            "description": "Full HD Desktop"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_desktop-fhd_1920x1080.png",
+            "filepath": "screenshots/landing-page_desktop-fhd_1920x1080.png"
+          }
+        },
+        "desktop-2k": {
+          "viewport": {
+            "width": 2560,
+            "height": 1440,
+            "description": "2K Desktop"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_desktop-2k_2560x1440.png",
+            "filepath": "screenshots/landing-page_desktop-2k_2560x1440.png"
+          }
+        },
+        "tv-4k": {
+          "viewport": {
+            "width": 3840,
+            "height": 2160,
+            "description": "4K TV"
+          },
+          "result": {
+            "success": true,
+            "filename": "landing-page_tv-4k_3840x2160.png",
+            "filepath": "screenshots/landing-page_tv-4k_3840x2160.png"
+          }
+        }
+      },
+      "errors": []
+    },
+    "login-page": {
+      "url": "/login",
+      "needsAuth": false,
+      "screenshots": {
+        "mobile-se": {
+          "viewport": {
+            "width": 375,
+            "height": 667,
+            "description": "iPhone SE"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_mobile-se_375x667.png",
+            "filepath": "screenshots/login-page_mobile-se_375x667.png"
+          }
+        },
+        "mobile-12": {
+          "viewport": {
+            "width": 390,
+            "height": 844,
+            "description": "iPhone 12"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_mobile-12_390x844.png",
+            "filepath": "screenshots/login-page_mobile-12_390x844.png"
+          }
+        },
+        "mobile-14": {
+          "viewport": {
+            "width": 430,
+            "height": 932,
+            "description": "iPhone 14 Pro"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_mobile-14_430x932.png",
+            "filepath": "screenshots/login-page_mobile-14_430x932.png"
+          }
+        },
+        "tablet": {
+          "viewport": {
+            "width": 768,
+            "height": 1024,
+            "description": "iPad"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_tablet_768x1024.png",
+            "filepath": "screenshots/login-page_tablet_768x1024.png"
+          }
+        },
+        "tablet-air": {
+          "viewport": {
+            "width": 820,
+            "height": 1180,
+            "description": "iPad Air"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_tablet-air_820x1180.png",
+            "filepath": "screenshots/login-page_tablet-air_820x1180.png"
+          }
+        },
+        "tablet-landscape": {
+          "viewport": {
+            "width": 1024,
+            "height": 768,
+            "description": "Tablet Landscape"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_tablet-landscape_1024x768.png",
+            "filepath": "screenshots/login-page_tablet-landscape_1024x768.png"
+          }
+        },
+        "desktop-small": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "description": "Small Desktop"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_desktop-small_1366x768.png",
+            "filepath": "screenshots/login-page_desktop-small_1366x768.png"
+          }
+        },
+        "desktop-fhd": {
+          "viewport": {
+            "width": 1920,
+            "height": 1080,
+            "description": "Full HD Desktop"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_desktop-fhd_1920x1080.png",
+            "filepath": "screenshots/login-page_desktop-fhd_1920x1080.png"
+          }
+        },
+        "desktop-2k": {
+          "viewport": {
+            "width": 2560,
+            "height": 1440,
+            "description": "2K Desktop"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_desktop-2k_2560x1440.png",
+            "filepath": "screenshots/login-page_desktop-2k_2560x1440.png"
+          }
+        },
+        "tv-4k": {
+          "viewport": {
+            "width": 3840,
+            "height": 2160,
+            "description": "4K TV"
+          },
+          "result": {
+            "success": true,
+            "filename": "login-page_tv-4k_3840x2160.png",
+            "filepath": "screenshots/login-page_tv-4k_3840x2160.png"
+          }
+        }
+      },
+      "errors": []
+    }
+  }
+}

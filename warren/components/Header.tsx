@@ -463,6 +463,19 @@ export function Header() {
             ) : (
               <div className="flex items-center space-x-2" data-testid="auth-buttons">
                 <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    // Open request access modal - we'll need to emit an event or use a callback
+                    const event = new CustomEvent('openRequestModal');
+                    window.dispatchEvent(event);
+                  }}
+                  className="min-w-[120px] bg-opacity-100"
+                  data-testid="request-access-button"
+                >
+                  {mounted ? (locale?.startsWith('es') ? 'Solicitar Acceso' : 'Request Access') : 'Request Access'}
+                </Button>
+                <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
@@ -471,18 +484,7 @@ export function Header() {
                   className="min-w-[80px] bg-opacity-100"
                   data-testid="sign-in-button"
                 >
-                  {mounted ? t('auth.login') : 'Sign In'}
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    router.push('/signup');
-                  }}
-                  className="min-w-[80px] bg-opacity-100"
-                  data-testid="sign-up-button"
-                >
-                  {mounted ? t('auth.signup') : 'Sign Up'}
+                  {mounted ? (locale?.startsWith('es') ? 'Iniciar Sesión' : 'Sign In') : 'Sign In'}
                 </Button>
               </div>
             )}

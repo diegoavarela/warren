@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warren - Complete Responsive Test Report</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 20px; background: #f8fafc; line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { 
+            background: linear-gradient(135deg, #3b82f6, #10b981); 
+            color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;
+            text-align: center;
+        }
+        .header h1 { margin: 0 0 0.5rem 0; font-size: 2.5rem; }
+        .header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
+        .summary { 
+            background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .stat-card { 
+            background: #f8fafc; padding: 1.5rem; border-radius: 8px; text-align: center;
+            border-left: 4px solid #3b82f6;
+        }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #1f2937; }
+        .stat-label { color: #6b7280; font-size: 0.9rem; margin-top: 0.5rem; }
+        .section { 
+            background: white; margin-bottom: 2rem; border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden;
+        }
+        .section-header { 
+            background: #1f2937; color: white; padding: 1.5rem; 
+            font-size: 1.3rem; font-weight: 600;
+        }
+        .section-content { padding: 2rem; }
+        .page-group { margin-bottom: 3rem; }
+        .page-title { 
+            font-size: 1.5rem; font-weight: 700; color: #1f2937; 
+            margin-bottom: 1.5rem; padding-bottom: 0.5rem;
+            border-bottom: 3px solid #e5e7eb;
+        }
+        .screenshot-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 1.5rem; 
+        }
+        .screenshot-item { 
+            border: 2px solid #e5e7eb; border-radius: 8px; 
+            background: white; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .screenshot-item:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #3b82f6;
+        }
+        .screenshot-item img { 
+            width: 100%; height: auto; display: block; 
+            cursor: pointer; transition: opacity 0.2s;
+        }
+        .screenshot-item img:hover { opacity: 0.95; }
+        .screenshot-info { padding: 1rem; }
+        .screenshot-title { font-weight: 600; color: #1f2937; margin-bottom: 0.5rem; }
+        .screenshot-meta { font-size: 0.85rem; color: #6b7280; }
+        .device-icon { display: inline-block; margin-right: 0.5rem; }
+        .public-badge { 
+            background: #10b981; color: white; padding: 0.25rem 0.75rem; 
+            border-radius: 999px; font-size: 0.75rem; font-weight: 500;
+        }
+        .auth-badge { 
+            background: #f59e0b; color: white; padding: 0.25rem 0.75rem; 
+            border-radius: 999px; font-size: 0.75rem; font-weight: 500;
+        }
+        .modal { 
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
+            width: 100%; height: 100%; background: rgba(0,0,0,0.9);
+            cursor: pointer;
+        }
+        .modal img { 
+            display: block; margin: auto; max-width: 95%; max-height: 95%; 
+            margin-top: 2.5%; border-radius: 8px;
+        }
+        .close { 
+            position: absolute; top: 20px; right: 30px; color: #fff; 
+            font-size: 40px; font-weight: bold; cursor: pointer;
+        }
+        .timestamp { 
+            text-align: center; margin-top: 2rem; color: #6b7280; 
+            font-size: 0.9rem; padding: 1rem;
+        }
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .screenshot-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Warren - Complete Responsive Test Report</h1>
+            <p>Comprehensive visual testing across all devices and screen sizes</p>
+        </div>
+        
+        <div class="summary">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number">35</div>
+                    <div class="stat-label">Total Screenshots</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Public Pages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">Dashboard Pages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Device Sizes</div>
+                </div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-header">
+                🌐 Public Pages <span class="public-badge">No Authentication Required</span>
+            </div>
+            <div class="section-content">
+                <div class="page-group">
+                    <div class="page-title">Landing Page</div>
+                    <div class="screenshot-grid">
+                        <div class="screenshot-item">
+                            <img src="landing-page_desktop-2k_2560x1440.png" alt="Landing Page - desktop-2k" onclick="openModal('landing-page_desktop-2k_2560x1440.png', 'Landing Page - 2K Desktop (2560×1440)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-2k</div>
+                                <div class="screenshot-meta">2K Desktop (2560×1440)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_desktop-fhd_1920x1080.png" alt="Landing Page - desktop-fhd" onclick="openModal('landing-page_desktop-fhd_1920x1080.png', 'Landing Page - Full HD Desktop (1920×1080)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-fhd</div>
+                                <div class="screenshot-meta">Full HD Desktop (1920×1080)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_desktop-small_1366x768.png" alt="Landing Page - desktop-small" onclick="openModal('landing-page_desktop-small_1366x768.png', 'Landing Page - Small Desktop (1366×768)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-small</div>
+                                <div class="screenshot-meta">Small Desktop (1366×768)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_mobile-12_390x844.png" alt="Landing Page - mobile-12" onclick="openModal('landing-page_mobile-12_390x844.png', 'Landing Page - iPhone 12 (390×844)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-12</div>
+                                <div class="screenshot-meta">iPhone 12 (390×844)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_mobile-14_430x932.png" alt="Landing Page - mobile-14" onclick="openModal('landing-page_mobile-14_430x932.png', 'Landing Page - iPhone 14 Pro (430×932)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-14</div>
+                                <div class="screenshot-meta">iPhone 14 Pro (430×932)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_mobile-se_375x667.png" alt="Landing Page - mobile-se" onclick="openModal('landing-page_mobile-se_375x667.png', 'Landing Page - iPhone SE (375×667)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-se</div>
+                                <div class="screenshot-meta">iPhone SE (375×667)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_tablet-air_820x1180.png" alt="Landing Page - tablet-air" onclick="openModal('landing-page_tablet-air_820x1180.png', 'Landing Page - iPad Air (820×1180)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet-air</div>
+                                <div class="screenshot-meta">iPad Air (820×1180)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_tablet-landscape_1024x768.png" alt="Landing Page - tablet-landscape" onclick="openModal('landing-page_tablet-landscape_1024x768.png', 'Landing Page - Tablet Landscape (1024×768)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet-landscape</div>
+                                <div class="screenshot-meta">Tablet Landscape (1024×768)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_tablet_768x1024.png" alt="Landing Page - tablet" onclick="openModal('landing-page_tablet_768x1024.png', 'Landing Page - iPad (768×1024)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet</div>
+                                <div class="screenshot-meta">iPad (768×1024)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing-page_tv-4k_3840x2160.png" alt="Landing Page - tv-4k" onclick="openModal('landing-page_tv-4k_3840x2160.png', 'Landing Page - 4K TV (3840×2160)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📺 tv-4k</div>
+                                <div class="screenshot-meta">4K TV (3840×2160)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-group">
+                    <div class="page-title">landing</div>
+                    <div class="screenshot-grid">
+                        <div class="screenshot-item">
+                            <img src="landing_desktop_1920x1080.png" alt="landing - desktop" onclick="openModal('landing_desktop_1920x1080.png', 'landing - desktop')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop</div>
+                                <div class="screenshot-meta">desktop</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing_mobile_375x667.png" alt="landing - mobile" onclick="openModal('landing_mobile_375x667.png', 'landing - mobile')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile</div>
+                                <div class="screenshot-meta">mobile</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="landing_tablet_768x1024.png" alt="landing - tablet" onclick="openModal('landing_tablet_768x1024.png', 'landing - iPad (768×1024)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet</div>
+                                <div class="screenshot-meta">iPad (768×1024)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-group">
+                    <div class="page-title">Login Page</div>
+                    <div class="screenshot-grid">
+                        <div class="screenshot-item">
+                            <img src="login-page_desktop-2k_2560x1440.png" alt="Login Page - desktop-2k" onclick="openModal('login-page_desktop-2k_2560x1440.png', 'Login Page - 2K Desktop (2560×1440)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-2k</div>
+                                <div class="screenshot-meta">2K Desktop (2560×1440)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_desktop-fhd_1920x1080.png" alt="Login Page - desktop-fhd" onclick="openModal('login-page_desktop-fhd_1920x1080.png', 'Login Page - Full HD Desktop (1920×1080)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-fhd</div>
+                                <div class="screenshot-meta">Full HD Desktop (1920×1080)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_desktop-small_1366x768.png" alt="Login Page - desktop-small" onclick="openModal('login-page_desktop-small_1366x768.png', 'Login Page - Small Desktop (1366×768)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-small</div>
+                                <div class="screenshot-meta">Small Desktop (1366×768)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_mobile-12_390x844.png" alt="Login Page - mobile-12" onclick="openModal('login-page_mobile-12_390x844.png', 'Login Page - iPhone 12 (390×844)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-12</div>
+                                <div class="screenshot-meta">iPhone 12 (390×844)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_mobile-14_430x932.png" alt="Login Page - mobile-14" onclick="openModal('login-page_mobile-14_430x932.png', 'Login Page - iPhone 14 Pro (430×932)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-14</div>
+                                <div class="screenshot-meta">iPhone 14 Pro (430×932)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_mobile-se_375x667.png" alt="Login Page - mobile-se" onclick="openModal('login-page_mobile-se_375x667.png', 'Login Page - iPhone SE (375×667)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-se</div>
+                                <div class="screenshot-meta">iPhone SE (375×667)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_tablet-air_820x1180.png" alt="Login Page - tablet-air" onclick="openModal('login-page_tablet-air_820x1180.png', 'Login Page - iPad Air (820×1180)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet-air</div>
+                                <div class="screenshot-meta">iPad Air (820×1180)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_tablet-landscape_1024x768.png" alt="Login Page - tablet-landscape" onclick="openModal('login-page_tablet-landscape_1024x768.png', 'Login Page - Tablet Landscape (1024×768)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet-landscape</div>
+                                <div class="screenshot-meta">Tablet Landscape (1024×768)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_tablet_768x1024.png" alt="Login Page - tablet" onclick="openModal('login-page_tablet_768x1024.png', 'Login Page - iPad (768×1024)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet</div>
+                                <div class="screenshot-meta">iPad (768×1024)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="login-page_tv-4k_3840x2160.png" alt="Login Page - tv-4k" onclick="openModal('login-page_tv-4k_3840x2160.png', 'Login Page - 4K TV (3840×2160)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📺 tv-4k</div>
+                                <div class="screenshot-meta">4K TV (3840×2160)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-header">
+                📊 Dashboard Pages <span class="auth-badge">Authentication Required</span>
+            </div>
+            <div class="section-content">
+                <div class="page-group">
+                    <div class="page-title">Cash Flow Dashboard</div>
+                    <div class="screenshot-grid">
+                        <div class="screenshot-item">
+                            <img src="dashboard/cashflow-dashboard_desktop-fhd_1920x1080.png" alt="Cash Flow Dashboard - desktop-fhd" onclick="openModal('dashboard/cashflow-dashboard_desktop-fhd_1920x1080.png', 'Cash Flow Dashboard - Full HD Desktop (1920×1080)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-fhd</div>
+                                <div class="screenshot-meta">Full HD Desktop (1920×1080)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/cashflow-dashboard_mobile-se_375x667.png" alt="Cash Flow Dashboard - mobile-se" onclick="openModal('dashboard/cashflow-dashboard_mobile-se_375x667.png', 'Cash Flow Dashboard - iPhone SE (375×667)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-se</div>
+                                <div class="screenshot-meta">iPhone SE (375×667)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/cashflow-dashboard_tablet_768x1024.png" alt="Cash Flow Dashboard - tablet" onclick="openModal('dashboard/cashflow-dashboard_tablet_768x1024.png', 'Cash Flow Dashboard - iPad (768×1024)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet</div>
+                                <div class="screenshot-meta">iPad (768×1024)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-group">
+                    <div class="page-title">Main Dashboard</div>
+                    <div class="screenshot-grid">
+                        <div class="screenshot-item">
+                            <img src="dashboard/main-dashboard_desktop-fhd_1920x1080.png" alt="Main Dashboard - desktop-fhd" onclick="openModal('dashboard/main-dashboard_desktop-fhd_1920x1080.png', 'Main Dashboard - Full HD Desktop (1920×1080)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-fhd</div>
+                                <div class="screenshot-meta">Full HD Desktop (1920×1080)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/main-dashboard_mobile-se_375x667.png" alt="Main Dashboard - mobile-se" onclick="openModal('dashboard/main-dashboard_mobile-se_375x667.png', 'Main Dashboard - iPhone SE (375×667)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-se</div>
+                                <div class="screenshot-meta">iPhone SE (375×667)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/main-dashboard_tablet_768x1024.png" alt="Main Dashboard - tablet" onclick="openModal('dashboard/main-dashboard_tablet_768x1024.png', 'Main Dashboard - iPad (768×1024)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet</div>
+                                <div class="screenshot-meta">iPad (768×1024)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-group">
+                    <div class="page-title">P&L Dashboard</div>
+                    <div class="screenshot-grid">
+                        <div class="screenshot-item">
+                            <img src="dashboard/pnl-dashboard_desktop-fhd_1920x1080.png" alt="P&L Dashboard - desktop-fhd" onclick="openModal('dashboard/pnl-dashboard_desktop-fhd_1920x1080.png', 'P&L Dashboard - Full HD Desktop (1920×1080)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-fhd</div>
+                                <div class="screenshot-meta">Full HD Desktop (1920×1080)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/pnl-dashboard_mobile-se_375x667.png" alt="P&L Dashboard - mobile-se" onclick="openModal('dashboard/pnl-dashboard_mobile-se_375x667.png', 'P&L Dashboard - iPhone SE (375×667)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-se</div>
+                                <div class="screenshot-meta">iPhone SE (375×667)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/pnl-dashboard_tablet_768x1024.png" alt="P&L Dashboard - tablet" onclick="openModal('dashboard/pnl-dashboard_tablet_768x1024.png', 'P&L Dashboard - iPad (768×1024)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet</div>
+                                <div class="screenshot-meta">iPad (768×1024)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-group">
+                    <div class="page-title">Uploads & History</div>
+                    <div class="screenshot-grid">
+                        <div class="screenshot-item">
+                            <img src="dashboard/uploads-dashboard_desktop-fhd_1920x1080.png" alt="Uploads & History - desktop-fhd" onclick="openModal('dashboard/uploads-dashboard_desktop-fhd_1920x1080.png', 'Uploads & History - Full HD Desktop (1920×1080)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">💻 desktop-fhd</div>
+                                <div class="screenshot-meta">Full HD Desktop (1920×1080)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/uploads-dashboard_mobile-se_375x667.png" alt="Uploads & History - mobile-se" onclick="openModal('dashboard/uploads-dashboard_mobile-se_375x667.png', 'Uploads & History - iPhone SE (375×667)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 mobile-se</div>
+                                <div class="screenshot-meta">iPhone SE (375×667)</div>
+                            </div>
+                        </div>
+                        <div class="screenshot-item">
+                            <img src="dashboard/uploads-dashboard_tablet_768x1024.png" alt="Uploads & History - tablet" onclick="openModal('dashboard/uploads-dashboard_tablet_768x1024.png', 'Uploads & History - iPad (768×1024)')">
+                            <div class="screenshot-info">
+                                <div class="screenshot-title">📱 tablet</div>
+                                <div class="screenshot-meta">iPad (768×1024)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="timestamp">
+            Generated on 9/4/2025, 11:56:57 AM
+        </div>
+    </div>
+
+    <!-- Modal for full-size images -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img id="modalImg" src="" alt="">
+    </div>
+
+    <script>
+        function openModal(src, alt) {
+            document.getElementById('imageModal').style.display = 'block';
+            document.getElementById('modalImg').src = src;
+            document.getElementById('modalImg').alt = alt;
+        }
+        
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

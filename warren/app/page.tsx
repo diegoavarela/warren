@@ -15,16 +15,31 @@ import {
   GlobeAltIcon,
   SparklesIcon,
   DocumentTextIcon,
-  CogIcon
+  CogIcon,
+  CheckIcon,
+  XMarkIcon
 } from "@heroicons/react/24/outline";
 
 function LandingContent() {
   const router = useRouter();
   const { locale } = useLocale();
   const [mounted, setMounted] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Listen for request modal events from header
+  useEffect(() => {
+    const handleOpenRequestModal = () => {
+      setShowRequestModal(true);
+    };
+
+    window.addEventListener('openRequestModal', handleOpenRequestModal);
+    return () => {
+      window.removeEventListener('openRequestModal', handleOpenRequestModal);
+    };
   }, []);
 
   // Handle keyboard shortcut for platform admin login
@@ -132,88 +147,180 @@ function LandingContent() {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <Header />
       
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      {/* Enhanced Hero Section */}
+      <section className="relative overflow-hidden h-screen flex items-center" style={{marginTop: '-4rem', paddingTop: '4rem'}}>
+        {/* Animated Background Layers */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700"></div>
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/20 to-violet-500/30"></div>
-        <div className="absolute inset-0 bg-grid-white/10 opacity-20"></div>
-        <div className="relative container mx-auto px-4 py-24 md:py-40">
-          <div className="text-center max-w-5xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-sm">
-              {isSpanish 
-                ? 'Plataforma de Análisis Financiero Inteligente'
-                : 'Intelligent Financial Analysis Platform'
-              }
-            </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-8 drop-shadow-sm">
-              {isSpanish
-                ? 'Transforma datos de Excel en insights poderosos con procesamiento impulsado por IA y dashboards interactivos'
-                : 'Transform Excel data into powerful insights with AI-driven processing and interactive dashboards'
-              }
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                variant="secondary"
-                size="xl"
-                onClick={() => {
-                  // Open request access modal or redirect to contact
-                  window.open('mailto:contact@warren.com?subject=Request Access to Warren Platform', '_blank');
-                }}
-                className="bg-white text-indigo-600 hover:bg-gray-100 px-8 shadow-lg"
-              >
-                {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
-              </Button>
-              <button
-                onClick={() => {
-                  window.location.href = '/login';
-                }}
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-transparent border-2 border-white rounded-xl hover:bg-white hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 ease-in-out"
-              >
-                {isSpanish ? 'Iniciar Sesión' : 'Sign In'}
-              </button>
+        
+        {/* Animated Floating Shapes */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute top-3/4 right-1/4 w-24 h-24 bg-cyan-400/20 rounded-full blur-lg animate-bounce" style={{animationDelay: '1s'}}></div>
+          <div className="absolute top-1/2 left-3/4 w-20 h-20 bg-purple-400/20 rounded-full blur-lg animate-pulse" style={{animationDelay: '2s'}}></div>
+          <div className="absolute bottom-1/4 left-1/2 w-28 h-28 bg-blue-300/15 rounded-full blur-xl animate-bounce" style={{animationDelay: '0.5s'}}></div>
+        </div>
+
+        {/* Moving Particle Grid */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 animate-pulse"></div>
+        </div>
+
+        {/* Geometric Decorations */}
+        <div className="absolute top-20 right-10 w-16 h-16 border-2 border-white/30 rotate-45 animate-spin" style={{animationDuration: '20s'}}></div>
+        <div className="absolute bottom-20 left-10 w-12 h-12 border-2 border-cyan-400/40 rotate-12 animate-pulse"></div>
+        <div className="absolute top-40 left-20 w-8 h-8 bg-purple-400/30 transform rotate-45 animate-bounce" style={{animationDelay: '1.5s'}}></div>
+
+        {/* Main Content */}
+        <div className="relative container mx-auto px-4 py-16 z-10">
+          <div className="text-center max-w-6xl mx-auto">
+            {/* Glassmorphism Container */}
+            <div className="backdrop-blur-sm bg-white/5 rounded-3xl p-6 md:p-8 lg:p-10 border border-white/10 shadow-2xl">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white mb-6 md:mb-8 drop-shadow-lg leading-tight">
+                <span className="bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent animate-pulse">
+                  {isSpanish 
+                    ? 'Plataforma de Análisis'
+                    : 'Intelligent Financial'
+                  }
+                </span>
+                <br />
+                <span className="text-white">
+                  {isSpanish 
+                    ? 'Financiero Inteligente'
+                    : 'Analysis Platform'
+                  }
+                </span>
+              </h1>
+              
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-blue-100 mb-8 md:mb-12 drop-shadow-sm leading-relaxed max-w-4xl mx-auto px-2">
+                {isSpanish
+                  ? 'Transforma datos de Excel en insights poderosos con procesamiento impulsado por IA y dashboards interactivos'
+                  : 'Transform Excel data into powerful insights with AI-driven processing and interactive dashboards'
+                }
+              </p>
+
+              {/* Enhanced CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                <Button
+                  variant="secondary"
+                  size="xl"
+                  onClick={() => setShowRequestModal(true)}
+                  className="bg-gradient-to-r from-white to-gray-100 text-indigo-600 hover:from-gray-100 hover:to-white px-12 py-5 shadow-2xl hover:shadow-white/20 transform hover:scale-105 transition-all duration-300 text-xl font-semibold border-2 border-white/20"
+                >
+                  <span className="mr-2">✨</span>
+                  {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
+                </Button>
+                
+                <button
+                  onClick={() => {
+                    window.location.href = '/login';
+                  }}
+                  className="group relative inline-flex items-center justify-center px-12 py-5 text-xl font-semibold text-white bg-transparent border-2 border-white/60 rounded-2xl hover:bg-white hover:text-indigo-600 focus:outline-none focus:ring-4 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 hover:scale-105 hover:shadow-2xl backdrop-blur-sm"
+                >
+                  <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform -skew-x-12 group-hover:skew-x-12 transition-transform duration-500"></span>
+                  <span className="relative">
+                    {isSpanish ? 'Iniciar Sesión' : 'Sign In'}
+                    <span className="ml-2 transform group-hover:translate-x-1 transition-transform duration-300">→</span>
+                  </span>
+                </button>
+              </div>
+
+              {/* Floating Features Preview */}
+              <div className="mt-16 flex flex-wrap justify-center gap-4 opacity-80">
+                <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-white">AI-Powered</span>
+                </div>
+                <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                  <span className="text-sm text-white">Real-time</span>
+                </div>
+                <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+                  <span className="text-sm text-white">Enterprise-Ready</span>
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-blue-200 mt-4">
-              {isSpanish 
-                ? 'Acceso inmediato • Configuración rápida'
-                : 'Instant access • Quick setup'
-              }
-            </p>
           </div>
+        </div>
+
+        {/* Bottom Wave Transition */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1200 120" fill="none" className="w-full h-20">
+            <path d="M0 120L50 105C100 90 200 60 300 45C400 30 500 30 600 37.5C700 45 800 60 900 67.5C1000 75 1100 75 1150 75L1200 75V120H0Z" fill="white"/>
+          </svg>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      {/* Enhanced Features Grid */}
+      <section className="py-24 bg-gradient-to-b from-white via-gray-50 to-white relative overflow-hidden">
+        {/* Background Decorations */}
+        <div className="absolute top-10 right-10 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute bottom-20 left-10 w-40 h-40 bg-purple-100 rounded-full blur-3xl opacity-30"></div>
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full mb-6">
+              <span className="text-sm font-semibold text-blue-700">
+                {isSpanish ? '🚀 Características' : '🚀 Features'}
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-6">
               {isSpanish 
                 ? 'Todo lo que necesitas para análisis financiero'
                 : 'Everything you need for financial analysis'
               }
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               {isSpanish
                 ? 'Herramientas poderosas para empresas de todos los tamaños'
                 : 'Powerful tools for businesses of all sizes'
               }
             </p>
           </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {features.map((feature, index) => (
-              <Card key={index} className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <CardBody className="p-8">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
-                    <feature.icon className="w-7 h-7 text-white" />
+              <div
+                key={index}
+                className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 border border-gray-100 overflow-hidden"
+              >
+                {/* Gradient Background on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Animated Border */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-[2px] bg-white rounded-2xl group-hover:bg-gradient-to-br group-hover:from-blue-50 group-hover:via-indigo-50 group-hover:to-purple-50"></div>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  {/* Enhanced Icon */}
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                    <feature.icon className="w-8 h-8 text-white relative z-10" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+
+                  {/* Enhanced Typography */}
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-indigo-700 transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
                     {feature.description}
                   </p>
-                </CardBody>
-              </Card>
+
+                  {/* Interactive Element */}
+                  <div className="mt-6 flex items-center text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-2 group-hover:translate-y-0">
+                    <span className="text-sm">Learn more</span>
+                    <span className="ml-2 transform group-hover:translate-x-1 transition-transform duration-300">→</span>
+                  </div>
+                </div>
+
+                {/* Floating Particles */}
+                <div className="absolute top-4 right-4 w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 animate-bounce transition-opacity duration-500" style={{animationDelay: '0s'}}></div>
+                <div className="absolute top-8 right-8 w-1.5 h-1.5 bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 animate-bounce transition-opacity duration-500" style={{animationDelay: '0.2s'}}></div>
+                <div className="absolute top-12 right-6 w-1 h-1 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 animate-bounce transition-opacity duration-500" style={{animationDelay: '0.4s'}}></div>
+              </div>
             ))}
           </div>
         </div>
@@ -314,6 +421,246 @@ function LandingContent() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {isSpanish ? 'Elige tu Plan' : 'Choose Your Plan'}
+            </h2>
+            <p className="text-xl text-gray-600">
+              {isSpanish
+                ? 'Soluciones empresariales diseñadas para tu crecimiento'
+                : 'Enterprise solutions designed for your growth'
+              }
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch relative">
+            {/* Standard Plan */}
+            <Card className="relative h-full">
+              <CardBody className="p-8 h-full flex flex-col">
+                <div className="flex-grow">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Standard
+                  </h3>
+                  <p className="text-gray-600 mb-6 min-h-[3rem]">
+                    {isSpanish
+                      ? 'Análisis financiero esencial para equipos pequeños'
+                      : 'Essential financial analytics for small teams'
+                    }
+                  </p>
+                  <div className="mb-6">
+                    <div className="text-3xl font-bold text-gray-900">
+                      $149
+                    </div>
+                    <div className="text-gray-500">
+                      {isSpanish ? 'por mes' : 'per month'}
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'Dashboard P&L' : 'P&L Dashboard'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'Dashboard Cash Flow' : 'Cash Flow Dashboard'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '3 usuarios' : '3 Users'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '4hs de configuración incluidas' : '4hs Setup Fee Included'}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full mt-auto"
+                  onClick={() => setShowRequestModal(true)}
+                >
+                  {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
+                </Button>
+              </CardBody>
+            </Card>
+
+            {/* Standard + Plan - Featured */}
+            <Card className="relative h-full transform scale-105 ring-4 ring-blue-500/20 shadow-2xl bg-gradient-to-br from-white via-blue-50/30 to-white !overflow-visible">
+              {/* Enhanced Badge */}
+              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-50">
+                <div className="relative">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-xl ring-4 ring-blue-500/30">
+                    {isSpanish ? 'MÁS POPULAR' : 'MOST POPULAR'}
+                  </div>
+                  {/* Glare effect on badge */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full pointer-events-none"></div>
+                </div>
+              </div>
+              
+              {/* Glare effect overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-transparent to-blue-600/5 pointer-events-none rounded-xl"></div>
+              <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none rounded-t-xl"></div>
+              
+              <CardBody className="p-8 h-full flex flex-col relative z-10">
+                <div className="flex-grow">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Standard +
+                  </h3>
+                  <p className="text-gray-600 mb-6 min-h-[3rem]">
+                    {isSpanish
+                      ? 'Todo lo de Standard más IA conversacional'
+                      : 'Everything in Standard plus conversational AI'
+                    }
+                  </p>
+                  <div className="mb-6">
+                    <div className="text-3xl font-bold text-blue-600">
+                      $249
+                    </div>
+                    <div className="text-gray-500">
+                      {isSpanish ? 'por mes' : 'per month'}
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'Dashboard P&L' : 'P&L Dashboard'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'Dashboard Cash Flow' : 'Cash Flow Dashboard'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'AI Chat' : 'AI Chat'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '5 usuarios' : '5 Users'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '$10/mes en créditos AI Chat' : '$10/month AI Chat credits'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '6hs de configuración incluidas' : '6hs Setup Fee Included'}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full mt-auto shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                  onClick={() => setShowRequestModal(true)}
+                >
+                  {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
+                </Button>
+              </CardBody>
+            </Card>
+
+            {/* Advanced Plan */}
+            <Card className="relative h-full">
+              <CardBody className="p-8 h-full flex flex-col">
+                <div className="flex-grow">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Advanced
+                  </h3>
+                  <p className="text-gray-600 mb-6 min-h-[3rem]">
+                    {isSpanish
+                      ? 'Solución completa para equipos más grandes'
+                      : 'Complete solution for larger teams'
+                    }
+                  </p>
+                  <div className="mb-6">
+                    <div className="text-3xl font-bold text-gray-900">
+                      $399
+                    </div>
+                    <div className="text-gray-500">
+                      {isSpanish ? 'por mes' : 'per month'}
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'Dashboard P&L' : 'P&L Dashboard'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'Dashboard Cash Flow' : 'Cash Flow Dashboard'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'AI Chat' : 'AI Chat'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '10 usuarios' : '10 Users'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '$20/mes en créditos AI Chat' : '$20/month AI Chat credits'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? 'Configuración incluida' : 'Setup Fee Included'}
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        {isSpanish ? '10hs funciones personalizadas' : '10hs Custom Features'}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full mt-auto"
+                  onClick={() => setShowRequestModal(true)}
+                >
+                  {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
+                </Button>
+              </CardBody>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-blue-600 to-blue-700">
         <div className="container mx-auto px-4 text-center">
@@ -333,23 +680,19 @@ function LandingContent() {
             <Button
               variant="secondary"
               size="xl"
-              onClick={() => {
-                window.open('mailto:contact@warren.com?subject=Request Access to Warren Platform', '_blank');
-              }}
+              onClick={() => setShowRequestModal(true)}
               className="bg-white text-blue-600 hover:bg-gray-100 px-8"
             >
               {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
             </Button>
-            <Button
-              variant="outline"
-              size="xl"
+            <button
               onClick={() => {
                 window.location.href = '/login';
               }}
-              className="text-white border-white hover:bg-white hover:text-blue-600 px-8"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-transparent border-2 border-white rounded-xl hover:bg-white hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 ease-in-out"
             >
-              {isSpanish ? 'Ya tengo cuenta' : 'I have an account'}
-            </Button>
+              {isSpanish ? 'Iniciar Sesión' : 'Sign In'}
+            </button>
           </div>
         </div>
       </section>
@@ -364,6 +707,137 @@ function LandingContent() {
           </div>
         </div>
       </footer>
+
+      {/* Request Access Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                {isSpanish ? 'Solicitar Acceso' : 'Request Access'}
+              </h3>
+              <button
+                onClick={() => setShowRequestModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const data = {
+                  name: formData.get('name'),
+                  email: formData.get('email'),
+                  company: formData.get('company'),
+                  plan: formData.get('plan'),
+                  message: formData.get('message')
+                };
+                
+                // Create mailto link
+                const subject = isSpanish 
+                  ? 'Solicitud de Acceso a Warren Platform'
+                  : 'Warren Platform Access Request';
+                const body = isSpanish
+                  ? `Hola,\n\nMe gustaría solicitar acceso a Warren Platform.\n\nDetalles:\n- Nombre: ${data.name}\n- Empresa: ${data.company}\n- Plan de interés: ${data.plan}\n- Mensaje adicional: ${data.message}\n\nGracias,\n${data.name}`
+                  : `Hello,\n\nI would like to request access to Warren Platform.\n\nDetails:\n- Name: ${data.name}\n- Company: ${data.company}\n- Plan of interest: ${data.plan}\n- Additional message: ${data.message}\n\nThank you,\n${data.name}`;
+                
+                window.open(`mailto:contact@warren.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                setShowRequestModal(false);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isSpanish ? 'Nombre completo' : 'Full name'}
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={isSpanish ? 'Tu nombre completo' : 'Your full name'}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isSpanish ? 'Email corporativo' : 'Business email'}
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={isSpanish ? 'tu@empresa.com' : 'you@company.com'}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isSpanish ? 'Empresa' : 'Company'}
+                </label>
+                <input
+                  type="text"
+                  name="company"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={isSpanish ? 'Nombre de tu empresa' : 'Your company name'}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isSpanish ? 'Plan de interés' : 'Plan of interest'}
+                </label>
+                <select
+                  name="plan"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Standard">Standard ($149/month)</option>
+                  <option value="Standard+">Standard + ($249/month)</option>
+                  <option value="Advanced">Advanced ($399/month)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isSpanish ? 'Mensaje adicional' : 'Additional message'}
+                </label>
+                <textarea
+                  name="message"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={isSpanish 
+                    ? 'Cuéntanos sobre tus necesidades específicas...'
+                    : 'Tell us about your specific needs...'
+                  }
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowRequestModal(false)}
+                  className="flex-1"
+                >
+                  {isSpanish ? 'Cancelar' : 'Cancel'}
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="flex-1"
+                >
+                  {isSpanish ? 'Enviar Solicitud' : 'Send Request'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
