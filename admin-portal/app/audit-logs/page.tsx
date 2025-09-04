@@ -4,7 +4,19 @@ import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardBody } from '@/shared/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ClipboardDocumentListIcon, FunnelIcon, MagnifyingGlassIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { Tooltip, IconButton } from '@/components/ui/Tooltip';
+import { useDebounce } from '@/hooks/useDebounce';
+import { 
+  ClipboardDocumentListIcon, 
+  FunnelIcon, 
+  MagnifyingGlassIcon, 
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  XMarkIcon,
+  ClockIcon,
+  Cog6ToothIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
 
 interface AuditLog {
   id: string;
@@ -26,6 +38,7 @@ interface AuditLog {
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [filters, setFilters] = useState({
     action: '',
     resource: '',
@@ -35,12 +48,31 @@ export default function AuditLogsPage() {
     dateRange: '7d' // 7 days, 30d, 90d, all
   });
 
+  // Debounce search to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(filters.search, 500);
+
+  // Effect for non-search filters (immediate)
   useEffect(() => {
+    if (filters.search === debouncedSearchTerm) {
+      fetchLogs();
+    }
+  }, [filters.action, filters.resource, filters.organizationId, filters.userId, filters.dateRange, debouncedSearchTerm]);
+
+  // Effect for debounced search
+  useEffect(() => {
+    if (filters.search !== debouncedSearchTerm) {
+      setIsSearching(true);
+    } else {
+      setIsSearching(false);
+    }
+    
+    if (debouncedSearchTerm !== filters.search) return;
     fetchLogs();
-  }, [filters]);
+  }, [debouncedSearchTerm]);
 
   const fetchLogs = async () => {
     setLoading(true);
+    setIsSearching(false);
     try {
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -59,6 +91,17 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      action: '',
+      resource: '',
+      organizationId: '',
+      userId: '',
+      search: '',
+      dateRange: '7d'
+    });
   };
 
   const getActionColor = (action: string) => {
@@ -141,163 +184,123 @@ export default function AuditLogsPage() {
       description="Platform activity and security audit trail"
     >
       <div className="space-y-6">
-        {/* Search & Filters */}
+        {/* Compact Filter & Search */}
         <Card>
-          <CardBody className="p-4">
-            <div className="flex items-center gap-4 mb-4">
-              <FunnelIcon className="h-5 w-5 text-gray-400" />
-              <h3 className="text-sm font-medium text-gray-900">Filter & Search Audit Logs</h3>
-              <div className="flex-1"></div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="secondary" 
-                  onClick={() => handleExport('csv')}
-                  className="px-3 py-2 text-sm flex items-center gap-1"
-                >
-                  <ArrowDownTrayIcon className="h-4 w-4" />
-                  Export CSV
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => handleExport('json')}
-                  className="px-3 py-2 text-sm flex items-center gap-1"
-                >
-                  <ArrowDownTrayIcon className="h-4 w-4" />
-                  Export JSON
-                </Button>
-              </div>
-            </div>
-            
-            {/* Filters */}
-            <div className="mb-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Action
-                  </label>
-                  <select
-                    value={filters.action}
-                    onChange={(e) => setFilters({ ...filters, action: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  >
-                    <option value="">All Actions</option>
-                    {/* Admin Portal Actions */}
-                    <option value="create">Create</option>
-                    <option value="update">Update</option>
-                    <option value="delete">Delete</option>
-                    <option value="deactivate">Deactivate</option>
-                    <option value="login">Login</option>
-                    <option value="logout">Logout</option>
-                    <option value="failed_login">Failed Login</option>
-                    <option value="invite">Invite</option>
-                    <option value="reset_password">Reset Password</option>
-                    {/* Warren Dashboard Actions */}
-                    <option value="view_pnl">View P&L Dashboard</option>
-                    <option value="view_cashflow">View Cash Flow Dashboard</option>
-                    <option value="view_dashboard">View Dashboard</option>
-                    {/* Warren Configuration Actions */}
-                    <option value="create_configuration">Create Configuration</option>
-                    <option value="update_configuration">Update Configuration</option>
-                    <option value="delete_configuration">Delete Configuration</option>
-                    <option value="validate_configuration">Validate Configuration</option>
-                    <option value="activate_configuration">Activate Configuration</option>
-                    {/* Warren Data Processing Actions */}
-                    <option value="upload_file">Upload File</option>
-                    <option value="process_data">Process Data</option>
-                    <option value="delete_file">Delete File</option>
-                    {/* Warren Export Actions */}
-                    <option value="export_csv">Export CSV</option>
-                    <option value="export_pdf">Export PDF</option>
-                    <option value="export_json">Export JSON</option>
-                    {/* Warren AI Actions */}
-                    <option value="ai_chat_query">AI Chat Query</option>
-                    <option value="ai_chat_context">AI Chat Context</option>
-                    {/* Other Actions */}
-                    <option value="view_audit_logs">View Audit Logs</option>
-                    <option value="export_audit_logs">Export Audit Logs</option>
-                    <option value="access_denied">Access Denied</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Resource
-                  </label>
-                  <select
-                    value={filters.resource}
-                    onChange={(e) => setFilters({ ...filters, resource: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  >
-                    <option value="">All Resources</option>
-                    {/* Admin Portal Resources */}
-                    <option value="organization">Organization</option>
-                    <option value="company">Company</option>
-                    <option value="user">User</option>
-                    <option value="session">Session</option>
-                    <option value="feature_flag">Feature Flag</option>
-                    {/* Warren Resources */}
-                    <option value="configuration">Configuration</option>
-                    <option value="financial_data">Financial Data</option>
-                    <option value="dashboard">Dashboard</option>
-                    <option value="file_upload">File Upload</option>
-                    <option value="export">Export</option>
-                    <option value="ai_chat">AI Chat</option>
-                    <option value="audit_log">Audit Log</option>
-                    {/* System Resources */}
-                    <option value="system">System</option>
-                    <option value="api">API</option>
-                    <option value="auth">Authentication</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Date Range
-                  </label>
-                  <select
-                    value={filters.dateRange}
-                    onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  >
-                    <option value="1d">Last 24 hours</option>
-                    <option value="7d">Last 7 days</option>
-                    <option value="30d">Last 30 days</option>
-                    <option value="90d">Last 90 days</option>
-                    <option value="all">All time</option>
-                  </select>
-                </div>
-
-                <div className="md:col-span-2 flex items-end gap-2">
-                  <Button 
-                    variant="secondary" 
-                    onClick={() => setFilters({ action: '', resource: '', organizationId: '', userId: '', search: '', dateRange: '7d' })}
-                    className="px-4 py-2 text-sm"
-                  >
-                    Clear All Filters
-                  </Button>
-                  <Button onClick={fetchLogs} className="px-4 py-2 text-sm">
-                    Refresh
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="border-t pt-4">
-              <div className="flex items-center gap-2 mb-3">
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Search</span>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Search across actions, resources, users, organizations, IPs, and metadata
-                </label>
+          <CardBody className="p-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Search Input (Takes 50% width on desktop) */}
+              <div className="relative flex-1 min-w-[300px]">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  placeholder="e.g., login, john@example.com, organization name, IP address..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Search actions, users, organizations, IPs..."
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Filter */}
+              <Tooltip content="Filter by action type">
+                <div className="relative">
+                  <Cog6ToothIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <select
+                    value={filters.action}
+                    onChange={(e) => setFilters({ ...filters, action: e.target.value })}
+                    className="pl-8 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[120px]"
+                  >
+                    <option value="">All Actions</option>
+                    <option value="login">Login</option>
+                    <option value="logout">Logout</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                    <option value="view_pnl">View P&L</option>
+                    <option value="view_cashflow">View Cash Flow</option>
+                    <option value="export_csv">Export CSV</option>
+                    <option value="export_pdf">Export PDF</option>
+                  </select>
+                </div>
+              </Tooltip>
+
+              {/* Resource Filter */}
+              <Tooltip content="Filter by resource type">
+                <div className="relative">
+                  <DocumentTextIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <select
+                    value={filters.resource}
+                    onChange={(e) => setFilters({ ...filters, resource: e.target.value })}
+                    className="pl-8 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[120px]"
+                  >
+                    <option value="">All Resources</option>
+                    <option value="user">User</option>
+                    <option value="company">Company</option>
+                    <option value="organization">Organization</option>
+                    <option value="dashboard">Dashboard</option>
+                    <option value="session">Session</option>
+                    <option value="configuration">Configuration</option>
+                    <option value="export">Export</option>
+                  </select>
+                </div>
+              </Tooltip>
+
+              {/* Date Range Filter */}
+              <Tooltip content="Filter by time period">
+                <div className="relative">
+                  <ClockIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <select
+                    value={filters.dateRange}
+                    onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                    className="pl-8 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[100px]"
+                  >
+                    <option value="1d">24h</option>
+                    <option value="7d">7d</option>
+                    <option value="30d">30d</option>
+                    <option value="90d">90d</option>
+                    <option value="all">All</option>
+                  </select>
+                </div>
+              </Tooltip>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1">
+                <IconButton
+                  icon={<XMarkIcon className="h-4 w-4" />}
+                  tooltip="Clear all filters"
+                  onClick={clearFilters}
+                  variant="ghost"
+                  size="sm"
+                />
+                
+                <IconButton
+                  icon={<ArrowPathIcon className="h-4 w-4" />}
+                  tooltip="Refresh logs"
+                  onClick={fetchLogs}
+                  variant="ghost"
+                  size="sm"
+                />
+
+                <div className="w-px h-6 bg-gray-300 mx-1"></div>
+
+                <IconButton
+                  icon={<ArrowDownTrayIcon className="h-4 w-4" />}
+                  tooltip="Export as CSV"
+                  onClick={() => handleExport('csv')}
+                  variant="ghost"
+                  size="sm"
+                />
+                
+                <IconButton
+                  icon={<DocumentTextIcon className="h-4 w-4" />}
+                  tooltip="Export as JSON"
+                  onClick={() => handleExport('json')}
+                  variant="ghost"
+                  size="sm"
                 />
               </div>
             </div>
