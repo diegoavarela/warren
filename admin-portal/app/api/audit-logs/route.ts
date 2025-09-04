@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, auditLogs, users, organizations, companies, eq, and, gte, sql, or, ilike } from '@/lib/db';
+import { db, auditLogs, users, organizations, companies, eq, and, gte, sql, or, ilike, inArray } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
           name: organizations.name
         })
         .from(organizations)
-        .where(sql`${organizations.id} = ANY(${uniqueCompanyOrgIds})`);
+        .where(inArray(organizations.id, uniqueCompanyOrgIds));
       
       companyOrganizations = Object.fromEntries(
         orgResults.map(org => [org.id, org.name])
