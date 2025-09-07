@@ -16,7 +16,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string, csrfToken?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, csrfToken?: string) => {
     try {
       console.log('Attempting login with:', { email, passwordLength: password.length });
       const response = await fetch('/api/auth/login', {
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, csrfToken }),
       });
 
       const data = await response.json();
@@ -87,12 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
         }
 
-        console.log('Login successful, setting user and token');
+        console.log('Login successful, setting user');
         setUser(data.user);
-        localStorage.setItem('admin-token', data.token);
-        
-        // Also set token in cookies for middleware
-        document.cookie = `admin-token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
+        // Token is now set as httpOnly cookie by the server
         
         return { success: true };
       } else {

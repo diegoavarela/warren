@@ -10,6 +10,16 @@ import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { Card, CardBody } from '@/shared/components/ui/Card';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { UsageData } from '@/shared/types/usage';
+import { fetchOrganizationUsageForAdmin } from '@/shared/lib/usage-api';
+
+interface Tier {
+  id: string;
+  name: string;
+  displayName: string;
+  priceMonthly: string;
+  isActive: boolean;
+}
 
 interface Organization {
   id: string;
@@ -27,10 +37,109 @@ interface Organization {
   companyCount: number;
 }
 
+function UsageCell({ organizationId }: { organizationId: string }) {
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      try {
+        setLoading(true);
+        const result = await fetchOrganizationUsageForAdmin(organizationId);
+        
+        if (result.success && result.data) {
+          setUsageData(result.data);
+        } else {
+          setError(result.error || 'Failed to fetch usage');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsage();
+  }, [organizationId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center space-x-2">
+        <div className="animate-pulse h-4 bg-gray-200 rounded w-16"></div>
+        <div className="animate-pulse h-4 bg-gray-200 rounded w-12"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 text-xs">
+        Error loading usage
+      </div>
+    );
+  }
+
+  if (!usageData) {
+    return (
+      <div className="text-gray-400 text-xs">
+        No data
+      </div>
+    );
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const userPercentage = usageData.users.max > 0 
+    ? Math.round((usageData.users.current / usageData.users.max) * 100)
+    : 0;
+
+  const getUsersColor = () => {
+    if (userPercentage >= 100) return 'text-red-600';
+    if (userPercentage >= 80) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  const getCreditsColor = () => {
+    const creditsUsedPercentage = usageData.aiCredits.monthly > 0 
+      ? (usageData.aiCredits.used / usageData.aiCredits.monthly) * 100
+      : 0;
+    
+    if (creditsUsedPercentage >= 90) return 'text-red-600';
+    if (creditsUsedPercentage >= 70) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  return (
+    <div className="flex flex-col space-y-1 min-w-[120px]">
+      <div className={`text-xs font-medium ${getUsersColor()}`}>
+        {usageData.users.current}/{usageData.users.max} users ({userPercentage}%)
+      </div>
+      <div className={`text-xs ${getCreditsColor()}`}>
+        {formatCurrency(usageData.aiCredits.balance)} credits
+      </div>
+      {usageData.aiCredits.estimatedDaysRemaining !== null && 
+       usageData.aiCredits.estimatedDaysRemaining <= 30 && (
+        <div className="text-xs text-orange-600">
+          ~{usageData.aiCredits.estimatedDaysRemaining}d left
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function OrganizationsPage() {
   const router = useRouter();
   const toast = useToast();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [tiers, setTiers] = useState<Tier[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -49,6 +158,7 @@ export default function OrganizationsPage() {
 
   useEffect(() => {
     fetchOrganizations();
+    fetchTiers();
   }, []);
 
   const fetchOrganizations = async () => {
@@ -66,11 +176,26 @@ export default function OrganizationsPage() {
     }
   };
 
+  const fetchTiers = async () => {
+    try {
+      const response = await apiRequest('/api/tiers');
+      const result = await response.json();
+      
+      if (result.success) {
+        // Filter only active tiers
+        const activeTiers = result.data.filter((tier: Tier) => tier.isActive);
+        setTiers(activeTiers);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tiers:', error);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
       subdomain: '',
-      tier: 'starter',
+      tier: '',
       locale: 'en-US',
       baseCurrency: 'USD',
       timezone: 'UTC',
@@ -79,6 +204,11 @@ export default function OrganizationsPage() {
   };
 
   const handleCreate = async () => {
+    if (!formData.tier) {
+      toast.error('Validation Error', 'Please select a tier for the organization');
+      return;
+    }
+
     setFormLoading(true);
     try {
       const response = await apiRequest('/api/organizations', {
@@ -93,6 +223,7 @@ export default function OrganizationsPage() {
         setShowCreateModal(false);
         resetForm();
         fetchOrganizations();
+        toast.success('Organization Created', 'Organization created successfully');
       } else {
         toast.error('Creation Failed', result.error || 'Failed to create organization');
       }
@@ -105,6 +236,11 @@ export default function OrganizationsPage() {
 
   const handleEdit = async () => {
     if (!selectedOrg) return;
+    
+    if (!formData.tier) {
+      toast.error('Validation Error', 'Please select a tier for the organization');
+      return;
+    }
 
     setFormLoading(true);
     try {
@@ -121,6 +257,7 @@ export default function OrganizationsPage() {
         setSelectedOrg(null);
         resetForm();
         fetchOrganizations();
+        toast.success('Organization Updated', 'Organization updated successfully');
       } else {
         toast.error('Update Failed', result.error || 'Failed to update organization');
       }
@@ -178,7 +315,46 @@ export default function OrganizationsPage() {
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
     { key: 'subdomain', label: 'Subdomain', render: (value: string | null) => value || '-' },
-    { key: 'tier', label: 'Tier', sortable: true },
+    { 
+      key: 'tier', 
+      label: 'Tier', 
+      sortable: true,
+      render: (value: string) => {
+        const tier = tiers.find(t => t.name === value);
+        if (!tier) {
+          return (
+            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+              {value || 'No Tier'}
+            </span>
+          );
+        }
+
+        // Define tier-specific colors
+        const getTierColors = (tierName: string) => {
+          const name = tierName.toLowerCase();
+          if (name.includes('standard+') || name.includes('standard_plus')) {
+            return 'bg-purple-100 text-purple-800 border border-purple-200';
+          } else if (name.includes('advanced') || name.includes('premium')) {
+            return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+          } else if (name.includes('standard')) {
+            return 'bg-blue-100 text-blue-800 border border-blue-200';
+          } else {
+            return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+          }
+        };
+
+        return (
+          <div className="flex flex-col gap-1">
+            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTierColors(tier.name)}`}>
+              {tier.displayName}
+            </span>
+            <span className="text-xs text-gray-500">
+              ${parseFloat(tier.priceMonthly).toFixed(0)}/mo
+            </span>
+          </div>
+        );
+      }
+    },
     { key: 'userCount', label: 'Users', sortable: true },
     { key: 'companyCount', label: 'Companies', sortable: true },
     { 
@@ -197,6 +373,13 @@ export default function OrganizationsPage() {
       label: 'Created', 
       sortable: true,
       render: (value: string) => new Date(value).toLocaleDateString()
+    },
+    {
+      key: 'usage',
+      label: 'Usage',
+      render: (_: any, row: Organization) => (
+        <UsageCell organizationId={row.id} />
+      )
     },
     {
       key: 'actions',
@@ -274,10 +457,14 @@ export default function OrganizationsPage() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             value={formData.tier}
             onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
+            required
           >
-            <option value="starter">Starter</option>
-            <option value="professional">Professional</option>
-            <option value="enterprise">Enterprise</option>
+            <option value="">Select a tier...</option>
+            {tiers.map((tier) => (
+              <option key={tier.id} value={tier.name}>
+                {tier.displayName} - ${parseFloat(tier.priceMonthly).toFixed(0)}/month
+              </option>
+            ))}
           </select>
         </div>
 

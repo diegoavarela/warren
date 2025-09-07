@@ -53,6 +53,25 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Tiers table - Define subscription tiers with their features and limits
+export const tiers = pgTable("tiers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 100 }).notNull().unique(), // standard, standard_plus, advanced
+  displayName: varchar("display_name", { length: 100 }).notNull(), // Standard, Standard+, Advanced
+  description: text("description"),
+  priceMonthly: decimal("price_monthly", { precision: 10, scale: 2 }).notNull(),
+  priceAnnual: decimal("price_annual", { precision: 10, scale: 2 }).notNull(),
+  maxUsers: integer("max_users").notNull(),
+  setupHours: integer("setup_hours"), // NULL means unlimited
+  aiCreditsMonthly: decimal("ai_credits_monthly", { precision: 10, scale: 2 }).default('0'),
+  customFeatureHours: integer("custom_feature_hours").default(0), // Hours of custom features per month
+  features: jsonb("features").notNull().default('[]'), // Array of feature keys
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0), // For display ordering
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Companies table (as it exists in the database)
 export const companies = pgTable("companies", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -71,10 +90,34 @@ export const companies = pgTable("companies", {
   website: varchar("website", { length: 255 }),
   displayUnits: varchar("display_units", { length: 20 }).default("normal"),
   cashflowDirectMode: boolean("cashflow_direct_mode").notNull().default(false),
+  // Tier and AI Credit fields
+  tierId: uuid("tier_id").references(() => tiers.id), // Inherits from organization but can be overridden
+  aiCreditsBalance: decimal("ai_credits_balance", { precision: 10, scale: 4 }).default('0'),
+  aiCreditsUsed: decimal("ai_credits_used", { precision: 10, scale: 4 }).default('0'),
+  aiCreditsResetDate: date("ai_credits_reset_date"), // Monthly reset date
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// AI Usage Logs table - Track AI chat usage for credit billing
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  creditsUsed: decimal("credits_used", { precision: 8, scale: 4 }).notNull(),
+  promptTokens: integer("prompt_tokens"),
+  responseTokens: integer("response_tokens"),
+  totalTokens: integer("total_tokens"),
+  model: varchar("model", { length: 50 }), // gpt-4, gpt-3.5-turbo, etc.
+  prompt: text("prompt"), // Truncated for storage
+  response: text("response"), // Truncated for storage
+  sessionId: varchar("session_id", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  companyIdx: unique().on(table.companyId, table.createdAt),
+  userIdx: unique().on(table.userId, table.createdAt),
+}));
 
 // Company-User relationships
 export const companyUsers = pgTable("company_users", {
@@ -560,3 +603,11 @@ export type NewFeatureRequest = typeof featureRequests.$inferInsert;
 // Audit Logs types
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+// Tiers types
+export type Tier = typeof tiers.$inferSelect;
+export type NewTier = typeof tiers.$inferInsert;
+
+// AI Usage Logs types
+export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+export type NewAiUsageLog = typeof aiUsageLogs.$inferInsert;

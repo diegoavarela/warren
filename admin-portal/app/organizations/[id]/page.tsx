@@ -49,6 +49,14 @@ interface Organization {
   userCount: number;
 }
 
+interface Tier {
+  id: string;
+  name: string;
+  displayName: string;
+  priceMonthly: string;
+  isActive: boolean;
+}
+
 interface Company {
   id: string;
   name: string;
@@ -100,10 +108,12 @@ export default function OrganizationDetailPage() {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [tiers, setTiers] = useState<Tier[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'users' | 'settings'>('overview');
   const [loading, setLoading] = useState(true);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [tiersLoading, setTiersLoading] = useState(false);
 
   // Modal states
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -138,6 +148,8 @@ export default function OrganizationDetailPage() {
       fetchCompanies();
     } else if (activeTab === 'users') {
       fetchUsers();
+    } else if (activeTab === 'settings') {
+      fetchTiers();
     }
   }, [activeTab, orgId]);
 
@@ -196,6 +208,24 @@ export default function OrganizationDetailPage() {
       console.error('Failed to fetch users:', error);
     } finally {
       setUsersLoading(false);
+    }
+  };
+
+  const fetchTiers = async () => {
+    setTiersLoading(true);
+    try {
+      const response = await apiRequest('/api/tiers');
+      const result = await response.json();
+      
+      if (result.success) {
+        // Only include active tiers
+        const activeTiers = result.data.filter((tier: Tier) => tier.isActive);
+        setTiers(activeTiers);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tiers:', error);
+    } finally {
+      setTiersLoading(false);
     }
   };
 
@@ -357,6 +387,7 @@ export default function OrganizationDetailPage() {
         body: JSON.stringify({
           name: settingsFormData.name,
           subdomain: settingsFormData.subdomain,
+          tier: settingsFormData.tier,
           locale: settingsFormData.locale,
           baseCurrency: settingsFormData.baseCurrency,
           timezone: settingsFormData.timezone,
@@ -788,6 +819,30 @@ export default function OrganizationDetailPage() {
                             onChange={(e) => handleSettingsChange('subdomain', e.target.value || null)}
                             placeholder="Optional subdomain"
                           />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
+                          <select
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            value={settingsFormData?.tier || ''}
+                            onChange={(e) => handleSettingsChange('tier', e.target.value)}
+                            disabled={tiersLoading}
+                          >
+                            {tiersLoading ? (
+                              <option value="">Loading tiers...</option>
+                            ) : (
+                              <>
+                                <option value="">Select a tier...</option>
+                                {tiers.map((tier) => (
+                                  <option key={tier.id} value={tier.name}>
+                                    {tier.displayName} - ${parseFloat(tier.priceMonthly).toFixed(0)}/month
+                                  </option>
+                                ))}
+                              </>
+                            )}
+                          </select>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-4">

@@ -83,7 +83,10 @@ export const {
   user2faAttempts,
   companyConfigurations,
   processedFinancialData,
-  financialDataFiles
+  financialDataFiles,
+  tiers,
+  tierFeatures,
+  aiUsage
 } = schema;
 
 // Re-export schema types

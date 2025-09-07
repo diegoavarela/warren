@@ -117,13 +117,13 @@ export const IconButton: React.FC<IconButtonProps> = ({
   const getSizeStyles = () => {
     switch (size) {
       case 'sm':
-        return 'p-1.5 text-sm';
+        return 'p-1 text-xs';
       case 'md':
-        return 'p-2 text-base';
+        return 'p-1.5 text-sm';
       case 'lg':
-        return 'p-3 text-lg';
-      default:
         return 'p-2 text-base';
+      default:
+        return 'p-1.5 text-sm';
     }
   };
 

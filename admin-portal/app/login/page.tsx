@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/shared/components/ui/Card';
+import { sanitizeUrl, logSecurityIncident, SecurityIncidentType } from '@/lib/security';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +17,30 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [csrfToken, setCsrfToken] = useState('');
+
+  // SECURITY: Clean sensitive parameters from URL on mount and fetch CSRF token
+  useEffect(() => {
+    const currentUrl = window.location.href;
+    const cleanUrl = sanitizeUrl(currentUrl);
+    
+    if (currentUrl !== cleanUrl) {
+      // Log security incident
+      logSecurityIncident(SecurityIncidentType.SENSITIVE_URL_PARAMETER, {
+        path: window.location.pathname,
+        severity: 'high'
+      });
+      
+      // Replace URL without page reload
+      window.history.replaceState({}, '', cleanUrl);
+    }
+
+    // Fetch CSRF token
+    fetch('/api/auth/csrf')
+      .then(res => res.json())
+      .then(data => setCsrfToken(data.csrfToken))
+      .catch(err => console.error('Failed to fetch CSRF token:', err));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +48,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, csrfToken);
       console.log('Login form result:', result);
       
       if (result.success) {
@@ -68,7 +93,7 @@ export default function LoginPage() {
         {/* Login Form */}
         <Card>
           <CardBody className="p-8">
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" method="POST" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
@@ -97,6 +122,7 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
+                    data-lpignore="true"
                     className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="••••••••"
                     value={formData.password}

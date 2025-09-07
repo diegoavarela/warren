@@ -1,22 +1,7 @@
-// Database connection with fallback to mock for local development
-// IMPORTANT: Using actual-schema.ts which matches the real database structure
+// Database connection with proper ESM compatibility for Next.js
 import * as schema from "./actual-schema";
 
-// Ensure .env.local is loaded (Next.js should handle this, but let's be explicit)
-if (typeof window === 'undefined') {
-  // Server-side: Load environment variables
-  const path = require('path');
-  const fs = require('fs');
-  
-  // Load .env.local if it exists (highest priority)
-  const envLocalPath = path.join(process.cwd(), '.env.local');
-  if (fs.existsSync(envLocalPath)) {
-    require('dotenv').config({ path: envLocalPath, override: true });
-  }
-}
-
 // Check if we have a real database URL (Neon database)
-// Only run database logic on server side
 const isServer = typeof window === 'undefined';
 const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
 
@@ -33,75 +18,60 @@ if (isServer) {
       !process.env.DATABASE_URL.includes('username:password'))));
 }
 
-let db: any;
-let organizations: any;
-let users: any;
-let companies: any;
-let companyUsers: any;
-let financialStatements: any;
-let financialLineItems: any;
-let mappingTemplates: any;
-let parsingLogs: any;
-let processingJobs: any;
-let systemSettings: any;
-let organizationSubcategories: any;
-let companySubcategories: any;
-let subcategoryTemplates: any;
-let companySubcategoryTemplates: any;
-let featureFlags: any;
-let organizationFeatures: any;
-let featureRequests: any;
-let auditLogs: any;
-let eq: any;
-let desc: any;
-let count: any;
-let and: any;
-let gte: any;
-let like: any;
-let or: any;
-let sql: any;
+// Initialize database connection asynchronously
+let dbPromise: Promise<any> | null = null;
 
-// Always use real database
-if (!isServer) {
-  // Client-side: Create empty stubs to avoid errors
-  db = null;
-  organizations = null;
-  users = null;
-  companies = null;
-  companyUsers = null;
-  financialStatements = null;
-  financialLineItems = null;
-  mappingTemplates = null;
-  parsingLogs = null;
-  processingJobs = null;
-  systemSettings = null;
-  organizationSubcategories = null;
-  companySubcategories = null;
-  subcategoryTemplates = null;
-  companySubcategoryTemplates = null;
-  featureFlags = null;
-  organizationFeatures = null;
-  featureRequests = null;
-  auditLogs = null;
-  eq = () => {};
-  desc = () => {};
-  count = () => {};
-  and = () => {};
-  gte = () => {};
-  like = () => {};
-  or = () => {};
-  sql = () => {};
-} else if (!hasRealDatabase) {
-  // Server-side without database configured
-  throw new Error(
-    'DATABASE_URL environment variable is not set. Please configure your database connection in .env.local'
-  );
-} else {
-  // Use real database
-  const { drizzle } = require("drizzle-orm/neon-http");
-  const { neon } = require("@neondatabase/serverless");
-  const { eq: realEq, desc: realDesc, count: realCount, and: realAnd, gte: realGte, like: realLike, or: realOr, sql: realSql } = require("drizzle-orm");
-  
+async function initializeDatabase() {
+  if (!isServer) {
+    // Client-side: return null stubs
+    return {
+      db: null,
+      organizations: null,
+      users: null,
+      tiers: null,
+      companies: null,
+      companyUsers: null,
+      aiUsageLogs: null,
+      financialStatements: null,
+      financialLineItems: null,
+      mappingTemplates: null,
+      parsingLogs: null,
+      processingJobs: null,
+      systemSettings: null,
+      organizationSubcategories: null,
+      companySubcategories: null,
+      subcategoryTemplates: null,
+      companySubcategoryTemplates: null,
+      featureFlags: null,
+      organizationFeatures: null,
+      featureRequests: null,
+      auditLogs: null,
+      eq: () => {},
+      desc: () => {},
+      asc: () => {},
+      lte: () => {},
+      count: () => {},
+      and: () => {},
+      gte: () => {},
+      like: () => {},
+      or: () => {},
+      sql: () => {}
+    };
+  }
+
+  if (!hasRealDatabase) {
+    throw new Error(
+      'DATABASE_URL environment variable is not set. Please configure your database connection in .env.local'
+    );
+  }
+
+  // Use dynamic imports for ESM compatibility
+  const [{ drizzle }, { neon }, drizzleOps] = await Promise.all([
+    import("drizzle-orm/neon-http"),
+    import("@neondatabase/serverless"), 
+    import("drizzle-orm")
+  ]);
+
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL environment variable is required");
   }
@@ -111,43 +81,136 @@ if (!isServer) {
     fetchConnectionCache: true,
     fullResults: false
   });
-  db = drizzle(neonSql, { schema });
+  const db = drizzle(neonSql, { schema });
   
-  // Use real schema tables
-  organizations = schema.organizations;
-  users = schema.users;
-  companies = schema.companies;
-  companyUsers = schema.companyUsers;
-  financialStatements = schema.financialStatements;
-  financialLineItems = schema.financialLineItems;
-  mappingTemplates = schema.mappingTemplates;
-  parsingLogs = schema.parsingLogs;
-  processingJobs = schema.processingJobs;
-  systemSettings = schema.systemSettings;
-  organizationSubcategories = schema.organizationSubcategories;
-  companySubcategories = schema.companySubcategories;
-  subcategoryTemplates = schema.subcategoryTemplates;
-  companySubcategoryTemplates = schema.companySubcategoryTemplates;
-  featureFlags = schema.featureFlags;
-  organizationFeatures = schema.organizationFeatures;
-  featureRequests = schema.featureRequests;
-  auditLogs = schema.auditLogs;
-  eq = realEq;
-  desc = realDesc;
-  count = realCount;
-  and = realAnd;
-  gte = realGte;
-  like = realLike;
-  or = realOr;
-  sql = realSql;
+  return {
+    db,
+    // Use real schema tables
+    organizations: schema.organizations,
+    users: schema.users,
+    tiers: schema.tiers,
+    companies: schema.companies,
+    companyUsers: schema.companyUsers,
+    aiUsageLogs: schema.aiUsageLogs,
+    financialStatements: schema.financialStatements,
+    financialLineItems: schema.financialLineItems,
+    mappingTemplates: schema.mappingTemplates,
+    parsingLogs: schema.parsingLogs,
+    processingJobs: schema.processingJobs,
+    systemSettings: schema.systemSettings,
+    organizationSubcategories: schema.organizationSubcategories,
+    companySubcategories: schema.companySubcategories,
+    subcategoryTemplates: schema.subcategoryTemplates,
+    companySubcategoryTemplates: schema.companySubcategoryTemplates,
+    featureFlags: schema.featureFlags,
+    organizationFeatures: schema.organizationFeatures,
+    featureRequests: schema.featureRequests,
+    auditLogs: schema.auditLogs,
+    // Drizzle operations
+    eq: drizzleOps.eq,
+    desc: drizzleOps.desc,
+    asc: drizzleOps.asc,
+    lte: drizzleOps.lte,
+    count: drizzleOps.count,
+    and: drizzleOps.and,
+    gte: drizzleOps.gte,
+    like: drizzleOps.like,
+    or: drizzleOps.or,
+    sql: drizzleOps.sql
+  };
+}
+
+// Create singleton promise to initialize database only once
+if (isServer && !dbPromise) {
+  dbPromise = initializeDatabase();
+}
+
+// Export async function to get database connection
+export async function getDatabase() {
+  if (!dbPromise) {
+    dbPromise = initializeDatabase();
+  }
+  return await dbPromise;
+}
+
+// Legacy synchronous exports - these will be deprecated
+let db: any = null;
+let organizations: any = null;
+let users: any = null;
+let tiers: any = null;
+let companies: any = null;
+let companyUsers: any = null;
+let aiUsageLogs: any = null;
+let financialStatements: any = null;
+let financialLineItems: any = null;
+let mappingTemplates: any = null;
+let parsingLogs: any = null;
+let processingJobs: any = null;
+let systemSettings: any = null;
+let organizationSubcategories: any = null;
+let companySubcategories: any = null;
+let subcategoryTemplates: any = null;
+let companySubcategoryTemplates: any = null;
+let featureFlags: any = null;
+let organizationFeatures: any = null;
+let featureRequests: any = null;
+let auditLogs: any = null;
+let eq: any = () => {};
+let desc: any = () => {};
+let asc: any = () => {};
+let lte: any = () => {};
+let count: any = () => {};
+let and: any = () => {};
+let gte: any = () => {};
+let like: any = () => {};
+let or: any = () => {};
+let sql: any = () => {};
+
+// Initialize legacy exports for backward compatibility
+if (isServer && hasRealDatabase) {
+  getDatabase().then(dbConnection => {
+    db = dbConnection.db;
+    organizations = dbConnection.organizations;
+    users = dbConnection.users;
+    tiers = dbConnection.tiers;
+    companies = dbConnection.companies;
+    companyUsers = dbConnection.companyUsers;
+    aiUsageLogs = dbConnection.aiUsageLogs;
+    financialStatements = dbConnection.financialStatements;
+    financialLineItems = dbConnection.financialLineItems;
+    mappingTemplates = dbConnection.mappingTemplates;
+    parsingLogs = dbConnection.parsingLogs;
+    processingJobs = dbConnection.processingJobs;
+    systemSettings = dbConnection.systemSettings;
+    organizationSubcategories = dbConnection.organizationSubcategories;
+    companySubcategories = dbConnection.companySubcategories;
+    subcategoryTemplates = dbConnection.subcategoryTemplates;
+    companySubcategoryTemplates = dbConnection.companySubcategoryTemplates;
+    featureFlags = dbConnection.featureFlags;
+    organizationFeatures = dbConnection.organizationFeatures;
+    featureRequests = dbConnection.featureRequests;
+    auditLogs = dbConnection.auditLogs;
+    eq = dbConnection.eq;
+    desc = dbConnection.desc;
+    asc = dbConnection.asc;
+    lte = dbConnection.lte;
+    count = dbConnection.count;
+    and = dbConnection.and;
+    gte = dbConnection.gte;
+    like = dbConnection.like;
+    or = dbConnection.or;
+    sql = dbConnection.sql;
+  }).catch(console.error);
 }
 
 export { 
   db,
   organizations,
   users,
+  tiers,
   companies,
   companyUsers,
+  aiUsageLogs,
   financialStatements,
   financialLineItems,
   mappingTemplates,
@@ -164,6 +227,8 @@ export {
   auditLogs,
   eq,
   desc,
+  asc,
+  lte,
   count,
   and,
   gte,

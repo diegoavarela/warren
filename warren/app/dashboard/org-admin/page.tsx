@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { Building2, Users, Plus, Settings, Trash2, Search } from 'lucide-react';
 import { useTranslation } from '@/lib/translations';
 import { useLocale } from '@/contexts/LocaleContext';
+import { AICreditsWidget } from '@/shared/components/usage/AICreditsWidget';
+import { UserLimitIndicator } from '@/shared/components/usage/UserLimitIndicator';
 
 interface Company {
   id: string;
@@ -31,10 +33,12 @@ function OrgAdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [usageLoading, setUsageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [usageData, setUsageData] = useState<any>(null);
 
   useEffect(() => {
     // Clear any selected company context when navigating to org admin
@@ -44,6 +48,7 @@ function OrgAdminDashboard() {
     fetchCompanies();
     if (organization?.id) {
       fetchUsers();
+      fetchUsageData();
     }
   }, [organization?.id]);
 
@@ -85,6 +90,24 @@ function OrgAdminDashboard() {
       console.error('Failed to load users:', err);
     } finally {
       setUsersLoading(false);
+    }
+  };
+
+  const fetchUsageData = async () => {
+    if (!organization?.id) return;
+    
+    try {
+      setUsageLoading(true);
+      const response = await fetch(`/api/organizations/${organization.id}/usage`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch usage data');
+      }
+      const data = await response.json();
+      setUsageData(data.data);
+    } catch (err) {
+      console.error('Failed to load usage data:', err);
+    } finally {
+      setUsageLoading(false);
     }
   };
 
@@ -257,7 +280,46 @@ function OrgAdminDashboard() {
               <Settings className="w-4 h-4 text-gray-400 mt-1 ml-auto" />
             </div>
           </div>
+          
+          {/* Embedded Usage Information */}
+          {!usageLoading && usageData && (
+            <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 text-xs text-gray-600">
+              {/* Users - Ultra Compact */}
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">
+                  {locale?.startsWith('es') ? 'Usuarios:' : 'Users:'}
+                </span>
+                <span>{usageData.users.current}/{usageData.users.max}</span>
+                <div className="w-10 bg-gray-200 rounded-full h-1">
+                  <div 
+                    className="bg-green-500 h-1 rounded-full transition-all"
+                    style={{ width: `${Math.min((usageData.users.current / usageData.users.max) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* AI Credits - Ultra Compact */}
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">
+                  {locale?.startsWith('es') ? 'Créditos IA:' : 'AI Credits:'}
+                </span>
+                <span>US$ {usageData.aiCredits.balance?.toFixed(2) || '0.00'}</span>
+                <div className="w-10 bg-gray-200 rounded-full h-1">
+                  <div 
+                    className="bg-blue-500 h-1 rounded-full transition-all"
+                    style={{ 
+                      width: usageData.aiCredits.monthly > 0 
+                        ? `${Math.min((usageData.aiCredits.used / usageData.aiCredits.monthly) * 100, 100)}%` 
+                        : '0%'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+
 
         {/* Companies Section */}
         <Card>

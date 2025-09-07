@@ -183,20 +183,20 @@ export default function AuditLogsPage() {
       title="Audit Logs" 
       description="Platform activity and security audit trail"
     >
-      <div className="space-y-6">
+      <div className="space-y-2">
         {/* Compact Filter & Search */}
         <Card>
-          <CardBody className="p-3">
-            <div className="flex flex-wrap items-center gap-3">
+          <CardBody className="px-3 py-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {/* Search Input (Takes 50% width on desktop) */}
               <div className="relative flex-1 min-w-[300px]">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <input
                   type="text"
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                   placeholder="Search actions, users, organizations, IPs..."
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-9 pr-3 py-1 w-full border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {isSearching && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -208,11 +208,11 @@ export default function AuditLogsPage() {
               {/* Action Filter */}
               <Tooltip content="Filter by action type">
                 <div className="relative">
-                  <Cog6ToothIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <Cog6ToothIcon className="absolute left-1.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                   <select
                     value={filters.action}
                     onChange={(e) => setFilters({ ...filters, action: e.target.value })}
-                    className="pl-8 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[120px]"
+                    className="pl-7 pr-7 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[110px]"
                   >
                     <option value="">All Actions</option>
                     <option value="login">Login</option>
@@ -231,11 +231,11 @@ export default function AuditLogsPage() {
               {/* Resource Filter */}
               <Tooltip content="Filter by resource type">
                 <div className="relative">
-                  <DocumentTextIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <DocumentTextIcon className="absolute left-1.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                   <select
                     value={filters.resource}
                     onChange={(e) => setFilters({ ...filters, resource: e.target.value })}
-                    className="pl-8 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[120px]"
+                    className="pl-7 pr-7 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[110px]"
                   >
                     <option value="">All Resources</option>
                     <option value="user">User</option>
@@ -252,11 +252,11 @@ export default function AuditLogsPage() {
               {/* Date Range Filter */}
               <Tooltip content="Filter by time period">
                 <div className="relative">
-                  <ClockIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <ClockIcon className="absolute left-1.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                   <select
                     value={filters.dateRange}
                     onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                    className="pl-8 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[100px]"
+                    className="pl-7 pr-7 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none min-w-[90px]"
                   >
                     <option value="1d">24h</option>
                     <option value="7d">7d</option>
@@ -268,7 +268,7 @@ export default function AuditLogsPage() {
               </Tooltip>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <IconButton
                   icon={<XMarkIcon className="h-4 w-4" />}
                   tooltip="Clear all filters"
@@ -285,7 +285,7 @@ export default function AuditLogsPage() {
                   size="sm"
                 />
 
-                <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                <div className="w-px h-5 bg-gray-300 mx-0.5"></div>
 
                 <IconButton
                   icon={<ArrowDownTrayIcon className="h-4 w-4" />}

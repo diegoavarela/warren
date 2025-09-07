@@ -4,6 +4,7 @@ import { verifyJWT } from '@/lib/auth/jwt';
 import { db, users, companyUsers, companies, eq, and } from '@/lib/db';
 import { ROLES } from '@/lib/auth/rbac';
 import { hashPassword, generateSecurePassword } from '@/lib/auth/password';
+import { enforceUserLimit } from '@/lib/tier-enforcement';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -177,6 +178,24 @@ export async function POST(
       .limit(1);
 
     let targetUser;
+    let isNewUser = false;
+
+    // If creating a new user, enforce user limit first
+    if (existingUserResult.length === 0) {
+      const limitResult = await enforceUserLimit(organizationId);
+      if (!limitResult.allowed) {
+        return NextResponse.json(
+          { 
+            error: 'User limit exceeded',
+            errorKey: limitResult.errorKey,
+            details: limitResult.errorDetails,
+            message: `Your current plan allows ${limitResult.errorDetails?.max} users. You currently have ${limitResult.errorDetails?.current} users.`
+          },
+          { status: 403 }
+        );
+      }
+      isNewUser = true;
+    }
 
     if (existingUserResult.length > 0) {
       targetUser = existingUserResult[0];

@@ -163,7 +163,7 @@ export function ToastContainer({
       aria-live="polite"
     >
       <div className="flex flex-col gap-3">
-        {toasts.map((toast) => (
+        {(toasts || []).map((toast) => (
           <Toast
             key={toast.id}
             {...toast}

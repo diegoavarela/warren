@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getCurrentUser } from '@/lib/auth/server-auth';
 import { logAIInteraction } from '@/lib/audit';
+import { enforceAICredits, consumeAICredits, calculateTokenCost } from '@/lib/tier-enforcement';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -380,6 +381,20 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Pre-check AI credits before making the OpenAI call
+    const estimatedTokens = Math.ceil(message.length / 4) + 500; // Rough estimation
+    const estimatedCost = calculateTokenCost(estimatedTokens, 'gpt-4o-mini');
+    
+    const creditEnforcement = await enforceAICredits(companyId, estimatedCost);
+    if (!creditEnforcement.allowed) {
+      return NextResponse.json({
+        error: 'Insufficient AI credits',
+        errorKey: creditEnforcement.errorKey,
+        details: creditEnforcement.errorDetails,
+        message: 'You do not have sufficient AI credits to complete this request. Please upgrade your plan.'
+      }, { status: 402 }); // 402 Payment Required
+    }
+
     // Helper to extract period indices for quarters
     const quarterMapping: Record<string, number[]> = {
       'Q1': [0, 1, 2], // Jan, Feb, Mar
@@ -623,6 +638,39 @@ When providing insights, base them solely on the available data.`;
         dataQuality: context.metadata.dataQuality
       }
     };
+
+    // Consume AI credits after successful completion
+    const actualTokens = completion.usage?.total_tokens || estimatedTokens;
+    const actualCost = calculateTokenCost(actualTokens, 'gpt-4o-mini');
+    
+    try {
+      await consumeAICredits(
+        companyId,
+        user.id,
+        actualCost,
+        {
+          promptTokens: completion.usage?.prompt_tokens || 0,
+          responseTokens: completion.usage?.completion_tokens || 0,
+          totalTokens: actualTokens,
+          model: 'gpt-4o-mini'
+        },
+        {
+          sessionId: `chat_${Date.now()}`,
+          prompt: message.substring(0, 1000),
+          response: (responseMessage.content || '').substring(0, 1000),
+        }
+      );
+      
+      // Add remaining balance to response for UI updates
+      response.aiCredits = {
+        consumed: actualCost,
+        remainingEstimate: creditEnforcement.details?.available ? creditEnforcement.details.available - actualCost : null
+      };
+    } catch (creditError) {
+      console.error('Failed to consume AI credits:', creditError);
+      // Don't fail the request if credit logging fails
+    }
+
     return NextResponse.json(response);
 
   } catch (error) {

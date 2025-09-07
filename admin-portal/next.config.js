@@ -18,8 +18,16 @@ const nextConfig = {
     
     // Handle ESM packages
     if (isServer) {
-      config.externals = [...(config.externals || []), 'drizzle-orm'];
+      config.externals = [...(config.externals || []), 'drizzle-orm', '@neondatabase/serverless'];
     }
+    
+    // Allow commonjs for drizzle packages
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
     
     return config;
   },

@@ -120,13 +120,13 @@ export function DataTable({
                   key={column.key}
                   scope="col"
                   className={clsx(
-                    "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                    "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider",
                     column.sortable && "cursor-pointer hover:bg-gray-100"
                   )}
                   style={column.width ? { width: column.width } : {}}
                   onClick={() => handleSort(column.key)}
                 >
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center justify-center space-x-1">
                     <span>{column.label}</span>
                     {column.sortable && sortConfig.key === column.key && (
                       <span className="text-blue-500">

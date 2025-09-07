@@ -19,7 +19,8 @@ import {
   BuildingOfficeIcon,
   CurrencyDollarIcon,
   GlobeAltIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from '@/lib/auth/rbac';
 
@@ -59,6 +60,8 @@ function OrganizationSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<OrganizationSettings | null>(null);
   const [formData, setFormData] = useState<OrganizationSettings | null>(null);
+  const [usageData, setUsageData] = useState<any>(null);
+  const [usageLoading, setUsageLoading] = useState(true);
 
   const sections: SettingSection[] = [
     {
@@ -84,6 +87,14 @@ function OrganizationSettingsPage() {
         ? 'Preferencias de notificaciones'
         : 'Notification preferences',
       icon: BellIcon
+    },
+    {
+      id: 'plan',
+      title: locale?.startsWith('es') ? 'Plan' : 'Plan',
+      description: locale?.startsWith('es')
+        ? 'Configuración del plan y límites'
+        : 'Plan settings and limits',
+      icon: SparklesIcon
     }
   ];
 
@@ -110,8 +121,29 @@ function OrganizationSettingsPage() {
       setSettings(initialSettings);
       setFormData(initialSettings);
       setLoading(false);
+      
+      // Fetch usage data for plan tab
+      fetchUsageData();
     }
   }, [organization]);
+
+  const fetchUsageData = async () => {
+    if (!organization?.id) return;
+    
+    try {
+      setUsageLoading(true);
+      const response = await fetch(`/api/organizations/${organization.id}/usage`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch usage data');
+      }
+      const data = await response.json();
+      setUsageData(data.data);
+    } catch (err) {
+      console.error('Failed to load usage data:', err);
+    } finally {
+      setUsageLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData || !organization) return;
@@ -345,6 +377,101 @@ function OrganizationSettingsPage() {
     );
   };
 
+  const renderPlanSettings = () => {
+    if (usageLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">
+            {locale?.startsWith('es') ? 'Cargando información del plan...' : 'Loading plan information...'}
+          </span>
+        </div>
+      );
+    }
+
+    if (!usageData) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-red-500">
+            {locale?.startsWith('es') ? 'No se pudo cargar la información del plan' : 'Failed to load plan information'}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Consolidated Plan Card */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          {/* Header with Plan Name and Upgrade Button */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-medium text-blue-900 mb-1">
+                {locale?.startsWith('es') ? 'Plan Actual' : 'Current Plan'}: {usageData.tier.displayName}
+              </h3>
+              <p className="text-sm text-blue-700">
+                {locale?.startsWith('es') 
+                  ? `${usageData.users.max} usuarios • $${usageData.aiCredits.monthly} AI créditos/mes` 
+                  : `${usageData.users.max} users • $${usageData.aiCredits.monthly} AI credits/month`}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/premium')}
+              className="text-blue-600 border-blue-300 hover:bg-blue-100"
+            >
+              {locale?.startsWith('es') ? 'Actualizar Plan' : 'Upgrade Plan'}
+            </Button>
+          </div>
+
+          {/* Ultra-Compact Usage Information */}
+          <div className="pt-3 mt-3 border-t border-blue-200">
+            <div className="flex items-center justify-between text-xs text-blue-700">
+              {/* Users - Minimal */}
+              <div className="flex items-center space-x-2">
+                <span className="font-medium text-blue-800">
+                  {locale?.startsWith('es') ? 'Usuarios:' : 'Users:'}
+                </span>
+                <span>{usageData.users.current}/{usageData.users.max}</span>
+                <div className="w-12 bg-blue-200 rounded-full h-1">
+                  <div 
+                    className="bg-blue-600 h-1 rounded-full transition-all"
+                    style={{ width: `${Math.min((usageData.users.current / usageData.users.max) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* AI Credits - Minimal */}
+              <div className="flex items-center space-x-2">
+                <span className="font-medium text-blue-800">
+                  {locale?.startsWith('es') ? 'Créditos IA:' : 'AI Credits:'}
+                </span>
+                <span>US$ {usageData.aiCredits.balance?.toFixed(2) || '0,00'}</span>
+                <div className="w-12 bg-blue-200 rounded-full h-1">
+                  <div 
+                    className="bg-blue-600 h-1 rounded-full transition-all"
+                    style={{ 
+                      width: usageData.aiCredits.monthly > 0 
+                        ? `${Math.min((usageData.aiCredits.used / usageData.aiCredits.monthly) * 100, 100)}%` 
+                        : '0%'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Reset Date */}
+              {usageData.aiCredits.resetDate && (
+                <span className="text-blue-600">
+                  {locale?.startsWith('es') ? 'Reset:' : 'Reset:'} {new Date(usageData.aiCredits.resetDate).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case 'general':
@@ -353,6 +480,8 @@ function OrganizationSettingsPage() {
         return renderSecuritySettings();
       case 'notifications':
         return renderNotificationSettings();
+      case 'plan':
+        return renderPlanSettings();
       default:
         return null;
     }
@@ -456,32 +585,34 @@ function OrganizationSettingsPage() {
                   </div>
                 )}
                 
-                {/* Save Button */}
-                <div className="mt-8 flex justify-end space-x-4">
-                  <Button 
-                    variant="outline"
-                    disabled={saving}
-                    onClick={() => {
-                      setFormData(settings);
-                      setError(null);
-                    }}
-                  >
-                    {locale?.startsWith('es') ? 'Cancelar' : 'Cancel'}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    loading={saving}
-                    onClick={handleSave}
-                    leftIcon={saved ? <CheckIcon className="w-4 h-4" /> : undefined}
-                  >
-                    {saving
-                      ? (locale?.startsWith('es') ? 'Guardando...' : 'Saving...')
-                      : saved 
-                      ? (locale?.startsWith('es') ? 'Guardado ✓' : 'Saved ✓')
-                      : (locale?.startsWith('es') ? 'Guardar Cambios' : 'Save Changes')
-                    }
-                  </Button>
-                </div>
+                {/* Save Button - Only show for editable tabs */}
+                {activeSection !== 'plan' && (
+                  <div className="mt-8 flex justify-end space-x-4">
+                    <Button 
+                      variant="outline"
+                      disabled={saving}
+                      onClick={() => {
+                        setFormData(settings);
+                        setError(null);
+                      }}
+                    >
+                      {locale?.startsWith('es') ? 'Cancelar' : 'Cancel'}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      loading={saving}
+                      onClick={handleSave}
+                      leftIcon={saved ? <CheckIcon className="w-4 h-4" /> : undefined}
+                    >
+                      {saving
+                        ? (locale?.startsWith('es') ? 'Guardando...' : 'Saving...')
+                        : saved 
+                        ? (locale?.startsWith('es') ? 'Guardado ✓' : 'Saved ✓')
+                        : (locale?.startsWith('es') ? 'Guardar Cambios' : 'Save Changes')
+                      }
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
         </div>

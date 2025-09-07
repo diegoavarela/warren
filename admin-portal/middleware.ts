@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { SignJWT, jwtVerify } from 'jose';
+import { sanitizeUrlMiddleware, applySecurityHeaders } from '@/lib/security';
 
 export async function middleware(request: NextRequest) {
   console.log('Middleware checking path:', request.nextUrl.pathname);
+  
+  // SECURITY: Check for sensitive parameters in URL first
+  const sanitizeResponse = sanitizeUrlMiddleware(request);
+  if (sanitizeResponse) {
+    return applySecurityHeaders(sanitizeResponse);
+  }
   
   // Skip middleware for API routes, public assets, and login page
   if (
@@ -13,7 +20,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname === '/login'
   ) {
     console.log('Skipping middleware for:', request.nextUrl.pathname);
-    return NextResponse.next();
+    const response = NextResponse.next();
+    return applySecurityHeaders(response);
   }
 
   // Get token from cookies or headers
@@ -30,7 +38,8 @@ export async function middleware(request: NextRequest) {
 
   if (!token) {
     console.log('No token found, redirecting to login');
-    return NextResponse.redirect(new URL('/login', request.url));
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    return applySecurityHeaders(response);
   }
 
   try {
@@ -42,15 +51,18 @@ export async function middleware(request: NextRequest) {
     // Check if user has platform_admin role
     if (decoded.role !== 'platform_admin') {
       console.log('Role check failed:', decoded.role, 'is not platform_admin');
-      return NextResponse.redirect(new URL('/login', request.url));
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      return applySecurityHeaders(response);
     }
 
     console.log('Middleware check passed, allowing access to:', request.nextUrl.pathname);
-    return NextResponse.next();
+    const response = NextResponse.next();
+    return applySecurityHeaders(response);
   } catch (error) {
     // Token is invalid, redirect to login
     console.log('Token verification failed:', error);
-    return NextResponse.redirect(new URL('/login', request.url));
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    return applySecurityHeaders(response);
   }
 }
 

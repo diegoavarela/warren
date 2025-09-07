@@ -15,7 +15,8 @@ import {
   ClipboardDocumentListIcon,
   Bars3Icon,
   XMarkIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
 interface NavItem {
@@ -37,6 +38,12 @@ const navigation: NavItem[] = [
     href: '/organizations',
     icon: BuildingOffice2Icon,
     description: 'Manage organizations'
+  },
+  {
+    name: 'Tiers',
+    href: '/tiers',
+    icon: CurrencyDollarIcon,
+    description: 'Pricing & features'
   },
   {
     name: 'Copy Center',

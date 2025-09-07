@@ -4,15 +4,34 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { logAuthentication } from '@/lib/audit';
+import { isRateLimited, getClientIP, validateCSRFToken } from '@/lib/security';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    // SECURITY: Rate limiting check
+    const clientIP = getClientIP(request);
+    if (isRateLimited(clientIP, 5, 15 * 60 * 1000)) { // 5 attempts per 15 minutes
+      return NextResponse.json(
+        { success: false, error: 'Too many login attempts. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    const { email, password, csrfToken } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
         { success: false, error: 'Email and password are required' },
         { status: 400 }
+      );
+    }
+
+    // SECURITY: CSRF token validation
+    const sessionCSRFToken = request.cookies.get('csrf-token')?.value;
+    if (!csrfToken || !sessionCSRFToken || !validateCSRFToken(csrfToken, sessionCSRFToken)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid security token' },
+        { status: 403 }
       );
     }
 
@@ -113,11 +132,22 @@ export async function POST(request: NextRequest) {
       organizationId: user.organizationId
     });
 
-    return NextResponse.json({
+    // Create response with httpOnly cookie
+    const response = NextResponse.json({
       success: true,
       user: userResponse,
-      token,
     });
+
+    // Set secure httpOnly cookie
+    response.cookies.set('admin-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60, // 24 hours
+      path: '/',
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);

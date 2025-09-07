@@ -637,6 +637,33 @@ export const translations = {
     'periodMapping.actualProjected.validation.invalidPeriod': 'El período seleccionado no existe en el mapeo de períodos',
     'periodMapping.actualProjected.buttonInstructions': 'Haz clic en "Hacer Real" para establecer ese período como el último real. Los anteriores serán reales, los posteriores proyectados.',
     
+    // Usage and Organization Management
+    'usage.user_capacity': 'Capacidad de Usuarios',
+    'usage.users_of_max': '{{current}} de {{max}} usuarios',
+    'usage.used': 'Usado',
+    'usage.users_remaining': 'usuarios disponibles',
+    'usage.at_limit': 'En el Límite',
+    'usage.near_limit': 'Cerca del Límite',
+    'usage.user_limit_reached_description': 'Has alcanzado el límite de usuarios. Contacta soporte para agregar más usuarios.',
+    'usage.user_capacity_description': 'Gestiona la capacidad de usuarios de tu organización y monitorea los espacios disponibles.',
+    'usage.ai_credits': 'Créditos de IA',
+    'usage.remaining': 'restantes',
+    'usage.monthly': 'Mensual',
+    'usage.used_this_month': 'usado este mes',
+    'usage.next_reset': 'Próximo reinicio',
+    'usage.companies': 'empresas',
+    'usage.critical_balance_warning': 'Crítico: Los créditos de IA se están agotando. Considera actualizar tu plan.',
+    'usage.low_balance_warning': 'Advertencia: Los créditos de IA se están agotando.',
+    'usage.monthly_allowance': 'asignación mensual',
+    'usage.recent_usage': 'Uso Reciente',
+    'usage.today': 'Hoy',
+    'usage.this_week': 'Esta semana',
+    'usage.this_month': 'Este mes',
+    'usage.avg_per_query': 'Promedio por consulta',
+    'usage.total_queries': 'Total de consultas',
+    'usage.days_remaining': 'días restantes',
+    'usage.no_reset_date': 'Sin fecha de reinicio',
+    
     // Data Rows
     'config.datarows.title': 'Mapeo de Filas de Datos',
     'config.datarows.subtitle': 'Mapea campos de datos financieros a filas específicas en tu archivo Excel. Los campos requeridos deben ser mapeados para que la configuración funcione correctamente.',
@@ -2019,28 +2046,64 @@ export const translations = {
     'periodMapping.actualProjected.legend.projected': 'Projected',
     'periodMapping.actualProjected.validation.invalidPeriod': 'The selected period does not exist in the period mapping',
     'periodMapping.actualProjected.buttonInstructions': 'Click "Set Actual" to make that period the last actual one. Previous ones will be actual, subsequent ones projected.',
+    
+    // Usage and Organization Management
+    'usage.user_capacity': 'User Capacity',
+    'usage.users_of_max': '{{current}} of {{max}} users',
+    'usage.used': 'Used',
+    'usage.users_remaining': 'users remaining',
+    'usage.at_limit': 'At Limit',
+    'usage.near_limit': 'Near Limit',
+    'usage.user_limit_reached_description': "You've reached your user limit. Contact support to add more users.",
+    'usage.user_capacity_description': "Manage your organization's user capacity and monitor available slots.",
+    'usage.ai_credits': 'AI Credits',
+    'usage.remaining': 'remaining',
+    'usage.monthly': 'Monthly',
+    'usage.used_this_month': 'used this month',
+    'usage.next_reset': 'Next reset',
+    'usage.companies': 'companies',
+    'usage.critical_balance_warning': 'Critical: AI credits running low. Consider upgrading your plan.',
+    'usage.low_balance_warning': 'Warning: AI credits are getting low.',
+    'usage.monthly_allowance': 'monthly allowance',
+    'usage.recent_usage': 'Recent Usage',
+    'usage.today': 'Today',
+    'usage.this_week': 'This week',
+    'usage.this_month': 'This month',
+    'usage.avg_per_query': 'Avg per query',
+    'usage.total_queries': 'Total queries',
+    'usage.days_remaining': 'days remaining',
+    'usage.no_reset_date': 'No reset date',
   }
 };
 
 export function useTranslation(locale: string = 'en-US') {
   const lang = locale?.startsWith('es') ? 'es' : 'en';
   
-  const t = (key: string): string => {
+  const t = (key: string, params?: Record<string, any>): string => {
     if (!key) return '';
     
     // Direct lookup in translations object
-    const translation = (translations[lang] as any)[key];
+    let translation = (translations[lang] as any)[key];
     
-    // If found, return it
-    if (translation) {
-      return translation;
+    // Try fallback to English if not found
+    if (!translation) {
+      translation = (translations.en as any)[key];
     }
     
-    // Try fallback to English
-    const fallback = (translations.en as any)[key];
+    // Return key if nothing found
+    if (!translation) {
+      return key;
+    }
     
-    // Return fallback or key if nothing found
-    return fallback || key;
+    // Handle string interpolation if params are provided
+    if (typeof translation === 'string' && params) {
+      Object.keys(params).forEach(param => {
+        const regex = new RegExp(`{{${param}}}`, 'g');
+        translation = translation.replace(regex, params[param]);
+      });
+    }
+    
+    return translation;
   };
 
   return { t };
