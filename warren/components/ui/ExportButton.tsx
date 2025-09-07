@@ -132,7 +132,7 @@ export function ExportButton({
       window.URL.revokeObjectURL(url);
 
       // Show success message (you might want to use a toast notification)
-      console.log(getExportTranslation('success'));
+      // TODO: Implement toast notification for export success
 
     } catch (error) {
       console.error('Export failed:', error);

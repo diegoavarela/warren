@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
       const { payload } = await jwtVerify(token, secret);
       decoded = payload;
     } catch (jwtError) {
-      console.log('JWT verification failed in /api/auth/me:', jwtError);
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
@@ -43,11 +42,6 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (!user || !user.isActive || user.role !== 'platform_admin') {
-      console.log('User validation failed:', { 
-        userExists: !!user, 
-        isActive: user?.isActive, 
-        role: user?.role 
-      });
       return NextResponse.json(
         { error: 'User not found or unauthorized' },
         { status: 401 }

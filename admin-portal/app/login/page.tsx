@@ -49,18 +49,14 @@ export default function LoginPage() {
 
     try {
       const result = await login(formData.email, formData.password, csrfToken);
-      console.log('Login form result:', result);
       
       if (result.success) {
-        console.log('Redirecting to dashboard...');
         // Try both methods
         router.push('/dashboard');
         setTimeout(() => {
-          console.log('Using window.location as fallback...');
           window.location.href = '/dashboard';
         }, 1000);
       } else {
-        console.log('Login failed with error:', result.error);
         setError(result.error || 'Login failed');
       }
     } catch (error) {

@@ -1774,8 +1774,6 @@ export class ProfessionalPDFExportService {
       // For now, skip SVG and go directly to Puppeteer
       throw new Error('SVG embedding not supported by jsPDF, using Puppeteer instead');
       
-      console.log('✅ SVG chart generated successfully');
-      
     } catch (svgError) {
       console.error('❌ SVG chart generation failed:', svgError);
       

@@ -65,7 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string, csrfToken?: string) => {
     try {
-      console.log('Attempting login with:', { email, passwordLength: password.length });
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -75,25 +74,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await response.json();
-      console.log('Login response:', { status: response.status, data });
 
       if (response.ok && data.success) {
         // Check if user is platform admin
         if (data.user.role !== 'platform_admin') {
-          console.log('Role check failed:', data.user.role);
           return {
             success: false,
             error: 'Access denied. Admin role required.'
           };
         }
 
-        console.log('Login successful, setting user');
         setUser(data.user);
         // Token is now set as httpOnly cookie by the server
         
         return { success: true };
       } else {
-        console.log('Login failed:', data);
         return {
           success: false,
           error: data.error || 'Login failed'
