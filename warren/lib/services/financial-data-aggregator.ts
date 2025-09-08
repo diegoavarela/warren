@@ -255,17 +255,13 @@ export class FinancialDataAggregator {
       }
 
       // Get financial statements
-      let statementsQuery = db
+      const statementsQuery = db
         .select()
         .from(financialStatements)
         .where(eq(financialStatements.companyId, companyId))
         .orderBy(desc(financialStatements.periodEnd));
 
-      if (periodLimit) {
-        statementsQuery = statementsQuery.limit(periodLimit);
-      }
-
-      const statements = await statementsQuery;
+      const statements = await (periodLimit ? statementsQuery.limit(periodLimit) : statementsQuery);
 
       // Filter by statement types
       const filteredStatements = statements.filter((s: any) => 

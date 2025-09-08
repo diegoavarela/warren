@@ -429,13 +429,13 @@ export class ExcelProcessingService {
           configId,
           fileId,
           dataJson: processedData,
-          processingStatus: 'completed',
+          processingStatus: 'completed' as const,
           periodStart,
           periodEnd,
           currency: processedData.metadata.currency,
           units: processedData.metadata.units,
           processedBy
-        })
+        } as any)
         .returning();
       
       return result[0];
