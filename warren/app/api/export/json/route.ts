@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Return JSON with proper headers
-    return new Response(jsonBuffer, {
+    return new Response(jsonBuffer.toString(), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

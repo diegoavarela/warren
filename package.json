@@ -1,4 +1,11 @@
 {
+  "name": "warren-v2",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "warren", 
+    "admin-portal"
+  ],
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
     "dotenv": "^17.2.2",

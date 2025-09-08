@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Return CSV with proper headers
-    return new Response(csvBuffer, {
+    return new Response(csvBuffer.toString(), {
       status: 200,
       headers: {
         'Content-Type': 'text/csv',

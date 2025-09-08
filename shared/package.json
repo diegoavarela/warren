@@ -10,8 +10,10 @@
     "@types/react-dom": "^18.3.0",
     "class-variance-authority": "^0.7.1",
     "dotenv": "^17.0.1",
-    "drizzle-orm": "^0.44.5",
     "react": "^18.3.1"
+  },
+  "peerDependencies": {
+    "drizzle-orm": "^0.44.5"
   },
   "devDependencies": {
     "typescript": "^5.5.3"

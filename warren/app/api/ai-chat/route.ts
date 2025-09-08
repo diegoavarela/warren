@@ -482,8 +482,8 @@ When providing insights, base them solely on the available data.`;
     
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
       const toolCall = responseMessage.tool_calls[0];
-      const functionName = toolCall.function.name;
-      const functionArgs = JSON.parse(toolCall.function.arguments);
+      const functionName = (toolCall as any).function.name;
+      const functionArgs = JSON.parse((toolCall as any).function.arguments);
       
       switch (functionName) {
         case 'create_chart':
