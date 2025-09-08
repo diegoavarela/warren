@@ -129,16 +129,16 @@ export async function getAIUsageStats(companyId: string): Promise<AIUsageStats> 
     ]);
 
     // Calculate totals
-    const today = todayUsage.reduce((sum, record) => 
+    const today = todayUsage.reduce((sum: number, record: any) => 
       sum + parseFloat(record.total?.toString() || '0'), 0);
     
-    const thisWeek = weekUsage.reduce((sum, record) => 
+    const thisWeek = weekUsage.reduce((sum: number, record: any) => 
       sum + parseFloat(record.total?.toString() || '0'), 0);
     
-    const thisMonth = monthUsage.reduce((sum, record) => 
+    const thisMonth = monthUsage.reduce((sum: number, record: any) => 
       sum + parseFloat(record.total?.toString() || '0'), 0);
 
-    const totalCredits = allUsage.reduce((sum, record) => 
+    const totalCredits = allUsage.reduce((sum: number, record: any) => 
       sum + parseFloat(record.total?.toString() || '0'), 0);
     
     const totalQueries = allUsage.length;
@@ -146,7 +146,7 @@ export async function getAIUsageStats(companyId: string): Promise<AIUsageStats> 
 
     // Find most used model
     const modelCounts: Record<string, number> = {};
-    allUsage.forEach(record => {
+    allUsage.forEach((record: any) => {
       const model = record.model || 'unknown';
       modelCounts[model] = (modelCounts[model] || 0) + 1;
     });
@@ -192,7 +192,7 @@ export async function resetAICredits(
         id: companies.id,
         currentBalance: companies.aiCreditsBalance,
         tierId: companies.tierId,
-        monthlyCredits: tiers.aiCreditsPerMonth,
+        monthlyCredits: tiers.aiCreditsMonthly,
       })
       .from(companies)
       .leftJoin(tiers, eq(companies.tierId, tiers.id))
@@ -251,7 +251,7 @@ export async function getCompaniesForCreditReset(): Promise<string[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const companies = await db
+    const companyResults = await db
       .select({ id: companies.id })
       .from(companies)
       .where(
@@ -261,7 +261,7 @@ export async function getCompaniesForCreditReset(): Promise<string[]> {
         )
       );
 
-    return companies.map(c => c.id);
+    return companyResults.map((c: any) => c.id);
   } catch (error) {
     console.error('Error getting companies for credit reset:', error);
     return [];
@@ -304,7 +304,7 @@ export async function estimateCreditRunout(companyId: string): Promise<number | 
         )
       );
 
-    const totalUsed = recentUsage.reduce((sum, record) => 
+    const totalUsed = recentUsage.reduce((sum: number, record: any) => 
       sum + parseFloat(record.total?.toString() || '0'), 0);
 
     const dailyAverage = totalUsed / 7;
@@ -345,7 +345,7 @@ export async function getDailyUsageData(companyId: string): Promise<{ date: stri
     // Group by date
     const dailyData: Record<string, number> = {};
     
-    usage.forEach(record => {
+    usage.forEach((record: any) => {
       const date = new Date(record.date).toISOString().split('T')[0];
       const credits = parseFloat(record.credits?.toString() || '0');
       dailyData[date] = (dailyData[date] || 0) + credits;

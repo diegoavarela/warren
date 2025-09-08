@@ -1,6 +1,6 @@
 // Role-Based Access Control (RBAC) for Multi-tenant Warren App
 import { NextRequest, NextResponse } from 'next/server';
-import { db, companyUsers, companies, users, eq } from '@/lib/db';
+import { db, companyUsers, companies, users, eq, and } from '@/lib/db';
 import { verifyJWT } from './jwt';
 
 // Role definitions - Simplified to 3 roles
@@ -122,8 +122,12 @@ export async function loadUserCompanyAccess(userId: string): Promise<UserContext
     const userCompanies = await db
       .select()
       .from(companyUsers)
-      .where(eq(companyUsers.userId, userId))
-      .where(eq(companyUsers.isActive, true));
+      .where(
+        and(
+          eq(companyUsers.userId, userId),
+          eq(companyUsers.isActive, true)
+        )
+      );
 
     return userCompanies.map((uc: any) => ({
       companyId: uc.companyId,

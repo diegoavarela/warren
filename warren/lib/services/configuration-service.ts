@@ -9,7 +9,7 @@
  * different levels of the organization.
  */
 
-import { db } from '@/lib/db';
+import { db, and } from '@/lib/db';
 import { 
   systemSettings, 
   organizationSettings, 
@@ -268,16 +268,16 @@ export class ConfigurationService {
    */
   async getConfigurationsByCompany(companyId: string, type?: 'cashflow' | 'pnl', includeTemplates = false) {
     try {
-      let query = db
-        .select()
-        .from(companyConfigurations)
-        .where(eq(companyConfigurations.companyId, companyId));
-
+      const whereConditions = [eq(companyConfigurations.companyId, companyId)];
+      
       if (type) {
-        query = query.where(eq(companyConfigurations.type, type));
+        whereConditions.push(eq(companyConfigurations.type, type));
       }
 
-      const results = await query;
+      const results = await db
+        .select()
+        .from(companyConfigurations)
+        .where(and(...whereConditions));
       
       // For each configuration, also fetch the latest processed data info
       const configurationsWithProcessedData = await Promise.all(

@@ -64,7 +64,7 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
       organizationId: user.organizationId,
       role: user.role,
       locale: user.locale,
-      isActive: user.isActive,
+      isActive: user.isActive ?? true,
     };
 
   } catch (error) {

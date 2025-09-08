@@ -233,10 +233,10 @@ class BackgroundProcessorService {
 
     // Process Excel with configuration
     const processedData = await excelProcessingService.processExcelWithConfiguration(
-      file.fileContent,
+      file.fileContent!,
       config.configJson as any,
       config.type as 'pnl' | 'cashflow',
-      config.configJson?.metadata?.selectedSheet
+      (config.configJson as any)?.metadata?.selectedSheet
     );
 
     // Update progress: Saving results
