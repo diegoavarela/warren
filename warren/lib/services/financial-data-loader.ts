@@ -277,7 +277,7 @@ class FinancialDataLoader {
         ebitda: totalRevenue - totalExpenses // Simplified EBITDA calculation
       },
       cashflow: {
-        operating: 0, // TODO: Implement when cash flow data is available
+        operating: 0,
         investing: 0,
         financing: 0,
         netChange: 0

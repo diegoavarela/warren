@@ -328,7 +328,6 @@ export function SmartUnitsProvider({
     setStatus('user_selected');
     setRecommendation(null);
     
-    // TODO: Save to user preferences (ConfigurationService setValue method not implemented)
     // if (user?.id) {
     //   configService.setValue(
     //     'ui.preferredUnits',
