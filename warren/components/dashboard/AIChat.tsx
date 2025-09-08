@@ -16,7 +16,10 @@ import {
   MessageSquare,
   ChevronRight,
   DollarSign,
-  Database
+  Database,
+  Brain,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
@@ -24,6 +27,21 @@ import { formatCurrency, formatNumber } from '@/lib/utils/formatters';
 import { useLocale } from '@/contexts/LocaleContext';
 
 ChartJS.register(...registerables);
+
+// Cost estimation function for gpt-4o-mini
+function estimateTokenCost(text: string, model: string = 'gpt-4o-mini'): number {
+  // Rough token estimation: ~4 characters per token for English
+  const inputTokens = Math.ceil(text.length / 4);
+  // Estimate response tokens (typically 1.5-2x input for chat responses)
+  const outputTokens = Math.ceil(inputTokens * 1.5);
+  const totalTokens = inputTokens + outputTokens;
+  
+  // gpt-4o-mini pricing: $0.00015 input, $0.0006 output per 1K tokens
+  const inputCost = (inputTokens / 1000) * 0.00015;
+  const outputCost = (outputTokens / 1000) * 0.0006;
+  
+  return inputCost + outputCost;
+}
 
 interface Message {
   id: string;
@@ -50,6 +68,21 @@ interface FinancialContext {
   };
 }
 
+interface AICreditsStatus {
+  balance: number;
+  used: number;
+  monthly: number;
+  percentage: number;
+  resetDate: Date | null;
+  isLow: boolean;
+  isExhausted: boolean;
+}
+
+interface QueryCost {
+  estimated: number;
+  actual?: number;
+}
+
 export function AIChat() {
   const { locale } = useLocale();
   const isSpanish = locale?.startsWith('es');
@@ -62,6 +95,16 @@ export function AIChat() {
   const [error, setError] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // AI Credits state
+  const [credits, setCredits] = useState<AICreditsStatus | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(true);
+  const [queryCost, setQueryCost] = useState<QueryCost>({ estimated: 0.0005 });
+  const [sessionCosts, setSessionCosts] = useState<number>(() => {
+    // Load session costs from sessionStorage on mount
+    const stored = sessionStorage.getItem('aiSessionCosts');
+    return stored ? parseFloat(stored) : 0;
+  });
 
   // Get company from sessionStorage on mount
   useEffect(() => {
@@ -69,9 +112,11 @@ export function AIChat() {
     if (storedCompanyId) {
       setCompanyId(storedCompanyId);
       loadFinancialContext(storedCompanyId);
+      loadAICreditsStatus(storedCompanyId);
     } else {
       setError('No company selected. Please select a company first.');
       setContextLoading(false);
+      setCreditsLoading(false);
     }
   }, []);
 
@@ -79,6 +124,73 @@ export function AIChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Update cost estimation when input changes
+  useEffect(() => {
+    if (input.trim()) {
+      const estimatedCost = estimateTokenCost(input);
+      setQueryCost({ estimated: estimatedCost });
+    } else {
+      setQueryCost({ estimated: 0.0005 }); // Minimum estimate
+    }
+  }, [input]);
+
+  // Persist session costs to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('aiSessionCosts', sessionCosts.toString());
+  }, [sessionCosts]);
+
+  const loadAICreditsStatus = async (companyId: string) => {
+    if (!companyId) return;
+    
+    setCreditsLoading(true);
+    
+    try {
+      // Use the tier enforcement library to get current AI credits
+      const response = await fetch(`/api/companies/${companyId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load AI credits');
+      }
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        const company = data.data;
+        const balance = parseFloat(company.aiCreditsBalance || '0'); // This is already the remaining balance
+        const used = parseFloat(company.aiCreditsUsed || '0');
+        const monthly = parseFloat(company.tier?.aiCreditsMonthly || '0');
+        const percentage = monthly > 0 ? Math.round((balance / monthly) * 100) : 0;
+        
+        setCredits({
+          balance, // Use balance directly as the remaining balance
+          used,
+          monthly,
+          percentage,
+          resetDate: company.aiCreditsResetDate ? new Date(company.aiCreditsResetDate) : null,
+          isLow: percentage <= 20,
+          isExhausted: balance <= 0,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading AI credits:', error);
+      // Set default values if loading fails
+      setCredits({
+        balance: 0,
+        used: 0,
+        monthly: 0,
+        percentage: 0,
+        resetDate: null,
+        isLow: true,
+        isExhausted: true,
+      });
+    } finally {
+      setCreditsLoading(false);
+    }
+  };
 
   const loadFinancialContext = async (companyId: string) => {
     if (!companyId) return;
@@ -209,6 +321,18 @@ How can I help you analyze your financial performance today?`,
 
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Handle insufficient credits specifically
+        if (response.status === 402) {
+          const creditError = {
+            type: 'insufficient_credits',
+            message: errorData.message || 'Insufficient AI credits',
+            details: errorData.details,
+            ...errorData
+          };
+          throw creditError;
+        }
+        
         throw new Error(errorData.error || 'Failed to get response');
       }
 
@@ -231,17 +355,55 @@ How can I help you analyze your financial performance today?`,
         setSuggestions(data.suggestions);
       }
       
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError(error instanceof Error ? error.message : 'Failed to send message');
+      // Handle AI credits response
+      if (data.aiCredits) {
+        const consumed = data.aiCredits.consumed || 0;
+        const remainingEstimate = data.aiCredits.remainingEstimate;
+        
+        // Update session costs
+        setSessionCosts(prev => prev + consumed);
+        
+        // Set actual cost for this query
+        setQueryCost(prev => ({ ...prev, actual: consumed }));
+        
+        // RELOAD credits from database to get fresh data instead of estimating
+        if (companyId) {
+          loadAICreditsStatus(companyId);
+        }
+      }
       
-      // Add error message
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
-        timestamp: new Date()
-      }]);
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      
+      // Handle credit errors specially
+      if (error?.type === 'insufficient_credits') {
+        setError('insufficient_credits');
+        // Reload credits to get current state
+        if (companyId) {
+          loadAICreditsStatus(companyId);
+        }
+        
+        const creditMessage = isSpanish 
+          ? `⚠️ No tienes suficientes créditos de IA para esta consulta. Necesitas ${error.details?.required ? `$${error.details.required.toFixed(2)}` : 'más créditos'}, pero solo tienes $${error.details?.available?.toFixed(2) || '0.00'} disponibles.`
+          : `⚠️ You don't have sufficient AI credits for this query. You need ${error.details?.required ? `$${error.details.required.toFixed(2)}` : 'more credits'}, but only have $${error.details?.available?.toFixed(2) || '0.00'} available.`;
+        
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: creditMessage,
+          timestamp: new Date()
+        }]);
+      } else {
+        setError(error instanceof Error ? error.message : 'Failed to send message');
+        
+        // Add error message
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+          timestamp: new Date()
+        }]);
+      }
     } finally {
       setLoading(false);
     }
@@ -328,6 +490,61 @@ How can I help you analyze your financial performance today?`,
                     {isSpanish ? 'Actualizado' : 'Updated'} {new Date().toLocaleDateString(isSpanish ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric' })}
                   </Badge>
               </>
+            )}
+            
+            {/* AI Credits Display */}
+            {!creditsLoading && credits && (
+              <div 
+                className={`flex items-center gap-1 px-2 py-1 rounded-md border cursor-help ${
+                  credits.isExhausted 
+                    ? 'bg-red-50 border-red-200' 
+                    : credits.isLow 
+                      ? 'bg-yellow-50 border-yellow-200'
+                      : 'bg-blue-50 border-blue-200'
+                }`}
+                title={`AI Credits Details:
+• Remaining: $${credits.balance.toFixed(6)}
+• Used this month: $${credits.used.toFixed(6)}
+• Monthly allowance: $${credits.monthly.toFixed(2)}
+• Usage percentage: ${((credits.used / credits.monthly) * 100).toFixed(3)}%
+• This session: $${sessionCosts.toFixed(6)}
+${credits.resetDate ? `• Resets: ${credits.resetDate.toLocaleDateString()}` : ''}
+
+Hover to see precise usage amounts`}
+              >
+                <Brain className={`h-3 w-3 ${
+                  credits.isExhausted 
+                    ? 'text-red-600' 
+                    : credits.isLow 
+                      ? 'text-yellow-600'
+                      : 'text-blue-600'
+                }`} />
+                <span className={`text-xs font-medium ${
+                  credits.isExhausted 
+                    ? 'text-red-700' 
+                    : credits.isLow 
+                      ? 'text-yellow-700'
+                      : 'text-blue-700'
+                }`}>
+                  AI: ${credits.balance.toFixed(2)} / ${credits.monthly.toFixed(2)}
+                </span>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  credits.isExhausted 
+                    ? 'bg-red-500' 
+                    : credits.isLow 
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
+                }`}></div>
+              </div>
+            )}
+            
+            {creditsLoading && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 border border-gray-200 rounded-md">
+                <RefreshCw className="h-3 w-3 text-gray-400 animate-spin" />
+                <span className="text-xs text-gray-500">
+                  {isSpanish ? 'Cargando...' : 'Loading...'}
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -432,20 +649,88 @@ How can I help you analyze your financial performance today?`,
           </div>
         )}
         
+        {/* Credit Warning */}
+        {credits?.isExhausted && (
+          <div className="px-4 pb-2">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>
+                  {isSpanish 
+                    ? '⚠️ Sin créditos de IA. Actualiza tu plan para continuar.' 
+                    : '⚠️ Out of AI credits. Upgrade your plan to continue.'
+                  }
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="ml-2"
+                  onClick={() => window.open('/dashboard/org-admin/settings', '_blank')}
+                >
+                  {isSpanish ? 'Actualizar' : 'Upgrade'}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        
+        {credits?.isLow && !credits.isExhausted && (
+          <div className="px-4 pb-2">
+            <Alert variant="warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {isSpanish 
+                  ? `⚠️ Créditos bajos: $${credits.balance.toFixed(2)} restantes (${credits.percentage}%)`
+                  : `⚠️ Low credits: $${credits.balance.toFixed(2)} remaining (${credits.percentage}%)`
+                }
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="border-t p-4">
+          {/* Cost Estimate */}
+          {!credits?.isExhausted && input.trim() && (
+            <div className="mb-2 text-xs text-gray-500 flex items-center justify-between">
+              <span>
+                {isSpanish 
+                  ? `Costo estimado: $${queryCost.estimated.toFixed(6)}`
+                  : `Estimated cost: $${queryCost.estimated.toFixed(6)}`
+                }
+              </span>
+              {credits && (
+                <span>
+                  {isSpanish 
+                    ? `Después de esta consulta: $${Math.max(0, credits.balance - queryCost.estimated).toFixed(2)}`
+                    : `After this query: $${Math.max(0, credits.balance - queryCost.estimated).toFixed(2)}`
+                  }
+                </span>
+              )}
+            </div>
+          )}
+          
           <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isSpanish ? "Pregunta sobre tus datos financieros..." : "Ask about your financial data..."}
-              disabled={loading || !context}
+              placeholder={
+                credits?.isExhausted 
+                  ? (isSpanish ? "Sin créditos disponibles..." : "No credits available...")
+                  : (isSpanish ? "Pregunta sobre tus datos financieros..." : "Ask about your financial data...")
+              }
+              disabled={loading || !context || credits?.isExhausted}
               className="flex-1"
             />
             <Button
               type="submit"
-              disabled={loading || !input.trim() || !context}
+              disabled={loading || !input.trim() || !context || credits?.isExhausted}
               className="px-4"
+              title={
+                credits?.isExhausted 
+                  ? (isSpanish ? "Sin créditos de IA" : "Out of AI credits")
+                  : (isSpanish ? `Enviar consulta (~$${queryCost.estimated.toFixed(6)})` : `Send query (~$${queryCost.estimated.toFixed(6)})`)
+              }
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -643,6 +643,8 @@ When providing insights, base them solely on the available data.`;
     const actualTokens = completion.usage?.total_tokens || estimatedTokens;
     const actualCost = calculateTokenCost(actualTokens, 'gpt-4o-mini');
     
+    console.log('🎯 About to consume AI credits:', { companyId, userId: user.id, actualCost, actualTokens });
+    
     try {
       await consumeAICredits(
         companyId,
@@ -661,11 +663,16 @@ When providing insights, base them solely on the available data.`;
         }
       );
       
+      // Get updated balance after consumption
+      const updatedCredits = await getAICreditsStatus(companyId);
+      console.log('🔄 Updated credits after consumption:', updatedCredits);
+      
       // Add remaining balance to response for UI updates
       response.aiCredits = {
         consumed: actualCost,
-        remainingEstimate: creditEnforcement.details?.available ? creditEnforcement.details.available - actualCost : null
+        remainingEstimate: updatedCredits.balance
       };
+      console.log('✨ Sending AI credits response:', response.aiCredits);
     } catch (creditError) {
       console.error('Failed to consume AI credits:', creditError);
       // Don't fail the request if credit logging fails

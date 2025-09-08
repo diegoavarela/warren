@@ -132,12 +132,94 @@ function OrganizationSettingsPage() {
     
     try {
       setUsageLoading(true);
+      
+      // Get current company from session storage (if available)
+      let currentCompany = JSON.parse(sessionStorage.getItem('currentCompany') || '{}');
+      console.log('🔍 Settings: Current company from sessionStorage:', currentCompany);
+      console.log('🔍 Settings: Company ID check:', { hasId: !!currentCompany.id, id: currentCompany.id });
+      
+      // If no company in session, find the first active company in the organization
+      if (!currentCompany.id && organization?.id) {
+        console.log('🔍 Settings: No company in session, finding first company in organization...');
+        try {
+          const orgResponse = await fetch(`/api/organizations/${organization.id}/usage`);
+          if (orgResponse.ok) {
+            const orgData = await orgResponse.json();
+            if (orgData.success && orgData.data.companies && orgData.data.companies.length > 0) {
+              // Find first company with actual usage (used > 0), then with balance > 0, then first one
+              const companyWithUsage = orgData.data.companies.find(c => parseFloat(c.used || 0) > 0);
+              const companyWithCredits = orgData.data.companies.find(c => parseFloat(c.balance || 0) > 0);
+              const firstCompany = companyWithUsage || companyWithCredits || orgData.data.companies[0];
+              
+              console.log('🔍 Settings: Company selection logic:', {
+                companiesCount: orgData.data.companies.length,
+                withUsage: companyWithUsage?.companyName || 'none',
+                withCredits: companyWithCredits?.companyName || 'none',
+                selected: firstCompany?.companyName
+              });
+              
+              currentCompany = {
+                id: firstCompany.companyId,
+                name: firstCompany.companyName
+              };
+              console.log('✅ Settings: Auto-selected company:', currentCompany);
+            }
+          }
+        } catch (error) {
+          console.log('⚠️ Settings: Could not auto-select company:', error);
+        }
+      }
+      
+      if (currentCompany.id) {
+        console.log('✅ Settings: Found company ID, fetching individual data...');
+        // Get individual company usage data instead of organization totals
+        const companyResponse = await fetch(`/api/companies/${currentCompany.id}`);
+        console.log('📡 Settings: Company API response status:', companyResponse.status);
+        if (companyResponse.ok) {
+          const companyData = await companyResponse.json();
+          console.log('📊 Settings: Company API data:', companyData);
+          if (companyData.success && companyData.data) {
+            // Format the data to match the expected structure
+            const individualData = {
+              users: { current: 0, max: 0, remaining: 0, percentage: 0 }, // Not relevant for company view
+              aiCredits: {
+                balance: parseFloat(companyData.data.aiCreditsBalance || '0'),
+                used: parseFloat(companyData.data.aiCreditsUsed || '0'),
+                monthly: parseFloat(companyData.data.tier?.aiCreditsMonthly || '0'),
+                resetDate: companyData.data.aiCreditsResetDate,
+              },
+              tier: {
+                id: companyData.data.tier?.id || '',
+                name: companyData.data.tier?.name || '',
+                displayName: companyData.data.tier?.displayName || 'Advanced',
+              },
+              companyContext: {
+                isIndividual: true,
+                companyName: companyData.data.name,
+              }
+            };
+            console.log('✅ Settings: Using individual company data:', individualData);
+            setUsageData(individualData);
+            return;
+          }
+        }
+      }
+      
+      // Fallback to organization usage if no current company
       const response = await fetch(`/api/organizations/${organization.id}/usage`);
       if (!response.ok) {
         throw new Error('Failed to fetch usage data');
       }
       const data = await response.json();
-      setUsageData(data.data);
+      const orgData = {
+        ...data.data,
+        companyContext: {
+          isIndividual: false,
+          companyName: null,
+        }
+      };
+      console.log('⚠️ Settings: Falling back to organization data:', orgData);
+      setUsageData(orgData);
     } catch (err) {
       console.error('Failed to load usage data:', err);
     } finally {
@@ -410,9 +492,14 @@ function OrganizationSettingsPage() {
                 {locale?.startsWith('es') ? 'Plan Actual' : 'Current Plan'}: {usageData.tier.displayName}
               </h3>
               <p className="text-sm text-blue-700">
-                {locale?.startsWith('es') 
-                  ? `${usageData.users.max} usuarios • $${usageData.aiCredits.monthly} AI créditos/mes` 
-                  : `${usageData.users.max} users • $${usageData.aiCredits.monthly} AI credits/month`}
+                {usageData.companyContext?.isIndividual 
+                  ? (locale?.startsWith('es') 
+                      ? `${usageData.companyContext.companyName} • $${usageData.aiCredits.monthly} AI créditos/mes`
+                      : `${usageData.companyContext.companyName} • $${usageData.aiCredits.monthly} AI credits/month`)
+                  : (locale?.startsWith('es') 
+                      ? `${usageData.users.max} usuarios • $${usageData.aiCredits.monthly} AI créditos/mes` 
+                      : `${usageData.users.max} users • $${usageData.aiCredits.monthly} AI credits/month`)
+                }
               </p>
             </div>
             <Button 
@@ -427,19 +514,21 @@ function OrganizationSettingsPage() {
           {/* Ultra-Compact Usage Information */}
           <div className="pt-3 mt-3 border-t border-blue-200">
             <div className="flex items-center justify-between text-xs text-blue-700">
-              {/* Users - Minimal */}
-              <div className="flex items-center space-x-2">
-                <span className="font-medium text-blue-800">
-                  {locale?.startsWith('es') ? 'Usuarios:' : 'Users:'}
-                </span>
-                <span>{usageData.users.current}/{usageData.users.max}</span>
-                <div className="w-12 bg-blue-200 rounded-full h-1">
-                  <div 
-                    className="bg-blue-600 h-1 rounded-full transition-all"
-                    style={{ width: `${Math.min((usageData.users.current / usageData.users.max) * 100, 100)}%` }}
-                  />
+              {/* Users - Only show for organization view */}
+              {!usageData.companyContext?.isIndividual && (
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium text-blue-800">
+                    {locale?.startsWith('es') ? 'Usuarios:' : 'Users:'}
+                  </span>
+                  <span>{usageData.users.current}/{usageData.users.max}</span>
+                  <div className="w-12 bg-blue-200 rounded-full h-1">
+                    <div 
+                      className="bg-blue-600 h-1 rounded-full transition-all"
+                      style={{ width: `${Math.min((usageData.users.current / usageData.users.max) * 100, 100)}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
               
               {/* AI Credits - Minimal */}
               <div className="flex items-center space-x-2">

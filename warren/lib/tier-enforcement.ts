@@ -7,6 +7,10 @@
 
 import { db, eq, and, count } from '@/shared/db';
 import { organizations, users, companies, tiers, companyUsers, aiUsageLogs } from '@/shared/db/actual-schema';
+import { neon } from "@neondatabase/serverless";
+
+// Initialize direct SQL connection for specific queries
+const sql = neon(process.env.DATABASE_URL!);
 
 // Types for tier enforcement
 export interface TierLimits {
@@ -266,29 +270,82 @@ export async function consumeAICredits(
   }
 ): Promise<boolean> {
   try {
+    // First, get current values
+    const currentCompany = await db
+      .select({
+        aiCreditsBalance: companies.aiCreditsBalance,
+        aiCreditsUsed: companies.aiCreditsUsed,
+      })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1);
+
+    if (currentCompany.length === 0) {
+      throw new Error('Company not found');
+    }
+
+    const current = currentCompany[0];
+    const newBalance = (parseFloat(current.aiCreditsBalance || '0') - creditsUsed);
+    const newUsed = (parseFloat(current.aiCreditsUsed || '0') + creditsUsed);
+
     // Update company AI credits balance
-    await db
+    console.log('🔄 Updating company credits:', {
+      companyId,
+      oldBalance: current.aiCreditsBalance,
+      oldUsed: current.aiCreditsUsed,
+      newBalance: newBalance.toFixed(6),
+      newUsed: newUsed.toFixed(6),
+      creditsUsed
+    });
+    
+    const updateResult = await db
       .update(companies)
       .set({
-        aiCreditsBalance: db.$decrement(companies.aiCreditsBalance, creditsUsed),
-        aiCreditsUsed: db.$increment(companies.aiCreditsUsed, creditsUsed),
+        aiCreditsBalance: newBalance.toFixed(6),
+        aiCreditsUsed: newUsed.toFixed(6),
         updatedAt: new Date(),
       })
-      .where(eq(companies.id, companyId));
+      .where(eq(companies.id, companyId))
+      .returning({ 
+        id: companies.id, 
+        aiCreditsBalance: companies.aiCreditsBalance,
+        aiCreditsUsed: companies.aiCreditsUsed 
+      });
+    
+    console.log('✅ Update result:', updateResult);
 
-    // Log the usage
-    await db.insert(aiUsageLogs).values({
-      companyId,
-      userId,
-      creditsUsed: creditsUsed.toString(),
-      promptTokens: tokenData?.promptTokens,
-      responseTokens: tokenData?.responseTokens,
-      totalTokens: tokenData?.totalTokens,
-      model: tokenData?.model,
-      prompt: sessionData?.prompt?.substring(0, 1000), // Truncate for storage
-      response: sessionData?.response?.substring(0, 1000), // Truncate for storage
-      sessionId: sessionData?.sessionId,
-    });
+    // Log the usage - using actual database columns
+    await sql`
+      INSERT INTO ai_usage_logs (
+        company_id, 
+        user_id, 
+        model, 
+        tokens_input, 
+        tokens_output, 
+        cost_usd, 
+        credits_used, 
+        request_type, 
+        request_data, 
+        response_data
+      ) VALUES (
+        ${companyId},
+        ${userId},
+        ${tokenData?.model || 'gpt-4o-mini'},
+        ${tokenData?.promptTokens || 0},
+        ${tokenData?.responseTokens || 0},
+        ${creditsUsed},
+        ${creditsUsed},
+        'chat',
+        ${JSON.stringify({
+          sessionId: sessionData?.sessionId,
+          prompt: sessionData?.prompt?.substring(0, 500)
+        })},
+        ${JSON.stringify({
+          response: sessionData?.response?.substring(0, 500),
+          totalTokens: tokenData?.totalTokens
+        })}
+      )
+    `;
 
     return true;
   } catch (error) {
@@ -302,10 +359,12 @@ export async function consumeAICredits(
  * This is a simple calculation - adjust based on actual OpenAI pricing
  */
 export function calculateTokenCost(tokens: number, model: string = 'gpt-4'): number {
-  // Basic pricing (per 1K tokens) - adjust based on actual costs
+  // OpenAI pricing (per 1K tokens) - updated with correct gpt-4o-mini pricing
   const pricing: Record<string, { input: number; output: number }> = {
     'gpt-4': { input: 0.03, output: 0.06 },
     'gpt-4-turbo': { input: 0.01, output: 0.03 },
+    'gpt-4o': { input: 0.005, output: 0.015 },
+    'gpt-4o-mini': { input: 0.00015, output: 0.0006 }, // Much cheaper!
     'gpt-3.5-turbo': { input: 0.001, output: 0.002 },
   };
 
