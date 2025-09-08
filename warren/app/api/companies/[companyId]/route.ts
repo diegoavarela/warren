@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT } from '@/lib/auth/jwt';
-import { db, companies, organizations, users, companyUsers, companyConfigurations, financialDataFiles, processedFinancialData, eq } from '@/lib/db';
+import { db, companies, organizations, users, companyUsers, companyConfigurations, financialDataFiles, processedFinancialData, tiers, eq } from '@/lib/db';
 import { ROLES } from '@/lib/auth/rbac';
 
 export async function DELETE(
@@ -162,10 +162,34 @@ export async function GET(
     const payload = await verifyJWT(token);
     const { companyId } = params;
 
-    // Get company details
+    // Get company details with tier information
     const companyQuery = await db
-      .select()
+      .select({
+        // Company fields
+        id: companies.id,
+        name: companies.name,
+        taxId: companies.taxId,
+        industry: companies.industry,
+        locale: companies.locale,
+        baseCurrency: companies.baseCurrency,
+        fiscalYearStart: companies.fiscalYearStart,
+        isActive: companies.isActive,
+        organizationId: companies.organizationId,
+        createdAt: companies.createdAt,
+        updatedAt: companies.updatedAt,
+        // AI Credits fields
+        aiCreditsBalance: companies.aiCreditsBalance,
+        aiCreditsUsed: companies.aiCreditsUsed,
+        aiCreditsResetDate: companies.aiCreditsResetDate,
+        tierId: companies.tierId,
+        // Tier fields
+        tierName: tiers.name,
+        tierDisplayName: tiers.displayName,
+        aiCreditsMonthly: tiers.aiCreditsMonthly,
+        maxUsers: tiers.maxUsers,
+      })
       .from(companies)
+      .leftJoin(tiers, eq(companies.tierId, tiers.id))
       .where(eq(companies.id, companyId))
       .limit(1);
 
@@ -220,7 +244,20 @@ export async function GET(
         isActive: company.isActive,
         organizationId: company.organizationId,
         createdAt: company.createdAt,
-        updatedAt: company.updatedAt
+        updatedAt: company.updatedAt,
+        // AI Credits fields
+        aiCreditsBalance: company.aiCreditsBalance,
+        aiCreditsUsed: company.aiCreditsUsed,
+        aiCreditsResetDate: company.aiCreditsResetDate,
+        tierId: company.tierId,
+        // Tier information
+        tier: company.tierName ? {
+          id: company.tierId,
+          name: company.tierName,
+          displayName: company.tierDisplayName,
+          aiCreditsMonthly: company.aiCreditsMonthly,
+          maxUsers: company.maxUsers,
+        } : null
       }
     });
 

@@ -424,6 +424,8 @@ function calculateTokenCost(tokens: number, model: string = 'gpt-4'): number {
   const pricing: Record<string, { input: number; output: number }> = {
     'gpt-4': { input: 0.03, output: 0.06 },
     'gpt-4-turbo': { input: 0.01, output: 0.03 },
+    'gpt-4o': { input: 0.005, output: 0.015 },
+    'gpt-4o-mini': { input: 0.00015, output: 0.0006 }, // Much cheaper!
     'gpt-3.5-turbo': { input: 0.001, output: 0.002 },
   };
 
