@@ -85,8 +85,7 @@ export const {
   processedFinancialData,
   financialDataFiles,
   tiers,
-  tierFeatures,
-  aiUsage
+  aiUsageLogs
 } = schema;
 
 // Re-export schema types

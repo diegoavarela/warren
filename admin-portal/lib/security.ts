@@ -32,7 +32,7 @@ export function hasSensitiveParameters(url: string): boolean {
   const urlObj = new URL(url);
   const params = urlObj.searchParams;
   
-  for (const param of params.keys()) {
+  for (const param of Array.from(params.keys())) {
     if (SENSITIVE_PARAMETERS.some(sensitive => 
       param.toLowerCase().includes(sensitive.toLowerCase())
     )) {
@@ -51,7 +51,7 @@ export function sanitizeUrl(url: string): string {
   const params = urlObj.searchParams;
   
   // Remove sensitive parameters
-  for (const param of params.keys()) {
+  for (const param of Array.from(params.keys())) {
     if (SENSITIVE_PARAMETERS.some(sensitive => 
       param.toLowerCase().includes(sensitive.toLowerCase())
     )) {

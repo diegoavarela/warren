@@ -268,7 +268,7 @@ export default function TiersPage() {
     actions: (
       <div className="flex items-center space-x-2">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => handleEdit(tier)}
           className="text-blue-600 hover:text-blue-800"
@@ -276,7 +276,7 @@ export default function TiersPage() {
           <PencilIcon className="h-4 w-4" />
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => handleDelete(tier)}
           className="text-red-600 hover:text-red-800"
@@ -348,12 +348,17 @@ export default function TiersPage() {
           onClose={() => setShowDeleteModal(false)}
           onConfirm={confirmDelete}
           title="Delete Tier"
-          message={`Are you sure you want to delete the tier "${deletingTier?.displayName}"? This action cannot be undone.`}
-          confirmText={deletingTier?.displayName || ''}
+          itemName={deletingTier?.displayName || ''}
+          itemType="tier"
+          warningMessage="This action cannot be undone."
         />
       </div>
 
-      <ToastContainer />
+      <ToastContainer
+        toasts={toast.toasts}
+        onClose={toast.removeToast}
+        position="top-right"
+      />
     </DashboardLayout>
   );
 }

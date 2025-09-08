@@ -1226,7 +1226,7 @@ export default function OrganizationDetailPage() {
             size="xl"
           >
             <CompanyEditForm
-              company={selectedCompany}
+              company={selectedCompany as any}
               onSubmit={handleEditCompany as any}
               onCancel={() => {
                 setShowEditCompanyModal(false);
