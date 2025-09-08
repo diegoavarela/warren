@@ -282,41 +282,60 @@ function OrgAdminDashboard() {
           </div>
           
           {/* Embedded Usage Information */}
-          {!usageLoading && usageData && (
-            <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 text-xs text-gray-600">
-              {/* Users - Ultra Compact */}
-              <div className="flex items-center space-x-2">
-                <span className="font-medium">
-                  {locale?.startsWith('es') ? 'Usuarios:' : 'Users:'}
-                </span>
-                <span>{usageData.users.current}/{usageData.users.max}</span>
-                <div className="w-10 bg-gray-200 rounded-full h-1">
-                  <div 
-                    className="bg-green-500 h-1 rounded-full transition-all"
-                    style={{ width: `${Math.min((usageData.users.current / usageData.users.max) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
+          {!usageLoading && usageData && (() => {
+            // Smart company selection - same logic as AI Chat fix
+            let selectedCompany = null;
+            if (usageData.companies && usageData.companies.length > 0) {
+              // First try: Company with AI usage > 0
+              selectedCompany = usageData.companies.find(c => parseFloat(c.used || 0) > 0);
               
-              {/* AI Credits - Ultra Compact */}
-              <div className="flex items-center space-x-2">
-                <span className="font-medium">
-                  {locale?.startsWith('es') ? 'Créditos IA:' : 'AI Credits:'}
-                </span>
-                <span>US$ {usageData.aiCredits.balance?.toFixed(2) || '0.00'}</span>
-                <div className="w-10 bg-gray-200 rounded-full h-1">
-                  <div 
-                    className="bg-blue-500 h-1 rounded-full transition-all"
-                    style={{ 
-                      width: usageData.aiCredits.monthly > 0 
-                        ? `${Math.min((usageData.aiCredits.used / usageData.aiCredits.monthly) * 100, 100)}%` 
-                        : '0%'
-                    }}
-                  />
+              // Second try: Company with balance > 0
+              if (!selectedCompany) {
+                selectedCompany = usageData.companies.find(c => parseFloat(c.balance || 0) > 0);
+              }
+              
+              // Fallback: First company
+              if (!selectedCompany) {
+                selectedCompany = usageData.companies[0];
+              }
+            }
+            
+            return (
+              <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 text-xs text-gray-600">
+                {/* Users - Ultra Compact */}
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">
+                    {locale?.startsWith('es') ? 'Usuarios:' : 'Users:'}
+                  </span>
+                  <span>{usageData.users.current}/{usageData.users.max}</span>
+                  <div className="w-10 bg-gray-200 rounded-full h-1">
+                    <div 
+                      className="bg-green-500 h-1 rounded-full transition-all"
+                      style={{ width: `${Math.min((usageData.users.current / usageData.users.max) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                
+                {/* AI Credits - Ultra Compact - Individual Company */}
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">
+                    {locale?.startsWith('es') ? 'Créditos IA:' : 'AI Credits:'}
+                  </span>
+                  <span>US$ {selectedCompany ? parseFloat(selectedCompany.balance || 0).toFixed(2) : '0.00'}</span>
+                  <div className="w-10 bg-gray-200 rounded-full h-1">
+                    <div 
+                      className="bg-blue-500 h-1 rounded-full transition-all"
+                      style={{ 
+                        width: selectedCompany && selectedCompany.monthly > 0 
+                          ? `${Math.min((parseFloat(selectedCompany.used || 0) / selectedCompany.monthly) * 100, 100)}%` 
+                          : '0%'
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
 

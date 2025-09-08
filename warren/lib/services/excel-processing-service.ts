@@ -478,7 +478,7 @@ export class ExcelProcessingService {
       return result[0];
       
     } catch (error) {
-      console.error('❌ Error storing file info:', {
+      console.error('Error storing file info:', {
         error,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
         errorName: error instanceof Error ? error.name : 'Unknown',
@@ -1061,8 +1061,8 @@ export class ExcelProcessingService {
         throw new Error(`Unsupported data type: ${type}`);
       }
     } catch (error) {
-      console.error('❌ Error processing Excel with configuration:', error);
-      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error('Error processing Excel with configuration:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       throw new Error(`Failed to process Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

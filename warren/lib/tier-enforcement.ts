@@ -289,15 +289,6 @@ export async function consumeAICredits(
     const newUsed = (parseFloat(current.aiCreditsUsed || '0') + creditsUsed);
 
     // Update company AI credits balance
-    console.log('🔄 Updating company credits:', {
-      companyId,
-      oldBalance: current.aiCreditsBalance,
-      oldUsed: current.aiCreditsUsed,
-      newBalance: newBalance.toFixed(6),
-      newUsed: newUsed.toFixed(6),
-      creditsUsed
-    });
-    
     const updateResult = await db
       .update(companies)
       .set({
@@ -311,8 +302,6 @@ export async function consumeAICredits(
         aiCreditsBalance: companies.aiCreditsBalance,
         aiCreditsUsed: companies.aiCreditsUsed 
       });
-    
-    console.log('✅ Update result:', updateResult);
 
     // Log the usage - using actual database columns
     await sql`

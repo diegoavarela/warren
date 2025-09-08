@@ -134,7 +134,7 @@ export default function EditConfigurationPage() {
       setConfigData(updatedConfig);
       setHasUnsavedChanges(true);
     } else {
-      console.error('❌ [SHEET CHANGE] No configData available to save sheet selection!');
+      console.error('[SHEET CHANGE] No configData available to save sheet selection!');
     }
     
     toast.success(`Cambiada a hoja: ${newSheet}`);
@@ -628,7 +628,7 @@ export default function EditConfigurationPage() {
       
       // Ensure we have all required fields
       if (!formData.name || !formData.type) {
-        console.error('❌ [AUTOSAVE] Missing required fields:', { name: formData.name, type: formData.type });
+        console.error('[AUTOSAVE] Missing required fields:', { name: formData.name, type: formData.type });
         throw new Error('Missing required fields for autosave');
       }
 
@@ -657,15 +657,15 @@ export default function EditConfigurationPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ [AUTOSAVE] Response status:', response.status);
-        console.error('❌ [AUTOSAVE] Response text:', errorText);
+        console.error('[AUTOSAVE] Response status:', response.status);
+        console.error('[AUTOSAVE] Response text:', errorText);
         
         let errorData;
         try {
           errorData = JSON.parse(errorText);
-          console.error('❌ [AUTOSAVE] Parsed error data:', errorData);
+          console.error('[AUTOSAVE] Parsed error data:', errorData);
         } catch {
-          console.error('❌ [AUTOSAVE] Could not parse error as JSON');
+          console.error('[AUTOSAVE] Could not parse error as JSON');
           errorData = { message: errorText };
         }
         
@@ -680,7 +680,7 @@ export default function EditConfigurationPage() {
       toast.success('Autoguardado completado');
       
     } catch (error) {
-      console.error('❌ [AUTOSAVE] Autosave failed:', error);
+      console.error('[AUTOSAVE] Autosave failed:', error);
       toast.error('Error en autoguardado - tus cambios no se perdieron');
     } finally {
       setIsAutoSaving(false);
@@ -846,14 +846,14 @@ export default function EditConfigurationPage() {
                 }, 1000);
               } else {
                 const errorData = await processResponse.json();
-                console.error('❌ [AUTO-PROCESS] Processing failed:', errorData);
+                console.error('[AUTO-PROCESS] Processing failed:', errorData);
                 toast.warning(`Configuration saved, but auto-processing failed: ${errorData.message || 'Unknown error'}`);
               }
             } else {
               toast.info('Configuration saved. Upload the Excel file through "Procesar Archivos".');
             }
           } else {
-            console.error('❌ [AUTO-PROCESS] Failed to fetch files:', filesResponse.status);
+            console.error('[AUTO-PROCESS] Failed to fetch files:', filesResponse.status);
           }
         } catch (autoProcessError) {
           toast.warning('Configuration saved, but auto-processing encountered an error.');
@@ -869,7 +869,7 @@ export default function EditConfigurationPage() {
       router.push('/dashboard/company-admin/configurations');
       
     } catch (error) {
-      console.error('❌ Error updating configuration:', error);
+      console.error('Error updating configuration:', error);
       
       const errorMessage = error instanceof Error ? error.message : t('config.errors.updateFailed');
       

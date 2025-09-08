@@ -135,12 +135,9 @@ function OrganizationSettingsPage() {
       
       // Get current company from session storage (if available)
       let currentCompany = JSON.parse(sessionStorage.getItem('currentCompany') || '{}');
-      console.log('🔍 Settings: Current company from sessionStorage:', currentCompany);
-      console.log('🔍 Settings: Company ID check:', { hasId: !!currentCompany.id, id: currentCompany.id });
       
       // If no company in session, find the first active company in the organization
       if (!currentCompany.id && organization?.id) {
-        console.log('🔍 Settings: No company in session, finding first company in organization...');
         try {
           const orgResponse = await fetch(`/api/organizations/${organization.id}/usage`);
           if (orgResponse.ok) {
@@ -151,33 +148,22 @@ function OrganizationSettingsPage() {
               const companyWithCredits = orgData.data.companies.find(c => parseFloat(c.balance || 0) > 0);
               const firstCompany = companyWithUsage || companyWithCredits || orgData.data.companies[0];
               
-              console.log('🔍 Settings: Company selection logic:', {
-                companiesCount: orgData.data.companies.length,
-                withUsage: companyWithUsage?.companyName || 'none',
-                withCredits: companyWithCredits?.companyName || 'none',
-                selected: firstCompany?.companyName
-              });
-              
               currentCompany = {
                 id: firstCompany.companyId,
                 name: firstCompany.companyName
               };
-              console.log('✅ Settings: Auto-selected company:', currentCompany);
             }
           }
         } catch (error) {
-          console.log('⚠️ Settings: Could not auto-select company:', error);
+          // Auto-selection failed, will fall back to organization data
         }
       }
       
       if (currentCompany.id) {
-        console.log('✅ Settings: Found company ID, fetching individual data...');
         // Get individual company usage data instead of organization totals
         const companyResponse = await fetch(`/api/companies/${currentCompany.id}`);
-        console.log('📡 Settings: Company API response status:', companyResponse.status);
         if (companyResponse.ok) {
           const companyData = await companyResponse.json();
-          console.log('📊 Settings: Company API data:', companyData);
           if (companyData.success && companyData.data) {
             // Format the data to match the expected structure
             const individualData = {
@@ -198,7 +184,6 @@ function OrganizationSettingsPage() {
                 companyName: companyData.data.name,
               }
             };
-            console.log('✅ Settings: Using individual company data:', individualData);
             setUsageData(individualData);
             return;
           }
@@ -218,7 +203,6 @@ function OrganizationSettingsPage() {
           companyName: null,
         }
       };
-      console.log('⚠️ Settings: Falling back to organization data:', orgData);
       setUsageData(orgData);
     } catch (err) {
       console.error('Failed to load usage data:', err);
