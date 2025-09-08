@@ -33,7 +33,7 @@ import {
   Cog6ToothIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 import { validatePeriods, getPeriodValidationStatus } from '@/lib/utils/period-validation';
 import { DetectedPeriod } from '@/lib/utils/period-detection';
 

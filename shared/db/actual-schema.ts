@@ -1,5 +1,6 @@
 // This schema matches the ACTUAL database structure in Neon
 // Used for database operations until we can migrate to the new schema
+import 'server-only';
 
 import {
   pgTable,

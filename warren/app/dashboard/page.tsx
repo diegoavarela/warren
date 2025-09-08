@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 
 function DashboardRouter({ user }: { user: any }) {
   const router = useRouter();

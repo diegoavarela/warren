@@ -12,7 +12,7 @@ import { Card, CardHeader, CardBody, CardTitle } from '@/components/ui/Card';
 import { AIChat } from '@/components/LazyComponents';
 import { ArrowLeftIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
 import { GlobalHelpButton } from '@/components/SuperCoolHelpIcon';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 import { ClientOnly } from '@/components/ClientOnly';
 import { useLocaleText } from '@/hooks/useLocaleText';
 

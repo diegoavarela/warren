@@ -16,7 +16,7 @@ import {
   ClockIcon,
   SignalIcon
 } from '@heroicons/react/24/outline';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 
 interface PlatformStats {
   totalOrganizations: number;

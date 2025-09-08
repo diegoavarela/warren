@@ -9,7 +9,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { CashFlowDashboard } from '@/components/dashboard/CashFlowDashboard';
 import { CompanyContextBar } from '@/components/dashboard/CompanyContextBar';
 import { ExportButton } from '@/components/ui/ExportButton';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from '@/lib/auth/constants';
 
 export default function CashFlowDashboardPage() {
   const router = useRouter();

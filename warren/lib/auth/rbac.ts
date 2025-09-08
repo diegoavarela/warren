@@ -1,36 +1,14 @@
 // Role-Based Access Control (RBAC) for Multi-tenant Warren App
+import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { db, companyUsers, companies, users, eq, and } from '@/lib/db';
 import { verifyJWT } from './jwt';
 
-// Role definitions - Simplified to 3 roles
-export const ROLES = {
-  PLATFORM_ADMIN: 'platform_admin',    // Can manage everything across all organizations
-  ORGANIZATION_ADMIN: 'organization_admin', // Can manage their organization and its companies
-  USER: 'user'                         // Can access companies they're assigned to
-} as const;
+// Re-export client-safe constants
+export { ROLES, PERMISSIONS, type Role, type Permission } from './constants';
 
-export type Role = typeof ROLES[keyof typeof ROLES];
-
-// Permission definitions
-export const PERMISSIONS = {
-  // Organization level
-  CREATE_COMPANY: 'create_company',
-  DELETE_COMPANY: 'delete_company',
-  MANAGE_ORGANIZATION: 'manage_organization',
-  MANAGE_USERS: 'manage_users',
-  
-  // Company level
-  MANAGE_COMPANY: 'manage_company',
-  UPLOAD_FILES: 'upload_files',
-  VIEW_FINANCIAL_DATA: 'view_financial_data',
-  EDIT_FINANCIAL_DATA: 'edit_financial_data',
-  DELETE_FINANCIAL_DATA: 'delete_financial_data',
-  MANAGE_COMPANY_USERS: 'manage_company_users',
-  VIEW_AUDIT_LOGS: 'view_audit_logs'
-} as const;
-
-export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
+// Import client-safe constants for internal use
+import { ROLES, PERMISSIONS, type Role, type Permission } from './constants';
 
 // Role-Permission mapping - Simplified to 3 roles
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {

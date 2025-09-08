@@ -17,7 +17,7 @@ import {
   XCircleIcon,
   EnvelopeIcon
 } from '@heroicons/react/24/outline';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 
 interface Company {
   id: string;

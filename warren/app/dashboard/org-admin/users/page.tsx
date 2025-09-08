@@ -8,7 +8,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Users, Plus, Search, Edit, Trash2, Mail, Shield, Key } from 'lucide-react';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 import { useLocale } from '@/contexts/LocaleContext';
 
 interface OrgUser {

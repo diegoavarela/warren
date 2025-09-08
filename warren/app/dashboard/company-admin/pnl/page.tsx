@@ -10,7 +10,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { PnLDashboard } from '@/components/dashboard/PnLDashboard';
 import { CompanyContextBar } from '@/components/dashboard/CompanyContextBar';
 import { ExportButton } from '@/components/ui/ExportButton';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 
 export default function PnLDashboardPage() {
   const router = useRouter();

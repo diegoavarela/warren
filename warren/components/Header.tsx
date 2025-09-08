@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useTranslation } from "@/lib/translations";
 import { Button } from "./ui/Button";
-import { ROLES } from "@/lib/auth/rbac";
+import { ROLES } from "@/lib/auth/constants";
 
 export function Header() {
   const router = useRouter();

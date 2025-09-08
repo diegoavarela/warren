@@ -20,7 +20,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useFeatures } from "@/contexts/FeaturesContext";
 import { useTranslation } from "@/lib/translations";
 import { Button } from "./ui/Button";
-import { ROLES } from "@/lib/auth/rbac";
+import { ROLES } from "@/lib/auth/constants";
 
 interface HeaderProps {
   onSearchOpen?: () => void;

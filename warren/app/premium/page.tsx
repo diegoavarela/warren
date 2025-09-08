@@ -21,7 +21,7 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from '@/lib/auth/constants';
 import { FeatureFlag } from '@/contexts/FeaturesContext';
 import { DynamicIcon } from '@/lib/utils/iconMapper';
 import { useToast, ToastContainer } from '@/components/ui/Toast';

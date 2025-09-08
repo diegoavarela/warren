@@ -13,7 +13,7 @@ import {
   BuildingOfficeIcon,
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 import CompanyForm, { CompanyFormData } from '@/shared/components/CompanyForm';
 
 export default function NewCompanyPage() {

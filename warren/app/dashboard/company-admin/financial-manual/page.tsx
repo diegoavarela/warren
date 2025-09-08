@@ -17,7 +17,7 @@ import {
   ChatBubbleBottomCenterTextIcon,
   LightBulbIcon
 } from '@heroicons/react/24/outline';
-import { ROLES } from '@/lib/auth/rbac';
+import { ROLES } from "@/lib/auth/constants";
 import { useTranslations } from '@/lib/locales/loader';
 import { useLocaleText } from '@/hooks/useLocaleText';
 

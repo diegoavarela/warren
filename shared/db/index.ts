@@ -1,4 +1,5 @@
 // Database connection with proper ESM compatibility for Next.js
+import 'server-only';
 import * as schema from "./actual-schema";
 
 // Check if we have a real database URL (Neon database)
