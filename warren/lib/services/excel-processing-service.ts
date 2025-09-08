@@ -3,7 +3,7 @@ import {
   financialDataFiles, 
   processedFinancialData,
   companyConfigurations 
-} from '@/lib/db/actual-schema';
+} from '@/shared/db/actual-schema';
 import { 
   CashFlowConfiguration,
   PLConfiguration,

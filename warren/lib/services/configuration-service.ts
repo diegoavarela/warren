@@ -9,7 +9,7 @@
  * different levels of the organization.
  */
 
-import { db, and } from '@/lib/db';
+import { db } from '@/lib/db';
 import { 
   systemSettings, 
   organizationSettings, 
@@ -445,8 +445,10 @@ export class ConfigurationService {
         .select()
         .from(financialDataFiles)
         .where(
-          // Add logic to find files without configurations
+          // TODO: Add logic to find files without configurations
           // This would require a LEFT JOIN or subquery to check for configurations
+          // For now, just use a simple condition to make it compile
+          eq(financialDataFiles.id, '')
         );
       
       // For now, just log the attempt

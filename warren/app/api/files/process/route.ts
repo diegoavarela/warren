@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       // Log data processing
       await logDataProcessing(
         'process_data',
-        processedRecord.id,
+        (processedRecord as any).id,
         companyId,
         user.id,
         req,
