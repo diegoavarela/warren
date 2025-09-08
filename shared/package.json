@@ -3,11 +3,12 @@
   "private": true,
   "description": "Shared components and utilities for Warren monorepo",
   "dependencies": {
-    "@neondatabase/serverless": "^0.9.3",
+    "@heroicons/react": "^2.2.0",
+    "@neondatabase/serverless": "^1.0.1",
     "@paralleldrive/cuid2": "^2.2.2",
     "class-variance-authority": "^0.7.1",
     "dotenv": "^17.0.1",
-    "drizzle-orm": "^0.31.2"
+    "drizzle-orm": "^0.44.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

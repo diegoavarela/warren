@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const today = new Date();
+    const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     console.log(`Starting credit reset process at ${today.toISOString()}`);
 
     // Find companies that need their credits reset
@@ -27,13 +28,13 @@ export async function GET(request: NextRequest) {
         aiCreditsBalance: companies.aiCreditsBalance,
         aiCreditsResetDate: companies.aiCreditsResetDate,
         tierName: tiers.name,
-        aiCreditsPerMonth: tiers.aiCreditsPerMonth,
+        aiCreditsPerMonth: tiers.aiCreditsMonthly,
       })
       .from(companies)
       .innerJoin(tiers, eq(companies.tierId, tiers.id))
       .where(
         and(
-          lte(companies.aiCreditsResetDate, today),
+          lte(companies.aiCreditsResetDate, todayString),
           eq(companies.isActive, true)
         )
       );
@@ -47,13 +48,13 @@ export async function GET(request: NextRequest) {
         console.log(`Resetting credits for company: ${company.name} (ID: ${company.id})`);
         
         // Calculate next reset date (same day next month)
-        const nextResetDate = new Date(company.aiCreditsResetDate);
+        const nextResetDate = new Date(company.aiCreditsResetDate || today);
         nextResetDate.setMonth(nextResetDate.getMonth() + 1);
         
         // Reset the credits using the ai-credits library
         const resetResult = await resetAICredits(
           company.id,
-          company.aiCreditsPerMonth,
+          Number(company.aiCreditsPerMonth) || 0,
           nextResetDate
         );
 

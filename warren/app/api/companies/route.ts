@@ -98,8 +98,10 @@ export async function POST(request: NextRequest) {
       const adminUser = await db
         .select()
         .from(users)
-        .where(eq(users.id, adminUserId))
-        .where(eq(users.organizationId, organizationId))
+        .where(and(
+          eq(users.id, adminUserId),
+          eq(users.organizationId, organizationId)
+        ))
         .limit(1);
       
       if (adminUser.length > 0) {
@@ -124,8 +126,10 @@ export async function POST(request: NextRequest) {
     const orgAdmins = await db
       .select({ id: users.id, email: users.email })
       .from(users)
-      .where(eq(users.organizationId, organizationId))
-      .where(eq(users.role, 'admin'));
+      .where(and(
+        eq(users.organizationId, organizationId),
+        eq(users.role, 'admin')
+      ));
     
     for (const admin of orgAdmins) {
       // Skip if this admin is already the creator/specified admin
@@ -137,8 +141,10 @@ export async function POST(request: NextRequest) {
       const existingAccess = await db
         .select()
         .from(companyUsers)
-        .where(eq(companyUsers.companyId, newCompany.id))
-        .where(eq(companyUsers.userId, admin.id))
+        .where(and(
+          eq(companyUsers.companyId, newCompany.id),
+          eq(companyUsers.userId, admin.id)
+        ))
         .limit(1);
 
       if (existingAccess.length === 0) {
@@ -255,13 +261,11 @@ export async function GET(request: NextRequest) {
         })
         .from(companyUsers)
         .innerJoin(companies, eq(companyUsers.companyId, companies.id))
-        .where(eq(companyUsers.userId, payload.userId))
-        .where(eq(companyUsers.isActive, true));
-      
-      // Filter active companies unless includeInactive is requested
-      if (!includeInactive) {
-        userQuery = userQuery.where(eq(companies.isActive, true));
-      }
+        .where(and(
+          eq(companyUsers.userId, payload.userId),
+          eq(companyUsers.isActive, true),
+          ...(includeInactive ? [] : [eq(companies.isActive, true)])
+        ));
       
       const userCompanies = await userQuery;
       

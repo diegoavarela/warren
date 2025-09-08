@@ -77,10 +77,7 @@ async function initializeDatabase() {
   }
   
   // Configure Neon connection with timeout settings
-  const neonSql = neon(process.env.DATABASE_URL, {
-    fetchConnectionCache: true,
-    fullResults: false
-  });
+  const neonSql = neon(process.env.DATABASE_URL);
   const db = drizzle(neonSql, { schema });
   
   return {

@@ -126,7 +126,7 @@ export async function GET(
         metrics: []
       },
       metadata: {
-        currency: company[0].defaultCurrency || 'USD',
+        currency: company[0].baseCurrency || 'USD',
         units: 'normal',
         lastUpdated: fileResult[0].uploadedAt?.toISOString() || new Date().toISOString(),
         dataQuality: {
@@ -142,7 +142,7 @@ export async function GET(
     if (pnlConfig && pnlConfig.configJson) {
       
       const pnlData = await excelProcessingService.processExcelWithConfiguration(
-        fileResult[0].fileContent,
+        fileResult[0].fileContent!,
         pnlConfig.configJson as any,
         'pnl',
         pnlConfig.configJson?.metadata?.selectedSheet
@@ -182,7 +182,7 @@ export async function GET(
     if (cashflowConfig && cashflowConfig.configJson) {
       
       const cashflowData = await excelProcessingService.processExcelWithConfiguration(
-        fileResult[0].fileContent,
+        fileResult[0].fileContent!,
         cashflowConfig.configJson as any,
         'cashflow',
         cashflowConfig.configJson?.metadata?.selectedSheet

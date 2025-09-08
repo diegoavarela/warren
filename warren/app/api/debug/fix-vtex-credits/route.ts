@@ -58,7 +58,7 @@ export async function POST() {
   } catch (error) {
     console.error('Failed to fix credits:', error);
     return NextResponse.json(
-      { error: 'Failed to fix credits', details: error.message },
+      { error: 'Failed to fix credits', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

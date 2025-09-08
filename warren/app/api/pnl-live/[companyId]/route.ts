@@ -98,7 +98,7 @@ export async function GET(
     // Process the Excel file with the current configuration
     const selectedSheet = pnlConfig.configJson?.metadata?.selectedSheet;
     const processedData = await excelProcessingService.processExcelWithConfiguration(
-      fileResult[0].fileContent,
+      fileResult[0].fileContent!,
       pnlConfig.configJson as any, // Cast to bypass TS type checking for now
       'pnl',
       selectedSheet // Pass the selected sheet from configuration

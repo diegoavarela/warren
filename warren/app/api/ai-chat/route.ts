@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getCurrentUser } from '@/lib/auth/server-auth';
 import { logAIInteraction } from '@/lib/audit';
-import { enforceAICredits, consumeAICredits, calculateTokenCost } from '@/lib/tier-enforcement';
+import { enforceAICredits, consumeAICredits, calculateTokenCost, getAICreditsStatus } from '@/lib/tier-enforcement';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -668,11 +668,11 @@ When providing insights, base them solely on the available data.`;
       console.log('🔄 Updated credits after consumption:', updatedCredits);
       
       // Add remaining balance to response for UI updates
-      response.aiCredits = {
+      (response as any).aiCredits = {
         consumed: actualCost,
         remainingEstimate: updatedCredits.balance
       };
-      console.log('✨ Sending AI credits response:', response.aiCredits);
+      console.log('✨ Sending AI credits response:', (response as any).aiCredits);
     } catch (creditError) {
       console.error('Failed to consume AI credits:', creditError);
       // Don't fail the request if credit logging fails

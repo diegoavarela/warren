@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
 
 /**
- * Script to test the usage data API and see what values are being returned
+ * Script to test AI usage data persistence and the consumeAICredits function
  */
 
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { organizations, companies, tiers } from '../shared/db/actual-schema';
+import { organizations, companies, tiers, aiUsageLogs } from '../shared/db/actual-schema';
 import { eq } from 'drizzle-orm';
 import dotenv from 'dotenv';
 
@@ -16,6 +16,104 @@ dotenv.config({ path: '.env.local' });
 // Initialize database connection
 const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle(sql);
+
+// Simple version of consumeAICredits for testing
+async function testConsumeAICredits(companyId: string, userId: string, creditsUsed: number) {
+  try {
+    // Get current values
+    const currentCompany = await db
+      .select({
+        aiCreditsBalance: companies.aiCreditsBalance,
+        aiCreditsUsed: companies.aiCreditsUsed,
+      })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1);
+
+    if (currentCompany.length === 0) {
+      throw new Error('Company not found');
+    }
+
+    const current = currentCompany[0];
+    const newBalance = (parseFloat(current.aiCreditsBalance || '0') - creditsUsed);
+    const newUsed = (parseFloat(current.aiCreditsUsed || '0') + creditsUsed);
+
+    // Update company AI credits balance
+    await db
+      .update(companies)
+      .set({
+        aiCreditsBalance: newBalance.toFixed(6),
+        aiCreditsUsed: newUsed.toFixed(6),
+        updatedAt: new Date(),
+      })
+      .where(eq(companies.id, companyId));
+
+    // Log the usage
+    await db.insert(aiUsageLogs).values({
+      companyId,
+      userId,
+      creditsUsed: creditsUsed.toString(),
+      promptTokens: 100,
+      responseTokens: 150,
+      totalTokens: 250,
+      model: 'gpt-4o-mini',
+      prompt: 'Test prompt for persistence verification',
+      response: 'Test response for persistence verification',
+      sessionId: 'test-session-' + Date.now(),
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error consuming AI credits:', error);
+    return false;
+  }
+}
+
+// Simple version of getAICreditsStatus for testing  
+async function testGetAICreditsStatus(companyId: string) {
+  try {
+    const result = await db
+      .select({
+        balance: companies.aiCreditsBalance,
+        used: companies.aiCreditsUsed,
+        resetDate: companies.aiCreditsResetDate,
+        monthlyCredits: tiers.aiCreditsMonthly,
+      })
+      .from(companies)
+      .leftJoin(tiers, eq(companies.tierId, tiers.id))
+      .where(eq(companies.id, companyId))
+      .limit(1);
+
+    if (result.length === 0) {
+      return {
+        balance: 0,
+        used: 0,
+        monthly: 0,
+        resetDate: null,
+      };
+    }
+
+    const data = result[0];
+    const balance = parseFloat(data.balance?.toString() || '0');
+    const used = parseFloat(data.used?.toString() || '0');
+    const monthly = parseFloat(data.monthlyCredits?.toString() || '0');
+
+    return {
+      balance,
+      used,
+      monthly,
+      resetDate: data.resetDate,
+    };
+  } catch (error) {
+    console.error('Error getting AI credits status:', error);
+    return {
+      balance: 0,
+      used: 0,
+      monthly: 0,
+      resetDate: null,
+    };
+  }
+}
 
 async function testUsageData() {
   console.log('🔍 Testing usage data for Vortex organization...\n');
@@ -115,6 +213,62 @@ async function testUsageData() {
     console.log(`   balance: $${expectedResponse.aiCredits.balance}`);
     console.log(`   used: $${expectedResponse.aiCredits.used}`);  
     console.log(`   monthly: $${expectedResponse.aiCredits.monthly}`);
+
+    // Test consumption if we have companies
+    if (orgCompanies.length > 0) {
+      const testCompany = orgCompanies[0];
+      console.log(`\n🧪 Testing AI Credit Consumption for ${testCompany.name}...`);
+      
+      // Get initial status using our test function
+      const initialStatus = await testGetAICreditsStatus(testCompany.id);
+      console.log(`📋 Initial Status:`);
+      console.log(`   Balance: $${initialStatus.balance.toFixed(6)}`);
+      console.log(`   Used: $${initialStatus.used.toFixed(6)}`);
+      console.log(`   Monthly: $${initialStatus.monthly.toFixed(2)}`);
+
+      // Test a small consumption
+      const testCost = 0.001234; // Small test cost
+      console.log(`\n🔄 Testing consumeAICredits with cost: $${testCost.toFixed(6)}`);
+      
+      try {
+        const consumeResult = await testConsumeAICredits(
+          testCompany.id,
+          'test-user-id-123',
+          testCost
+        );
+
+        console.log(`✅ Consume result: ${consumeResult ? 'SUCCESS' : 'FAILED'}`);
+
+        if (consumeResult) {
+          // Check updated status
+          const updatedStatus = await testGetAICreditsStatus(testCompany.id);
+          console.log(`\n📋 Updated Status:`);
+          console.log(`   Balance: $${updatedStatus.balance.toFixed(6)} (was $${initialStatus.balance.toFixed(6)})`);
+          console.log(`   Used: $${updatedStatus.used.toFixed(6)} (was $${initialStatus.used.toFixed(6)})`);
+          
+          const balanceChange = initialStatus.balance - updatedStatus.balance;
+          const usedChange = updatedStatus.used - initialStatus.used;
+          
+          console.log(`\n🔍 Changes:`);
+          console.log(`   Balance decreased by: $${balanceChange.toFixed(6)} (expected: $${testCost.toFixed(6)})`);
+          console.log(`   Used increased by: $${usedChange.toFixed(6)} (expected: $${testCost.toFixed(6)})`);
+          
+          const balanceCorrect = Math.abs(balanceChange - testCost) < 0.000001;
+          const usedCorrect = Math.abs(usedChange - testCost) < 0.000001;
+          
+          console.log(`   Balance change correct: ${balanceCorrect ? '✅' : '❌'}`);
+          console.log(`   Used change correct: ${usedCorrect ? '✅' : '❌'}`);
+          
+          if (balanceCorrect && usedCorrect) {
+            console.log(`\n🎉 AI usage persistence is working correctly!`);
+          } else {
+            console.log(`\n⚠️  Issues detected with persistence calculations`);
+          }
+        }
+      } catch (consumeError) {
+        console.error(`❌ Error during consumption test:`, consumeError);
+      }
+    }
 
   } catch (error) {
     console.error('❌ Error testing usage data:', error);

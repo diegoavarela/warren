@@ -21,7 +21,14 @@ export async function GET() {
         used: c.ai_credits_used,
         resetDate: c.ai_credits_reset_date,
       })),
-      logs: []
+      logs: [] as Array<{
+        date: string;
+        model: any;
+        cost: string;
+        tokensIn: any;
+        tokensOut: any;
+      }>,
+      summary: {} as any
     };
     
     if (companies.length > 0) {
@@ -75,7 +82,7 @@ export async function GET() {
   } catch (error) {
     console.error('Database query failed:', error);
     return NextResponse.json(
-      { error: 'Failed to query database', details: error.message },
+      { error: 'Failed to query database', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

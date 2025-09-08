@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT } from '@/lib/auth/jwt';
-import { db, financialDataFiles, companyConfigurations, eq } from '@/lib/db';
+import { db, financialDataFiles, companyConfigurations, eq, and } from '@/lib/db';
 import { ROLES } from '@/lib/auth/rbac';
 
 export async function GET(
@@ -105,8 +105,10 @@ export async function DELETE(
     // Delete the file
     const deletedFile = await db
       .delete(financialDataFiles)
-      .where(eq(financialDataFiles.id, fileId))
-      .where(eq(financialDataFiles.companyId, companyId))
+      .where(and(
+        eq(financialDataFiles.id, fileId),
+        eq(financialDataFiles.companyId, companyId)
+      ))
       .returning();
 
     if (deletedFile.length === 0) {

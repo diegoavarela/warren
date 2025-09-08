@@ -99,7 +99,7 @@ export function AICreditsWidget({
         color: 'yellow',
         bgColor: 'bg-yellow-500',
         icon: <AlertTriangle className="h-4 w-4 text-yellow-500" />,
-        badgeVariant: 'warning' as const,
+        badgeVariant: 'outline' as const,
         statusText: t("Low", "Bajo"),
       };
     }
@@ -107,7 +107,7 @@ export function AICreditsWidget({
       color: 'green',
       bgColor: 'bg-green-500',
       icon: <Brain className="h-4 w-4 text-green-500" />,
-      badgeVariant: 'success' as const,
+      badgeVariant: 'default' as const,
       statusText: t("Available", "Disponible"),
     };
   };
@@ -209,8 +209,8 @@ export function AICreditsWidget({
                   <div className="text-gray-500">{t("Est. days left", "Días estimados")}</div>
                   <div className={cn(
                     "font-medium",
-                    estimatedDaysRemaining <= 3 && "text-red-600",
-                    estimatedDaysRemaining <= 7 && estimatedDaysRemaining > 3 && "text-yellow-600"
+                    estimatedDaysRemaining !== undefined && estimatedDaysRemaining <= 3 && "text-red-600",
+                    estimatedDaysRemaining !== undefined && estimatedDaysRemaining <= 7 && estimatedDaysRemaining > 3 && "text-yellow-600"
                   )}>
                     {estimatedDaysRemaining === 0 
                       ? t("< 1 day", "< 1 día")

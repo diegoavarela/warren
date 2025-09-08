@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, organizations, companies, users, mappingTemplates, eq, like, or } from '@/lib/db';
+import { db, organizations, companies, users, mappingTemplates, eq, like, or, and } from '@/lib/db';
 import { withRBAC, hasPermission, PERMISSIONS, ROLES } from '@/lib/auth/rbac';
 
 export async function GET(request: NextRequest) {
@@ -53,14 +53,14 @@ export async function GET(request: NextRequest) {
           .select({
             id: companies.id,
             name: companies.name,
-            ruc: companies.ruc,
+            ruc: companies.taxId,
             country: companies.country
           })
           .from(companies)
           .where(
             or(
               like(companies.name, searchQuery),
-              like(companies.ruc, searchQuery)
+              like(companies.taxId, searchQuery)
             )
           )
           .limit(5);
@@ -84,30 +84,40 @@ export async function GET(request: NextRequest) {
       // Search users (admins only)
       if ((type === 'all' || type === 'users') && 
           (user.role === ROLES.PLATFORM_ADMIN || user.role === ROLES.ORGANIZATION_ADMIN)) {
-        const usersQuery = db
-          .select({
-            id: users.id,
-            email: users.email,
-            firstName: users.firstName,
-            lastName: users.lastName,
-            role: users.role
-          })
-          .from(users)
-          .where(
-            or(
-              like(users.email, searchQuery),
-              like(users.firstName, searchQuery),
-              like(users.lastName, searchQuery)
-            )
-          )
-          .limit(5);
+        // Build where conditions
+        const searchConditions = or(
+          like(users.email, searchQuery),
+          like(users.firstName, searchQuery),
+          like(users.lastName, searchQuery)
+        );
 
-        // If org admin, filter by organization
-        if (user.role === ROLES.ORGANIZATION_ADMIN) {
-          usersQuery.where(eq(users.organizationId, user.organizationId));
-        }
-
-        const usersResult = await usersQuery;
+        // Build query with conditional organization filter
+        const usersResult = user.role === ROLES.ORGANIZATION_ADMIN 
+          ? await db
+              .select({
+                id: users.id,
+                email: users.email,
+                firstName: users.firstName,
+                lastName: users.lastName,
+                role: users.role
+              })
+              .from(users)
+              .where(and(
+                searchConditions,
+                eq(users.organizationId, user.organizationId)
+              ))
+              .limit(5)
+          : await db
+              .select({
+                id: users.id,
+                email: users.email,
+                firstName: users.firstName,
+                lastName: users.lastName,
+                role: users.role
+              })
+              .from(users)
+              .where(searchConditions)
+              .limit(5);
         
         usersResult.forEach((u: any) => {
           results.push({

@@ -72,7 +72,7 @@ export function UserLimitIndicator({
         </div>
         
         <Badge 
-          variant={isAtLimit ? "destructive" : isNearLimit ? "warning" : "success"}
+          variant={isAtLimit ? "destructive" : isNearLimit ? "outline" : "default"}
           className="text-xs"
         >
           {remaining === 0 
@@ -132,7 +132,7 @@ export function UserLimitIndicator({
                 {percentage}% {t("used", "utilizado")}
               </span>
               <Badge 
-                variant={isAtLimit ? "destructive" : isNearLimit ? "warning" : "default"}
+                variant={isAtLimit ? "destructive" : isNearLimit ? "outline" : "default"}
                 className="text-xs"
               >
                 {isAtLimit 

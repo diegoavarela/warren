@@ -150,7 +150,9 @@ export default function CompanyForm({
               >
                 <option value="">{isSpanish ? 'Seleccionar...' : 'Select...'}</option>
                 {INDUSTRIES.map(industry => (
-                  <option key={industry} value={industry}>{industry}</option>
+                  <option key={industry.value} value={industry.value}>
+                    {isSpanish ? industry.labelEs : industry.labelEn}
+                  </option>
                 ))}
               </select>
             </div>
@@ -168,7 +170,9 @@ export default function CompanyForm({
               >
                 <option value="">{isSpanish ? 'Seleccionar...' : 'Select...'}</option>
                 {COUNTRIES.map(country => (
-                  <option key={country} value={country}>{country}</option>
+                  <option key={country.value} value={country.value}>
+                    {isSpanish ? country.labelEs : country.labelEn}
+                  </option>
                 ))}
               </select>
             </div>
@@ -209,8 +213,8 @@ export default function CompanyForm({
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {LOCALES.map(loc => (
-                  <option key={loc.code} value={loc.code}>
-                    {loc.flag} {loc.name}
+                  <option key={loc.value} value={loc.value}>
+                    {isSpanish ? loc.labelEs : loc.labelEn}
                   </option>
                 ))}
               </select>
@@ -228,8 +232,8 @@ export default function CompanyForm({
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {CURRENCIES.map(currency => (
-                  <option key={currency.code} value={currency.code}>
-                    {currency.flag} {currency.code} - {currency.name}
+                  <option key={currency.value} value={currency.value}>
+                    {isSpanish ? currency.labelEs : currency.labelEn}
                   </option>
                 ))}
               </select>
@@ -247,7 +251,9 @@ export default function CompanyForm({
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {TIMEZONES.map(tz => (
-                  <option key={tz} value={tz}>{tz}</option>
+                  <option key={tz.value} value={tz.value}>
+                    {isSpanish ? tz.labelEs : tz.labelEn}
+                  </option>
                 ))}
               </select>
             </div>

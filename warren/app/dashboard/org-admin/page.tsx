@@ -287,11 +287,11 @@ function OrgAdminDashboard() {
             let selectedCompany = null;
             if (usageData.companies && usageData.companies.length > 0) {
               // First try: Company with AI usage > 0
-              selectedCompany = usageData.companies.find(c => parseFloat(c.used || 0) > 0);
+              selectedCompany = usageData.companies.find((c: any) => parseFloat(c.used || 0) > 0);
               
               // Second try: Company with balance > 0
               if (!selectedCompany) {
-                selectedCompany = usageData.companies.find(c => parseFloat(c.balance || 0) > 0);
+                selectedCompany = usageData.companies.find((c: any) => parseFloat(c.balance || 0) > 0);
               }
               
               // Fallback: First company

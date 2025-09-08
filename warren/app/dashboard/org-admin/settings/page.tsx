@@ -144,8 +144,8 @@ function OrganizationSettingsPage() {
             const orgData = await orgResponse.json();
             if (orgData.success && orgData.data.companies && orgData.data.companies.length > 0) {
               // Find first company with actual usage (used > 0), then with balance > 0, then first one
-              const companyWithUsage = orgData.data.companies.find(c => parseFloat(c.used || 0) > 0);
-              const companyWithCredits = orgData.data.companies.find(c => parseFloat(c.balance || 0) > 0);
+              const companyWithUsage = orgData.data.companies.find((c: any) => parseFloat(c.used || 0) > 0);
+              const companyWithCredits = orgData.data.companies.find((c: any) => parseFloat(c.balance || 0) > 0);
               const firstCompany = companyWithUsage || companyWithCredits || orgData.data.companies[0];
               
               currentCompany = {

@@ -19,13 +19,10 @@ export async function GET(
     
     // Force completely fresh connection by adding timestamp to connection
     const connectionString = `${process.env.DATABASE_URL}?bust=${Date.now()}`;
-    const neonSql = neon(connectionString, {
-      fullResults: false,
-      arrayMode: false
-    });
+    const neonSql = neon(connectionString);
     
     // Use raw SQL query to bypass any ORM caching
-    const features = await neonSql(`
+    const features = await neonSql`
       SELECT 
         f.id,
         f.key,
@@ -47,14 +44,14 @@ export async function GET(
         of.enabled_at as "enabledAt"
       FROM feature_flags f
       LEFT JOIN organization_features of ON f.id = of.feature_id 
-        AND of.organization_id = $1::uuid
+        AND of.organization_id = ${organizationId}::uuid
       WHERE (
         f.is_baseline = true OR 
         f.is_public = true OR 
         (f.is_public = false AND of.enabled IS NOT NULL AND of.enabled = true)
       )
       ORDER BY f.is_baseline DESC, f.name ASC
-    `, [organizationId]);
+    `;
 
 
     return NextResponse.json({

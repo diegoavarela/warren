@@ -98,7 +98,7 @@ export async function GET(
     // The configJson already has the correct structure from the database
     const selectedSheet = cashFlowConfig.configJson?.metadata?.selectedSheet;
     const processedData = await excelProcessingService.processExcelWithConfiguration(
-      fileResult[0].fileContent,
+      fileResult[0].fileContent!,
       cashFlowConfig.configJson as any, // Cast to bypass TS type checking for now
       'cashflow',
       selectedSheet // Pass the selected sheet from configuration

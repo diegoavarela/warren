@@ -56,14 +56,10 @@ export async function GET(request: NextRequest) {
       const { searchParams } = new URL(request.url);
       const category = searchParams.get('category');
 
-      // Build query
-      let query = db.select().from(systemSettings);
-      if (category) {
-        query = query.where(eq(systemSettings.category, category));
-      }
-
-      // Execute query
-      const settings = await query;
+      // Build and execute query
+      const settings = category 
+        ? await db.select().from(systemSettings).where(eq(systemSettings.category, category))
+        : await db.select().from(systemSettings);
 
     // Transform settings into a more usable format
     const settingsMap: Record<string, any> = {};

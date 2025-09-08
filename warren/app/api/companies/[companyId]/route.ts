@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT } from '@/lib/auth/jwt';
-import { db, companies, organizations, users, companyUsers, companyConfigurations, financialDataFiles, processedFinancialData, tiers, eq } from '@/lib/db';
+import { db, companies, organizations, users, companyUsers, companyConfigurations, financialDataFiles, processedFinancialData, tiers, eq, and } from '@/lib/db';
 import { ROLES } from '@/lib/auth/rbac';
 
 export async function DELETE(
@@ -218,9 +218,11 @@ export async function GET(
       const userCompany = await db
         .select()
         .from(companyUsers)
-        .where(eq(companyUsers.userId, payload.userId))
-        .where(eq(companyUsers.companyId, companyId))
-        .where(eq(companyUsers.isActive, true))
+        .where(and(
+          eq(companyUsers.userId, payload.userId),
+          eq(companyUsers.companyId, companyId),
+          eq(companyUsers.isActive, true)
+        ))
         .limit(1);
 
       if (userCompany.length === 0) {

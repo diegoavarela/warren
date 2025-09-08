@@ -676,7 +676,7 @@ Hover to see precise usage amounts`}
         
         {credits?.isLow && !credits.isExhausted && (
           <div className="px-4 pb-2">
-            <Alert variant="warning">
+            <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 {isSpanish 

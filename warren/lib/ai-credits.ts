@@ -58,7 +58,7 @@ export async function getAIUsageHistory(
       .orderBy(desc(aiUsageLogs.createdAt))
       .limit(1000);
 
-    return records.map(record => ({
+    return records.map((record: any) => ({
       ...record,
       creditsUsed: parseFloat(record.creditsUsed?.toString() || '0'),
       createdAt: new Date(record.createdAt),

@@ -119,10 +119,9 @@ export async function POST(
             role: 'user', // Default organization role
             organizationId: company.organizationId,
             isActive: true,
-            emailVerified: false,
+            isEmailVerified: false,
             passwordHash: hashedPassword,
-            locale: 'en-US',
-            twoFactorEnabled: false
+            locale: 'en-US'
           })
           .returning();
 
@@ -185,7 +184,7 @@ export async function POST(
     };
 
     // Include temporary password if a new user was created
-    if (targetUser.temporaryPassword) {
+    if ('temporaryPassword' in targetUser && targetUser.temporaryPassword) {
       response.temporaryPassword = targetUser.temporaryPassword;
       response.message = 'User assigned to company successfully. Please share the temporary password securely.';
     }
