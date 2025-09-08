@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       // Log file upload
       await logDataProcessing(
         'upload_file',
-        fileRecord.id,
+        (fileRecord as any).id,
         companyId,
         user.id,
         req,
