@@ -32,7 +32,7 @@ interface HeatmapCell {
 export function CashFlowHeatmap({ 
   historicalData,
   formatValue,
-  locale = 'es-MX',
+  locale = 'es-AR',
   fullWidth = false,
   periodMetadata,
   isPeriodActual,
@@ -40,6 +40,37 @@ export function CashFlowHeatmap({
 }: CashFlowHeatmapProps) {
   const [viewMode, setViewMode] = useState<'net' | 'inflows' | 'outflows'>('net');
   const currentYear = 2025;
+  // Translation mappings
+  const translations = {
+    en: {
+      monthlyPerformance: "Monthly Cash Flow Performance",
+      flujoNeto: "Net Flow",
+      soloEntradas: "Inflows Only",
+      soloSalidas: "Outflows Only"
+    },
+    es: {
+      monthlyPerformance: "Rendimiento Mensual de Flujo de Caja",
+      flujoNeto: "Flujo Neto",
+      soloEntradas: "Solo Entradas",
+      soloSalidas: "Solo Salidas"
+    }
+  };
+
+  const t = (key: string) => {
+    const isEnglish = locale === 'en' || locale?.startsWith('en-') || locale?.includes('US') || locale?.includes('en');
+    const lang = isEnglish ? 'en' : 'es';
+    
+    // Map the old keys to new simple keys
+    const keyMap: { [key: string]: keyof typeof translations.en } = {
+      'export.cashflow.charts.monthlyPerformance': 'monthlyPerformance',
+      'export.cashflow.charts.flujoNeto': 'flujoNeto',
+      'export.cashflow.charts.soloEntradas': 'soloEntradas',
+      'export.cashflow.charts.soloSalidas': 'soloSalidas'
+    };
+    
+    const mappedKey = keyMap[key];
+    return mappedKey ? translations[lang][mappedKey] : key;
+  };
 
   // Process data for 2025 heatmap with inflow/outflow views
   const heatmapData = useMemo(() => {
@@ -189,7 +220,7 @@ export function CashFlowHeatmap({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white">
-                Rendimiento Mensual de Flujo de Caja
+                {t('export.cashflow.charts.monthlyPerformance')}
               </h3>
               <p className="text-sm text-white/80">
                 {currentYear}
@@ -217,7 +248,7 @@ export function CashFlowHeatmap({
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            Flujo Neto
+            {t('export.cashflow.charts.flujoNeto')}
           </button>
           <button
             onClick={() => setViewMode('inflows')}
@@ -227,7 +258,7 @@ export function CashFlowHeatmap({
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            Solo Entradas
+            {t('export.cashflow.charts.soloEntradas')}
           </button>
           <button
             onClick={() => setViewMode('outflows')}
@@ -237,7 +268,7 @@ export function CashFlowHeatmap({
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            Solo Salidas
+            {t('export.cashflow.charts.soloSalidas')}
           </button>
         </div>
 
