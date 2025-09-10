@@ -8,9 +8,10 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   title?: string;
   description?: string;
+  helpAction?: React.ReactNode;
 }
 
-export function DashboardLayout({ children, title, description }: DashboardLayoutProps) {
+export function DashboardLayout({ children, title, description, helpAction }: DashboardLayoutProps) {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
@@ -26,7 +27,10 @@ export function DashboardLayout({ children, title, description }: DashboardLayou
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       {title && (
-                        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                        <div className="flex items-center space-x-2">
+                          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                          {helpAction}
+                        </div>
                       )}
                       {description && (
                         <p className="mt-1 text-sm text-gray-500">{description}</p>

@@ -359,17 +359,16 @@ export default function CopyCenterPage() {
     <DashboardLayout
       title="Copy Center"
       description="Copy configurations and data between companies across organizations"
+      helpAction={
+        <button
+          onClick={() => setShowHelpModal(true)}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <QuestionMarkCircleIcon className="h-5 w-5" />
+        </button>
+      }
     >
-      <div className="space-y-6">{/* Help button moved to DashboardLayout header */}
-        <div className="flex justify-end">
-          <button
-            onClick={() => setShowHelpModal(true)}
-            className="text-gray-400 hover:text-gray-600 transition-colors flex items-center space-x-1"
-          >
-            <QuestionMarkCircleIcon className="h-4 w-4" />
-            <span className="text-sm">Help</span>
-          </button>
-        </div>
+      <div className="space-y-6">
 
         {/* Source Companies */}
         <div className="space-y-3">
@@ -380,20 +379,6 @@ export default function CopyCenterPage() {
             <span className="text-sm text-gray-500">{sourceCompanies.length} companies</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Source Organization
-              </label>
-              <Select
-                options={[{ value: '', label: 'All Organizations', extra: `${organizations.reduce((sum, org) => sum + org.companyCount, 0)} companies` }, ...orgSelectOptions]}
-                value={selectedSourceOrg}
-                onChange={setSelectedSourceOrg}
-                placeholder="Select organization..."
-                loading={loading}
-              />
-            </div>
-          </div>
 
           <DataTable
             columns={sourceCompanyColumns}
@@ -491,20 +476,6 @@ export default function CopyCenterPage() {
             <span className="text-sm text-gray-500">{targetCompanies.length} available</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Target Organization
-              </label>
-              <Select
-                options={[{ value: '', label: 'All Organizations', extra: `${organizations.reduce((sum, org) => sum + org.companyCount, 0)} companies` }, ...orgSelectOptions]}
-                value={selectedTargetOrg}
-                onChange={setSelectedTargetOrg}
-                placeholder="Select organization..."
-                loading={loading}
-              />
-            </div>
-          </div>
 
           <DataTable
             columns={targetCompanyColumns}
