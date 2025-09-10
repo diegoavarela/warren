@@ -36,6 +36,8 @@ import {
 import { ROLES } from "@/lib/auth/constants";
 import { validatePeriods, getPeriodValidationStatus } from '@/lib/utils/period-validation';
 import { DetectedPeriod } from '@/lib/utils/period-detection';
+import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useToast, ToastContainer } from '@/components/ui/Toast';
 
 interface Company {
   id: string;
@@ -133,6 +135,8 @@ function CompanyAdminDashboard() {
   const [configurationsLoading, setConfigurationsLoading] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const { confirm, ConfirmDialog } = useConfirmDialog();
+  const toast = useToast();
 
   useEffect(() => {
     fetchCompanies();
@@ -308,23 +312,35 @@ function CompanyAdminDashboard() {
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
-    if (!confirm(locale?.startsWith('es') ? '¿Estás seguro de eliminar esta configuración?' : 'Are you sure you want to delete this configuration?')) {
-      return;
-    }
-
     try {
-      const response = await fetch(`/api/configurations/${templateId}`, {
-        method: 'DELETE',
-      });
+      await confirm({
+        title: locale?.startsWith('es') ? 'Confirmar Eliminación' : 'Confirm Deletion',
+        description: locale?.startsWith('es') ? '¿Estás seguro de eliminar esta configuración?' : 'Are you sure you want to delete this configuration?',
+        confirmText: locale?.startsWith('es') ? 'Eliminar' : 'Delete',
+        cancelText: locale?.startsWith('es') ? 'Cancelar' : 'Cancel',
+        variant: 'danger',
+        onConfirm: async () => {
+          const response = await fetch(`/api/configurations/${templateId}`, {
+            method: 'DELETE',
+          });
 
-      if (response.ok) {
-        // Refresh templates/configurations list
-        fetchTemplates(selectedCompanyId);
-      } else {
-        alert(locale?.startsWith('es') ? 'Error al eliminar configuración' : 'Failed to delete configuration');
-      }
-    } catch (error) {
-      alert(locale?.startsWith('es') ? 'Error de red' : 'Network error');
+          if (response.ok) {
+            // Refresh templates/configurations list
+            fetchTemplates(selectedCompanyId);
+            toast.success(
+              locale?.startsWith('es') ? 'Configuración Eliminada' : 'Configuration Deleted',
+              locale?.startsWith('es') ? 'La configuración se eliminó correctamente' : 'Configuration was deleted successfully'
+            );
+          } else {
+            throw new Error(locale?.startsWith('es') ? 'Error al eliminar configuración' : 'Failed to delete configuration');
+          }
+        }
+      });
+    } catch (error: any) {
+      toast.error(
+        locale?.startsWith('es') ? 'Error' : 'Error',
+        error.message || (locale?.startsWith('es') ? 'Error de red' : 'Network error')
+      );
     }
   };
 
@@ -924,6 +940,12 @@ function CompanyAdminDashboard() {
           ) : null}
         </div>
       </div>
+      {ConfirmDialog}
+      <ToastContainer 
+        toasts={toast.toasts} 
+        onClose={toast.removeToast} 
+        position="top-right" 
+      />
     </AppLayout>
   );
 }

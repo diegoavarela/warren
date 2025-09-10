@@ -35,12 +35,20 @@ const toastVariants = cva(
   }
 );
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+  variant?: 'default' | 'danger';
+}
+
 export interface ToastProps extends VariantProps<typeof toastVariants> {
   id: string;
   title: string;
   description?: string;
   duration?: number;
   onClose: (id: string) => void;
+  actions?: ToastAction[];
+  persistent?: boolean;
 }
 
 const icons = {
@@ -64,19 +72,21 @@ export function Toast({
   variant = 'info', 
   position = 'top-right',
   duration = 5000, 
-  onClose 
+  onClose,
+  actions = [],
+  persistent = false
 }: ToastProps) {
   const [isExiting, setIsExiting] = useState(false);
   const Icon = icons[variant || 'info'];
 
   useEffect(() => {
-    if (duration > 0) {
+    if (duration > 0 && !persistent) {
       const timer = setTimeout(() => {
         handleClose();
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [duration, id]);
+  }, [duration, id, persistent]);
 
   const handleClose = () => {
     setIsExiting(true);
@@ -85,29 +95,56 @@ export function Toast({
     }, 300);
   };
 
+  const handleActionClick = (action: ToastAction) => {
+    action.onClick();
+    if (!persistent) {
+      handleClose();
+    }
+  };
+
   return (
     <div
       className={`${toastVariants({ variant, position })} ${
         isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'
-      }`}
+      } ${actions.length > 0 ? 'flex-col items-start' : ''}`}
       role="alert"
     >
-      <Icon className={`w-5 h-5 flex-shrink-0 ${iconColors[variant || 'info']}`} />
-      
-      <div className="flex-1">
-        <p className="font-medium">{title}</p>
-        {description && (
-          <p className="text-sm opacity-90 mt-0.5">{description}</p>
-        )}
+      <div className="flex items-center gap-3 w-full">
+        <Icon className={`w-5 h-5 flex-shrink-0 ${iconColors[variant || 'info']}`} />
+        
+        <div className="flex-1">
+          <p className="font-medium">{title}</p>
+          {description && (
+            <p className="text-sm opacity-90 mt-0.5">{description}</p>
+          )}
+        </div>
+
+        <button
+          onClick={handleClose}
+          className="flex-shrink-0 ml-4 inline-flex rounded-md p-1.5 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+        >
+          <span className="sr-only">Close</span>
+          <XMarkIcon className="w-4 h-4" />
+        </button>
       </div>
 
-      <button
-        onClick={handleClose}
-        className="flex-shrink-0 ml-4 inline-flex rounded-md p-1.5 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-      >
-        <span className="sr-only">Close</span>
-        <XMarkIcon className="w-4 h-4" />
-      </button>
+      {actions.length > 0 && (
+        <div className="flex gap-2 mt-3 ml-8">
+          {actions.map((action, index) => (
+            <button
+              key={index}
+              onClick={() => handleActionClick(action)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                action.variant === 'danger'
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200 focus:ring-red-500'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500'
+              }`}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -124,6 +161,8 @@ export interface ToastData {
   description?: string;
   variant?: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
+  actions?: ToastAction[];
+  persistent?: boolean;
 }
 
 export type ToastPosition = 
@@ -190,29 +229,72 @@ export function useToast() {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  const success = (title: string, description?: string, duration?: number) => {
-    return addToast({ title, description, variant: 'success', duration });
+  const clearAll = () => {
+    setToasts([]);
   };
 
-  const error = (title: string, description?: string, duration?: number) => {
-    return addToast({ title, description, variant: 'error', duration });
+  const success = (title: string, description?: string, options?: Partial<Pick<ToastData, 'duration' | 'actions' | 'persistent'>>) => {
+    return addToast({ title, description, variant: 'success', ...options });
   };
 
-  const warning = (title: string, description?: string, duration?: number) => {
-    return addToast({ title, description, variant: 'warning', duration });
+  const error = (title: string, description?: string, options?: Partial<Pick<ToastData, 'duration' | 'actions' | 'persistent'>>) => {
+    return addToast({ title, description, variant: 'error', duration: options?.duration || 8000, ...options });
   };
 
-  const info = (title: string, description?: string, duration?: number) => {
-    return addToast({ title, description, variant: 'info', duration });
+  const warning = (title: string, description?: string, options?: Partial<Pick<ToastData, 'duration' | 'actions' | 'persistent'>>) => {
+    return addToast({ title, description, variant: 'warning', ...options });
+  };
+
+  const info = (title: string, description?: string, options?: Partial<Pick<ToastData, 'duration' | 'actions' | 'persistent'>>) => {
+    return addToast({ title, description, variant: 'info', ...options });
+  };
+
+  // Helper for common scenarios
+  const loading = (title: string, description?: string) => {
+    return addToast({ 
+      title, 
+      description, 
+      variant: 'info', 
+      persistent: true,
+      duration: 0 
+    });
+  };
+
+  const promise = <T,>(
+    promise: Promise<T>,
+    options: {
+      loading: { title: string; description?: string };
+      success: { title: string; description?: string } | ((data: T) => { title: string; description?: string });
+      error: { title: string; description?: string } | ((error: any) => { title: string; description?: string });
+    }
+  ) => {
+    const loadingId = loading(options.loading.title, options.loading.description);
+
+    return promise
+      .then((data) => {
+        removeToast(loadingId);
+        const successOptions = typeof options.success === 'function' ? options.success(data) : options.success;
+        success(successOptions.title, successOptions.description);
+        return data;
+      })
+      .catch((err) => {
+        removeToast(loadingId);
+        const errorOptions = typeof options.error === 'function' ? options.error(err) : options.error;
+        error(errorOptions.title, errorOptions.description);
+        throw err;
+      });
   };
 
   return {
     toasts,
     addToast,
     removeToast,
+    clearAll,
     success,
     error,
     warning,
-    info
+    info,
+    loading,
+    promise
   };
 }

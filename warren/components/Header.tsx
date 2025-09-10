@@ -18,6 +18,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useTranslation } from "@/lib/translations";
 import { Button } from "./ui/Button";
 import { ROLES } from "@/lib/auth/constants";
+import { useToast, ToastContainer } from "./ui/Toast";
 
 export function Header() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export function Header() {
   const { user, organization, isAuthenticated, logout } = useAuth();
   const { locale, setLocale } = useLocale();
   const { t } = useTranslation(locale || 'en-US');
+  const toast = useToast();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -311,7 +313,7 @@ export function Header() {
                             <div
                               key={notification.id}
                               onClick={() => {
-                                alert('Notification clicked: ' + notification.title);
+                                toast.info(notification.title, 'Notification clicked');
                                 handleNotificationClick(notification);
                               }}
                               className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-all duration-200 hover:translate-x-1 ${
@@ -491,6 +493,11 @@ export function Header() {
           </div>
         </div>
       </div>
+      <ToastContainer 
+        toasts={toast.toasts} 
+        onClose={toast.removeToast} 
+        position="top-right" 
+      />
     </header>
   );
 }

@@ -21,6 +21,7 @@ import { useFeatures } from "@/contexts/FeaturesContext";
 import { useTranslation } from "@/lib/translations";
 import { Button } from "./ui/Button";
 import { ROLES } from "@/lib/auth/constants";
+import { useToast, ToastContainer } from "./ui/Toast";
 
 interface HeaderProps {
   onSearchOpen?: () => void;
@@ -33,6 +34,7 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
   const { locale, setLocale } = useLocale();
   const { enabledFeatures, hasFeature } = useFeatures();
   const { t } = useTranslation(locale || 'en-US');
+  const toast = useToast();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -81,7 +83,7 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
         break;
       case 'view_updates':
         // For now just show an alert, later this could navigate to changelog
-        alert('System update: Performance improvements and bug fixes applied successfully!');
+        toast.success('System Update Complete', 'Performance improvements and bug fixes applied successfully!');
         break;
       default:
     }
@@ -526,6 +528,11 @@ export function HeaderV2({ onSearchOpen }: HeaderProps) {
           </div>
         </div>
       )}
+      <ToastContainer 
+        toasts={toast.toasts} 
+        onClose={toast.removeToast} 
+        position="top-right" 
+      />
     </>
   );
 }
