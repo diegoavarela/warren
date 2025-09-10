@@ -360,34 +360,29 @@ export default function CopyCenterPage() {
       title="Copy Center"
       description="Copy configurations and data between companies across organizations"
     >
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            Copy Center
-            <button
-              onClick={() => setShowHelpModal(true)}
-              className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <QuestionMarkCircleIcon className="h-5 w-5" />
-            </button>
-          </h1>
+      <div className="space-y-6">{/* Help button moved to DashboardLayout header */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="text-gray-400 hover:text-gray-600 transition-colors flex items-center space-x-1"
+          >
+            <QuestionMarkCircleIcon className="h-4 w-4" />
+            <span className="text-sm">Help</span>
+          </button>
         </div>
 
         {/* Source Companies */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Source Companies</h2>
-              <p className="text-gray-600">
-                Select organization and company with existing data to copy from
-              </p>
-            </div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Source Companies <span className="text-sm font-normal text-gray-600">• Select company to copy from</span>
+            </h2>
             <span className="text-sm text-gray-500">{sourceCompanies.length} companies</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Source Organization
               </label>
               <Select
@@ -414,14 +409,11 @@ export default function CopyCenterPage() {
 
         {/* Configuration Selection */}
         {selectedSource && availableConfigurations.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Select Configurations to Copy</h3>
-                <p className="text-gray-600">
-                  Choose which configurations from "{selectedSource.name}" to copy
-                </p>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Configurations <span className="text-sm font-normal text-gray-600">• From "{selectedSource.name}"</span>
+              </h3>
               <span className="text-sm text-gray-500">{selectedConfigIds.size} of {availableConfigurations.length} selected</span>
             </div>
 
@@ -491,20 +483,17 @@ export default function CopyCenterPage() {
         )}
 
         {/* Target Companies */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Target Companies</h2>
-              <p className="text-gray-600">
-                Select organization and company to copy the data to
-              </p>
-            </div>
-            <span className="text-sm text-gray-500">{targetCompanies.length} companies available</span>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Target Companies <span className="text-sm font-normal text-gray-600">• Select company to copy to</span>
+            </h2>
+            <span className="text-sm text-gray-500">{targetCompanies.length} available</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Target Organization
               </label>
               <Select
