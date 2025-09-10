@@ -279,9 +279,9 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     // getValueForPeriod is now defined at the top of the function
     
     const revenue = getValueForPeriod(dataRows?.totalRevenue, index);
-    const cogs = getValueForPeriod(dataRows?.cogs, index);
+    const cogs = Math.abs(getValueForPeriod(dataRows?.cogs, index));
     const grossProfit = getValueForPeriod(dataRows?.grossProfit, index);
-    const operatingExpenses = getValueForPeriod(dataRows?.totalOpex, index);
+    const operatingExpenses = Math.abs(getValueForPeriod(dataRows?.totalOpex, index));
     const netIncome = getValueForPeriod(dataRows?.netIncome, index);
     // Calculate taxes as sum of ALL tax categories for this period
     let taxes = 0;
