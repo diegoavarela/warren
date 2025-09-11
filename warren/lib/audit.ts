@@ -328,3 +328,8 @@ export function extractAuditUser(request: NextRequest): { userId?: string; sessi
     return {};
   }
 }
+
+/**
+ * Alias for logAudit to maintain compatibility
+ */
+export const logAuditEvent = logAudit;
