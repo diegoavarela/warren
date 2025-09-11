@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
       },
       
       // Recent activities
-      recentActivities: recentActivities.map(activity => ({
+      recentActivities: recentActivities.map((activity: any) => ({
         userName: activity.userName || 'Unknown User',
         action: activity.action,
         resource: activity.resource,
