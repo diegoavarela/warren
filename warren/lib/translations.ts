@@ -319,8 +319,31 @@ export const translations = {
     
     // Profit Margin Trends
     'profitMargin.trends.title': 'Tendencia de Márgenes de Beneficio',
+    // Chart Labels
+    'chart.grossMargin': 'Margen Bruto',
+    'chart.netMargin': 'Margen Neto',
     'profitMargin.averageGross': 'Margen Bruto Promedio',
     'profitMargin.averageNet': 'Margen Neto Promedio',
+    
+    // Month names
+    'months.jan': 'Ene',
+    'months.feb': 'Feb',
+    'months.mar': 'Mar',
+    'months.apr': 'Abr',
+    'months.may': 'May',
+    'months.jun': 'Jun',
+    'months.jul': 'Jul',
+    'months.aug': 'Ago',
+    'months.sep': 'Sep',
+    'months.oct': 'Oct',
+    'months.nov': 'Nov',
+    'months.dec': 'Dic',
+    
+    // Chart series labels
+    'chart.trendLine': 'Línea de Tendencia',
+    'chart.upperConfidence': 'Confianza Superior (95%)',
+    'chart.lowerConfidence': 'Confianza Inferior (95%)',
+    'chart.vsPreviousMonth': 'vs Mes Anterior',
     
     // Revenue & Net Income Forecasts
     'forecast.revenue.title': 'Tendencia de Ingresos y Pronóstico a 6 Meses',
@@ -328,6 +351,10 @@ export const translations = {
     'forecast.currentTrend': 'Tendencia Actual',
     'forecast.sixMonthProjection': 'Proyección 6 Meses',
     'forecast.confidenceRange': 'Rango de Confianza',
+    'forecast.actualRevenue': 'Ingresos Reales',
+    'forecast.actualNetIncome': 'Utilidad Neta Real',
+    'forecast.forecast': 'Pronóstico',
+    'forecast.monthly': 'mensual',
     
     // Revenue Growth Analysis
     'revenue.growthAnalysis.title': 'Análisis de Crecimiento', 
@@ -1803,8 +1830,31 @@ export const translations = {
     
     // Profit Margin Trends
     'profitMargin.trends.title': 'Profit Margin Trends',
+    // Chart Labels
+    'chart.grossMargin': 'Gross Margin',
+    'chart.netMargin': 'Net Margin',
     'profitMargin.averageGross': 'Average Gross Margin',
     'profitMargin.averageNet': 'Average Net Margin',
+    
+    // Month names
+    'months.jan': 'Jan',
+    'months.feb': 'Feb',
+    'months.mar': 'Mar',
+    'months.apr': 'Apr',
+    'months.may': 'May',
+    'months.jun': 'Jun',
+    'months.jul': 'Jul',
+    'months.aug': 'Aug',
+    'months.sep': 'Sep',
+    'months.oct': 'Oct',
+    'months.nov': 'Nov',
+    'months.dec': 'Dec',
+    
+    // Chart series labels
+    'chart.trendLine': 'Trend Line',
+    'chart.upperConfidence': 'Upper Confidence (95%)',
+    'chart.lowerConfidence': 'Lower Confidence (95%)',
+    'chart.vsPreviousMonth': 'vs Previous Month',
     
     // Revenue & Net Income Forecasts
     'forecast.revenue.title': 'Revenue Trend & 6-Month Forecast',
@@ -1812,6 +1862,10 @@ export const translations = {
     'forecast.currentTrend': 'Current Trend',
     'forecast.sixMonthProjection': '6-Month Projection',
     'forecast.confidenceRange': 'Confidence Range',
+    'forecast.actualRevenue': 'Actual Revenue',
+    'forecast.actualNetIncome': 'Actual Net Income',
+    'forecast.forecast': 'Forecast',
+    'forecast.monthly': 'monthly',
     
     // Revenue Growth Analysis
     'revenue.growthAnalysis.title': 'Growth Analysis', 

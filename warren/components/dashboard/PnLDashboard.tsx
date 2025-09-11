@@ -2228,6 +2228,7 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
               netIncome: previous.netIncome
             } : undefined
           }}
+          locale={locale}
         />
       </div>
       

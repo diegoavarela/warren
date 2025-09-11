@@ -308,7 +308,11 @@ function transformConfigurationBasedData(apiData: any): PnLData | null {
     const netMargin = revenue > 0 ? ((netIncome / revenue) * 100) : 0; // Monthly Net Margin Performance
     
     // Use data margins if available, otherwise calculate
-    const grossMargin = grossMarginFromData > 0 ? grossMarginFromData : (revenue > 0 ? ((grossProfit / revenue) * 100) : 0);
+    // If grossMarginFromData exists but seems to be in decimal format (0.6 instead of 60), convert it
+    let calculatedGrossMargin = revenue > 0 ? ((grossProfit / revenue) * 100) : 0;
+    const grossMargin = grossMarginFromData > 0 ? 
+      (grossMarginFromData < 1 ? grossMarginFromData * 100 : grossMarginFromData) : 
+      calculatedGrossMargin;
     const ebitdaMargin = ebitdaMarginFromData > 0 ? ebitdaMarginFromData : (revenue > 0 ? ((ebitda / revenue) * 100) : 0);
     const operatingMargin = revenue > 0 ? ((operatingIncome / revenue) * 100) : 0;
     const earningsBeforeTax = earningsBeforeTaxes > 0 ? earningsBeforeTaxes : (netIncome + taxes);

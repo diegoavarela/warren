@@ -6,6 +6,7 @@ import { ChartOptions } from 'chart.js';
 import { ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 import { HelpIcon } from '../HelpIcon';
 import { helpTopics } from '@/lib/help-content';
+import { useTranslation } from '@/lib/translations';
 import '@/lib/utils/chartSetup'; // Register Chart.js components
 
 interface ProfitMarginTrendsProps {
@@ -19,6 +20,7 @@ export function ProfitMarginTrendsChartJS({
   formatPercentage,
   locale = 'es-MX'
 }: ProfitMarginTrendsProps) {
+  const { t } = useTranslation(locale);
   
   // Defensive check
   if (!formatPercentage || !chartData || chartData.length === 0) {
@@ -30,7 +32,7 @@ export function ProfitMarginTrendsChartJS({
     labels: chartData.map(d => d.month),
     datasets: [
       {
-        label: 'Margen Bruto',
+        label: t('chart.grossMargin'),
         data: chartData.map(d => d.grossMargin),
         borderColor: '#10B981',
         backgroundColor: '#10B98120',
@@ -41,7 +43,7 @@ export function ProfitMarginTrendsChartJS({
         fill: true
       },
       {
-        label: 'Margen Neto',
+        label: t('chart.netMargin'),
         data: chartData.map(d => d.netMargin),
         borderColor: '#3B82F6',
         backgroundColor: '#3B82F620',
@@ -110,7 +112,7 @@ export function ProfitMarginTrendsChartJS({
               <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-white">
-              Tendencia de Márgenes de Beneficio
+              {t('profitMargin.trends.title')}
             </h3>
           </div>
           <HelpIcon 
@@ -132,7 +134,7 @@ export function ProfitMarginTrendsChartJS({
         <div className="grid grid-cols-2 gap-4 mt-6">
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">
-              Margen Bruto Promedio
+              {t('profitMargin.averageGross')}
             </p>
             <p className="text-xl font-bold text-green-600">
               {formatPercentage(chartData.reduce((sum, d) => sum + d.grossMargin, 0) / chartData.length)}
@@ -140,7 +142,7 @@ export function ProfitMarginTrendsChartJS({
           </div>
           <div className="text-center p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">
-              Margen Neto Promedio
+              {t('profitMargin.averageNet')}
             </p>
             <p className="text-xl font-bold text-blue-600">
               {formatPercentage(chartData.reduce((sum, d) => sum + d.netMargin, 0) / chartData.length)}

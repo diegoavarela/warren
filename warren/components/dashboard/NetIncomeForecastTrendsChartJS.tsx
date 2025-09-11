@@ -6,6 +6,7 @@ import { ChartOptions } from 'chart.js';
 import { CurrencyDollarIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import { HelpIcon } from '../HelpIcon';
 import { helpTopics } from '@/lib/help-content';
+import { useTranslation } from '@/lib/translations';
 import '@/lib/utils/chartSetup'; // Register Chart.js components
 
 interface DataPoint {
@@ -38,6 +39,7 @@ export function NetIncomeForecastTrendsChartJS({
   formatPercentage,
   locale = 'es-MX'
 }: NetIncomeForecastTrendsProps) {
+  const { t } = useTranslation(locale);
   
   const { chartData, forecastStats } = useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
@@ -68,7 +70,11 @@ export function NetIncomeForecastTrendsChartJS({
     for (let i = 1; i <= forecastMonths; i++) {
       const x = lastIndex + i;
       const y = slope * x + intercept;
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNames = [
+        t('months.jan'), t('months.feb'), t('months.mar'), t('months.apr'),
+        t('months.may'), t('months.jun'), t('months.jul'), t('months.aug'),
+        t('months.sep'), t('months.oct'), t('months.nov'), t('months.dec')
+      ];
       const currentMonth = actualData[lastIndex].month;
       const currentMonthIndex = monthNames.findIndex(m => currentMonth && currentMonth.includes(m.substring(0, 3)));
       const forecastMonthIndex = (currentMonthIndex + i) % 12;
@@ -97,7 +103,7 @@ export function NetIncomeForecastTrendsChartJS({
       labels: [...actualData.map(d => d.month), ...forecastPoints.map(d => d.month)],
       datasets: [
         {
-          label: 'Utilidad Neta Real',
+          label: t('forecast.actualNetIncome'),
           data: [...actualData.map(d => d.y), ...Array(forecastMonths).fill(null)],
           borderColor: '#10B981',
           backgroundColor: '#10B98120',
@@ -107,7 +113,7 @@ export function NetIncomeForecastTrendsChartJS({
           tension: 0.1
         },
         {
-          label: 'Pronóstico',
+          label: t('forecast.forecast'),
           data: [...Array(actualData.length - 1).fill(null), actualData[actualData.length - 1].y, ...forecastPoints.map(d => d.y)],
           borderColor: '#8B5CF6',
           backgroundColor: '#8B5CF620',
@@ -118,7 +124,7 @@ export function NetIncomeForecastTrendsChartJS({
           tension: 0.1
         },
         {
-          label: 'Línea de Tendencia',
+          label: t('chart.trendLine'),
           data: allPoints.map(d => slope * d.x + intercept),
           borderColor: '#6B7280',
           borderWidth: 1,
@@ -127,7 +133,7 @@ export function NetIncomeForecastTrendsChartJS({
           fill: false
         },
         {
-          label: 'Confianza Superior (95%)',
+          label: t('chart.upperConfidence'),
           data: upperBand,
           borderColor: '#8B5CF650',
           backgroundColor: '#8B5CF610',
@@ -136,7 +142,7 @@ export function NetIncomeForecastTrendsChartJS({
           fill: '+1'
         },
         {
-          label: 'Confianza Inferior (95%)',
+          label: t('chart.lowerConfidence'),
           data: lowerBand,
           borderColor: '#8B5CF650',
           backgroundColor: '#8B5CF610',
@@ -159,7 +165,7 @@ export function NetIncomeForecastTrendsChartJS({
     };
 
     return { chartData: chartJSData, forecastStats: stats };
-  }, [historicalData]);
+  }, [historicalData, t]);
 
   if (!chartData) {
     return <div>Loading...</div>;
@@ -221,7 +227,7 @@ export function NetIncomeForecastTrendsChartJS({
               <CurrencyDollarIcon className="h-6 w-6 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-white">
-              Tendencia de Utilidad Neta y Pronóstico a 6 Meses
+              {t('forecast.netIncome.title')}
             </h3>
           </div>
           <div className="flex items-center space-x-3">
@@ -234,7 +240,7 @@ export function NetIncomeForecastTrendsChartJS({
                 <ArrowTrendingDownIcon className="w-5 h-5" />
               )}
               <span className="font-bold text-sm">
-                {formatPercentage(currentTrendPercentage)} vs {locale?.startsWith('es') ? 'Mes Anterior' : 'Previous Month'}
+                {formatPercentage(currentTrendPercentage)} {t('chart.vsPreviousMonth')}
               </span>
             </div>
             <HelpIcon 
@@ -256,19 +262,19 @@ export function NetIncomeForecastTrendsChartJS({
         {/* Forecast Summary */}
         <div className="mt-6 grid grid-cols-3 gap-4 flex-shrink-0">
           <div className="bg-emerald-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">Tendencia Actual</p>
+            <p className="text-sm text-gray-600">{t('forecast.currentTrend')}</p>
             <p className="text-lg font-semibold text-emerald-900">
-              {currentTrendPercentage > 0 ? '↑' : currentTrendPercentage < 0 ? '↓' : '→'} {formatPercentage(Math.abs(currentTrendPercentage))} mensual
+              {currentTrendPercentage > 0 ? '↑' : currentTrendPercentage < 0 ? '↓' : '→'} {formatPercentage(Math.abs(currentTrendPercentage))} {t('forecast.monthly')}
             </p>
           </div>
           <div className="bg-green-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">Pronóstico 6 Meses</p>
+            <p className="text-sm text-gray-600">{t('forecast.sixMonthProjection')}</p>
             <p className="text-lg font-semibold text-green-900">
               {formatValue(forecastStats?.sixMonthValue || 0)}
             </p>
           </div>
           <div className="bg-purple-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">Rango de Confianza</p>
+            <p className="text-sm text-gray-600">{t('forecast.confidenceRange')}</p>
             <p className="text-lg font-semibold text-purple-900">
               ±{formatPercentage((forecastStats?.confidenceRange || 0) / 2 / (forecastStats?.sixMonthValue || 1) * 100)}
             </p>
