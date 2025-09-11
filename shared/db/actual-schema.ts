@@ -612,3 +612,152 @@ export type NewTier = typeof tiers.$inferInsert;
 // AI Usage Logs types
 export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
 export type NewAiUsageLog = typeof aiUsageLogs.$inferInsert;
+
+// QUICKBOOKS INTEGRATION TABLES
+
+// QuickBooks Connections - OAuth tokens and connection status
+export const quickbooksConnections = pgTable("quickbooks_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: 'cascade' }).notNull(),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  qbCompanyId: varchar("qb_company_id", { length: 100 }).notNull(),
+  qbCompanyName: varchar("qb_company_name", { length: 255 }),
+  qbBaseUrl: varchar("qb_base_url", { length: 255 }), // Sandbox vs Production
+  accessToken: text("access_token").notNull(), // Store encrypted
+  refreshToken: text("refresh_token").notNull(), // Store encrypted
+  tokenExpiresAt: timestamp("token_expires_at").notNull(),
+  refreshExpiresAt: timestamp("refresh_expires_at").notNull(),
+  scope: varchar("scope", { length: 255 }), // QB permissions granted
+  syncEnabled: boolean("sync_enabled").default(true),
+  autoSync: boolean("auto_sync").default(false), // Auto sync on schedule
+  syncFrequency: varchar("sync_frequency", { length: 50 }).default("daily"), // hourly, daily, weekly
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: varchar("last_sync_status", { length: 50 }).default("pending"), // pending, success, failed
+  lastSyncError: text("last_sync_error"),
+  connectionStatus: varchar("connection_status", { length: 50 }).default("active"), // active, expired, revoked
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyQB: unique().on(table.companyId, table.qbCompanyId),
+  orgIdx: unique().on(table.organizationId, table.createdAt),
+}));
+
+// QuickBooks Data Mappings - Map QB accounts to Warren categories
+export const quickbooksDataMappings = pgTable("quickbooks_data_mappings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id").references(() => quickbooksConnections.id, { onDelete: 'cascade' }).notNull(),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  reportType: varchar("report_type", { length: 50 }).notNull(), // 'pnl', 'cashflow', 'balance_sheet'
+  qbAccountId: varchar("qb_account_id", { length: 100 }),
+  qbAccountName: varchar("qb_account_name", { length: 255 }),
+  qbAccountType: varchar("qb_account_type", { length: 100 }), // Income, Expense, Asset, etc.
+  qbAccountSubType: varchar("qb_account_sub_type", { length: 100 }), // SalesOfProductIncome, etc.
+  warrenCategory: varchar("warren_category", { length: 100 }).notNull(), // revenue, cogs, opex, etc.
+  warrenSubcategory: varchar("warren_subcategory", { length: 100 }), // Detailed subcategory
+  mappingRules: jsonb("mapping_rules"), // Custom transformation rules
+  transformationFactor: decimal("transformation_factor", { precision: 10, scale: 4 }).default('1.0'), // Multiply by factor
+  isAutoDetected: boolean("is_auto_detected").default(false), // Was this mapping auto-detected?
+  isActive: boolean("is_active").default(true),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueConnectionAccount: unique().on(table.connectionId, table.qbAccountId, table.reportType),
+  connectionIdx: unique().on(table.connectionId, table.createdAt),
+}));
+
+// QuickBooks Sync Logs - Track all sync operations
+export const quickbooksSyncLogs = pgTable("quickbooks_sync_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id").references(() => quickbooksConnections.id, { onDelete: 'cascade' }).notNull(),
+  syncType: varchar("sync_type", { length: 50 }).notNull(), // 'manual', 'scheduled', 'webhook', 'initial'
+  reportType: varchar("report_type", { length: 50 }).notNull(), // 'pnl', 'cashflow', 'balance_sheet', 'all'
+  status: varchar("status", { length: 50 }).notNull(), // 'started', 'in_progress', 'completed', 'failed', 'partial'
+  recordsProcessed: integer("records_processed").default(0),
+  recordsCreated: integer("records_created").default(0),
+  recordsUpdated: integer("records_updated").default(0),
+  recordsSkipped: integer("records_skipped").default(0),
+  startDate: date("start_date"), // Report period start
+  endDate: date("end_date"), // Report period end
+  dataSize: integer("data_size"), // Size of data processed in bytes
+  errorMessage: text("error_message"),
+  errorDetails: jsonb("error_details"), // Detailed error information
+  qbRequestId: varchar("qb_request_id", { length: 100 }), // QB API request ID for debugging
+  syncDurationMs: integer("sync_duration_ms"),
+  triggeredBy: uuid("triggered_by").references(() => users.id), // Who triggered the sync
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  connectionIdx: unique().on(table.connectionId, table.createdAt),
+  statusIdx: unique().on(table.status, table.createdAt),
+}));
+
+// QuickBooks Webhooks - Track webhook notifications from QB
+export const quickbooksWebhooks = pgTable("quickbooks_webhooks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id").references(() => quickbooksConnections.id, { onDelete: 'cascade' }),
+  webhookId: varchar("webhook_id", { length: 100 }), // QB webhook ID
+  eventType: varchar("event_type", { length: 100 }).notNull(), // CREATE, UPDATE, DELETE, MERGE
+  entityName: varchar("entity_name", { length: 100 }).notNull(), // Customer, Invoice, Item, etc.
+  entityId: varchar("entity_id", { length: 100 }), // QB entity ID
+  lastUpdated: timestamp("last_updated"), // When the entity was last updated in QB
+  payload: jsonb("payload").notNull(), // Full webhook payload
+  processed: boolean("processed").default(false),
+  processedAt: timestamp("processed_at"),
+  processingError: text("processing_error"),
+  shouldTriggerSync: boolean("should_trigger_sync").default(false), // Should this trigger a data sync?
+  receivedAt: timestamp("received_at").defaultNow(),
+}, (table) => ({
+  connectionIdx: unique().on(table.connectionId, table.receivedAt),
+  entityIdx: unique().on(table.entityName, table.entityId, table.receivedAt),
+}));
+
+// QuickBooks Company Settings - QB-specific configuration per company
+export const quickbooksCompanySettings = pgTable("quickbooks_company_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id").references(() => quickbooksConnections.id, { onDelete: 'cascade' }).notNull(),
+  settingKey: varchar("setting_key", { length: 100 }).notNull(),
+  settingValue: jsonb("setting_value").notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }).default("general"), // sync, mapping, reporting, etc.
+  isInherited: boolean("is_inherited").default(false), // Inherited from organization
+  updatedBy: uuid("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueConnectionSetting: unique().on(table.connectionId, table.settingKey),
+}));
+
+// QuickBooks Reports Cache - Cache QB report data to reduce API calls
+export const quickbooksReportsCache = pgTable("quickbooks_reports_cache", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id").references(() => quickbooksConnections.id, { onDelete: 'cascade' }).notNull(),
+  reportType: varchar("report_type", { length: 50 }).notNull(),
+  reportPeriod: varchar("report_period", { length: 100 }).notNull(), // "2025-01", "2025-Q1", etc.
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  reportData: jsonb("report_data").notNull(), // Raw QB report JSON
+  transformedData: jsonb("transformed_data"), // Warren-formatted data
+  cacheKey: varchar("cache_key", { length: 255 }).notNull(), // For quick lookups
+  ttlMinutes: integer("ttl_minutes").default(60), // Cache TTL in minutes
+  expiresAt: timestamp("expires_at").notNull(),
+  isStale: boolean("is_stale").default(false), // Mark as stale if underlying data changed
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueCacheKey: unique().on(table.cacheKey),
+  connectionPeriodIdx: unique().on(table.connectionId, table.reportType, table.reportPeriod),
+}));
+
+// Export QuickBooks types
+export type QuickBooksConnection = typeof quickbooksConnections.$inferSelect;
+export type NewQuickBooksConnection = typeof quickbooksConnections.$inferInsert;
+export type QuickBooksDataMapping = typeof quickbooksDataMappings.$inferSelect;
+export type NewQuickBooksDataMapping = typeof quickbooksDataMappings.$inferInsert;
+export type QuickBooksSyncLog = typeof quickbooksSyncLogs.$inferSelect;
+export type NewQuickBooksSyncLog = typeof quickbooksSyncLogs.$inferInsert;
+export type QuickBooksWebhook = typeof quickbooksWebhooks.$inferSelect;
+export type NewQuickBooksWebhook = typeof quickbooksWebhooks.$inferInsert;
+export type QuickBooksCompanySetting = typeof quickbooksCompanySettings.$inferSelect;
+export type NewQuickBooksCompanySetting = typeof quickbooksCompanySettings.$inferInsert;
+export type QuickBooksReportsCache = typeof quickbooksReportsCache.$inferSelect;
+export type NewQuickBooksReportsCache = typeof quickbooksReportsCache.$inferInsert;

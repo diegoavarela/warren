@@ -104,6 +104,13 @@ async function initializeDatabase() {
     organizationFeatures: schema.organizationFeatures,
     featureRequests: schema.featureRequests,
     auditLogs: schema.auditLogs,
+    // QuickBooks tables
+    quickbooksConnections: schema.quickbooksConnections,
+    quickbooksDataMappings: schema.quickbooksDataMappings,
+    quickbooksSyncLogs: schema.quickbooksSyncLogs,
+    quickbooksWebhooks: schema.quickbooksWebhooks,
+    quickbooksCompanySettings: schema.quickbooksCompanySettings,
+    quickbooksReportsCache: schema.quickbooksReportsCache,
     // Drizzle operations
     eq: drizzleOps.eq,
     desc: drizzleOps.desc,
@@ -153,6 +160,13 @@ let featureFlags: any = null;
 let organizationFeatures: any = null;
 let featureRequests: any = null;
 let auditLogs: any = null;
+// QuickBooks variables
+let quickbooksConnections: any = null;
+let quickbooksDataMappings: any = null;
+let quickbooksSyncLogs: any = null;
+let quickbooksWebhooks: any = null;
+let quickbooksCompanySettings: any = null;
+let quickbooksReportsCache: any = null;
 let eq: any = () => {};
 let desc: any = () => {};
 let asc: any = () => {};
@@ -188,6 +202,13 @@ if (isServer && hasRealDatabase) {
     organizationFeatures = dbConnection.organizationFeatures;
     featureRequests = dbConnection.featureRequests;
     auditLogs = dbConnection.auditLogs;
+    // QuickBooks tables
+    quickbooksConnections = dbConnection.quickbooksConnections;
+    quickbooksDataMappings = dbConnection.quickbooksDataMappings;
+    quickbooksSyncLogs = dbConnection.quickbooksSyncLogs;
+    quickbooksWebhooks = dbConnection.quickbooksWebhooks;
+    quickbooksCompanySettings = dbConnection.quickbooksCompanySettings;
+    quickbooksReportsCache = dbConnection.quickbooksReportsCache;
     eq = dbConnection.eq;
     desc = dbConnection.desc;
     asc = dbConnection.asc;
@@ -223,6 +244,13 @@ export {
   organizationFeatures,
   featureRequests,
   auditLogs,
+  // QuickBooks exports
+  quickbooksConnections,
+  quickbooksDataMappings,
+  quickbooksSyncLogs,
+  quickbooksWebhooks,
+  quickbooksCompanySettings,
+  quickbooksReportsCache,
   eq,
   desc,
   asc,
