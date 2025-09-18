@@ -1392,6 +1392,8 @@ export const translations = {
     'config.form.row': 'Row',
     'config.form.rowPlaceholder': 'Row number',
     'config.datarows.requiredLabel': 'Required',
+    'config.datarows.title': 'Data Row Mapping',
+    'config.datarows.required': 'required',
 
     // New Configuration Page
     'config.new.title': 'New Configuration',
