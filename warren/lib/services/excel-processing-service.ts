@@ -1,10 +1,10 @@
 import { db } from '@/lib/db';
-import { 
-  financialDataFiles, 
+import {
+  financialDataFiles,
   processedFinancialData,
-  companyConfigurations 
+  companyConfigurations
 } from '@/lib/db';
-import { 
+import {
   CashFlowConfiguration,
   PLConfiguration,
   ProcessedData,
@@ -14,9 +14,61 @@ import {
 type Configuration = CashFlowConfiguration | PLConfiguration;
 import { eq } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
+import * as fs from 'fs';
+
+// Debug logging interface
+interface DebugLog {
+  timestamp: string;
+  filename: string;
+  configId: string;
+  sheetName: string;
+  configuration: any;
+  periodMappings: any[];
+  periodMetadata: any;
+  dataExtractions: any[];
+  transformations: any[];
+  finalData: any;
+}
 
 export class ExcelProcessingService {
-  
+
+  private debugLog: DebugLog | null = null;
+
+  /**
+   * Initialize debug logging for this processing session
+   */
+  private initializeDebugLog(filename: string, configId: string, sheetName: string, configuration: any): void {
+    this.debugLog = {
+      timestamp: new Date().toISOString(),
+      filename,
+      configId,
+      sheetName,
+      configuration: JSON.parse(JSON.stringify(configuration)),
+      periodMappings: [],
+      periodMetadata: {},
+      dataExtractions: [],
+      transformations: [],
+      finalData: {}
+    };
+
+    console.log('🔍 [DEBUG] Starting Excel processing debug session for:', filename);
+  }
+
+  /**
+   * Write debug log to file
+   */
+  private writeDebugLog(): void {
+    if (!this.debugLog) return;
+
+    try {
+      const debugFilename = `/tmp/excel_processing_debug_${Date.now()}.json`;
+      fs.writeFileSync(debugFilename, JSON.stringify(this.debugLog, null, 2));
+      console.log('📝 [DEBUG] Debug log written to:', debugFilename);
+    } catch (error) {
+      console.error('❌ [DEBUG] Failed to write debug log:', error);
+    }
+  }
+
   /**
    * Parse an Excel file from database content using a specific configuration
    */
@@ -32,20 +84,21 @@ export class ExcelProcessingService {
         .from(companyConfigurations)
         .where(eq(companyConfigurations.id, configId))
         .limit(1);
-      
+
       if (configResult.length === 0) {
         throw new Error('Configuration not found');
       }
-      
+
       const configData = configResult[0].configJson as any;
       const configuration = configData as Configuration;
-      
+
       // Convert base64 to buffer and read Excel file
       const buffer = Buffer.from(fileContentBase64, 'base64');
       const workbook = XLSX.read(buffer, { type: 'buffer' });
-      
+
       // Use smart detection for sheet selection (same logic as other methods)
       let sheetName = workbook.SheetNames[0]; // Default to first sheet
+
       
       // Check if there are sheets with names that suggest cash flow data
       const dataSheetNames = workbook.SheetNames.filter(name => 
@@ -219,7 +272,7 @@ export class ExcelProcessingService {
    * Process cash flow data from Excel worksheet
    */
   private async processCashFlowData(
-    worksheet: XLSX.WorkSheet, 
+    worksheet: XLSX.WorkSheet,
     configuration: CashFlowConfiguration
   ): Promise<ProcessedData> {
     const structure = configuration.structure;
@@ -233,11 +286,11 @@ export class ExcelProcessingService {
       },
       metadata: configuration.metadata
     };
-    
+
     // CONFIGURATION-DRIVEN: Use ONLY explicit mapping - NO AUTO-DETECTION
     // Check for new format (periodMapping) or convert from legacy format (periodsRow + periodsRange)
     let periodMapping = structure.periodMapping;
-    
+
     if (!periodMapping || periodMapping.length === 0) {
       // Try to convert from legacy format
       if (structure.periodsRow && structure.periodsRange) {
@@ -246,13 +299,38 @@ export class ExcelProcessingService {
         throw new Error('Configuration must have explicit period mapping. Auto-detection is disabled.');
       }
     }
-    
+
+    // Log period mapping for debugging
+    if (this.debugLog) {
+      this.debugLog.periodMappings = periodMapping.map(mapping => ({
+        column: mapping.column,
+        period: mapping.period.label,
+        fullPeriod: mapping.period
+      }));
+      console.log('🔍 [DEBUG] Period mappings extracted:', this.debugLog.periodMappings);
+    }
+
     const periods = this.extractPeriodsFromMapping(periodMapping);
     processedData.periods = periods;
+
+    console.log('🔍 [DEBUG] Extracted periods:', periods);
     
     // Extract core data rows using explicit column mapping
     for (const [fieldName, rowNumber] of Object.entries(structure.dataRows)) {
       const rowData = this.extractRowDataFromMapping(worksheet, rowNumber, periodMapping);
+
+      // Log data extraction for debugging
+      if (this.debugLog) {
+        this.debugLog.dataExtractions.push({
+          type: 'dataRow',
+          fieldName,
+          rowNumber,
+          extractedValues: rowData,
+          total: rowData.reduce((sum, val) => (sum || 0) + (val || 0), 0)
+        });
+        console.log(`🔍 [DEBUG] Extracted ${fieldName} from row ${rowNumber}:`, rowData);
+      }
+
       processedData.dataRows[fieldName] = {
         label: this.getDataRowLabel(fieldName), // Use predefined labels instead of Excel cell values
         values: rowData,
@@ -265,6 +343,19 @@ export class ExcelProcessingService {
     
     for (const [categoryKey, category] of Object.entries(structure.categories.inflows || {})) {
       const categoryValues = this.extractRowDataFromMapping(worksheet, category.row, periodMapping);
+
+      // Log inflow category extraction
+      if (this.debugLog) {
+        this.debugLog.dataExtractions.push({
+          type: 'inflowCategory',
+          categoryKey,
+          rowNumber: category.row,
+          extractedValues: categoryValues,
+          total: categoryValues.reduce((sum, val) => (sum || 0) + (val || 0), 0)
+        });
+        console.log(`🔍 [DEBUG] Extracted inflow category ${categoryKey} from row ${category.row}:`, categoryValues);
+      }
+
       processedData.categories.inflows[categoryKey] = {
         label: categoryKey, // Use category key as label
         values: categoryValues,
@@ -288,6 +379,19 @@ export class ExcelProcessingService {
     // Extract outflows categories using explicit column mapping
     for (const [categoryKey, category] of Object.entries(structure.categories.outflows || {})) {
       const categoryValues = this.extractRowDataFromMapping(worksheet, category.row, periodMapping);
+
+      // Log outflow category extraction
+      if (this.debugLog) {
+        this.debugLog.dataExtractions.push({
+          type: 'outflowCategory',
+          categoryKey,
+          rowNumber: category.row,
+          extractedValues: categoryValues,
+          total: categoryValues.reduce((sum, val) => (sum || 0) + (val || 0), 0)
+        });
+        console.log(`🔍 [DEBUG] Extracted outflow category ${categoryKey} from row ${category.row}:`, categoryValues);
+      }
+
       processedData.categories.outflows[categoryKey] = {
         label: categoryKey, // Use category key as label
         values: categoryValues,
@@ -317,11 +421,25 @@ export class ExcelProcessingService {
     // Add period metadata for actual vs projected distinction (cash flow only)
     if (configuration.type === 'cashflow') {
       processedData.periodMetadata = this.generatePeriodMetadata(
-        periodMapping, 
+        periodMapping,
         structure.lastActualPeriod
       );
+
+      // Log period metadata generation
+      if (this.debugLog) {
+        this.debugLog.periodMetadata = processedData.periodMetadata;
+        console.log('🔍 [DEBUG] Generated period metadata:', processedData.periodMetadata);
+        console.log('🔍 [DEBUG] Last actual period configuration:', structure.lastActualPeriod);
+      }
     }
-    
+
+    // Store final processed data and write debug log
+    if (this.debugLog) {
+      this.debugLog.finalData = JSON.parse(JSON.stringify(processedData));
+      this.writeDebugLog();
+      console.log('🔍 [DEBUG] Processing complete, debug log written');
+    }
+
     return processedData;
   }
   
@@ -618,25 +736,43 @@ export class ExcelProcessingService {
    */
   private extractRowDataFromMapping(worksheet: XLSX.WorkSheet, row: number, periodMapping: any[]): (number | null)[] {
     const data: (number | null)[] = [];
-    
+    const cellExtractions: any[] = [];
+
     // Sort mapping by column to ensure correct order
     const sortedMapping = [...periodMapping].sort((a, b) => {
       const colA = a.column.charCodeAt(0);
       const colB = b.column.charCodeAt(0);
       return colA - colB;
     });
-    
+
     // Extract data from exact columns specified in mapping
     for (const mapping of sortedMapping) {
       const columnIndex = mapping.column.charCodeAt(0) - 65; // Convert A, B, C to 0, 1, 2
-      const value = this.getCellValue(worksheet, row, columnIndex);
-      
-      // Debug logging removed to prevent console flooding
-      
-      // Only accept numeric values, convert to null if not a number
-      data.push(typeof value === 'number' ? value : null);
+      const rawValue = this.getCellValue(worksheet, row, columnIndex);
+      const processedValue = typeof rawValue === 'number' ? rawValue : null;
+
+      // Log detailed cell extraction for debugging
+      cellExtractions.push({
+        column: mapping.column,
+        columnIndex,
+        period: mapping.period.label,
+        rawValue,
+        processedValue,
+        cellAddress: `${mapping.column}${row}`
+      });
+
+      data.push(processedValue);
     }
-    
+
+    // Add cell extractions to debug log if available
+    if (this.debugLog) {
+      this.debugLog.dataExtractions.push({
+        type: 'cellExtraction',
+        row,
+        cellExtractions
+      });
+    }
+
     return data;
   }
 
@@ -732,36 +868,59 @@ export class ExcelProcessingService {
    */
   private calculateDerivedFields(processedData: ProcessedData): void {
     const periods = processedData.periods;
-    
+
     // Check if netCashFlow needs to be calculated
-    const netCashFlowMissing = !processedData.dataRows.netCashFlow || 
+    const netCashFlowMissing = !processedData.dataRows.netCashFlow ||
       processedData.dataRows.netCashFlow.values.every(v => v === 0 || v === null || v === undefined);
-    
+
     if (netCashFlowMissing) {
-      
-      // Initialize netCashFlow if it doesn't exist
-      if (!processedData.dataRows.netCashFlow) {
-        processedData.dataRows.netCashFlow = {
-          label: 'Net Cash Flow',
-          values: new Array(periods.length).fill(0),
-          total: 0
-        };
-      }
-      
-      // Calculate Net Cash Flow = Total Inflows - Total Outflows
-      for (let periodIndex = 0; periodIndex < periods.length; periodIndex++) {
-        const inflow = processedData.dataRows.totalInflows?.values[periodIndex] || 0;
-        const outflow = processedData.dataRows.totalOutflows?.values[periodIndex] || 0;
-        processedData.dataRows.netCashFlow.values[periodIndex] = inflow - outflow;
-      }
-      
-      // Calculate total across all periods
-      processedData.dataRows.netCashFlow.total = 
-        processedData.dataRows.netCashFlow.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
-      for (let i = 0; i < Math.min(3, periods.length); i++) {
-        const inflow = processedData.dataRows.totalInflows?.values[i] || 0;
-        const outflow = processedData.dataRows.totalOutflows?.values[i] || 0;
-        const calculated = inflow - outflow;
+      console.log(`🔍 [DEBUG] netCashFlow missing, checking if monthlyGeneration exists...`);
+
+      // If monthlyGeneration exists, use it for netCashFlow (they should be the same)
+      if (processedData.dataRows.monthlyGeneration &&
+          processedData.dataRows.monthlyGeneration.values.some(v => v !== 0 && v !== null && v !== undefined)) {
+
+        console.log(`✅ [DEBUG] Using monthlyGeneration values for netCashFlow`);
+        console.log(`📊 [DEBUG] monthlyGeneration values: ${JSON.stringify(processedData.dataRows.monthlyGeneration.values)}`);
+
+        // Initialize netCashFlow if it doesn't exist
+        if (!processedData.dataRows.netCashFlow) {
+          processedData.dataRows.netCashFlow = {
+            label: 'Net Cash Flow',
+            values: new Array(periods.length).fill(0),
+            total: 0
+          };
+        }
+
+        // Copy monthlyGeneration values to netCashFlow
+        processedData.dataRows.netCashFlow.values = [...processedData.dataRows.monthlyGeneration.values];
+        processedData.dataRows.netCashFlow.total = processedData.dataRows.monthlyGeneration.total;
+
+        console.log(`✅ [DEBUG] netCashFlow now matches monthlyGeneration: ${JSON.stringify(processedData.dataRows.netCashFlow.values)}`);
+
+      } else {
+        // Fallback: Calculate Net Cash Flow = Total Inflows - Total Outflows (only if monthlyGeneration not available)
+        console.log(`⚠️  [DEBUG] monthlyGeneration not available, calculating netCashFlow from inflows-outflows`);
+
+        // Initialize netCashFlow if it doesn't exist
+        if (!processedData.dataRows.netCashFlow) {
+          processedData.dataRows.netCashFlow = {
+            label: 'Net Cash Flow',
+            values: new Array(periods.length).fill(0),
+            total: 0
+          };
+        }
+
+        // Calculate Net Cash Flow = Total Inflows - Total Outflows
+        for (let periodIndex = 0; periodIndex < periods.length; periodIndex++) {
+          const inflow = processedData.dataRows.totalInflows?.values[periodIndex] || 0;
+          const outflow = processedData.dataRows.totalOutflows?.values[periodIndex] || 0;
+          processedData.dataRows.netCashFlow.values[periodIndex] = inflow - outflow;
+        }
+
+        // Calculate total across all periods
+        processedData.dataRows.netCashFlow.total =
+          processedData.dataRows.netCashFlow.values.reduce((sum, val) => (sum || 0) + (val || 0), 0) as number;
       }
     }
     
@@ -1051,7 +1210,16 @@ export class ExcelProcessingService {
       }
       
       const worksheet = workbook.Sheets[sheetName];
-      
+
+      // Initialize debug logging for processExcelWithConfiguration
+      this.initializeDebugLog(`live_processing_${Date.now()}.xlsx`, 'live_config', sheetName, configuration);
+
+      console.log('🔍 [DEBUG] Live processing configuration loaded:', {
+        type: configuration.type,
+        lastActualPeriod: configuration.structure?.lastActualPeriod,
+        sheetSelected: sheetName
+      });
+
       // Process using the configuration
       if (type === 'cashflow') {
         return this.processCashFlowData(worksheet, configuration);
@@ -1071,11 +1239,12 @@ export class ExcelProcessingService {
    * Generate period metadata for actual vs projected distinction
    */
   private generatePeriodMetadata(
-    periodMapping: any[], 
+    periodMapping: any[],
     lastActualPeriod?: any
   ): { [periodLabel: string]: { isActual: boolean; isProjected: boolean } } {
     const periodMetadata: { [periodLabel: string]: { isActual: boolean; isProjected: boolean } } = {};
-    
+    const debugInfo: any[] = [];
+
     if (!lastActualPeriod) {
       // No actual period set, all periods are projected
       periodMapping.forEach(mapping => {
@@ -1083,27 +1252,68 @@ export class ExcelProcessingService {
           isActual: false,
           isProjected: true
         };
+        debugInfo.push({
+          period: mapping.period.label,
+          reason: 'No lastActualPeriod set',
+          isActual: false,
+          isProjected: true
+        });
       });
+
+      if (this.debugLog) {
+        this.debugLog.transformations.push({
+          type: 'periodMetadataGeneration',
+          reason: 'No lastActualPeriod configured',
+          lastActualPeriod: null,
+          periodDecisions: debugInfo
+        });
+        console.log('🔍 [DEBUG] Period metadata: All periods marked as projected (no lastActualPeriod)');
+      }
+
       return periodMetadata;
     }
-    
+
     // Sort periods by date to determine which are actual vs projected
     const sortedPeriods = periodMapping.sort((a, b) => {
       return this.getPeriodSortKey(a.period) - this.getPeriodSortKey(b.period);
     });
-    
+
     const lastActualSortKey = this.getPeriodSortKey(lastActualPeriod);
-    
+
     sortedPeriods.forEach(mapping => {
       const periodSortKey = this.getPeriodSortKey(mapping.period);
       const isActual = periodSortKey <= lastActualSortKey;
-      
+
       periodMetadata[mapping.period.label] = {
         isActual: isActual,
         isProjected: !isActual
       };
+
+      debugInfo.push({
+        period: mapping.period.label,
+        periodData: mapping.period,
+        periodSortKey,
+        lastActualSortKey,
+        comparison: `${periodSortKey} <= ${lastActualSortKey}`,
+        isActual,
+        isProjected: !isActual
+      });
     });
-    
+
+    if (this.debugLog) {
+      this.debugLog.transformations.push({
+        type: 'periodMetadataGeneration',
+        lastActualPeriod,
+        lastActualSortKey,
+        periodDecisions: debugInfo
+      });
+      console.log('🔍 [DEBUG] Period metadata generation details:', {
+        lastActualPeriod,
+        lastActualSortKey,
+        decisions: debugInfo
+      });
+    }
+
     return periodMetadata;
   }
 

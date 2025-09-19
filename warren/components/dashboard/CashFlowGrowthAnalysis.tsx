@@ -223,9 +223,10 @@ export function CashFlowGrowthAnalysis({
   }
 
   // YTD calculations using actual period count - matches Resumen Anual Acumulado
-  const ytdNetFlow = chartData.slice(0, actualPeriodCount).reduce((sum, d) => sum + (d.netCashFlow || 0), 0);
   const ytdInflows = chartData.slice(0, actualPeriodCount).reduce((sum, d) => sum + (d.totalInflows || 0), 0);
   const ytdOutflows = chartData.slice(0, actualPeriodCount).reduce((sum, d) => sum + (d.totalOutflows || 0), 0);
+  // YTD Net Flow should always be calculated as inflows - outflows for consistency
+  const ytdNetFlow = ytdInflows - ytdOutflows;
 
   // Chart.js options - Mixed chart with bars and line for final balance
   const chartOptions = useMemo(() => ({

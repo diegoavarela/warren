@@ -35,7 +35,7 @@ export async function GET(
     // Check cache first
     const cacheKey = cacheService.generateKey.cashflowData(params.companyId);
     const cachedData = cacheService.get(cacheKey);
-    
+
     if (cachedData) {
       return NextResponse.json({
         ...cachedData,
@@ -189,7 +189,7 @@ export async function GET(
         configurationName: cashFlowConfig.name,
         periodCount: processedData.periods?.length || 0,
         currency: cashFlowConfig.configJson?.metadata?.currency || 'USD',
-        fromCache: !!cachedData
+        fromCache: false
       }
     );
     
