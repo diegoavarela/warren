@@ -95,21 +95,18 @@ if (!isServer) {
     'DATABASE_URL environment variable is not set. Please configure your database connection in .env.local'
   );
 } else {
-  // Use real database
-  const { drizzle } = require("drizzle-orm/neon-http");
-  const { neon } = require("@neondatabase/serverless");
+  // Use real database with PostgreSQL
+  const { drizzle } = require("drizzle-orm/postgres-js");
+  const postgres = require("postgres");
   const { eq: realEq, desc: realDesc, count: realCount, and: realAnd, gte: realGte, like: realLike, or: realOr, sql: realSql } = require("drizzle-orm");
-  
+
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL environment variable is required");
   }
-  
-  // Configure Neon connection with timeout settings
-  const neonSql = neon(process.env.DATABASE_URL, {
-    fetchConnectionCache: true,
-    fullResults: false
-  });
-  db = drizzle(neonSql, { schema });
+
+  // Create PostgreSQL connection
+  const queryClient = postgres(process.env.DATABASE_URL);
+  db = drizzle(queryClient, { schema });
   
   // Use real schema tables
   organizations = schema.organizations;
