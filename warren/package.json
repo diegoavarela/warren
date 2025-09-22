@@ -2,6 +2,7 @@
   "name": "warren-financial-parser",
   "version": "0.1.1",
   "private": true,
+  "_comment": "Trigger Vercel deployment - P&L unit conversion fix included",
   "scripts": {
     "dev": "next dev -p 4000",
     "build": "next build",
