@@ -31,8 +31,13 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Check cache first
+    // Clear cache to force fresh data with updated displayUnits
+    // TODO: Remove this cache clear after verifying the fix works
     const cacheKey = cacheService.generateKey.pnlData(params.companyId);
+    cacheService.delete(cacheKey);
+    console.log('🔍 [API DEBUG] Cache cleared for key:', cacheKey, 'at', new Date().toISOString());
+
+    // Check cache first
     const cachedData = cacheService.get(cacheKey);
     
     if (cachedData) {
@@ -105,19 +110,34 @@ export async function GET(
     );
     // P&L processing completed successfully
     
+    // Debug: Log the configuration units before sending to dashboard
+    const configUnits = pnlConfig.configJson?.metadata?.units || 'normal';
+    console.log('🔍 [API DEBUG] Original configuration units from config:', configUnits);
+    console.log('🔍 [API DEBUG] Available dataRows keys:', Object.keys(processedData?.dataRows || {}));
+    console.log('🔍 [API DEBUG] Revenue data structure:', processedData?.dataRows?.revenue);
+    console.log('🔍 [API DEBUG] Sample revenue values (first 3):',
+      processedData?.periods?.slice(0, 3)?.map((period: string) =>
+        `${period}: ${processedData?.dataRows?.revenue?.values?.[processedData.periods.indexOf(period)] || 'N/A'}`
+      ).join(', ') || 'no periods'
+    );
+
+    // IMPORTANT: The processedData is now transformed to base units by transformData() method
+    // So we should report units as 'normal' regardless of original configuration
+    console.log('🔍 [API DEBUG] Data has been transformed to base units, reporting as "normal"');
+
     // Transform to dashboard format
     const response = {
       success: true,
       data: {
         data: processedData,
         currency: pnlConfig.configJson?.metadata?.currency || 'USD',
-        displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
+        displayUnits: 'normal', // Data is now in base units after transformation
         // Include the processed data structure directly for easier access
         ...processedData,
         metadata: {
           currency: pnlConfig.configJson?.metadata?.currency || 'USD',
-          units: pnlConfig.configJson?.metadata?.units || 'normal',
-          displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
+          units: 'normal', // Data is now in base units after transformation
+          displayUnits: 'normal', // Data is now in base units after transformation
           numberFormat: pnlConfig.configJson?.metadata?.numberFormat || {
             decimalSeparator: '.',
             thousandsSeparator: ',',

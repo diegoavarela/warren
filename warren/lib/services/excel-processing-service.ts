@@ -440,7 +440,10 @@ export class ExcelProcessingService {
       console.log('🔍 [DEBUG] Processing complete, debug log written');
     }
 
-    return processedData;
+    // Apply data transformations (unit conversions, etc.)
+    const transformedData = this.transformData(processedData);
+
+    return transformedData;
   }
   
   /**
@@ -520,8 +523,11 @@ export class ExcelProcessingService {
         };
       }
     }
-    
-    return processedData;
+
+    // Apply data transformations (unit conversions, etc.)
+    const transformedData = this.transformData(processedData);
+
+    return transformedData;
   }
   
   /**
@@ -968,11 +974,19 @@ export class ExcelProcessingService {
    * Apply data transformations based on configuration metadata
    */
   private transformData(data: ProcessedData): ProcessedData {
+    console.log('🔧 [TRANSFORM] Starting data transformation with units:', data.metadata.units);
+
     // Apply unit conversions
     if (data.metadata.units === 'thousands') {
+      console.log('🔧 [TRANSFORM] Converting from thousands to base units (multiplying by 1000)');
       this.multiplyNumericValues(data, 1000);
+      console.log('🔧 [TRANSFORM] Transformation complete - data is now in base units');
     } else if (data.metadata.units === 'millions') {
+      console.log('🔧 [TRANSFORM] Converting from millions to base units (multiplying by 1000000)');
       this.multiplyNumericValues(data, 1000000);
+      console.log('🔧 [TRANSFORM] Transformation complete - data is now in base units');
+    } else {
+      console.log('🔧 [TRANSFORM] No unit conversion needed, units already in base format:', data.metadata.units);
     }
     
     // Apply any other transformations here
