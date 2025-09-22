@@ -31,8 +31,13 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Check cache first
+    // Clear cache to force fresh data with updated displayUnits
+    // TODO: Remove this cache clear after verifying the fix works
     const cacheKey = cacheService.generateKey.pnlData(params.companyId);
+    cacheService.delete(cacheKey);
+    console.log('🔍 [API DEBUG] Cache cleared for key:', cacheKey, 'at', new Date().toISOString());
+
+    // Check cache first
     const cachedData = cacheService.get(cacheKey);
     
     if (cachedData) {
@@ -105,19 +110,47 @@ export async function GET(
     );
     // P&L processing completed successfully
     
+    // Debug: Log the configuration and processed data units
+    console.log('🔍 [API DEBUG] Raw configuration JSON:', JSON.stringify(pnlConfig.configJson, null, 2));
+    console.log('🔍 [API DEBUG] Configuration metadata:', JSON.stringify(pnlConfig.configJson?.metadata, null, 2));
+    const configUnits = pnlConfig.configJson?.metadata?.units || 'normal';
+    console.log('🔍 [API DEBUG] Original configuration units from config:', configUnits);
+    console.log('🔍 [API DEBUG] Processed data metadata:', JSON.stringify(processedData?.metadata, null, 2));
+    console.log('🔍 [API DEBUG] Sample revenue values (first 3):',
+      processedData?.periods?.slice(0, 3)?.map((period: string) =>
+        `${period}: ${processedData?.dataRows?.revenue?.values?.[processedData.periods.indexOf(period)] || 'N/A'}`
+      ).join(', ') || 'no periods'
+    );
+
+    // Get the transformation status from processed data
+    const originalUnits = processedData?.metadata?.originalUnits || configUnits;
+    const currentUnits = processedData?.metadata?.units || 'normal';
+    const wasTransformed = processedData?.metadata?.wasTransformed || false;
+
+    console.log('🔍 [API DEBUG] Units summary:');
+    console.log('  - Original units (from config):', configUnits);
+    console.log('  - Original units (stored):', originalUnits);
+    console.log('  - Current units (after transform):', currentUnits);
+    console.log('  - Was transformed:', wasTransformed);
+
     // Transform to dashboard format
     const response = {
       success: true,
       data: {
         data: processedData,
         currency: pnlConfig.configJson?.metadata?.currency || 'USD',
-        displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
+        // Pass the correct units information to dashboard
+        originalUnits: originalUnits, // What units the data was originally in
+        currentUnits: currentUnits, // What units the data is in now (after transformation)
+        displayUnits: currentUnits, // For backward compatibility, same as currentUnits
+        wasTransformed: wasTransformed,
         // Include the processed data structure directly for easier access
         ...processedData,
         metadata: {
           currency: pnlConfig.configJson?.metadata?.currency || 'USD',
-          units: pnlConfig.configJson?.metadata?.units || 'normal',
-          displayUnits: pnlConfig.configJson?.metadata?.units || 'normal',
+          units: currentUnits, // Current units (after transformation)
+          originalUnits: originalUnits, // Original units (before transformation)
+          displayUnits: currentUnits, // What units the data is actually in now
           numberFormat: pnlConfig.configJson?.metadata?.numberFormat || {
             decimalSeparator: '.',
             thousandsSeparator: ',',

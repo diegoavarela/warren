@@ -7,10 +7,10 @@
 
 import { db, eq, and, count } from '@/shared/db';
 import { organizations, users, companies, tiers, companyUsers, aiUsageLogs } from '@/shared/db/actual-schema';
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 
 // Initialize direct SQL connection for specific queries
-const sql = neon(process.env.DATABASE_URL!);
+const sql = postgres(process.env.DATABASE_URL!);
 
 // Types for tier enforcement
 export interface TierLimits {

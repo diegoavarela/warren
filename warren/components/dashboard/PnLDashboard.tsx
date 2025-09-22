@@ -150,6 +150,7 @@ interface PnLDashboardProps {
 
 const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, hybridParserData, onPeriodChange }: PnLDashboardProps) {
   const { t } = useTranslation(locale);
+  const { numberFormat: localeNumberFormat } = useLocale();
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
   const [comparisonPeriod, setComparisonPeriod] = useState<'lastMonth' | 'lastQuarter' | 'lastYear'>('lastMonth');
   const [activeBreakdown, setActiveBreakdown] = useState<'cogs' | 'opex' | null>(null);
@@ -253,19 +254,22 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
         setSelectedCurrency((apiData as any).currency);
       }
       
-      // Set display units from API
-      if ((apiData as any).displayUnits) {
-        
+      // Set units from API response
+      if ((apiData as any).currentUnits) {
+        // Use currentUnits (what the data is actually in now after any transformations)
+        setOriginalUnits((apiData as any).currentUnits);
+        console.log('🎯 [DASHBOARD] Set originalUnits to currentUnits from API:', (apiData as any).currentUnits);
+        console.log('🎯 [DASHBOARD] API also reported:');
+        console.log('  - originalUnits (before transform):', (apiData as any).originalUnits);
+        console.log('  - wasTransformed:', (apiData as any).wasTransformed);
+        // Don't automatically set display units - let the smart unit analysis decide
+        // or keep user's preference if they've set one
+      } else if ((apiData as any).displayUnits) {
+        // Fallback to legacy displayUnits field
         setOriginalUnits((apiData as any).displayUnits);
-        // Convert displayUnits to the format used in the UI
-        if ((apiData as any).displayUnits === 'thousands') {
-          setDisplayUnits('K');
-        } else if ((apiData as any).displayUnits === 'millions') {
-          setDisplayUnits('M');
-        } else {
-          setDisplayUnits('normal');
-        }
+        console.log('🎯 [DASHBOARD] Fallback: Set originalUnits to displayUnits from API:', (apiData as any).displayUnits);
       } else {
+        console.log('🎯 [DASHBOARD] No units information found in API response');
       }
     }
   }, [apiData]);
@@ -613,47 +617,60 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
   };
 
   const formatValue = useCallback((value: number): string => {
-    // 🔍 ULTRA-DEBUG: Log every formatting operation
-    
     // Handle edge cases
     if (!value || isNaN(value)) {
       return '0';
     }
-    
+
+    // Debug logging for first few calls
+    const shouldLog = Math.random() < 0.05; // Log ~5% of calls to avoid spam
+    if (shouldLog) {
+      console.log('💰 [FORMAT_VALUE] Debug:');
+      console.log('  - Input value:', value);
+      console.log('  - originalUnits:', originalUnits);
+      console.log('  - displayUnits:', displayUnits);
+    }
+
     let actualValue = value;
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
-    
-    // First, normalize the value to base units based on what unit the data comes in (originalUnits)
-    let normalizedValue = convertedValue;
-    
+
+    // Step 1: Convert from data units to base units
+    let baseValue = convertedValue;
     if (originalUnits === 'thousands') {
-      normalizedValue = convertedValue * 1000; // Convert from thousands to normal
+      baseValue = convertedValue * 1000; // Convert from thousands to base units
+      if (shouldLog) console.log('  - Converted from thousands:', convertedValue, '* 1000 =', baseValue);
     } else if (originalUnits === 'millions') {
-      normalizedValue = convertedValue * 1000000; // Convert from millions to normal
+      baseValue = convertedValue * 1000000; // Convert from millions to base units
+      if (shouldLog) console.log('  - Converted from millions:', convertedValue, '* 1000000 =', baseValue);
+    } else {
+      if (shouldLog) console.log('  - No unit conversion needed, originalUnits is:', originalUnits);
     }
-    // If originalUnits is 'normal' or 'units', no conversion needed
-    
-    // Now apply the display units conversion from the normalized value
-    let displayValue = normalizedValue;
+    // If originalUnits is 'normal' or 'units', no conversion needed (data already in base units)
+
+    // Step 2: Apply display formatting
+    let displayValue = baseValue;
     let suffix = '';
-    
+
     if (displayUnits === 'K') {
-      // Convert to thousands
-      displayValue = normalizedValue / 1000;
+      // Convert to thousands for display
+      displayValue = baseValue / 1000;
       suffix = 'K';
+      if (shouldLog) console.log('  - Display as K:', baseValue, '/ 1000 =', displayValue, 'K');
     } else if (displayUnits === 'M') {
-      // Convert to millions
-      displayValue = normalizedValue / 1000000;
+      // Convert to millions for display
+      displayValue = baseValue / 1000000;
       suffix = 'M';
+      if (shouldLog) console.log('  - Display as M:', baseValue, '/ 1000000 =', displayValue, 'M');
     } else if (displayUnits === 'normal') {
-      // Keep as normal (base units)
-      displayValue = normalizedValue;
+      // Keep as base units
+      displayValue = baseValue;
+      if (shouldLog) console.log('  - Display as normal (no suffix):', displayValue);
     }
-    
+
     // NO AUTO-SCALING: Use only the centrally determined displayUnits for consistency
     // The Smart Units Analysis system determines the optimal unit for ALL components
     // This ensures perfect consistency across the entire dashboard
-    
+
     // Use displayValue for the final formatting
     convertedValue = displayValue;
     
@@ -690,7 +707,6 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
       thousandsSeparator = configNumberFormat.thousandsSeparator;
     } else {
       // Fallback to locale detection
-      const { numberFormat: localeNumberFormat } = useLocale();
       decimalSeparator = localeNumberFormat.decimalSeparator;
       thousandsSeparator = localeNumberFormat.thousandsSeparator;
     }
@@ -797,20 +813,20 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
       return 'normal';
     }
 
-    // Normalize values based on originalUnits (from configuration)
-    const normalizedValues = validValues.map(value => {
-      let normalizedValue = value;
+    // Convert values to base units for analysis
+    const baseValues = validValues.map(value => {
+      let baseValue = value;
       if (originalUnits === 'thousands') {
-        normalizedValue = value * 1000; // Convert from thousands to base units
+        baseValue = value * 1000; // Convert from thousands to base units
       } else if (originalUnits === 'millions') {
-        normalizedValue = value * 1000000; // Convert from millions to base units
+        baseValue = value * 1000000; // Convert from millions to base units
       }
       // If originalUnits is 'units' or 'normal', no conversion needed
-      return Math.abs(normalizedValue);
+      return Math.abs(baseValue);
     });
 
     // Find the maximum value to determine optimal unit
-    const maxValue = Math.max(...normalizedValues);
+    const maxValue = Math.max(...baseValues);
 
     // Determine optimal unit based on comfort thresholds
     // These thresholds ensure values fit comfortably in cards
