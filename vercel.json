@@ -1,12 +1,15 @@
 {
+  "buildCommand": "cd warren && npm install && npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "warren/.next",
   "functions": {
-    "app/api/upload/route.ts": {
+    "warren/app/api/upload/route.ts": {
       "maxDuration": 60
     },
-    "app/api/analyze/route.ts": {
+    "warren/app/api/analyze/route.ts": {
       "maxDuration": 300
     },
-    "app/api/v1/parse/route.ts": {
+    "warren/app/api/v1/parse/route.ts": {
       "maxDuration": 300
     }
   },
