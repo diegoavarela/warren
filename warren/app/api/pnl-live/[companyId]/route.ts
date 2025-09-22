@@ -110,20 +110,28 @@ export async function GET(
     );
     // P&L processing completed successfully
     
-    // Debug: Log the configuration units before sending to dashboard
+    // Debug: Log the configuration and processed data units
+    console.log('🔍 [API DEBUG] Raw configuration JSON:', JSON.stringify(pnlConfig.configJson, null, 2));
+    console.log('🔍 [API DEBUG] Configuration metadata:', JSON.stringify(pnlConfig.configJson?.metadata, null, 2));
     const configUnits = pnlConfig.configJson?.metadata?.units || 'normal';
     console.log('🔍 [API DEBUG] Original configuration units from config:', configUnits);
-    console.log('🔍 [API DEBUG] Available dataRows keys:', Object.keys(processedData?.dataRows || {}));
-    console.log('🔍 [API DEBUG] Revenue data structure:', processedData?.dataRows?.revenue);
+    console.log('🔍 [API DEBUG] Processed data metadata:', JSON.stringify(processedData?.metadata, null, 2));
     console.log('🔍 [API DEBUG] Sample revenue values (first 3):',
       processedData?.periods?.slice(0, 3)?.map((period: string) =>
         `${period}: ${processedData?.dataRows?.revenue?.values?.[processedData.periods.indexOf(period)] || 'N/A'}`
       ).join(', ') || 'no periods'
     );
 
-    // IMPORTANT: The processedData is now transformed to base units by transformData() method
-    // So we should report units as 'normal' regardless of original configuration
-    console.log('🔍 [API DEBUG] Data has been transformed to base units, reporting as "normal"');
+    // Get the transformation status from processed data
+    const originalUnits = processedData?.metadata?.originalUnits || configUnits;
+    const currentUnits = processedData?.metadata?.units || 'normal';
+    const wasTransformed = processedData?.metadata?.wasTransformed || false;
+
+    console.log('🔍 [API DEBUG] Units summary:');
+    console.log('  - Original units (from config):', configUnits);
+    console.log('  - Original units (stored):', originalUnits);
+    console.log('  - Current units (after transform):', currentUnits);
+    console.log('  - Was transformed:', wasTransformed);
 
     // Transform to dashboard format
     const response = {
@@ -131,13 +139,18 @@ export async function GET(
       data: {
         data: processedData,
         currency: pnlConfig.configJson?.metadata?.currency || 'USD',
-        displayUnits: 'normal', // Data is now in base units after transformation
+        // Pass the correct units information to dashboard
+        originalUnits: originalUnits, // What units the data was originally in
+        currentUnits: currentUnits, // What units the data is in now (after transformation)
+        displayUnits: currentUnits, // For backward compatibility, same as currentUnits
+        wasTransformed: wasTransformed,
         // Include the processed data structure directly for easier access
         ...processedData,
         metadata: {
           currency: pnlConfig.configJson?.metadata?.currency || 'USD',
-          units: 'normal', // Data is now in base units after transformation
-          displayUnits: 'normal', // Data is now in base units after transformation
+          units: currentUnits, // Current units (after transformation)
+          originalUnits: originalUnits, // Original units (before transformation)
+          displayUnits: currentUnits, // What units the data is actually in now
           numberFormat: pnlConfig.configJson?.metadata?.numberFormat || {
             decimalSeparator: '.',
             thousandsSeparator: ',',

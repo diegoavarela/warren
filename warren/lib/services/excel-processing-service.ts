@@ -974,23 +974,48 @@ export class ExcelProcessingService {
    * Apply data transformations based on configuration metadata
    */
   private transformData(data: ProcessedData): ProcessedData {
-    console.log('🔧 [TRANSFORM] Starting data transformation with units:', data.metadata.units);
+    console.log('🔧 [TRANSFORM] Starting data transformation');
+    console.log('🔧 [TRANSFORM] Input metadata:', JSON.stringify(data.metadata, null, 2));
+
+    // Sample a revenue value before transformation
+    const sampleRevenue = data.dataRows?.revenue?.values?.[0];
+    console.log('🔧 [TRANSFORM] Sample revenue value BEFORE transform:', sampleRevenue);
+
+    // Store original units before transformation
+    const originalUnits = data.metadata.units;
 
     // Apply unit conversions
     if (data.metadata.units === 'thousands') {
       console.log('🔧 [TRANSFORM] Converting from thousands to base units (multiplying by 1000)');
       this.multiplyNumericValues(data, 1000);
+
+      // Update metadata to reflect transformation
+      data.metadata.originalUnits = originalUnits;
+      data.metadata.units = 'normal'; // Data is now in base units
+      data.metadata.wasTransformed = true;
+
       console.log('🔧 [TRANSFORM] Transformation complete - data is now in base units');
     } else if (data.metadata.units === 'millions') {
       console.log('🔧 [TRANSFORM] Converting from millions to base units (multiplying by 1000000)');
       this.multiplyNumericValues(data, 1000000);
+
+      // Update metadata to reflect transformation
+      data.metadata.originalUnits = originalUnits;
+      data.metadata.units = 'normal'; // Data is now in base units
+      data.metadata.wasTransformed = true;
+
       console.log('🔧 [TRANSFORM] Transformation complete - data is now in base units');
     } else {
       console.log('🔧 [TRANSFORM] No unit conversion needed, units already in base format:', data.metadata.units);
+      data.metadata.originalUnits = originalUnits;
+      data.metadata.wasTransformed = false;
     }
-    
-    // Apply any other transformations here
-    
+
+    // Sample the same revenue value after transformation
+    const sampleRevenueAfter = data.dataRows?.revenue?.values?.[0];
+    console.log('🔧 [TRANSFORM] Sample revenue value AFTER transform:', sampleRevenueAfter);
+    console.log('🔧 [TRANSFORM] Final metadata:', JSON.stringify(data.metadata, null, 2));
+
     return data;
   }
   

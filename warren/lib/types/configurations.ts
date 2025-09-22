@@ -24,6 +24,9 @@ export interface ConfigurationMetadata {
     thousandsSeparator: ',' | '.' | ' ';
     decimalPlaces: number;
   };
+  // Unit transformation tracking
+  originalUnits?: 'normal' | 'thousands' | 'millions'; // Units before transformation
+  wasTransformed?: boolean; // Whether data was transformed during processing
 }
 
 // Cash Flow Configuration Structure

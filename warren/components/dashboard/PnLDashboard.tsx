@@ -254,12 +254,22 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
         setSelectedCurrency((apiData as any).currency);
       }
       
-      // Set original units from API (what units the data is stored in)
-      if ((apiData as any).displayUnits) {
-        setOriginalUnits((apiData as any).displayUnits);
+      // Set units from API response
+      if ((apiData as any).currentUnits) {
+        // Use currentUnits (what the data is actually in now after any transformations)
+        setOriginalUnits((apiData as any).currentUnits);
+        console.log('🎯 [DASHBOARD] Set originalUnits to currentUnits from API:', (apiData as any).currentUnits);
+        console.log('🎯 [DASHBOARD] API also reported:');
+        console.log('  - originalUnits (before transform):', (apiData as any).originalUnits);
+        console.log('  - wasTransformed:', (apiData as any).wasTransformed);
         // Don't automatically set display units - let the smart unit analysis decide
         // or keep user's preference if they've set one
+      } else if ((apiData as any).displayUnits) {
+        // Fallback to legacy displayUnits field
+        setOriginalUnits((apiData as any).displayUnits);
+        console.log('🎯 [DASHBOARD] Fallback: Set originalUnits to displayUnits from API:', (apiData as any).displayUnits);
       } else {
+        console.log('🎯 [DASHBOARD] No units information found in API response');
       }
     }
   }, [apiData]);
@@ -612,6 +622,15 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
       return '0';
     }
 
+    // Debug logging for first few calls
+    const shouldLog = Math.random() < 0.05; // Log ~5% of calls to avoid spam
+    if (shouldLog) {
+      console.log('💰 [FORMAT_VALUE] Debug:');
+      console.log('  - Input value:', value);
+      console.log('  - originalUnits:', originalUnits);
+      console.log('  - displayUnits:', displayUnits);
+    }
+
     let actualValue = value;
     let convertedValue = currencyService.convertValue(actualValue, originalCurrency, selectedCurrency);
 
@@ -619,8 +638,12 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
     let baseValue = convertedValue;
     if (originalUnits === 'thousands') {
       baseValue = convertedValue * 1000; // Convert from thousands to base units
+      if (shouldLog) console.log('  - Converted from thousands:', convertedValue, '* 1000 =', baseValue);
     } else if (originalUnits === 'millions') {
       baseValue = convertedValue * 1000000; // Convert from millions to base units
+      if (shouldLog) console.log('  - Converted from millions:', convertedValue, '* 1000000 =', baseValue);
+    } else {
+      if (shouldLog) console.log('  - No unit conversion needed, originalUnits is:', originalUnits);
     }
     // If originalUnits is 'normal' or 'units', no conversion needed (data already in base units)
 
@@ -632,13 +655,16 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
       // Convert to thousands for display
       displayValue = baseValue / 1000;
       suffix = 'K';
+      if (shouldLog) console.log('  - Display as K:', baseValue, '/ 1000 =', displayValue, 'K');
     } else if (displayUnits === 'M') {
       // Convert to millions for display
       displayValue = baseValue / 1000000;
       suffix = 'M';
+      if (shouldLog) console.log('  - Display as M:', baseValue, '/ 1000000 =', displayValue, 'M');
     } else if (displayUnits === 'normal') {
       // Keep as base units
       displayValue = baseValue;
+      if (shouldLog) console.log('  - Display as normal (no suffix):', displayValue);
     }
 
     // NO AUTO-SCALING: Use only the centrally determined displayUnits for consistency
