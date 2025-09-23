@@ -498,6 +498,43 @@ export const featureRequests = pgTable("feature_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// QuickBooks Integration Tables
+export const quickbooksIntegrations = pgTable("quickbooks_integrations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id),
+  realmId: varchar("realm_id", { length: 50 }).notNull(), // QuickBooks company ID
+  accessToken: text("access_token").notNull(), // Encrypted
+  refreshToken: text("refresh_token").notNull(), // Encrypted
+  tokenType: varchar("token_type", { length: 20 }).default("Bearer"),
+  expiresIn: integer("expires_in"), // Token expiry in seconds
+  expiresAt: timestamp("expires_at"), // Calculated expiry timestamp
+  scope: text("scope"),
+  isActive: boolean("is_active").default(true),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueCompanyRealm: unique().on(table.companyId, table.realmId),
+  realmIdIndex: index("quickbooks_integrations_realm_id_idx").on(table.realmId),
+  companyIdIndex: index("quickbooks_integrations_company_id_idx").on(table.companyId),
+}));
+
+// QuickBooks Data Cache - Store raw API responses for performance
+export const quickbooksDataCache = pgTable("quickbooks_data_cache", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  integrationId: uuid("integration_id").references(() => quickbooksIntegrations.id).notNull(),
+  dataType: varchar("data_type", { length: 50 }).notNull(), // 'company_info', 'profit_loss', 'accounts', etc.
+  rawData: jsonb("raw_data").notNull(), // Raw QuickBooks API response
+  dataHash: varchar("data_hash", { length: 64 }), // Hash of data for change detection
+  cachedAt: timestamp("cached_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(), // Cache expiry
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  integrationDataTypeIndex: index("qb_cache_integration_data_type_idx").on(table.integrationId, table.dataType),
+  expiresAtIndex: index("qb_cache_expires_at_idx").on(table.expiresAt),
+}));
+
 // Export new types
 export type CompanyConfiguration = typeof companyConfigurations.$inferSelect;
 export type NewCompanyConfiguration = typeof companyConfigurations.$inferInsert;
@@ -527,6 +564,12 @@ export type NewUser2faAttempts = typeof user2faAttempts.$inferInsert;
 // Feature Flags types
 export type FeatureFlag = typeof featureFlags.$inferSelect;
 export type NewFeatureFlag = typeof featureFlags.$inferInsert;
+
+// QuickBooks Integration types
+export type QuickBooksIntegration = typeof quickbooksIntegrations.$inferSelect;
+export type NewQuickBooksIntegration = typeof quickbooksIntegrations.$inferInsert;
+export type QuickBooksDataCache = typeof quickbooksDataCache.$inferSelect;
+export type NewQuickBooksDataCache = typeof quickbooksDataCache.$inferInsert;
 export type OrganizationFeature = typeof organizationFeatures.$inferSelect;
 export type NewOrganizationFeature = typeof organizationFeatures.$inferInsert;
 export type FeatureRequest = typeof featureRequests.$inferSelect;

@@ -51,6 +51,8 @@ let companySubcategoryTemplates: any;
 let featureFlags: any;
 let organizationFeatures: any;
 let featureRequests: any;
+let quickbooksIntegrations: any;
+let quickbooksDataCache: any;
 let eq: any;
 let desc: any;
 let count: any;
@@ -81,6 +83,8 @@ if (!isServer) {
   featureFlags = null;
   organizationFeatures = null;
   featureRequests = null;
+  quickbooksIntegrations = null;
+  quickbooksDataCache = null;
   eq = () => {};
   desc = () => {};
   count = () => {};
@@ -126,6 +130,8 @@ if (!isServer) {
   featureFlags = schema.featureFlags;
   organizationFeatures = schema.organizationFeatures;
   featureRequests = schema.featureRequests;
+  quickbooksIntegrations = schema.quickbooksIntegrations;
+  quickbooksDataCache = schema.quickbooksDataCache;
   eq = realEq;
   desc = realDesc;
   count = realCount;
@@ -136,7 +142,7 @@ if (!isServer) {
   sql = realSql;
 }
 
-export { 
+export {
   db,
   organizations,
   users,
@@ -155,6 +161,8 @@ export {
   featureFlags,
   organizationFeatures,
   featureRequests,
+  quickbooksIntegrations,
+  quickbooksDataCache,
   eq,
   desc,
   count,
