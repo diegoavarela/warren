@@ -287,3 +287,126 @@ export async function callQuickBooksAPI(
     throw error;
   }
 }
+
+/**
+ * Fetch P&L data for a specific month and year
+ * Used for comparison calculations (current vs year-ago vs 3-months-ago)
+ */
+export async function fetchSpecificMonthPnL(
+  realmId: string,
+  year: number,
+  month: number, // 1-12
+  reportType: 'ProfitAndLoss' | 'ProfitAndLossDetail' = 'ProfitAndLoss'
+): Promise<any> {
+  try {
+    console.log(`🔍 [QuickBooks] Fetching P&L for ${year}-${month.toString().padStart(2, '0')}`);
+
+    // Calculate start and end dates for the month
+    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+
+    // Calculate last day of the month
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const lastDay = new Date(nextYear, nextMonth - 1, 0).getDate();
+    const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+
+    console.log(`📅 [QuickBooks] Date range: ${startDate} to ${endDate}`);
+
+    // Build QuickBooks API endpoint for P&L report
+    const endpoint = `reports/${reportType}?start_date=${startDate}&end_date=${endDate}&summarize_column_by=Month`;
+
+    // Make the API call
+    const response = await callQuickBooksAPI(realmId, endpoint);
+
+    console.log(`✅ [QuickBooks] P&L data fetched for ${year}-${month.toString().padStart(2, '0')}`);
+
+    return response;
+
+  } catch (error) {
+    console.error(`❌ [QuickBooks] Error fetching P&L for ${year}-${month}:`, error);
+    throw new Error(`Failed to fetch P&L data for ${year}-${month}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Calculate comparison periods for a given date
+ */
+export function calculateComparisonPeriods(currentYear: number, currentMonth: number) {
+  // Year ago - same month, previous year
+  const yearAgo = {
+    year: currentYear - 1,
+    month: currentMonth
+  };
+
+  // 3 months ago
+  let threeMonthsAgoMonth = currentMonth - 3;
+  let threeMonthsAgoYear = currentYear;
+
+  if (threeMonthsAgoMonth <= 0) {
+    threeMonthsAgoMonth += 12;
+    threeMonthsAgoYear -= 1;
+  }
+
+  const threeMonthsAgo = {
+    year: threeMonthsAgoYear,
+    month: threeMonthsAgoMonth
+  };
+
+  return {
+    current: { year: currentYear, month: currentMonth },
+    yearAgo,
+    threeMonthsAgo
+  };
+}
+
+/**
+ * Fetch P&L data for current month and comparison periods
+ */
+export async function fetchPnLWithComparisons(
+  realmId: string,
+  currentYear: number,
+  currentMonth: number
+): Promise<{
+  current: any;
+  yearAgo: any | null;
+  threeMonthsAgo: any | null;
+}> {
+  try {
+    console.log(`🔍 [QuickBooks] Fetching P&L with comparisons for ${currentYear}-${currentMonth}`);
+
+    const periods = calculateComparisonPeriods(currentYear, currentMonth);
+
+    // Fetch current month (required)
+    const current = await fetchSpecificMonthPnL(realmId, periods.current.year, periods.current.month);
+
+    // Fetch comparison periods (optional - don't fail if they don't exist)
+    let yearAgo = null;
+    let threeMonthsAgo = null;
+
+    try {
+      yearAgo = await fetchSpecificMonthPnL(realmId, periods.yearAgo.year, periods.yearAgo.month);
+      console.log(`✅ [QuickBooks] Year-ago data fetched for ${periods.yearAgo.year}-${periods.yearAgo.month}`);
+    } catch (error) {
+      console.warn(`⚠️ [QuickBooks] Year-ago data not available for ${periods.yearAgo.year}-${periods.yearAgo.month}:`, error instanceof Error ? error.message : 'Unknown error');
+    }
+
+    try {
+      threeMonthsAgo = await fetchSpecificMonthPnL(realmId, periods.threeMonthsAgo.year, periods.threeMonthsAgo.month);
+      console.log(`✅ [QuickBooks] 3-months-ago data fetched for ${periods.threeMonthsAgo.year}-${periods.threeMonthsAgo.month}`);
+    } catch (error) {
+      console.warn(`⚠️ [QuickBooks] 3-months-ago data not available for ${periods.threeMonthsAgo.year}-${periods.threeMonthsAgo.month}:`, error instanceof Error ? error.message : 'Unknown error');
+    }
+
+    console.log(`✅ [QuickBooks] Comparison data fetch complete for ${currentYear}-${currentMonth}`);
+
+    return {
+      current,
+      yearAgo,
+      threeMonthsAgo
+    };
+
+  } catch (error) {
+    console.error(`❌ [QuickBooks] Error fetching P&L with comparisons:`, error);
+    throw error;
+  }
+}
