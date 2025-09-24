@@ -22,8 +22,9 @@ export default function PnLDashboardPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [hybridParserData, setHybridParserData] = useState<any>(null);
   const [hasCashflowConfig, setHasCashflowConfig] = useState<boolean>(false);
+  const [dataSource, setDataSource] = useState<'excel' | 'quickbooks'>('excel');
 
-  // Get company ID and hybrid parser data from session storage if available
+  // Get company ID, data source, and hybrid parser data from session storage if available
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Get company ID
@@ -31,7 +32,13 @@ export default function PnLDashboardPage() {
       if (storedCompanyId && storedCompanyId !== selectedCompanyId) {
         setSelectedCompanyId(storedCompanyId);
       }
-      
+
+      // Get data source
+      const storedDataSource = sessionStorage.getItem('dataSource') as 'excel' | 'quickbooks';
+      if (storedDataSource && (storedDataSource === 'excel' || storedDataSource === 'quickbooks')) {
+        setDataSource(storedDataSource);
+      }
+
       // Check for hybrid parser result data
       const hybridParserResult = sessionStorage.getItem('hybridParserResult');
       if (hybridParserResult) {
@@ -40,7 +47,7 @@ export default function PnLDashboardPage() {
           setHybridParserData(parsedData);
           setCurrentPeriod(`Hybrid Test: ${parsedData.fileName}`);
           setLastUpdate(new Date());
-          
+
           // Clear the session storage after using it
           sessionStorage.removeItem('hybridParserResult');
         } catch (error) {
@@ -130,11 +137,23 @@ export default function PnLDashboardPage() {
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent">
-                    {t('dashboard.pnl.title')}
-                  </h1>
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent">
+                      {t('dashboard.pnl.title')}
+                    </h1>
+                    {/* Data Source Indicator */}
+                    {!hybridParserData && (
+                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        dataSource === 'quickbooks'
+                          ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                          : 'bg-blue-100 text-blue-800 border border-blue-200'
+                      }`}>
+                        {dataSource === 'quickbooks' ? 'QuickBooks Data' : 'Excel Data'}
+                      </div>
+                    )}
+                  </div>
                   <p className="text-gray-600 mt-2">
-                    {hybridParserData 
+                    {hybridParserData
                       ? `Testing hybrid parser results from ${hybridParserData.fileName}`
                       : t('dashboard.pnl.subtitle')
                     }
@@ -160,11 +179,12 @@ export default function PnLDashboardPage() {
             </div>
 
             {/* P&L Dashboard Component */}
-            <PnLDashboard 
-              companyId={selectedCompanyId} 
-              currency="$" 
+            <PnLDashboard
+              companyId={selectedCompanyId}
+              currency="$"
               locale={locale}
               hybridParserData={hybridParserData}
+              dataSource={dataSource}
               onPeriodChange={(period, update) => {
                 setCurrentPeriod(period);
                 setLastUpdate(update);

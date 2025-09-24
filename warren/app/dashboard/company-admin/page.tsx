@@ -30,6 +30,7 @@ import {
   ChevronDownIcon,
   ArrowDownTrayIcon,
   DocumentArrowDownIcon,
+  LinkIcon,
   Cog6ToothIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
@@ -138,6 +139,10 @@ function CompanyAdminDashboard() {
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const toast = useToast();
 
+  // QuickBooks state
+  const [quickbooksConnected, setQuickbooksConnected] = useState<boolean>(false);
+  const [quickbooksRealmId, setQuickbooksRealmId] = useState<string>('');
+
   useEffect(() => {
     fetchCompanies();
     
@@ -174,7 +179,8 @@ function CompanyAdminDashboard() {
       fetchFinancialStatements(selectedCompanyId);
       fetchTemplates(selectedCompanyId);
       fetchConfigurations(selectedCompanyId);
-      
+      fetchQuickBooksStatus(selectedCompanyId);
+
       // If company is selected and we have the companies list, store the company name
       const company = companies.find(c => c.id === selectedCompanyId);
       if (company) {
@@ -206,6 +212,24 @@ function CompanyAdminDashboard() {
 
   const getSelectedCompany = () => {
     return companies.find(company => company.id === selectedCompanyId);
+  };
+
+  const fetchQuickBooksStatus = async (companyId: string) => {
+    try {
+      const response = await fetch(`/api/companies/${companyId}/quickbooks-status`);
+      if (response.ok) {
+        const data = await response.json();
+        setQuickbooksConnected(data.isConnected || false);
+        setQuickbooksRealmId(data.realmId || '');
+      } else {
+        setQuickbooksConnected(false);
+        setQuickbooksRealmId('');
+      }
+    } catch (error) {
+      console.error('Error fetching QuickBooks status:', error);
+      setQuickbooksConnected(false);
+      setQuickbooksRealmId('');
+    }
   };
 
   const fetchTemplates = async (companyId: string) => {
@@ -565,12 +589,22 @@ function CompanyAdminDashboard() {
 
                         {/* Cash Flow Status */}
                         <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
-                          (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
+                          quickbooksConnected
+                            ? 'bg-gray-50 border border-gray-200'  // Always grayed out for QB
+                            : ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200')
                         }`}>
-                          <BanknotesIcon className={`w-5 h-5 ${(cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? 'text-green-600' : 'text-gray-400'}`} />
+                          <BanknotesIcon className={`w-5 h-5 ${
+                            quickbooksConnected
+                              ? 'text-gray-400'  // Always gray for QB
+                              : ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? 'text-green-600' : 'text-gray-400')
+                          }`} />
                           <span className="font-medium text-sm">CF</span>
-                          <span className={`text-xs font-semibold ${(cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? 'text-green-600' : 'text-gray-400'}`}>
-                            {(cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? '✓' : '−'}
+                          <span className={`text-xs font-semibold ${
+                            quickbooksConnected
+                              ? 'text-gray-400'  // Always gray for QB
+                              : ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? 'text-green-600' : 'text-gray-400')
+                          }`}>
+                            {quickbooksConnected ? '−' : ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? '✓' : '−')}
                           </span>
                         </div>
 
@@ -588,7 +622,15 @@ function CompanyAdminDashboard() {
                             }
                           }}
                           leftIcon={<ChatBubbleBottomCenterTextIcon className="w-4 h-4" />}
-                          disabled={hasFeature('AI_CHAT') && (!selectedCompanyId || (pnlStatements.length === 0 && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode))}
+                          disabled={
+                            hasFeature('AI_CHAT') && (
+                              !selectedCompanyId ||
+                              (quickbooksConnected
+                                ? false  // For QB companies, AI Chat is always available (they have P&L)
+                                : (pnlStatements.length === 0 && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode)
+                              )
+                            )
+                          }
                           className={`${
                             hasFeature('AI_CHAT')
                               ? 'bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
@@ -622,20 +664,25 @@ function CompanyAdminDashboard() {
                   }`}>
                     {/* P&L Dashboard Card */}
                     <div className={`border rounded-lg p-4 ${
-                      pnlStatements.length > 0 ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'
+                      (quickbooksConnected || pnlStatements.length > 0) ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'
                     }`}>
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <ChartBarIcon className={`w-6 h-6 ${
-                            pnlStatements.length > 0 ? 'text-blue-600' : 'text-gray-400'
+                            (quickbooksConnected || pnlStatements.length > 0) ? 'text-blue-600' : 'text-gray-400'
                           }`} />
                           <h3 className="font-semibold text-gray-900">
                             {locale?.startsWith('es') ? 'Estado de Resultados (P&L)' : 'Profit & Loss Statement'}
                           </h3>
                         </div>
-                        {pnlStatements.length > 0 && (
-                          <Badge className="bg-green-100 text-green-700">
-                            {locale?.startsWith('es') ? 'Disponible' : 'Available'}
+                        {(quickbooksConnected || pnlStatements.length > 0) && (
+                          <Badge className={`${
+                            quickbooksConnected ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {quickbooksConnected
+                              ? (locale?.startsWith('es') ? 'QuickBooks' : 'QuickBooks')
+                              : (locale?.startsWith('es') ? 'Disponible' : 'Available')
+                            }
                           </Badge>
                         )}
                       </div>
@@ -667,30 +714,38 @@ function CompanyAdminDashboard() {
                       
                       <Button
                         variant={
-                          hasFeature('pnl_dashboard') 
-                            ? (pnlStatements.length > 0 ? "primary" : "secondary")
+                          (quickbooksConnected || hasFeature('pnl_dashboard'))
+                            ? ((quickbooksConnected || pnlStatements.length > 0) ? "primary" : "secondary")
                             : "secondary"
                         }
                         onClick={() => {
-                          if (hasFeature('pnl_dashboard')) {
+                          if (quickbooksConnected || hasFeature('pnl_dashboard')) {
                             sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
+                            // Add QB flag to indicate data source
+                            if (quickbooksConnected) {
+                              sessionStorage.setItem('dataSource', 'quickbooks');
+                            } else {
+                              sessionStorage.setItem('dataSource', 'excel');
+                            }
                             router.push('/dashboard/company-admin/pnl');
                           } else {
                             router.push('/premium');
                           }
                         }}
-                        disabled={hasFeature('pnl_dashboard') && pnlStatements.length === 0}
+                        disabled={!quickbooksConnected && hasFeature('pnl_dashboard') && pnlStatements.length === 0}
                         className={`w-full ${
-                          hasFeature('pnl_dashboard')
-                            ? (pnlStatements.length > 0 
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                          (quickbooksConnected || hasFeature('pnl_dashboard'))
+                            ? ((quickbooksConnected || pnlStatements.length > 0)
+                                ? (quickbooksConnected ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white')
                                 : 'bg-gray-100 text-gray-500 cursor-not-allowed')
                             : 'bg-orange-500 hover:bg-orange-600 text-white'
                         }`}
                       >
-                        {hasFeature('pnl_dashboard')
-                          ? (pnlStatements.length > 0 
-                              ? (locale?.startsWith('es') ? 'Ver Dashboard P&L' : 'View P&L Dashboard')
+                        {(quickbooksConnected || hasFeature('pnl_dashboard'))
+                          ? ((quickbooksConnected || pnlStatements.length > 0)
+                              ? (quickbooksConnected
+                                  ? (locale?.startsWith('es') ? 'Ver P&L de QuickBooks' : 'View QuickBooks P&L')
+                                  : (locale?.startsWith('es') ? 'Ver Dashboard P&L' : 'View P&L Dashboard'))
                               : (locale?.startsWith('es') ? 'Sin datos P&L' : 'No P&L data'))
                           : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`
                         }
@@ -699,8 +754,8 @@ function CompanyAdminDashboard() {
 
                     {/* Cash Flow Dashboard Card */}
                     <div className={`border rounded-lg p-4 ${
-                      (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) 
-                        ? 'border-green-200 bg-green-50' 
+                      (!quickbooksConnected && (cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode))
+                        ? 'border-green-200 bg-green-50'
                         : 'border-gray-200 bg-gray-50'
                     }`}>
                       <div className="flex items-start justify-between mb-3">
@@ -748,32 +803,39 @@ function CompanyAdminDashboard() {
                       
                       <Button
                         variant={
-                          hasFeature('cashflow_dashboard') 
+                          (!quickbooksConnected && hasFeature('cashflow_dashboard'))
                             ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode) ? "primary" : "secondary")
                             : "secondary"
                         }
                         onClick={() => {
-                          if (hasFeature('cashflow_dashboard')) {
+                          if (!quickbooksConnected && hasFeature('cashflow_dashboard')) {
                             sessionStorage.setItem('selectedCompanyId', selectedCompanyId);
                             router.push('/dashboard/company-admin/cashflow');
-                          } else {
+                          } else if (!quickbooksConnected) {
                             router.push('/premium');
                           }
                         }}
-                        disabled={hasFeature('cashflow_dashboard') && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode}
+                        disabled={
+                          quickbooksConnected ||
+                          (hasFeature('cashflow_dashboard') && cashFlowStatements.length === 0 && !getSelectedCompany()?.cashflowDirectMode)
+                        }
                         className={`w-full ${
-                          hasFeature('cashflow_dashboard')
-                            ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
-                                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                                : 'bg-gray-100 text-gray-500 cursor-not-allowed')
-                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                          quickbooksConnected
+                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                            : (hasFeature('cashflow_dashboard')
+                                ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : 'bg-gray-100 text-gray-500 cursor-not-allowed')
+                                : 'bg-orange-500 hover:bg-orange-600 text-white')
                         }`}
                       >
-                        {hasFeature('cashflow_dashboard')
-                          ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
-                              ? (locale?.startsWith('es') ? 'Ver Dashboard Flujo de Caja' : 'View Cash Flow Dashboard')
-                              : (locale?.startsWith('es') ? 'Sin datos Flujo de Caja' : 'No Cash Flow data'))
-                          : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`
+                        {quickbooksConnected
+                          ? (locale?.startsWith('es') ? 'No disponible con QuickBooks' : 'Not available with QuickBooks')
+                          : (hasFeature('cashflow_dashboard')
+                              ? ((cashFlowStatements.length > 0 || getSelectedCompany()?.cashflowDirectMode)
+                                  ? (locale?.startsWith('es') ? 'Ver Dashboard Flujo de Caja' : 'View Cash Flow Dashboard')
+                                  : (locale?.startsWith('es') ? 'Sin datos Flujo de Caja' : 'No Cash Flow data'))
+                              : `🔒 ${locale?.startsWith('es') ? 'Actualizar a Premium' : 'Upgrade to Premium'}`)
                         }
                       </Button>
                     </div>
@@ -849,7 +911,8 @@ function CompanyAdminDashboard() {
                     )}
                   </div>
 
-                  {/* Configurations and Actions Section */}
+                  {/* Configurations and Actions Section - Only for Excel companies */}
+                  {!quickbooksConnected ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                     {/* Configuration Summary - Left Half */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col justify-between min-h-[140px]">
@@ -934,6 +997,32 @@ function CompanyAdminDashboard() {
                       </Button>
                     </div>
                   </div>
+                  ) : (
+                    /* QuickBooks Connected - Show alternative section */
+                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-purple-100 p-3 rounded-full">
+                          <LinkIcon className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-purple-900">
+                            {locale?.startsWith('es') ? 'QuickBooks Conectado' : 'QuickBooks Connected'}
+                          </h3>
+                          <p className="text-purple-700 text-sm mt-1">
+                            {locale?.startsWith('es')
+                              ? 'Los datos se sincronizan automáticamente desde QuickBooks. No es necesario configurar plantillas o subir archivos.'
+                              : 'Data syncs automatically from QuickBooks. No need to configure templates or upload files.'
+                            }
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {locale?.startsWith('es') ? 'Sincronizado' : 'Synced'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

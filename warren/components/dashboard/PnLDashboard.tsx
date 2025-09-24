@@ -145,10 +145,11 @@ interface PnLDashboardProps {
   locale?: string;
   useMockData?: boolean;
   hybridParserData?: any; // Data from hybrid parser testing
+  dataSource?: 'excel' | 'quickbooks'; // Data source: Excel configuration or QuickBooks
   onPeriodChange?: (period: string, lastUpdate: Date | null) => void;
 }
 
-const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, hybridParserData, onPeriodChange }: PnLDashboardProps) {
+const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, currency = '$', locale = 'es-MX', useMockData = false, hybridParserData, dataSource = 'excel', onPeriodChange }: PnLDashboardProps) {
   const { t } = useTranslation(locale);
   const { numberFormat: localeNumberFormat } = useLocale();
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined);
@@ -174,7 +175,15 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
       
       // Add timestamp to prevent caching and ensure fresh data
       const timestamp = new Date().getTime();
-      const response = await fetch(`/api/pnl-live/${companyId}?limit=12&t=${timestamp}`, {
+
+      // Choose API endpoint based on data source
+      const apiEndpoint = dataSource === 'quickbooks'
+        ? `/api/quickbooks/dashboard/pnl/${companyId}?t=${timestamp}`
+        : `/api/pnl-live/${companyId}?limit=12&t=${timestamp}`;
+
+      console.log(`🎯 [DASHBOARD] Fetching P&L data from ${dataSource} source:`, apiEndpoint);
+
+      const response = await fetch(apiEndpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -229,7 +238,7 @@ const PnLDashboardComponent = function PnLDashboard({ companyId, statementId, cu
     } finally {
       setApiLoading(false);
     }
-  }, [companyId, useMockData]);
+  }, [companyId, useMockData, dataSource]);
 
   // Initial data fetch
   useEffect(() => {

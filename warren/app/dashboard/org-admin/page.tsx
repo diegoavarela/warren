@@ -520,19 +520,23 @@ function OrgAdminDashboard() {
                     <div className="flex items-center space-x-2">
                       {quickbooksEnabled && (
                         <Button
-                          variant={company.quickbooksRealmId ? "success" : "outline"}
+                          variant={company.quickbooksRealmId ? "danger" : "outline"}
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleQuickBooksConnect(company);
                           }}
-                          className="whitespace-nowrap"
+                          className={`whitespace-nowrap ${
+                            company.quickbooksRealmId
+                              ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700'
+                              : ''
+                          }`}
                         >
                           <div className="flex items-center">
                             <LinkIcon className="w-3 h-3 mr-1" />
                             {company.quickbooksRealmId
-                              ? (t?.('quickbooks.connected') || 'QB')
-                              : (t?.('quickbooks.connect') || 'Connect QB')
+                              ? 'Disconnect QB'
+                              : 'Connect QB'
                             }
                           </div>
                         </Button>
