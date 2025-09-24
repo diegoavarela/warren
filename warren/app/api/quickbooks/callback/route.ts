@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { storeQuickBooksTokens } from '@/lib/services/quickbooks-service';
+import { storeQuickBooksTokens, linkCompanyToQuickBooks } from '@/lib/services/quickbooks-service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,17 +25,33 @@ export async function GET(request: NextRequest) {
       error
     });
 
+    // Parse state parameter to get company context
+    let companyId = null;
+    if (state) {
+      try {
+        const stateData = JSON.parse(state);
+        companyId = stateData.companyId;
+        console.log('🔍 [QuickBooks] Company ID from state:', companyId);
+      } catch (error) {
+        console.warn('⚠️ [QuickBooks] Could not parse state parameter:', state);
+      }
+    }
+
     // Check for OAuth errors
     if (error) {
       console.error('❌ [QuickBooks] OAuth error:', error);
-      const errorPageUrl = `/dashboard/quickbooks-test?error=${encodeURIComponent(error)}`;
+      const errorPageUrl = companyId
+        ? `/dashboard/org-admin?error=${encodeURIComponent(error)}`
+        : `/dashboard/quickbooks-test?error=${encodeURIComponent(error)}`;
       return NextResponse.redirect(new URL(errorPageUrl, request.url));
     }
 
     // Validate required parameters
     if (!code || !realmId) {
       console.error('❌ [QuickBooks] Missing required parameters');
-      const errorPageUrl = `/dashboard/quickbooks-test?error=missing_params`;
+      const errorPageUrl = companyId
+        ? `/dashboard/org-admin?error=missing_params`
+        : `/dashboard/quickbooks-test?error=missing_params`;
       return NextResponse.redirect(new URL(errorPageUrl, request.url));
     }
 
@@ -81,12 +97,20 @@ export async function GET(request: NextRequest) {
     // Store tokens in database
     await storeQuickBooksTokens(realmId, tokens.access_token, tokens.refresh_token, tokens.expires_in);
 
-    // Return success page with the realmId
-    const testPageUrl = `/dashboard/quickbooks-test?realmId=${realmId}&connected=true&hasTokens=true`;
+    // Link company to QuickBooks if we have company context
+    if (companyId) {
+      await linkCompanyToQuickBooks(companyId, realmId);
+      console.log('✅ [QuickBooks] Company linked to QuickBooks:', companyId);
+    }
 
-    console.log('🔍 [QuickBooks] Redirecting to test page:', testPageUrl);
+    // Redirect based on context
+    const redirectUrl = companyId
+      ? `/dashboard/org-admin?connected=true&companyId=${companyId}&realmId=${realmId}`
+      : `/dashboard/quickbooks-test?realmId=${realmId}&connected=true&hasTokens=true`;
 
-    return NextResponse.redirect(new URL(testPageUrl, request.url));
+    console.log('🔍 [QuickBooks] Redirecting to:', redirectUrl);
+
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
 
   } catch (error) {
     console.error('❌ [QuickBooks] Error in callback endpoint:', error);

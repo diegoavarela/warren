@@ -516,8 +516,6 @@ export const quickbooksIntegrations = pgTable("quickbooks_integrations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
   uniqueCompanyRealm: unique().on(table.companyId, table.realmId),
-  realmIdIndex: index("quickbooks_integrations_realm_id_idx").on(table.realmId),
-  companyIdIndex: index("quickbooks_integrations_company_id_idx").on(table.companyId),
 }));
 
 // QuickBooks Data Cache - Store raw API responses for performance
@@ -530,10 +528,7 @@ export const quickbooksDataCache = pgTable("quickbooks_data_cache", {
   cachedAt: timestamp("cached_at").defaultNow(),
   expiresAt: timestamp("expires_at").notNull(), // Cache expiry
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  integrationDataTypeIndex: index("qb_cache_integration_data_type_idx").on(table.integrationId, table.dataType),
-  expiresAtIndex: index("qb_cache_expires_at_idx").on(table.expiresAt),
-}));
+});
 
 // Export new types
 export type CompanyConfiguration = typeof companyConfigurations.$inferSelect;

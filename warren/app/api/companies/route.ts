@@ -266,9 +266,9 @@ export async function GET(request: NextRequest) {
           eq(companyUsers.isActive, true),
           ...(includeInactive ? [] : [eq(companies.isActive, true)])
         ));
-      
+
       const userCompanies = await userQuery;
-      
+
       companyList = userCompanies.map((uc: any) => ({
         ...uc.company,
         userRole: uc.role

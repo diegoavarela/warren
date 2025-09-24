@@ -213,6 +213,34 @@ export async function refreshQuickBooksToken(realmId: string): Promise<string | 
 }
 
 /**
+ * Link QuickBooks integration to a Warren company
+ */
+export async function linkCompanyToQuickBooks(
+  companyId: string,
+  realmId: string
+): Promise<void> {
+  try {
+    console.log('🔍 [QuickBooks] Linking company to QuickBooks:', { companyId, realmId });
+
+    // Update the QuickBooks integration to include the company ID
+    const result = await db
+      .update(quickbooksIntegrations)
+      .set({
+        companyId,
+        connectedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(quickbooksIntegrations.realmId, realmId));
+
+    console.log('✅ [QuickBooks] Company linked to QuickBooks successfully');
+
+  } catch (error) {
+    console.error('❌ [QuickBooks] Error linking company to QuickBooks:', error);
+    throw new Error(`Failed to link company to QuickBooks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Get valid access token (refresh if needed)
  */
 export async function getValidAccessToken(realmId: string): Promise<string | null> {

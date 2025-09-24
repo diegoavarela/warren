@@ -11,6 +11,18 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 [QuickBooks] Starting OAuth connection flow');
 
+    // Get company ID from query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const companyId = searchParams.get('companyId');
+
+    if (!companyId) {
+      return NextResponse.json({
+        error: 'Company ID is required'
+      }, { status: 400 });
+    }
+
+    console.log('🔍 [QuickBooks] Company ID:', companyId);
+
     // Validate environment variables
     if (!process.env.QB_CLIENT_ID || !process.env.QB_CLIENT_SECRET || !process.env.QB_REDIRECT_URI) {
       return NextResponse.json({
@@ -30,12 +42,12 @@ export async function GET(request: NextRequest) {
       redirect_uri: process.env.QB_REDIRECT_URI,
       response_type: 'code',
       access_type: 'offline',
-      state: 'warren-quickbooks-integration'
+      state: JSON.stringify({ companyId, source: 'warren' }) // Include company context
     });
 
     const authUrl = `${baseUrl}?${params.toString()}`;
 
-    console.log('🔍 [QuickBooks] Generated auth URL:', authUrl);
+    console.log('🔍 [QuickBooks] Generated auth URL for company:', companyId);
 
     // Redirect user to QuickBooks for authorization
     return NextResponse.redirect(authUrl);

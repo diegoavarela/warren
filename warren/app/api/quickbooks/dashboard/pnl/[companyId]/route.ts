@@ -7,8 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getTransformedPnLData,
-  getAccumulativeData
+  getTransformedPnLData
 } from '@/lib/services/quickbooks-storage-service';
 import { getAccumulativeData as getAccumulativeDataService } from '@/lib/services/quickbooks-accumulative-service';
 

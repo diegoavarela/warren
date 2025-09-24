@@ -3,16 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatures } from '@/contexts/FeaturesContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { ROLES } from "@/lib/auth/constants";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Building2, Users, Plus, Settings, Trash2, Search } from 'lucide-react';
+import { Building2, Users, Plus, Settings, Trash2, Search, LinkIcon, CogIcon } from 'lucide-react';
 import { useTranslation } from '@/lib/translations';
 import { useLocale } from '@/contexts/LocaleContext';
 import { AICreditsWidget } from '@/shared/components/usage/AICreditsWidget';
 import { UserLimitIndicator } from '@/shared/components/usage/UserLimitIndicator';
+import { QuickBooksConnectionModal } from '@/components/quickbooks/QuickBooksConnectionModal';
+import { useToast, ToastContainer } from '@/components/ui/Toast';
+import { QuickBooksIcon } from '@/components/icons/QuickBooksIcon';
 
 interface Company {
   id: string;
@@ -22,13 +26,17 @@ interface Company {
   industry?: string;
   isActive: boolean;
   createdAt: string;
+  quickbooksRealmId?: string;
+  quickbooksLastSync?: string;
 }
 
 function OrgAdminDashboard() {
   const router = useRouter();
   const { user, organization } = useAuth();
+  const { hasFeature } = useFeatures();
   const { locale } = useLocale();
   const { t } = useTranslation(locale || 'en-US');
+  const toast = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,17 +48,44 @@ function OrgAdminDashboard() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [usageData, setUsageData] = useState<any>(null);
 
+  // QuickBooks state
+  const [selectedCompanyForQB, setSelectedCompanyForQB] = useState<Company | null>(null);
+  const [showQBModal, setShowQBModal] = useState(false);
+
+  // Check if QuickBooks feature is enabled - temporarily enabled for testing
+  const quickbooksEnabled = true; // hasFeature('quickbooks_integration');
+
   useEffect(() => {
     // Clear any selected company context when navigating to org admin
     sessionStorage.removeItem('selectedCompanyId');
     sessionStorage.removeItem('selectedCompanyName');
-    
+
     fetchCompanies();
     if (organization?.id) {
       fetchUsers();
       fetchUsageData();
     }
   }, [organization?.id]);
+
+  // Handle OAuth callback return
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const connected = urlParams.get('connected');
+    const companyId = urlParams.get('companyId');
+    const realmId = urlParams.get('realmId');
+
+    if (connected === 'true' && companyId && realmId) {
+      // Show success message
+      toast.success(t?.('quickbooks.success.connected') || 'Successfully connected to QuickBooks!');
+
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+
+      // Refresh companies to get updated status
+      fetchCompanies();
+    }
+  }, []);
 
   const fetchCompanies = async () => {
     try {
@@ -67,7 +102,27 @@ function OrgAdminDashboard() {
         }
         return belongsToUserOrg;
       });
-      setCompanies(filteredCompanies);
+
+      // Fetch QuickBooks connection status for each company
+      const companiesWithQBStatus = await Promise.all(
+        filteredCompanies.map(async (company: Company) => {
+          try {
+            const qbResponse = await fetch(`/api/companies/${company.id}/quickbooks-status`);
+            if (qbResponse.ok) {
+              const qbData = await qbResponse.json();
+              return {
+                ...company,
+                quickbooksRealmId: qbData.isConnected ? qbData.realmId : undefined
+              };
+            }
+          } catch (error) {
+            console.warn('Failed to fetch QuickBooks status for company:', company.id, error);
+          }
+          return company;
+        })
+      );
+
+      setCompanies(companiesWithQBStatus);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load companies');
     } finally {
@@ -244,6 +299,25 @@ function OrgAdminDashboard() {
     router.push('/dashboard/company-admin');
   };
 
+  // QuickBooks handlers
+  const handleQuickBooksConnect = (company: Company) => {
+    setSelectedCompanyForQB(company);
+    setShowQBModal(true);
+  };
+
+  const handleQuickBooksConnectionSuccess = async (realmId: string) => {
+    // Refresh the companies to get the updated QuickBooks connection status
+    await fetchCompanies();
+    setShowQBModal(false);
+    toast.success(t?.('quickbooks.success.connected') || 'Successfully connected to QuickBooks!');
+  };
+
+  const handleQuickBooksDisconnectionSuccess = async () => {
+    // Refresh the companies to get the updated QuickBooks connection status
+    await fetchCompanies();
+    setShowQBModal(false);
+  };
+
   // Filter companies based on search term
   const filteredCompanies = companies.filter(company => 
     company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -358,12 +432,25 @@ function OrgAdminDashboard() {
                   className="px-3 py-2 w-64 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <Button variant="primary" onClick={handleCreateCompany} className="whitespace-nowrap">
-                <div className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  <span>{locale?.startsWith('es') ? 'Crear Empresa' : 'Create Company'}</span>
-                </div>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="primary" onClick={handleCreateCompany} className="whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span>{locale?.startsWith('es') ? 'Crear Empresa' : 'Create Company'}</span>
+                  </div>
+                </Button>
+
+                {quickbooksEnabled && (
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/dashboard/org-admin/quickbooks-settings')}
+                    className="whitespace-nowrap p-2"
+                    title={t?.('quickbooks.configure') || 'Configure QuickBooks'}
+                  >
+                    <QuickBooksIcon className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardBody className="p-0">
@@ -407,12 +494,50 @@ function OrgAdminDashboard() {
                         <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                           {company.name}
                         </h3>
-                        <p className="text-sm text-gray-500">
-                          Tax ID: {company.taxId || 'ABC'} • {company.industry || 'Tecnología'}
-                        </p>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm text-gray-500">
+                            Tax ID: {company.taxId || 'ABC'} • {company.industry || 'Tecnología'}
+                          </p>
+                          {quickbooksEnabled && (
+                            <div className="flex items-center">
+                              <span className="text-xs text-gray-400">•</span>
+                              <div className="ml-2 flex items-center">
+                                <LinkIcon className="w-3 h-3 mr-1" />
+                                <span className={`text-xs ${
+                                  company.quickbooksRealmId ? 'text-green-600' : 'text-gray-400'
+                                }`}>
+                                  {company.quickbooksRealmId
+                                    ? (t?.('quickbooks.connected') || 'QB Connected')
+                                    : (t?.('quickbooks.not_connected') || 'QB Not Connected')
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      {quickbooksEnabled && (
+                        <Button
+                          variant={company.quickbooksRealmId ? "success" : "outline"}
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuickBooksConnect(company);
+                          }}
+                          className="whitespace-nowrap"
+                        >
+                          <div className="flex items-center">
+                            <LinkIcon className="w-3 h-3 mr-1" />
+                            {company.quickbooksRealmId
+                              ? (t?.('quickbooks.connected') || 'QB')
+                              : (t?.('quickbooks.connect') || 'Connect QB')
+                            }
+                          </div>
+                        </Button>
+                      )}
+
                       <Button
                         variant="secondary"
                         size="sm"
@@ -431,7 +556,7 @@ function OrgAdminDashboard() {
                           e.stopPropagation();
                           handleEditCompany(company);
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="opacity-70 hover:opacity-100 transition-opacity"
                       >
                         <Settings className="w-4 h-4 text-gray-600" />
                       </Button>
@@ -442,7 +567,7 @@ function OrgAdminDashboard() {
                           e.stopPropagation();
                           handleDeleteCompany(company.id, company.name);
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="opacity-70 hover:opacity-100 transition-opacity"
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
@@ -627,6 +752,19 @@ function OrgAdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* QuickBooks Connection Modal */}
+      {selectedCompanyForQB && (
+        <QuickBooksConnectionModal
+          isOpen={showQBModal}
+          onClose={() => setShowQBModal(false)}
+          company={selectedCompanyForQB}
+          onConnectionSuccess={handleQuickBooksConnectionSuccess}
+          onDisconnectionSuccess={handleQuickBooksDisconnectionSuccess}
+        />
+      )}
+
+      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
     </AppLayout>
   );
 }
