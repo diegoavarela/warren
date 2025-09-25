@@ -10,6 +10,7 @@ import { COGSAnalysisChart } from './COGSAnalysisChart';
 import { COGSDetailModal } from './COGSDetailModal';
 import { OperatingExpensesAnalysisChart } from './OperatingExpensesAnalysisChart';
 import { OperatingExpensesDetailModal } from './OperatingExpensesDetailModal';
+import { PerformanceOverviewHeatmaps } from './PerformanceOverviewHeatmaps';
 import { ComparisonPeriodSelector } from './ComparisonPeriodSelector';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
 import { formatCurrency } from '@/lib/utils/formatters';
@@ -90,6 +91,14 @@ export function QuickBooksPnLDashboard({
   const [selectedOpexCategory, setSelectedOpexCategory] = useState<any>(null);
   const [showOpexModal, setShowOpexModal] = useState(false);
 
+  // Monthly Performance Heatmap data
+  const [monthlyHeatmapData, setMonthlyHeatmapData] = useState<Array<{
+    month: string;
+    revenue: number;
+    netMargin: number;
+    periodLabel: string;
+  }>>([]);
+
   // Locale and translation setup
   const { locale: currentLocale } = useLocale();
   const { t } = useTranslation(currentLocale);
@@ -141,7 +150,7 @@ export function QuickBooksPnLDashboard({
     }
   };
 
-  // Format value for COGS chart display
+  // Format value for COGS chart display that respects selectedUnits
   const formatCogsValue = (value: number): string => {
     if (value === undefined || value === null || isNaN(value)) {
       return '0';
@@ -150,13 +159,19 @@ export function QuickBooksPnLDashboard({
     const convertedValue = convertValue(value);
     const suffix = getUnitSuffix();
 
-    if (Math.abs(convertedValue) >= 1000000) {
-      return `${(convertedValue / 1000000).toFixed(1)}M`;
-    } else if (Math.abs(convertedValue) >= 1000) {
-      return `${(convertedValue / 1000).toFixed(0)}K`;
+    if (selectedUnits === 'units') {
+      // Show full numbers when units is selected
+      return convertedValue.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    } else {
+      // Apply K/M formatting for thousands/millions
+      if (Math.abs(convertedValue) >= 1000000) {
+        return `${(convertedValue / 1000000).toFixed(1)}M`;
+      } else if (Math.abs(convertedValue) >= 1000) {
+        return `${(convertedValue / 1000).toFixed(0)}K`;
+      } else {
+        return `${convertedValue.toLocaleString()}${suffix ? ` ${suffix}` : ''}`;
+      }
     }
-
-    return `${convertedValue.toLocaleString()}${suffix ? ` ${suffix}` : ''}`;
   };
 
   // Transform COGS data for the chart
@@ -387,6 +402,14 @@ export function QuickBooksPnLDashboard({
         console.log('💰 [QB Dashboard] Currency from API:', result.data.currency);
       }
 
+      // Also fetch heatmap data after successful main data fetch
+      if (availablePeriods.length > 0) {
+        console.log('🎯 [QB Dashboard] Triggering heatmap data fetch after successful P&L fetch');
+        fetchMonthlyHeatmapData().catch(error =>
+          console.error('❌ [QB Dashboard] Error fetching heatmap data:', error)
+        );
+      }
+
     } catch (error) {
       console.error('❌ [QB Dashboard] Error fetching data:', error);
       setError(error instanceof Error ? error.message : 'Unknown error occurred');
@@ -434,6 +457,98 @@ export function QuickBooksPnLDashboard({
     return null;
   }, [companyId, selectedPeriod, accountingMode, comparisonPeriod]);
 
+  // Fetch monthly data for heatmaps (last 12 months)
+  const fetchMonthlyHeatmapData = useCallback(async () => {
+    console.log('🌟🌟🌟 [HEATMAP FUNC] fetchMonthlyHeatmapData called at:', new Date().toISOString(), {
+      companyId: !!companyId,
+      availablePeriodsCount: availablePeriods.length,
+      accountingMode
+    });
+
+    if (!companyId || !availablePeriods.length) {
+      console.log('🎯 [Debug] Skipping monthly fetch - missing companyId or periods');
+      return;
+    }
+
+    try {
+      console.log('📊 [QB Dashboard] Fetching monthly heatmap data...');
+      console.log('📊 Available periods:', availablePeriods.slice(0, 5).map(p => ({
+        label: p.periodLabel,
+        start: p.periodStart,
+        end: p.periodEnd
+      })));
+
+      // Get the last 12 periods (or all available if less than 12)
+      const periodsToFetch = availablePeriods.slice(0, Math.min(12, availablePeriods.length));
+      console.log('📊 Fetching data for periods:', periodsToFetch.map(p => p.periodLabel));
+
+      const monthlyPromises = periodsToFetch.map(async (period, index) => {
+        try {
+          console.log(`📊 [${index + 1}/${periodsToFetch.length}] Fetching ${period.label}...`);
+
+          const apiUrl = `/api/quickbooks/dashboard/pnl/${companyId}`;
+          const params = new URLSearchParams({
+            periodStart: period.start,
+            periodEnd: period.end,
+            accountingMode: accountingMode,
+            // Exclude accumulative data to avoid database errors
+            includeAccumulative: 'false'
+          });
+
+          const response = await fetch(`${apiUrl}?${params.toString()}`);
+          const result = await response.json();
+
+          console.log(`📊 API response for ${period.label}:`, {
+            success: result.success,
+            hasData: !!result.data,
+            hasCategories: !!result.data?.categories,
+            categories: result.data?.categories ? Object.keys(result.data.categories) : []
+          });
+
+          if (result.success && result.data?.categories) {
+            const revenue = result.data.categories['Revenue']?.total || 0;
+            const cogs = result.data.categories['Cost of Goods Sold']?.total || 0;
+            const operatingExpenses = result.data.categories['Operating Expenses']?.total || 0;
+            const otherExpenses = result.data.categories['Other Expenses']?.total || 0;
+
+            const netIncome = revenue - cogs - operatingExpenses - otherExpenses;
+            const netMargin = revenue > 0 ? (netIncome / revenue) * 100 : 0;
+
+            // Extract month abbreviation from period label
+            const monthMatch = period.label.match(/^([A-Za-z]{3})/);
+            const monthAbbr = monthMatch ? monthMatch[1] : period.label.substring(0, 3);
+
+            const processedData = {
+              month: monthAbbr,
+              revenue: Math.abs(revenue),
+              netMargin: netMargin,
+              periodLabel: period.label
+            };
+
+            console.log(`✅ [${period.label}] Processed:`, processedData);
+            return processedData;
+          } else {
+            console.log(`❌ [${period.label}] No valid data:`, result);
+          }
+        } catch (error) {
+          console.warn(`❌ [QB Dashboard] Error fetching data for ${period.label}:`, error);
+        }
+        return null;
+      });
+
+      const results = await Promise.all(monthlyPromises);
+      const validResults = results.filter(result => result !== null);
+
+      console.log('📈 [QB Dashboard] Monthly heatmap data loaded:', validResults.length, 'months out of', periodsToFetch.length, 'requested');
+      console.log('📈 Final results:', validResults);
+
+      setMonthlyHeatmapData(validResults);
+
+    } catch (error) {
+      console.error('❌ [QB Dashboard] Error fetching monthly heatmap data:', error);
+    }
+  }, [companyId, availablePeriods, accountingMode]);
+
   // Initial periods fetch
   useEffect(() => {
     fetchAvailablePeriods();
@@ -451,6 +566,30 @@ export function QuickBooksPnLDashboard({
       });
     }
   }, [selectedPeriod, fetchQuickBooksData, fetchYTDData]);
+
+  // Fetch monthly heatmap data when periods are available
+  useEffect(() => {
+    console.log('🌟 [HEATMAP DEBUG] useEffect for monthly heatmap triggered:', {
+      availablePeriodsLength: availablePeriods.length,
+      companyId: !!companyId,
+      accountingMode,
+      funcDefined: typeof fetchMonthlyHeatmapData === 'function'
+    });
+
+    if (companyId && availablePeriods.length > 0) {
+      console.log('🌟 [HEATMAP DEBUG] Calling fetchMonthlyHeatmapData from useEffect NOW!');
+      fetchMonthlyHeatmapData()
+        .then(() => console.log('🌟 [HEATMAP DEBUG] fetchMonthlyHeatmapData completed successfully'))
+        .catch(error => {
+          console.error('🌟 [HEATMAP DEBUG] fetchMonthlyHeatmapData ERROR:', error);
+        });
+    } else {
+      console.log('🌟 [HEATMAP DEBUG] Conditions not met:', {
+        hasCompanyId: !!companyId,
+        periodsCount: availablePeriods.length
+      });
+    }
+  }, [availablePeriods, companyId, accountingMode, fetchMonthlyHeatmapData]);
 
   // Manual refresh handler
   const handleManualRefresh = () => {
@@ -919,6 +1058,44 @@ export function QuickBooksPnLDashboard({
               />
             </div>
           </SectionCard>
+        </div>
+      )}
+
+      {/* Performance Overview Heatmaps */}
+      {console.log('🎯 [Debug] monthlyHeatmapData:', monthlyHeatmapData.length, 'items - rendering now')}
+      {monthlyHeatmapData.length > 0 ? (
+        <PerformanceOverviewHeatmaps
+          monthlyData={monthlyHeatmapData}
+          currency={getCurrencyInfo(actualCurrency).symbol}
+          formatValue={formatCogsValue}
+        />
+      ) : (
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-t-2xl px-6 py-4">
+            <div className="flex items-center space-x-3">
+              <div className="text-xl font-bold text-white">Performance Overview</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-b-2xl shadow-lg p-6">
+            <div className="text-center text-gray-500 py-8">
+              Loading monthly performance data... ({availablePeriods.length} periods available)
+              <br />
+              <div className="text-xs mt-2">
+                Debug: companyId={companyId}, accountingMode={accountingMode}
+              </div>
+              <button
+                onClick={() => {
+                  console.log('🌟🌟🌟 [MANUAL TRIGGER] Manual trigger - fetchMonthlyHeatmapData');
+                  fetchMonthlyHeatmapData()
+                    .then(() => console.log('🌟🌟🌟 [MANUAL TRIGGER] Manual trigger completed successfully'))
+                    .catch(error => console.error('🌟🌟🌟 [MANUAL TRIGGER] Manual trigger ERROR:', error));
+                }}
+                className="mt-4 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-bold shadow-lg"
+              >
+                🔄 Manual Load Heatmap Data
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

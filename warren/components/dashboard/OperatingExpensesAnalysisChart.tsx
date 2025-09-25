@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { Tooltip, FinancialTooltip } from '../ui/Tooltip';
 
 interface ExpenseData {
   category: string;
@@ -103,13 +104,35 @@ export function OperatingExpensesAnalysisChart({
                           return (
                             <div
                               key={itemIndex}
-                              className="transition-all duration-500"
+                              className="transition-all duration-500 h-full"
                               style={{
-                                width: `${itemWidthPercent}%`,
-                                backgroundColor: OPEX_COLORS[(index * 3 + itemIndex) % OPEX_COLORS.length]
+                                width: `${itemWidthPercent}%`
                               }}
-                              title={`${item.accountName}\n${currency}${formatValue(item.amount)} • ${item.percentage.toFixed(1)}% of ${category.category}\n${((item.amount / totalOpex) * 100).toFixed(1)}% of Total OpEx`}
-                            />
+                            >
+                              <Tooltip
+                                content={
+                                  <FinancialTooltip
+                                    accountName={item.accountName}
+                                    amount={item.amount}
+                                    currency={currency}
+                                    formatValue={formatValue}
+                                    categoryPercentage={item.percentage}
+                                    totalPercentage={(item.amount / totalOpex) * 100}
+                                    categoryName={category.category}
+                                    totalLabel="Total OpEx"
+                                  />
+                                }
+                                position="top"
+                                className="cursor-help h-full block"
+                              >
+                                <div
+                                  className="h-full w-full"
+                                  style={{
+                                    backgroundColor: OPEX_COLORS[(index * 3 + itemIndex) % OPEX_COLORS.length]
+                                  }}
+                                />
+                              </Tooltip>
+                            </div>
                           );
                         })}
                     </div>
