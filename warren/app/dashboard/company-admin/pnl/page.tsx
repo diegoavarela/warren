@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/translations';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { PnLDashboard } from '@/components/dashboard/PnLDashboard';
+import { QuickBooksPnLDashboard } from '@/components/dashboard/QuickBooksPnLDashboard';
 import { CompanyContextBar } from '@/components/dashboard/CompanyContextBar';
 import { ExportButton } from '@/components/ui/ExportButton';
 import { ROLES } from "@/lib/auth/constants";
@@ -23,6 +24,7 @@ export default function PnLDashboardPage() {
   const [hybridParserData, setHybridParserData] = useState<any>(null);
   const [hasCashflowConfig, setHasCashflowConfig] = useState<boolean>(false);
   const [dataSource, setDataSource] = useState<'excel' | 'quickbooks'>('excel');
+  const [quickbooksRealmId, setQuickbooksRealmId] = useState<string>('');
 
   // Get company ID, data source, and hybrid parser data from session storage if available
   useEffect(() => {
@@ -37,6 +39,12 @@ export default function PnLDashboardPage() {
       const storedDataSource = sessionStorage.getItem('dataSource') as 'excel' | 'quickbooks';
       if (storedDataSource && (storedDataSource === 'excel' || storedDataSource === 'quickbooks')) {
         setDataSource(storedDataSource);
+      }
+
+      // Get QuickBooks realm ID if available
+      const storedRealmId = sessionStorage.getItem('quickbooksRealmId');
+      if (storedRealmId) {
+        setQuickbooksRealmId(storedRealmId);
       }
 
       // Check for hybrid parser result data
@@ -178,18 +186,37 @@ export default function PnLDashboardPage() {
               </div>
             </div>
 
-            {/* P&L Dashboard Component */}
-            <PnLDashboard
-              companyId={selectedCompanyId}
-              currency="$"
-              locale={locale}
-              hybridParserData={hybridParserData}
-              dataSource={dataSource}
-              onPeriodChange={(period, update) => {
-                setCurrentPeriod(period);
-                setLastUpdate(update);
-              }}
-            />
+            {/* P&L Dashboard Component - Conditional rendering based on data source */}
+            {dataSource === 'quickbooks' ? (
+              <QuickBooksPnLDashboard
+                companyId={selectedCompanyId}
+                quickbooksRealmId={quickbooksRealmId}
+                locale={locale}
+                currency="$"
+                onPeriodChange={(period, update) => {
+                  setCurrentPeriod(period);
+                  setLastUpdate(update);
+                }}
+                onSyncStatusChange={(status, lastSync) => {
+                  // Handle sync status updates if needed
+                  if (lastSync) {
+                    setLastUpdate(lastSync);
+                  }
+                }}
+              />
+            ) : (
+              <PnLDashboard
+                companyId={selectedCompanyId}
+                currency="$"
+                locale={locale}
+                hybridParserData={hybridParserData}
+                dataSource={dataSource}
+                onPeriodChange={(period, update) => {
+                  setCurrentPeriod(period);
+                  setLastUpdate(update);
+                }}
+              />
+            )}
           </div>
         </div>
       </AppLayout>

@@ -30,7 +30,8 @@ export async function storeRawPnLData(
   periodEnd: string,
   reportType: string,
   rawResponse: any,
-  currency: string = 'USD'
+  currency: string = 'USD',
+  accountingMode: 'Accrual' | 'Cash' = 'Accrual'
 ): Promise<string> {
   try {
     console.log('🔍 [QB Storage] Storing raw P&L data for company:', companyId);
@@ -44,7 +45,8 @@ export async function storeRawPnLData(
       periodType: 'month', // Default to monthly, can be enhanced later
       rawResponse,
       reportType,
-      currency
+      currency,
+      accountingMode
     };
 
     const result = await db
@@ -74,7 +76,8 @@ export async function storeTransformedPnLData(
   periodStart: string,
   periodEnd: string,
   periodLabel: string,
-  currency: string = 'USD'
+  currency: string = 'USD',
+  accountingMode: 'Accrual' | 'Cash' = 'Accrual'
 ): Promise<void> {
   try {
     console.log('🔍 [QB Storage] Storing transformed P&L data for company:', companyId);
@@ -88,7 +91,8 @@ export async function storeTransformedPnLData(
         and(
           eq(quickbooksPnlData.companyId, companyId),
           eq(quickbooksPnlData.periodStart, periodStart),
-          eq(quickbooksPnlData.periodEnd, periodEnd)
+          eq(quickbooksPnlData.periodEnd, periodEnd),
+          eq(quickbooksPnlData.accountingMode, accountingMode)
         )
       );
     console.log('✅ [QB Storage] Existing data cleaned');
@@ -139,7 +143,8 @@ export async function storeTransformedPnLData(
 
       // Currency
       currency,
-      originalAmount: row.originalAmount || row.total || row.amount || '0'
+      originalAmount: row.originalAmount || row.total || row.amount || '0',
+      accountingMode
     }));
 
     // Insert records individually to avoid any parameter limits
@@ -231,8 +236,8 @@ export async function logSyncOperation(
       periodStart: periodStart ? periodStart : null,
       periodEnd: periodEnd ? periodEnd : null,
       recordsProcessed: recordsProcessed || 0,
-      startedAt: new Date().toISOString(),
-      completedAt: status === 'completed' || status === 'failed' ? new Date().toISOString() : null,
+      startedAt: new Date(),
+      completedAt: status === 'completed' || status === 'failed' ? new Date() : null,
       errorMessage: errorMessage || null,
       errorDetails: errorMessage ? { error: errorMessage } : null
     };
@@ -260,7 +265,8 @@ export async function logSyncOperation(
 export async function getTransformedPnLData(
   companyId: string,
   periodStart?: string,
-  periodEnd?: string
+  periodEnd?: string,
+  accountingMode: 'Accrual' | 'Cash' = 'Accrual'
 ): Promise<QuickBooksPnlData[]> {
   try {
     console.log('🔍 [QB Storage] Retrieving P&L data for company:', companyId);
@@ -268,13 +274,19 @@ export async function getTransformedPnLData(
     let query = db
       .select()
       .from(quickbooksPnlData)
-      .where(eq(quickbooksPnlData.companyId, companyId));
+      .where(
+        and(
+          eq(quickbooksPnlData.companyId, companyId),
+          eq(quickbooksPnlData.accountingMode, accountingMode)
+        )
+      );
 
     // Add period filters if provided
     if (periodStart && periodEnd) {
       query = query.where(
         and(
           eq(quickbooksPnlData.companyId, companyId),
+          eq(quickbooksPnlData.accountingMode, accountingMode),
           gte(quickbooksPnlData.periodStart, periodStart),
           lte(quickbooksPnlData.periodEnd, periodEnd)
         )
@@ -295,6 +307,84 @@ export async function getTransformedPnLData(
     console.error('❌ [QB Storage] Error retrieving P&L data:', error);
     throw new Error(`Failed to retrieve P&L data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+/**
+ * Get P&L data for comparison periods (previous month, quarter, year)
+ */
+export async function getComparisonPnLData(
+  companyId: string,
+  currentPeriodEnd: string,
+  comparisonType: 'last_month' | 'last_quarter' | 'last_year',
+  accountingMode: 'Accrual' | 'Cash' = 'Accrual'
+): Promise<QuickBooksPnlData[]> {
+  try {
+    console.log('🔍 [QB Storage] Fetching comparison data:', { companyId, currentPeriodEnd, comparisonType, accountingMode });
+
+    // Calculate comparison period based on type
+    const currentDate = new Date(currentPeriodEnd);
+    let comparisonStart: Date, comparisonEnd: Date;
+
+    switch (comparisonType) {
+      case 'last_month':
+        // Previous month
+        comparisonEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0); // Last day of previous month
+        comparisonStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1); // First day of previous month
+        break;
+
+      case 'last_quarter':
+        // 3 months ago (same month, 3 months back)
+        comparisonEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, currentDate.getDate());
+        comparisonStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, 1);
+        // Adjust to last day of that month
+        comparisonEnd = new Date(comparisonEnd.getFullYear(), comparisonEnd.getMonth() + 1, 0);
+        break;
+
+      case 'last_year':
+        // Same month, previous year
+        comparisonStart = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1);
+        comparisonEnd = new Date(currentDate.getFullYear() - 1, currentDate.getMonth() + 1, 0);
+        break;
+
+      default:
+        throw new Error(`Unknown comparison type: ${comparisonType}`);
+    }
+
+    const startStr = formatDateString(comparisonStart);
+    const endStr = formatDateString(comparisonEnd);
+
+    console.log('📅 [QB Storage] Comparison period:', { start: startStr, end: endStr });
+
+    // Fetch data for the comparison period
+    const data = await db
+      .select()
+      .from(quickbooksPnlData)
+      .where(
+        and(
+          eq(quickbooksPnlData.companyId, companyId),
+          eq(quickbooksPnlData.accountingMode, accountingMode),
+          eq(quickbooksPnlData.periodStart, startStr),
+          eq(quickbooksPnlData.periodEnd, endStr)
+        )
+      )
+      .orderBy(
+        quickbooksPnlData.category,
+        quickbooksPnlData.level,
+        quickbooksPnlData.accountName
+      );
+
+    console.log('✅ [QB Storage] Retrieved comparison data records:', data.length);
+    return data;
+
+  } catch (error) {
+    console.error('❌ [QB Storage] Error retrieving comparison P&L data:', error);
+    return []; // Return empty array on error to avoid breaking the dashboard
+  }
+}
+
+// Helper function to format date as YYYY-MM-DD
+function formatDateString(date: Date): string {
+  return date.toISOString().split('T')[0];
 }
 
 /**
@@ -342,19 +432,25 @@ export async function getRawPnLData(
 export async function checkPnLDataExists(
   companyId: string,
   periodStart: string,
-  periodEnd: string
+  periodEnd: string,
+  accountingMode?: 'Accrual' | 'Cash'
 ): Promise<boolean> {
   try {
+    const conditions = [
+      eq(quickbooksPnlData.companyId, companyId),
+      eq(quickbooksPnlData.periodStart, periodStart),
+      eq(quickbooksPnlData.periodEnd, periodEnd)
+    ];
+
+    // If accounting mode is specified, include it in the check
+    if (accountingMode) {
+      conditions.push(eq(quickbooksPnlData.accountingMode, accountingMode));
+    }
+
     const existing = await db
       .select({ id: quickbooksPnlData.id })
       .from(quickbooksPnlData)
-      .where(
-        and(
-          eq(quickbooksPnlData.companyId, companyId),
-          eq(quickbooksPnlData.periodStart, periodStart),
-          eq(quickbooksPnlData.periodEnd, periodEnd)
-        )
-      )
+      .where(and(...conditions))
       .limit(1);
 
     return existing.length > 0;
@@ -383,5 +479,162 @@ export async function getLatestSyncStatus(companyId: string): Promise<any> {
   } catch (error) {
     console.error('❌ [QB Storage] Error getting latest sync status:', error);
     return null;
+  }
+}
+
+/**
+ * Get the latest available period for a company
+ * Multi-tenant: Company-specific retrieval
+ */
+export async function getLatestAvailablePeriod(
+  companyId: string
+): Promise<{ periodStart: string; periodEnd: string; periodLabel: string } | null> {
+  try {
+    const data = await db
+      .select({
+        periodStart: quickbooksPnlData.periodStart,
+        periodEnd: quickbooksPnlData.periodEnd,
+        periodLabel: quickbooksPnlData.periodLabel
+      })
+      .from(quickbooksPnlData)
+      .where(eq(quickbooksPnlData.companyId, companyId))
+      .orderBy(desc(quickbooksPnlData.periodEnd))
+      .limit(1);
+
+    if (data.length === 0) {
+      return null;
+    }
+
+    const latestPeriod = data[0];
+    return {
+      periodStart: latestPeriod.periodStart,
+      periodEnd: latestPeriod.periodEnd,
+      periodLabel: latestPeriod.periodLabel || ''
+    };
+
+  } catch (error) {
+    console.error('❌ [QB Storage] Error getting latest available period:', error);
+    return null;
+  }
+}
+
+/**
+ * Get all available periods for a company
+ * Multi-tenant: Company-specific retrieval
+ */
+export async function getAllAvailablePeriods(
+  companyId: string
+): Promise<Array<{ periodStart: string; periodEnd: string; periodLabel: string }>> {
+  try {
+    console.log('🔍 [QB Storage] Fetching all available periods for company:', companyId);
+
+    const data = await db
+      .selectDistinct({
+        periodStart: quickbooksPnlData.periodStart,
+        periodEnd: quickbooksPnlData.periodEnd,
+        periodLabel: quickbooksPnlData.periodLabel
+      })
+      .from(quickbooksPnlData)
+      .where(eq(quickbooksPnlData.companyId, companyId))
+      .orderBy(desc(quickbooksPnlData.periodEnd));
+
+    console.log('✅ [QB Storage] Found available periods:', data.length);
+
+    return data.map(period => ({
+      periodStart: period.periodStart,
+      periodEnd: period.periodEnd,
+      periodLabel: period.periodLabel || ''
+    }));
+
+  } catch (error) {
+    console.error('❌ [QB Storage] Error getting all available periods:', error);
+    return [];
+  }
+}
+
+/**
+ * Get YTD (Year-to-Date) aggregated P&L data for a company up to a specific date
+ * Multi-tenant: Company-specific retrieval
+ */
+export async function getYTDPnLData(
+  companyId: string,
+  endDate: string, // YYYY-MM-DD format
+  accountingMode: 'Accrual' | 'Cash' = 'Accrual'
+): Promise<QuickBooksPnlData[]> {
+  try {
+    console.log('🔍 [QB Storage] Calculating YTD P&L data for company:', companyId, 'up to:', endDate);
+
+    // Calculate year start (January 1st of the same year)
+    const endDateObj = new Date(endDate);
+    const yearStart = `${endDateObj.getFullYear()}-01-01`;
+
+    console.log('📅 [QB Storage] YTD period:', yearStart, 'to', endDate);
+
+    // Get all P&L data for the year up to the end date
+    const yearData = await db
+      .select()
+      .from(quickbooksPnlData)
+      .where(
+        and(
+          eq(quickbooksPnlData.companyId, companyId),
+          eq(quickbooksPnlData.accountingMode, accountingMode),
+          gte(quickbooksPnlData.periodStart, yearStart),
+          lte(quickbooksPnlData.periodEnd, endDate)
+        )
+      )
+      .orderBy(quickbooksPnlData.periodStart, quickbooksPnlData.accountName);
+
+    console.log('📊 [QB Storage] Found YTD records:', yearData.length);
+
+    if (yearData.length === 0) {
+      return [];
+    }
+
+    // Group by account and sum amounts
+    const accountTotals = new Map<string, {
+      record: QuickBooksPnlData;
+      totalAmount: number;
+      periodCount: number;
+    }>();
+
+    for (const record of yearData) {
+      const key = `${record.accountName}|${record.category}|${record.subcategory || ''}`;
+      const amount = parseFloat(record.amount.toString());
+
+      if (!accountTotals.has(key)) {
+        accountTotals.set(key, {
+          record: { ...record },
+          totalAmount: 0,
+          periodCount: 0
+        });
+      }
+
+      const account = accountTotals.get(key)!;
+      account.totalAmount += amount;
+      account.periodCount += 1;
+    }
+
+    // Convert back to QuickBooksPnlData format with aggregated amounts
+    const ytdData: QuickBooksPnlData[] = [];
+
+    for (const [key, account] of accountTotals) {
+      ytdData.push({
+        ...account.record,
+        amount: account.totalAmount.toString(),
+        periodStart: yearStart,
+        periodEnd: endDate,
+        periodLabel: `YTD ${endDateObj.getFullYear()}`,
+        // Add metadata about aggregation
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
+
+    console.log('✅ [QB Storage] Generated YTD aggregated data records:', ytdData.length);
+    return ytdData;
+
+  } catch (error) {
+    console.error('❌ [QB Storage] Error getting YTD P&L data:', error);
+    throw new Error(`Failed to retrieve YTD P&L data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

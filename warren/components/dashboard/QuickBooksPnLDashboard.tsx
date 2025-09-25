@@ -6,11 +6,16 @@ import { MetricCard } from './MetricCard';
 import { MetricKPICard } from './MetricKPICard';
 import { SectionCard } from './SectionCard';
 import { HorizontalStackedChart } from '../LazyComponents';
+import { COGSAnalysisChart } from './COGSAnalysisChart';
+import { COGSDetailModal } from './COGSDetailModal';
+import { OperatingExpensesAnalysisChart } from './OperatingExpensesAnalysisChart';
+import { OperatingExpensesDetailModal } from './OperatingExpensesDetailModal';
 import { ComparisonPeriodSelector } from './ComparisonPeriodSelector';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { useLocale } from '@/contexts/LocaleContext';
 import { transformQuickBooksData } from '@/lib/utils/quickbooks-transformers';
+import { groupExpensesByCategory } from '@/lib/utils/expense-categorization';
 import { PnLData, Period } from '@/types/financial';
 import { HelpIcon } from '../HelpIcon';
 import { helpTopics } from '@/lib/help-content';
@@ -77,6 +82,13 @@ export function QuickBooksPnLDashboard({
   const [accountingMode, setAccountingMode] = useState<'Accrual' | 'Cash'>('Accrual');
   const [showCurrencyEdit, setShowCurrencyEdit] = useState(false);
   const [comparisonData, setComparisonData] = useState<any>(null);
+  const [rawApiData, setRawApiData] = useState<any>(null); // Store raw API response for COGS analysis
+  const [selectedCogsCategory, setSelectedCogsCategory] = useState<any>(null);
+  const [showCogsModal, setShowCogsModal] = useState(false);
+
+  // Operating Expenses Modal state
+  const [selectedOpexCategory, setSelectedOpexCategory] = useState<any>(null);
+  const [showOpexModal, setShowOpexModal] = useState(false);
 
   // Locale and translation setup
   const { locale: currentLocale } = useLocale();
@@ -128,6 +140,164 @@ export function QuickBooksPnLDashboard({
         return '';
     }
   };
+
+  // Format value for COGS chart display
+  const formatCogsValue = (value: number): string => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '0';
+    }
+
+    const convertedValue = convertValue(value);
+    const suffix = getUnitSuffix();
+
+    if (Math.abs(convertedValue) >= 1000000) {
+      return `${(convertedValue / 1000000).toFixed(1)}M`;
+    } else if (Math.abs(convertedValue) >= 1000) {
+      return `${(convertedValue / 1000).toFixed(0)}K`;
+    }
+
+    return `${convertedValue.toLocaleString()}${suffix ? ` ${suffix}` : ''}`;
+  };
+
+  // Transform COGS data for the chart
+  const transformCogsData = useMemo(() => {
+    console.log('🔍 [COGS Transform] Raw API Data:', rawApiData);
+
+    if (!rawApiData?.categories?.['Cost of Goods Sold']) {
+      console.log('❌ [COGS Transform] No Cost of Goods Sold category found');
+      return [];
+    }
+
+    const cogsCategory = rawApiData.categories['Cost of Goods Sold'];
+    const totalCogs = cogsCategory.total;
+
+    console.log('📊 [COGS Transform] COGS Category:', cogsCategory);
+    console.log('💰 [COGS Transform] Total COGS:', totalCogs);
+
+    // Group subcategories
+    const subcategoriesMap = new Map<string, { accounts: any[], total: number }>();
+
+    if (cogsCategory.subcategories) {
+      console.log('📋 [COGS Transform] Subcategories:', cogsCategory.subcategories);
+
+      for (const [subcategoryName, accounts] of Object.entries(cogsCategory.subcategories)) {
+        const accountsArray = accounts as any[];
+        const subcategoryTotal = accountsArray.reduce((sum, account) => {
+          return sum + Math.abs(account.amount || 0); // Use absolute value for COGS
+        }, 0);
+
+        console.log(`💸 [COGS Transform] ${subcategoryName}: $${subcategoryTotal} from ${accountsArray.length} accounts`);
+
+        console.log(`🔍 [COGS Transform] Processing ${subcategoryName} with total $${subcategoryTotal}`);
+
+        if (subcategoryTotal > 0) { // Only include subcategories with positive amounts
+          const validAccounts = accountsArray.filter(account => Math.abs(account.amount || 0) > 0);
+          console.log(`✅ [COGS Transform] Valid accounts for ${subcategoryName}:`, validAccounts);
+
+          subcategoriesMap.set(subcategoryName, {
+            accounts: validAccounts,
+            total: subcategoryTotal
+          });
+        } else {
+          console.log(`❌ [COGS Transform] Skipping ${subcategoryName} - zero total`);
+        }
+      }
+    }
+
+    console.log('🗂️ [COGS Transform] Subcategories Map:', subcategoriesMap);
+
+    // Convert subcategories to chart format
+    const chartData = Array.from(subcategoriesMap.entries()).map(([subcategoryName, data]) => {
+      const percentage = totalCogs > 0 ? (data.total / totalCogs) * 100 : 0;
+
+      return {
+        category: subcategoryName,
+        amount: data.total,
+        percentage: percentage,
+        items: data.accounts.map(account => ({
+          accountName: account.accountName,
+          amount: Math.abs(account.amount || 0), // Use absolute value
+          percentage: totalCogs > 0 ? ((Math.abs(account.amount || 0) / totalCogs) * 100) : 0
+        }))
+      };
+    });
+
+    console.log('📈 [COGS Transform] Final Chart Data:', chartData);
+
+    // Sort by amount (largest first)
+    return chartData.sort((a, b) => b.amount - a.amount);
+  }, [rawApiData]);
+
+  // Calculate derived values
+  const hasCogsData = transformCogsData.length > 0;
+  const totalCogs = rawApiData?.categories?.['Cost of Goods Sold']?.total || 0;
+
+  // Transform Operating Expenses data for the chart with hierarchical grouping
+  const transformOpexData = useMemo(() => {
+    console.log('🔍 [OpEx Transform] Raw API Data:', rawApiData);
+
+    if (!rawApiData?.categories?.['Operating Expenses']) {
+      console.log('❌ [OpEx Transform] No Operating Expenses category found');
+      return [];
+    }
+
+    const opexCategory = rawApiData.categories['Operating Expenses'];
+    const totalOpex = opexCategory.total;
+
+    console.log('📊 [OpEx Transform] OpEx Category:', opexCategory);
+    console.log('💰 [OpEx Transform] Total OpEx:', totalOpex);
+
+    // Collect all expense accounts
+    const allExpenseAccounts: Array<{
+      accountName: string;
+      amount: number;
+      subcategory: string;
+    }> = [];
+
+    if (opexCategory.subcategories) {
+      for (const [subcategoryName, accounts] of Object.entries(opexCategory.subcategories)) {
+        const accountsArray = accounts as any[];
+        accountsArray.forEach(account => {
+          if (Math.abs(account.amount || 0) > 0) {
+            allExpenseAccounts.push({
+              accountName: account.accountName,
+              amount: Math.abs(account.amount || 0),
+              subcategory: subcategoryName
+            });
+          }
+        });
+      }
+    }
+
+    console.log('📋 [OpEx Transform] All Expense Accounts:', allExpenseAccounts);
+
+    // Group by parent categories using our categorization logic
+    const groupedExpenses = groupExpensesByCategory(allExpenseAccounts);
+
+    console.log('🗂️ [OpEx Transform] Grouped Expenses:', groupedExpenses);
+
+    // Convert to chart format
+    const chartData = groupedExpenses.map(group => ({
+      category: group.displayName,
+      parentCategory: group.parentCategory,
+      amount: group.totalAmount,
+      percentage: group.percentage,
+      items: group.accounts.map(account => ({
+        accountName: account.accountName,
+        amount: account.amount,
+        percentage: group.totalAmount > 0 ? ((account.amount / group.totalAmount) * 100) : 0,
+        subcategory: account.subcategory
+      }))
+    }));
+
+    console.log('📈 [OpEx Transform] Final Hierarchical Chart Data:', chartData);
+
+    return chartData;
+  }, [rawApiData]);
+
+  // Calculate derived values for OpEx
+  const hasOpexData = transformOpexData.length > 0;
+  const totalOpex = rawApiData?.categories?.['Operating Expenses']?.total || 0;
 
   // Fetch available periods
   const fetchAvailablePeriods = useCallback(async () => {
@@ -194,6 +364,9 @@ export function QuickBooksPnLDashboard({
       }
 
       console.log('📊 [QB Dashboard] API Response:', result.data);
+
+      // Store raw API data for COGS analysis
+      setRawApiData(result.data);
 
       // Transform the data using our transformer
       const transformed = transformQuickBooksData(result);
@@ -698,6 +871,80 @@ export function QuickBooksPnLDashboard({
           </SectionCard>
         </div>
       )}
+
+      {/* COGS Analysis Section */}
+      {hasCogsData && (
+        <div className="mb-8">
+          <SectionCard
+            title="Cost of Goods Sold Analysis"
+            icon={ChartBarIcon}
+            backgroundColor="red"
+          >
+            <div className="space-y-6">
+              {/* COGS Analysis Chart */}
+              <COGSAnalysisChart
+                data={transformCogsData}
+                totalCogs={totalCogs}
+                currency={getCurrencyInfo(actualCurrency).symbol}
+                formatValue={formatCogsValue}
+                onCategoryClick={(categoryData) => {
+                  setSelectedCogsCategory(categoryData);
+                  setShowCogsModal(true);
+                }}
+              />
+            </div>
+          </SectionCard>
+        </div>
+      )}
+
+      {/* Operating Expenses Analysis Section */}
+      {hasOpexData && (
+        <div className="mb-8">
+          <SectionCard
+            title="Operating Expenses Analysis"
+            icon={CalculatorIcon}
+            backgroundColor="blue"
+          >
+            <div className="space-y-6">
+              {/* Operating Expenses Analysis Chart */}
+              <OperatingExpensesAnalysisChart
+                data={transformOpexData}
+                totalOpex={totalOpex}
+                currency={getCurrencyInfo(actualCurrency).symbol}
+                formatValue={formatCogsValue}
+                onCategoryClick={(categoryData) => {
+                  setSelectedOpexCategory(categoryData);
+                  setShowOpexModal(true);
+                }}
+              />
+            </div>
+          </SectionCard>
+        </div>
+      )}
+
+      {/* COGS Detail Modal */}
+      <COGSDetailModal
+        isOpen={showCogsModal}
+        onClose={() => {
+          setShowCogsModal(false);
+          setSelectedCogsCategory(null);
+        }}
+        categoryData={selectedCogsCategory}
+        currency={getCurrencyInfo(actualCurrency).symbol}
+        formatValue={formatCogsValue}
+      />
+
+      {/* Operating Expenses Detail Modal */}
+      <OperatingExpensesDetailModal
+        isOpen={showOpexModal}
+        onClose={() => {
+          setShowOpexModal(false);
+          setSelectedOpexCategory(null);
+        }}
+        categoryData={selectedOpexCategory}
+        currency={getCurrencyInfo(actualCurrency).symbol}
+        formatValue={formatCogsValue}
+      />
 
     </div>
   );

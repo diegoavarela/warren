@@ -39,6 +39,7 @@ export const quickbooksPnlRaw = pgTable("quickbooks_pnl_raw", {
 
   // Metadata
   currency: varchar("currency", { length: 3 }).notNull(),
+  accountingMode: varchar("accounting_mode", { length: 10 }).notNull().default("Accrual"), // 'Accrual' or 'Cash'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
@@ -82,6 +83,7 @@ export const quickbooksPnlData = pgTable("quickbooks_pnl_data", {
   // Currency and Units
   currency: varchar("currency", { length: 3 }).notNull(),
   originalAmount: decimal("original_amount", { precision: 15, scale: 2 }), // Before any conversions
+  accountingMode: varchar("accounting_mode", { length: 10 }).notNull().default("Accrual"), // 'Accrual' or 'Cash'
 
   // Metadata
   // quickbooksMetadata: jsonb("quickbooks_metadata"), // Column doesn't exist in database

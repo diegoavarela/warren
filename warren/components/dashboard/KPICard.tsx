@@ -5,7 +5,7 @@ interface KPICardProps {
   title: string;
   value: string | number;
   previousValue?: string | number;
-  icon?: React.ReactNode;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   trend?: 'up' | 'down' | 'neutral';
   changePercent?: number;
   currency?: string;
@@ -86,7 +86,7 @@ const KPICardComponent = function KPICard({
       <div className="flex items-center justify-between mb-4">
         <div className={`${colors.iconBg} p-2 rounded-xl shadow-sm`}>
           <div className={colors.text}>
-            {icon || <div className="w-6 h-6 bg-current rounded opacity-20" />}
+            {icon ? React.createElement(icon, { className: "w-6 h-6" }) : <div className="w-6 h-6 bg-current rounded opacity-20" />}
           </div>
         </div>
         {sparkle && (

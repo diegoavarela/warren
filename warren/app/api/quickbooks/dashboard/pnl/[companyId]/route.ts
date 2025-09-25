@@ -7,7 +7,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getTransformedPnLData
+  getTransformedPnLData,
+  getLatestAvailablePeriod,
+  getYTDPnLData,
+  getComparisonPnLData
 } from '@/lib/services/quickbooks-storage-service';
 import { getAccumulativeData as getAccumulativeDataService } from '@/lib/services/quickbooks-accumulative-service';
 
@@ -25,9 +28,11 @@ export async function GET(request: NextRequest, { params }: PageProps) {
     // Extract query parameters
     const periodStart = searchParams.get('periodStart');
     const periodEnd = searchParams.get('periodEnd');
-    const periodType = searchParams.get('periodType') as 'ytd' | 'qtd' | 'rolling_12m' || 'ytd';
+    const periodType = searchParams.get('periodType') as 'ytd' | 'qtd' | 'rolling_12m' | null;
     const includeAccumulative = searchParams.get('includeAccumulative') === 'true';
     const currency = searchParams.get('currency') || 'USD';
+    const accountingMode = searchParams.get('accountingMode') as 'Accrual' | 'Cash' || 'Accrual';
+    const comparisonPeriod = searchParams.get('comparisonPeriod') as 'last_month' | 'last_quarter' | 'last_year' || 'last_month';
 
     console.log('🔍 [QB Dashboard P&L] Request:', {
       companyId,
@@ -35,7 +40,9 @@ export async function GET(request: NextRequest, { params }: PageProps) {
       periodEnd,
       periodType,
       includeAccumulative,
-      currency
+      currency,
+      accountingMode,
+      comparisonPeriod
     });
 
     if (!companyId) {
@@ -44,12 +51,38 @@ export async function GET(request: NextRequest, { params }: PageProps) {
       }, { status: 400 });
     }
 
-    // Get base P&L data
-    const pnlData = await getTransformedPnLData(
-      companyId,
-      periodStart || undefined,
-      periodEnd || undefined
-    );
+    // If no dates provided, find the latest available period
+    let actualPeriodStart = periodStart;
+    let actualPeriodEnd = periodEnd;
+
+    if (!periodStart || !periodEnd) {
+      console.log('🔍 [QB Dashboard P&L] No dates provided, finding latest available period...');
+
+      // Get the latest period from the database
+      const latestPeriodData = await getLatestAvailablePeriod(companyId);
+      if (latestPeriodData) {
+        actualPeriodStart = latestPeriodData.periodStart;
+        actualPeriodEnd = latestPeriodData.periodEnd;
+        console.log('🎯 [QB Dashboard P&L] Using latest available period:', actualPeriodStart, 'to', actualPeriodEnd);
+      } else {
+        console.log('⚠️ [QB Dashboard P&L] No data available for company');
+      }
+    }
+
+    // Get base P&L data - use YTD if specified
+    let pnlData;
+    if (periodType === 'ytd' && actualPeriodEnd) {
+      console.log('🔍 [QB Dashboard P&L] Fetching YTD data up to:', actualPeriodEnd);
+      pnlData = await getYTDPnLData(companyId, actualPeriodEnd, accountingMode);
+    } else {
+      console.log('🔍 [QB Dashboard P&L] Fetching regular period data');
+      pnlData = await getTransformedPnLData(
+        companyId,
+        actualPeriodStart || undefined,
+        actualPeriodEnd || undefined,
+        accountingMode
+      );
+    }
 
     if (pnlData.length === 0) {
       return NextResponse.json({
@@ -57,7 +90,7 @@ export async function GET(request: NextRequest, { params }: PageProps) {
         message: 'No P&L data found for the specified period',
         data: {
           companyId,
-          period: { start: periodStart, end: periodEnd },
+          period: { start: actualPeriodStart, end: actualPeriodEnd },
           accounts: [],
           summary: {
             totalAccounts: 0,
@@ -71,19 +104,40 @@ export async function GET(request: NextRequest, { params }: PageProps) {
     // Structure data by categories
     const categorizedData = organizePnLDataByCategory(pnlData);
 
+    // Get comparison data for growth calculations
+    let comparisonData = null;
+    if (actualPeriodEnd) {
+      try {
+        const comparisonPnlData = await getComparisonPnLData(
+          companyId,
+          actualPeriodEnd,
+          comparisonPeriod,
+          accountingMode
+        );
+        if (comparisonPnlData.length > 0) {
+          comparisonData = organizePnLDataByCategory(comparisonPnlData);
+          console.log(`📊 [QB Dashboard P&L] Retrieved ${comparisonPnlData.length} comparison records for ${comparisonPeriod}`);
+        } else {
+          console.log(`⚠️ [QB Dashboard P&L] No comparison data found for ${comparisonPeriod}`);
+        }
+      } catch (error) {
+        console.warn('⚠️ [QB Dashboard P&L] Could not retrieve comparison data:', error);
+      }
+    }
+
     // Get accumulative data if requested
     let accumulativeData = null;
-    if (includeAccumulative && periodEnd) {
+    if (includeAccumulative && actualPeriodEnd) {
       try {
-        accumulativeData = await getAccumulativeDataService(companyId, periodEnd, periodType);
+        accumulativeData = await getAccumulativeDataService(companyId, actualPeriodEnd, periodType);
         console.log(`📊 [QB Dashboard P&L] Retrieved ${accumulativeData.length} accumulative records`);
       } catch (error) {
         console.warn('⚠️ [QB Dashboard P&L] Could not retrieve accumulative data:', error);
       }
     }
 
-    // Calculate summary metrics
-    const summary = calculatePnLSummary(categorizedData, accumulativeData);
+    // Calculate summary metrics with comparison data
+    const summary = calculatePnLSummary(categorizedData, accumulativeData, comparisonData);
 
     return NextResponse.json({
       success: true,
@@ -91,12 +145,13 @@ export async function GET(request: NextRequest, { params }: PageProps) {
       data: {
         companyId,
         period: {
-          start: periodStart,
-          end: periodEnd,
+          start: actualPeriodStart,
+          end: actualPeriodEnd,
           type: periodType
         },
         currency,
         categories: categorizedData,
+        comparison: comparisonData,
         accumulative: accumulativeData ? organizeAccumulativeData(accumulativeData) : null,
         summary,
         metadata: {
@@ -142,8 +197,9 @@ function organizePnLDataByCategory(pnlData: any[]) {
 
     const category = categories.get(categoryName)!;
 
-    // Add to category total if it's a detail account
-    if (record.isDetailAccount) {
+    // Add to category total if it's a detail account OR a section total without detail breakdowns
+    // This handles cases like "Landscaping Services" which is a section header representing actual revenue
+    if (record.isDetailAccount || (record.isTotal && !record.isSubtotal)) {
       category.total += amount;
     }
 
@@ -169,7 +225,8 @@ function organizePnLDataByCategory(pnlData: any[]) {
       category.subcategories.set(subcategoryName, []);
     }
 
-    if (record.isDetailAccount) {
+    // Include detail accounts and section totals in subcategories
+    if (record.isDetailAccount || (record.isTotal && !record.isSubtotal)) {
       category.subcategories.get(subcategoryName)!.push({
         accountName: record.accountName,
         amount: amount,
@@ -248,7 +305,7 @@ function organizeAccumulativeData(accumulativeData: any[]) {
 /**
  * Calculate summary metrics for P&L dashboard
  */
-function calculatePnLSummary(categorizedData: any, accumulativeData?: any) {
+function calculatePnLSummary(categorizedData: any, accumulativeData?: any, comparisonData?: any) {
   const categories = Object.keys(categorizedData);
   const totalAccounts = Object.values(categorizedData).reduce(
     (sum: number, category: any) => sum + category.accounts.length, 0
@@ -258,11 +315,72 @@ function calculatePnLSummary(categorizedData: any, accumulativeData?: any) {
   const revenue = categorizedData['Revenue']?.total || 0;
   const cogs = categorizedData['Cost of Goods Sold']?.total || 0;
   const operatingExpenses = categorizedData['Operating Expenses']?.total || 0;
+  const otherExpenses = categorizedData['Other Expenses']?.total || 0;
 
   const grossProfit = revenue - cogs;
-  const netIncome = grossProfit - operatingExpenses;
+  const operatingIncome = grossProfit - operatingExpenses; // Net Operating Income
+  const netIncome = operatingIncome - otherExpenses; // Final Net Income after Other Expenses
+
   const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+  const operatingMargin = revenue > 0 ? (operatingIncome / revenue) * 100 : 0;
   const netMargin = revenue > 0 ? (netIncome / revenue) * 100 : 0;
+
+  // Calculate growth percentages if comparison data is available
+  let growthMetrics = {
+    revenueGrowth: 0,
+    grossProfitGrowth: 0,
+    operatingIncomeGrowth: 0,
+    netIncomeGrowth: 0,
+    ebitdaGrowth: 0
+  };
+
+  if (comparisonData) {
+    const compRevenue = comparisonData['Revenue']?.total || 0;
+    const compCogs = comparisonData['Cost of Goods Sold']?.total || 0;
+    const compOperatingExpenses = comparisonData['Operating Expenses']?.total || 0;
+    const compOtherExpenses = comparisonData['Other Expenses']?.total || 0;
+
+    const compGrossProfit = compRevenue - compCogs;
+    const compOperatingIncome = compGrossProfit - compOperatingExpenses;
+    const compNetIncome = compOperatingIncome - compOtherExpenses;
+    // Simple EBITDA approximation (we don't have depreciation data)
+    const compEbitda = compOperatingIncome;
+    const ebitda = operatingIncome; // Current period EBITDA
+
+    // Calculate growth percentages with proper handling of negative values
+    function calculateGrowthPercentage(current: number, previous: number): number {
+      // If no previous data, can't calculate growth
+      if (previous === 0) return 0;
+
+      // Standard calculation for positive previous values
+      if (previous > 0) {
+        return ((current - previous) / previous) * 100;
+      }
+
+      // Special handling for negative previous values
+      if (previous < 0) {
+        // If both negative, calculate relative change
+        if (current < 0) {
+          // Both negative: calculate percentage change in absolute terms
+          // Less negative = improvement (positive %), more negative = deterioration (negative %)
+          return ((Math.abs(previous) - Math.abs(current)) / Math.abs(previous)) * 100;
+        } else {
+          // Previous negative, current positive: improvement (use absolute of previous for percentage)
+          return ((current + Math.abs(previous)) / Math.abs(previous)) * 100;
+        }
+      }
+
+      return 0;
+    }
+
+    growthMetrics = {
+      revenueGrowth: calculateGrowthPercentage(revenue, compRevenue),
+      grossProfitGrowth: calculateGrowthPercentage(grossProfit, compGrossProfit),
+      operatingIncomeGrowth: calculateGrowthPercentage(operatingIncome, compOperatingIncome),
+      netIncomeGrowth: calculateGrowthPercentage(netIncome, compNetIncome),
+      ebitdaGrowth: calculateGrowthPercentage(ebitda, compEbitda)
+    };
+  }
 
   return {
     totalAccounts,
@@ -273,11 +391,15 @@ function calculatePnLSummary(categorizedData: any, accumulativeData?: any) {
       costOfGoodsSold: cogs,
       grossProfit,
       operatingExpenses,
+      operatingIncome,
+      otherExpenses,
       netIncome,
       margins: {
         gross: grossMargin,
+        operating: operatingMargin,
         net: netMargin
-      }
+      },
+      growth: growthMetrics
     },
     hasAccumulativeData: !!accumulativeData,
     accumulativePeriods: accumulativeData && Object.keys(accumulativeData).length > 0 ?
