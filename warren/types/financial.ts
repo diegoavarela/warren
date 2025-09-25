@@ -9,6 +9,7 @@ export interface Period {
   operatingExpenses: number;
   operatingIncome: number;
   operatingMargin: number;
+  otherExpenses: number;
   earningsBeforeTax: number;
   earningsBeforeTaxMargin: number;
   taxes: number;
@@ -40,6 +41,7 @@ export interface YTDMetrics {
   operatingExpenses: number;
   operatingIncome: number;
   operatingMargin: number;
+  otherExpenses: number;
   earningsBeforeTax: number;
   earningsBeforeTaxMargin: number;
   taxes: number;
@@ -104,6 +106,15 @@ export interface PnLData {
       decimalSeparator: '.' | ',';
       thousandsSeparator: ',' | '.' | ' ';
       decimalPlaces: number;
+    };
+    financials?: {
+      growth?: {
+        revenueGrowth: number;
+        grossProfitGrowth: number;
+        operatingIncomeGrowth: number;
+        netIncomeGrowth: number;
+        ebitdaGrowth: number;
+      };
     };
   };
 }
