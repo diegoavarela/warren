@@ -110,7 +110,7 @@ export async function storeTransformedPnLData(
       accountNames.forEach(name => {
         duplicates[name] = (duplicates[name] || 0) + 1;
       });
-      const actualDuplicates = Object.entries(duplicates).filter(([_, count]) => count > 1);
+      const actualDuplicates = Object.entries(duplicates).filter(([_, count]) => (count as number) > 1);
       console.log('🔍 [QB Storage] Duplicate accounts:', actualDuplicates);
     }
 
@@ -540,7 +540,7 @@ export async function getAllAvailablePeriods(
 
     console.log('✅ [QB Storage] Found available periods:', data.length);
 
-    return data.map(period => ({
+    return data.map((period: any) => ({
       periodStart: period.periodStart,
       periodEnd: period.periodEnd,
       periodLabel: period.periodLabel || ''
