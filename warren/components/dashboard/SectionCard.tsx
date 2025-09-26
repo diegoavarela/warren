@@ -1,12 +1,13 @@
 import React from 'react';
 import { HelpIcon } from '../HelpIcon';
+import { HelpTopic } from '../HelpModal';
 
 interface SectionCardProps {
   title: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   backgroundColor: 'green' | 'red' | 'blue';
   children: React.ReactNode;
-  helpTopic?: string;
+  helpTopic?: string | HelpTopic;
 }
 
 const backgroundColors = {
@@ -44,7 +45,7 @@ export function SectionCard({
 
           {helpTopic && (
             <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-              <HelpIcon topic={helpTopic} className="h-4 w-4 text-white" />
+              <HelpIcon topic={typeof helpTopic === 'string' ? helpTopic : helpTopic.id} className="h-4 w-4 text-white" />
             </div>
           )}
         </div>
