@@ -599,7 +599,7 @@ function transformPnLData(pnlReport: any) {
     }
   }
 
-  const rows = [];
+  const rows: any[] = [];
   let totalRevenue = 0;
   let totalExpenses = 0;
 
