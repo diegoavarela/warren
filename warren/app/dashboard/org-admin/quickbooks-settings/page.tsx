@@ -18,6 +18,7 @@ import {
   WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
 import { ROLES } from "@/lib/auth/constants";
+import { FEATURE_KEYS } from '@/lib/constants/features';
 
 interface QuickBooksSettings {
   clientId: string;
@@ -44,7 +45,7 @@ export default function QuickBooksSettingsPage() {
   });
 
   // Check if QuickBooks feature is enabled
-  const quickbooksEnabled = hasFeature('quickbooks_integration');
+  const quickbooksEnabled = hasFeature(FEATURE_KEYS.QUICKBOOKS_INTEGRATION);
 
   useEffect(() => {
     if (!quickbooksEnabled) {

@@ -8,10 +8,13 @@
 export const FEATURE_KEYS = {
   // Export and Reporting
   ADVANCED_EXPORT: 'ADVANCED_EXPORT',
-  
+
   // Financial Tools
   FINANCIAL_MANUAL: 'FINANCIAL_MANUAL',
-  
+
+  // Integrations
+  QUICKBOOKS_INTEGRATION: 'quickbooks_integration',
+
   // Add new feature keys here as they're implemented
 } as const;
 

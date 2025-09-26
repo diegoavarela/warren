@@ -17,6 +17,7 @@ import { UserLimitIndicator } from '@/shared/components/usage/UserLimitIndicator
 import { QuickBooksConnectionModal } from '@/components/quickbooks/QuickBooksConnectionModal';
 import { useToast, ToastContainer } from '@/components/ui/Toast';
 import { QuickBooksIcon } from '@/components/icons/QuickBooksIcon';
+import { FEATURE_KEYS } from '@/lib/constants/features';
 
 interface Company {
   id: string;
@@ -52,8 +53,8 @@ function OrgAdminDashboard() {
   const [selectedCompanyForQB, setSelectedCompanyForQB] = useState<Company | null>(null);
   const [showQBModal, setShowQBModal] = useState(false);
 
-  // Check if QuickBooks feature is enabled - temporarily enabled for testing
-  const quickbooksEnabled = true; // hasFeature('quickbooks_integration');
+  // Check if QuickBooks feature is enabled
+  const quickbooksEnabled = hasFeature(FEATURE_KEYS.QUICKBOOKS_INTEGRATION);
 
   useEffect(() => {
     // Clear any selected company context when navigating to org admin
