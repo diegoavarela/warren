@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * Clean QuickBooks Test Endpoint - No Conflicts
  *
  * Tests the fixed transformation and storage with real QuickBooks data

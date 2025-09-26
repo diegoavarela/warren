@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * QuickBooks Credentials Test API
  *
  * Tests QuickBooks API credentials without storing them

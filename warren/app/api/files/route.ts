@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { getCurrentUser } from '@/lib/auth/server-auth';
 import { hasCompanyAccess } from '@/lib/auth/rbac';
 import { db, financialDataFiles, processedFinancialData, companyConfigurations, users } from '@/lib/db';

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { configurationService } from '@/lib/services/configuration-service';
 import { getCurrentUser } from '@/lib/auth/server-auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // Get current user

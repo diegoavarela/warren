@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * Debug P&L Report Endpoint
  *
  * Direct QuickBooks API calls to understand why P&L is showing zero

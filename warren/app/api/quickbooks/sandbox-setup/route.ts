@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * QuickBooks Sandbox Setup Endpoint
  *
  * This endpoint helps examine and populate the sandbox company with test data

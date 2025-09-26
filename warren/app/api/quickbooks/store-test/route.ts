@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * QuickBooks Storage Test Endpoint
  *
  * Tests the storage system with real QuickBooks data

@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * QuickBooks OAuth Callback Endpoint
  *
  * This endpoint handles the return from QuickBooks OAuth flow

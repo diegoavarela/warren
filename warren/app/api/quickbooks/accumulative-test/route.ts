@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * QuickBooks Accumulative Test Endpoint
  *
  * Tests the accumulative calculation system (YTD, QTD, Rolling 12M)

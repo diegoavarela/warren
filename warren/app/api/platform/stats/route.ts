@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { withRBAC, ROLES } from '@/lib/auth/rbac';
 import { db, organizations, companies, users, financialStatements, mappingTemplates, eq, count, and, gte } from '@/lib/db';
 

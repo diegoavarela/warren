@@ -1,4 +1,6 @@
 /**
+
+export const dynamic = 'force-dynamic';
  * Raw P&L Response Endpoint
  *
  * Shows exactly what QuickBooks API returns (no processing)

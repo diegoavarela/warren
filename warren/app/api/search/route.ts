@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { db, organizations, companies, users, mappingTemplates, eq, like, or, and } from '@/lib/db';
 import { withRBAC, hasPermission, PERMISSIONS, ROLES } from '@/lib/auth/rbac';
 
