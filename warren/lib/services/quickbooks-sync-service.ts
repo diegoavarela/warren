@@ -513,7 +513,7 @@ function transformPnLData(pnlResponse: any): any[] {
 
     // Handle nested sections
     if (row.type === 'Section') {
-      processSection(row, level, parentCategory);
+      processSection(row, level, null);
     }
 
     // Handle subsection rows recursively

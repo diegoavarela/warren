@@ -106,7 +106,7 @@ export function transformQuickBooksData(apiResponse: QuickBooksApiResponse): PnL
 
     if (data.summary?.financials) {
       // Trust the API's corrected calculations
-      const financials = data.summary.financials;
+      const financials = data.summary.financials as any;
       calculatedSummary = {
         totalRevenue: financials.revenue,
         totalCogs: financials.costOfGoodsSold,
