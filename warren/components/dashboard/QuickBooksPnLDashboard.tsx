@@ -1401,7 +1401,6 @@ export function QuickBooksPnLDashboard({
       )}
 
       {/* Performance Overview Heatmaps */}
-      {console.log('🎯 [Debug] monthlyHeatmapData:', monthlyHeatmapData.length, 'items - rendering now')}
       {monthlyHeatmapData.length > 0 ? (
         <PerformanceOverviewHeatmaps
           monthlyData={monthlyHeatmapData}
@@ -1439,7 +1438,6 @@ export function QuickBooksPnLDashboard({
       )}
 
       {/* Trend Analysis Charts */}
-      {console.log('📈 [Debug] trendData:', { revenueCount: trendData.revenue.length, netIncomeCount: trendData.netIncome.length })}
       {trendData.revenue.length > 0 && trendData.netIncome.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <QuickBooksRevenueTrendChartJS
