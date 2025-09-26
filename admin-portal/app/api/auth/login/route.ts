@@ -69,16 +69,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.role !== 'platform_admin') {
+    if (!['platform_admin', 'organization_admin'].includes(user.role)) {
       // Log failed login attempt
-      await logAuthentication('failed_login', user.id, request, { 
-        email, 
+      await logAuthentication('failed_login', user.id, request, {
+        email,
         reason: 'insufficient_privileges',
-        userRole: user.role 
+        userRole: user.role
       });
-      
+
       return NextResponse.json(
-        { success: false, error: 'Access denied. Platform admin role required.' },
+        { success: false, error: 'Access denied. Platform admin or organization admin role required.' },
         { status: 403 }
       );
     }

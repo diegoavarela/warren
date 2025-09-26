@@ -518,22 +518,22 @@ export default function FeatureFlagsPage() {
               {/* Statistics */}
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center space-x-2">
-                  <span className="text-2xl font-bold text-blue-600">{features.length}</span>
+                  <span className="text-2xl font-bold text-blue-600">{features?.length || 0}</span>
                   <span className="text-sm text-gray-600">Total</span>
                 </div>
                 <div className="w-px h-6 bg-gray-300"></div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-2xl font-bold text-green-600">{features.filter(f => f.isActive).length}</span>
+                  <span className="text-2xl font-bold text-green-600">{features?.filter(f => f.isActive).length || 0}</span>
                   <span className="text-sm text-gray-600">Active</span>
                 </div>
                 <div className="w-px h-6 bg-gray-300"></div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-2xl font-bold text-purple-600">{features.filter(f => !f.isPublic).length}</span>
+                  <span className="text-2xl font-bold text-purple-600">{features?.filter(f => !f.isPublic).length || 0}</span>
                   <span className="text-sm text-gray-600">Private</span>
                 </div>
                 <div className="w-px h-6 bg-gray-300"></div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-2xl font-bold text-orange-600">{features.filter(f => f.isBaseline).length}</span>
+                  <span className="text-2xl font-bold text-orange-600">{features?.filter(f => f.isBaseline).length || 0}</span>
                   <span className="text-sm text-gray-600">Baseline</span>
                 </div>
               </div>
@@ -566,7 +566,7 @@ export default function FeatureFlagsPage() {
                 </div>
               ) : (
                 <DataTable
-                  data={features}
+                  data={features || []}
                   columns={columns}
                   searchable={true}
                   searchPlaceholder="Search features..."

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch features with organization count using direct SQL for accuracy
     const features = await db.execute(sql`
-      SELECT 
+      SELECT
         f.id,
         f.key,
         f.name,
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
         f.created_at as "createdAt",
         f.updated_at as "updatedAt",
         COALESCE(
-          (SELECT COUNT(*)::int FROM organization_features of 
-           WHERE of.feature_id = f.id AND of.enabled = true), 
+          (SELECT COUNT(*)::int FROM organization_features of
+           WHERE of.feature_id = f.id AND of.enabled = true),
           0
         ) as "organizationCount"
       FROM feature_flags f
@@ -41,12 +41,13 @@ export async function GET(request: NextRequest) {
 
     const result: any = {
       success: true,
-      features: features.rows
+      features: Array.isArray(features) ? features : (features?.rows || [])
     };
 
     // If organizations are requested, fetch detailed organization data
     if (includeOrganizations) {
-      const targetFeatureId = featureId || features.rows[0]?.id;
+      const featuresArray = Array.isArray(features) ? features : (features?.rows || []);
+      const targetFeatureId = featureId || featuresArray[0]?.id;
       
       if (targetFeatureId) {
         const organizations = await db.execute(sql`
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
         `);
 
         result.organizations = {
-          [targetFeatureId]: organizations.rows
+          [targetFeatureId]: Array.isArray(organizations) ? organizations : (organizations?.rows || [])
         };
       }
     }

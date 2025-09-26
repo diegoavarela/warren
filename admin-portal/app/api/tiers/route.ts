@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
-import { eq, desc } from 'drizzle-orm';
-import { tiers } from '../../../../shared/db/actual-schema';
+import { db, eq, desc, tiers } from '@/lib/db';
 import type { Tier, NewTier } from '../../../../shared/db/actual-schema';
-
-// Initialize database connection
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
-}
-
-const sql = neon(process.env.DATABASE_URL);
-const db = drizzle(sql);
 
 // GET /api/tiers - Get all tiers
 export async function GET() {

@@ -43,8 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiRequest('/api/auth/me');
       if (response.ok) {
         const userData = await response.json();
-        // Only allow platform admins
-        if (userData.user && userData.user.role === 'platform_admin') {
+        // Allow platform admins and organization admins
+        if (userData.user && ['platform_admin', 'organization_admin'].includes(userData.user.role)) {
           setUser(userData.user);
         } else {
           setUser(null);
@@ -76,11 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Check if user is platform admin
-        if (data.user.role !== 'platform_admin') {
+        // Check if user is platform admin or organization admin
+        if (!['platform_admin', 'organization_admin'].includes(data.user.role)) {
           return {
             success: false,
-            error: 'Access denied. Admin role required.'
+            error: 'Access denied. Platform admin or organization admin role required.'
           };
         }
 

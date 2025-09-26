@@ -183,7 +183,7 @@ export default function LoginPage() {
                 </span>
               </p>
               <p className="text-xs text-gray-500">
-                Only users with platform_admin or organization_admin roles can access this portal
+                Users with platform_admin or organization_admin roles can access this portal
               </p>
             </div>
           </CardBody>

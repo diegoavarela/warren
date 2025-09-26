@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user || !user.isActive || user.role !== 'platform_admin') {
+    if (!user || !user.isActive || !['platform_admin', 'organization_admin'].includes(user.role)) {
       return NextResponse.json(
         { error: 'User not found or unauthorized' },
         { status: 401 }
