@@ -45,7 +45,7 @@ export function SectionCard({
 
           {helpTopic && (
             <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-              <HelpIcon topic={typeof helpTopic === 'string' ? helpTopic : helpTopic.id} className="h-4 w-4 text-white" />
+              <HelpIcon topic={typeof helpTopic === 'string' ? { id: helpTopic, titleKey: helpTopic, contentKey: helpTopic } : helpTopic} className="h-4 w-4 text-white" />
             </div>
           )}
         </div>
