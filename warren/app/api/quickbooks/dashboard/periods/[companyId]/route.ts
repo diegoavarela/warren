@@ -69,7 +69,7 @@ export async function GET(request: NextRequest, { params }: PageProps) {
           accountCount: 0,
           detailAccountCount: 0,
           categories: new Set(),
-          lastUpdated: record.updatedAt || record.createdAt
+          lastUpdated: (record.updatedAt || record.createdAt)?.toISOString() || new Date().toISOString()
         });
       }
 
@@ -83,8 +83,8 @@ export async function GET(request: NextRequest, { params }: PageProps) {
       period.categories.add(record.category);
 
       // Keep the latest update time
-      if (record.updatedAt && record.updatedAt > period.lastUpdated) {
-        period.lastUpdated = record.updatedAt;
+      if (record.updatedAt && record.updatedAt.toISOString() > period.lastUpdated) {
+        period.lastUpdated = record.updatedAt.toISOString();
       }
     }
 

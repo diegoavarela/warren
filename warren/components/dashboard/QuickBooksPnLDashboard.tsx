@@ -521,14 +521,14 @@ export function QuickBooksPnLDashboard({
     try {
       console.log('📊 [QB Dashboard] Fetching monthly heatmap data...');
       console.log('📊 Available periods:', availablePeriods.slice(0, 5).map(p => ({
-        label: p.periodLabel,
-        start: p.periodStart,
-        end: p.periodEnd
+        label: (p as any).periodLabel || (p as any).label,
+        start: (p as any).periodStart || (p as any).start,
+        end: (p as any).periodEnd || (p as any).end
       })));
 
       // Get the last 12 periods (or all available if less than 12)
       const periodsToFetch = availablePeriods.slice(0, Math.min(12, availablePeriods.length));
-      console.log('📊 Fetching data for periods:', periodsToFetch.map(p => p.periodLabel));
+      console.log('📊 Fetching data for periods:', periodsToFetch.map(p => (p as any).periodLabel || (p as any).label));
 
       const monthlyPromises = periodsToFetch.map(async (period, index) => {
         try {

@@ -129,7 +129,7 @@ export async function GET(request: NextRequest, { params }: PageProps) {
     let accumulativeData = null;
     if (includeAccumulative && actualPeriodEnd) {
       try {
-        accumulativeData = await getAccumulativeDataService(companyId, actualPeriodEnd, periodType);
+        accumulativeData = await getAccumulativeDataService(companyId, actualPeriodEnd, periodType || undefined);
         console.log(`📊 [QB Dashboard P&L] Retrieved ${accumulativeData.length} accumulative records`);
       } catch (error) {
         console.warn('⚠️ [QB Dashboard P&L] Could not retrieve accumulative data:', error);
