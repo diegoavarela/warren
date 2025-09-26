@@ -11,6 +11,8 @@ import { COGSDetailModal } from './COGSDetailModal';
 import { OperatingExpensesAnalysisChart } from './OperatingExpensesAnalysisChart';
 import { OperatingExpensesDetailModal } from './OperatingExpensesDetailModal';
 import { PerformanceOverviewHeatmaps } from './PerformanceOverviewHeatmaps';
+import { QuickBooksRevenueTrendChartJS } from './QuickBooksRevenueTrendChartJS';
+import { QuickBooksNetIncomeTrendChartJS } from './QuickBooksNetIncomeTrendChartJS';
 import { ComparisonPeriodSelector } from './ComparisonPeriodSelector';
 import { currencyService, SUPPORTED_CURRENCIES } from '@/lib/services/currency';
 import { formatCurrency } from '@/lib/utils/formatters';
@@ -60,6 +62,9 @@ export function QuickBooksPnLDashboard({
   onPeriodChange,
   onSyncStatusChange
 }: QuickBooksPnLDashboardProps) {
+  // TESTING: Basic console log to verify component loads
+  console.log('🚀 [COMPONENT TEST] QuickBooksPnLDashboard component is running!');
+
   const [transformedData, setTransformedData] = useState<PnLData | null>(null);
   const [ytdData, setYtdData] = useState<PnLData | null>(null);
   const [apiLoading, setApiLoading] = useState(false);
@@ -98,6 +103,23 @@ export function QuickBooksPnLDashboard({
     netMargin: number;
     periodLabel: string;
   }>>([]);
+
+
+  // Trend Analysis data with forecasting
+  const [trendData, setTrendData] = useState<{
+    revenue: Array<{
+      month: string;
+      value: number;
+      isActual: boolean;
+      periodLabel: string;
+    }>;
+    netIncome: Array<{
+      month: string;
+      value: number;
+      isActual: boolean;
+      periodLabel: string;
+    }>;
+  }>({ revenue: [], netIncome: [] });
 
   // Locale and translation setup
   const { locale: currentLocale } = useLocale();
@@ -590,6 +612,171 @@ export function QuickBooksPnLDashboard({
       });
     }
   }, [availablePeriods, companyId, accountingMode, fetchMonthlyHeatmapData]);
+
+  // Fetch trend data with forecasting (Jan-Aug 2025 actual + Sep-Dec 2025 forecast)
+  const fetchTrendData = useCallback(async () => {
+    console.log('📈 [TREND DEBUG] fetchTrendData called:', {
+      companyId: !!companyId,
+      availablePeriodsCount: availablePeriods.length,
+      accountingMode
+    });
+
+    if (!companyId || !availablePeriods.length) {
+      console.log('📈 [TREND DEBUG] Skipping trend fetch - missing companyId or periods');
+      return;
+    }
+
+    try {
+      // Filter to get only 2025 periods and only Jan-Aug (for current year trend)
+      const currentYear = new Date().getFullYear();
+      const year2025Periods = availablePeriods.filter(period => {
+        const periodDate = new Date(period.start);
+        return periodDate.getFullYear() === currentYear;
+      });
+
+      // Sort in chronological order (oldest first) and take Jan-Aug
+      const actualPeriods = year2025Periods
+        .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+        .slice(0, 8); // January through August
+
+      console.log('📈 [TREND DEBUG] Filtered 2025 periods (Jan-Aug):', actualPeriods);
+
+      // Fetch actual data for all periods in parallel
+      const actualDataPromises = actualPeriods.map(async (period) => {
+        const response = await fetch(`/api/quickbooks/dashboard/pnl/${companyId}?` +
+          `periodStart=${period.start}&periodEnd=${period.end}&accountingMode=${accountingMode}&includeAccumulative=false`);
+        const result = await response.json();
+
+        if (result.success) {
+          const totalRevenue = result.data?.categories?.Revenue?.total || 0;
+          const totalNetIncome = result.data?.summary?.financials?.netIncome || 0;
+
+          return {
+            period,
+            revenue: Math.abs(totalRevenue),
+            netIncome: totalNetIncome,
+            month: new Date(period.start).toLocaleDateString('en-US', { month: 'short' })
+          };
+        }
+        return null;
+      });
+
+      const actualResults = await Promise.all(actualDataPromises);
+      const validActualResults = actualResults.filter(result => result !== null);
+
+      console.log('📈 [TREND DEBUG] Valid actual results:', validActualResults);
+
+      // Generate forecast data (simple linear trend projection for 6 months)
+      const generateForecast = (historicalData: number[], months: number = 6) => {
+        if (historicalData.length < 2) return [];
+
+        // Calculate simple linear trend
+        const n = historicalData.length;
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+
+        for (let i = 0; i < n; i++) {
+          sumX += i;
+          sumY += historicalData[i];
+          sumXY += i * historicalData[i];
+          sumXX += i * i;
+        }
+
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+
+        // Calculate average historical value as baseline
+        const avgHistorical = sumY / n;
+
+        // Project future values
+        const forecasts = [];
+        for (let i = 1; i <= months; i++) {
+          const projectedValue = slope * (n + i - 1) + intercept;
+          // If slope is 0 or near 0 (flat data), use historical average
+          const futureValue = Math.abs(slope) < 0.01 ? avgHistorical : Math.max(0, projectedValue);
+          forecasts.push(futureValue);
+        }
+
+        return forecasts;
+      };
+
+      // Prepare trend data
+      const revenueValues = validActualResults.map(r => r!.revenue);
+      const netIncomeValues = validActualResults.map(r => r!.netIncome);
+
+      const revenueForecast = generateForecast(revenueValues, 4); // Sep-Dec (4 months)
+      const netIncomeForecast = generateForecast(netIncomeValues, 4); // Sep-Dec (4 months)
+
+      // Create complete trend data with actual + forecast
+      const revenueTrendData = [
+        ...validActualResults.map(result => ({
+          month: result!.month,
+          value: result!.revenue,
+          isActual: true,
+          periodLabel: result!.period.label
+        })),
+        ...revenueForecast.map((value, index) => {
+          // Generate specific months: September, October, November, December 2025
+          const forecastMonths = ['Sep', 'Oct', 'Nov', 'Dec'];
+          const month = forecastMonths[index];
+          const fullMonth = ['September', 'October', 'November', 'December'][index];
+          return {
+            month,
+            value,
+            isActual: false,
+            periodLabel: `${fullMonth} 2025`
+          };
+        })
+      ];
+
+      const netIncomeTrendData = [
+        ...validActualResults.map(result => ({
+          month: result!.month,
+          value: result!.netIncome,
+          isActual: true,
+          periodLabel: result!.period.label
+        })),
+        ...netIncomeForecast.map((value, index) => {
+          // Generate specific months: September, October, November, December 2025
+          const forecastMonths = ['Sep', 'Oct', 'Nov', 'Dec'];
+          const month = forecastMonths[index];
+          const fullMonth = ['September', 'October', 'November', 'December'][index];
+          return {
+            month,
+            value,
+            isActual: false,
+            periodLabel: `${fullMonth} 2025`
+          };
+        })
+      ];
+
+      console.log('📈 [TREND DEBUG] Final trend data:', {
+        revenueTrendData,
+        netIncomeTrendData,
+        revenueValues,
+        netIncomeValues,
+        revenueForecast,
+        netIncomeForecast
+      });
+
+      setTrendData({
+        revenue: revenueTrendData,
+        netIncome: netIncomeTrendData
+      });
+
+    } catch (error) {
+      console.error('❌ [TREND DEBUG] Error fetching trend data:', error);
+    }
+  }, [companyId, availablePeriods, accountingMode]);
+
+  // Fetch trend data when heatmap data is successfully loaded
+  useEffect(() => {
+    if (monthlyHeatmapData.length > 0) {
+      console.log('📈 [TREND DEBUG] Triggering trend data fetch after heatmap data loaded');
+      fetchTrendData().catch(error =>
+        console.error('❌ [TREND DEBUG] Error fetching trend data:', error)
+      );
+    }
+  }, [monthlyHeatmapData, fetchTrendData]);
 
   // Manual refresh handler
   const handleManualRefresh = () => {
@@ -1098,6 +1285,25 @@ export function QuickBooksPnLDashboard({
           </div>
         </div>
       )}
+
+      {/* Trend Analysis Charts */}
+      {console.log('📈 [Debug] trendData:', { revenueCount: trendData.revenue.length, netIncomeCount: trendData.netIncome.length })}
+      {trendData.revenue.length > 0 && trendData.netIncome.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <QuickBooksRevenueTrendChartJS
+            data={trendData.revenue}
+            title="Revenue Trend & 6-Month Forecast"
+            currency={getCurrencyInfo(actualCurrency).symbol}
+            formatValue={formatCogsValue}
+          />
+          <QuickBooksNetIncomeTrendChartJS
+            data={trendData.netIncome}
+            title="Net Income Trend & 6-Month Forecast"
+            currency={getCurrencyInfo(actualCurrency).symbol}
+            formatValue={formatCogsValue}
+          />
+        </div>
+      ) : null}
 
       {/* COGS Detail Modal */}
       <COGSDetailModal
