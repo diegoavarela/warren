@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {

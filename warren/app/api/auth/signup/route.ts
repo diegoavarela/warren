@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { db, users, organizations, eq } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
 import { signJWT } from '@/lib/auth/jwt';

@@ -4,6 +4,8 @@ import { verifyPassword } from '@/lib/auth/password';
 import { signJWT } from '@/lib/auth/jwt';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
