@@ -1,22 +1,65 @@
 /**
  * Warren Database Configuration
  *
- * Uses the shared universal database configuration from the monorepo.
+ * Uses the same direct connection approach as admin-portal.
  * Automatically detects database type and uses appropriate adapter.
  *
  * DEPLOYMENT: Only change DATABASE_URL environment variable!
  */
 
-// Import schema from local warren schema for backward compatibility
-import * as localSchema from "./schema";
+import { eq, desc, count, and, gte, like, or, sql, ilike, inArray, asc, lte } from "drizzle-orm";
+import * as schema from "./schema";
 
-// Re-export everything from the shared universal database configuration
-export * from '../../shared/db/universal-config';
+// Direct database connection based on environment
+function createDatabaseConnection() {
+  const DATABASE_URL = process.env.DATABASE_URL;
 
-// Explicitly export drizzle operators for backward compatibility
-export { eq, and, or, gte, lte, desc, asc, count, like, sql, ilike, inArray } from 'drizzle-orm';
+  if (!DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
 
-// Override with local warren schema exports for backward compatibility
+  // Check if it's a Neon database
+  if (DATABASE_URL.includes('neon.tech') || DATABASE_URL.includes('neondb')) {
+    // Use Neon HTTP adapter for production
+    const { neon } = require('@neondatabase/serverless');
+    const { drizzle } = require('drizzle-orm/neon-http');
+
+    const sql = neon(DATABASE_URL);
+    return drizzle(sql, { schema });
+  } else {
+    // Use postgres-js for local development
+    const { drizzle } = require('drizzle-orm/postgres-js');
+    const postgres = require('postgres');
+
+    const queryClient = postgres(DATABASE_URL, {
+      max: 5,
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
+    });
+    return drizzle(queryClient, { schema });
+  }
+}
+
+const db = createDatabaseConnection();
+
+// Export database connection and drizzle operators
+export {
+  db,
+  eq,
+  desc,
+  count,
+  and,
+  gte,
+  like,
+  or,
+  sql,
+  ilike,
+  inArray,
+  asc,
+  lte
+};
+
+// Export all schema tables
 export const {
   organizations,
   users,
@@ -41,10 +84,10 @@ export const {
   financialDataFiles,
   configurationsTable,
   processedFinancialData
-} = localSchema;
+} = schema;
 
 // Export configurationsTable as companyConfigurations for backwards compatibility
-export const companyConfigurations = localSchema.configurationsTable;
+export const companyConfigurations = schema.configurationsTable;
 
 // Export type aliases for backwards compatibility
 export type {
@@ -54,4 +97,5 @@ export type {
   NewCompanyConfiguration
 } from "./schema";
 
-// Warren-specific database exports are now handled by the shared universal config
+// Re-export all schema types for convenience
+export * from "./schema";
