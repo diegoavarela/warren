@@ -168,7 +168,7 @@ export default function PnLDashboardPage() {
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
-                  {!hybridParserData && hasCashflowConfig && (
+                  {!hybridParserData && hasCashflowConfig && dataSource !== 'quickbooks' && (
                     <button
                       onClick={() => router.push('/dashboard/company-admin/cashflow')}
                       className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"

@@ -39,32 +39,42 @@ class CurrencyService {
         return this.getRates();
       }
 
-      // Using exchangerate-api.com free tier
-      const response = await fetch(
-        `https://api.exchangerate-api.com/v4/latest/${baseCurrency}`
-      );
+      // Use our server-side API endpoint
+      const response = await fetch(`/api/exchange-rates?base=${baseCurrency}`);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch exchange rates');
+        throw new Error('Failed to fetch exchange rates from API');
       }
 
       const data = await response.json();
-      
-      // Update rates
-      this.rates = {
-        USD: data.rates.USD || 1,
-        MXN: data.rates.MXN || 17.5,
-        EUR: data.rates.EUR || 0.92,
-        GBP: data.rates.GBP || 0.79,
-        BRL: data.rates.BRL || 5.1,
-        ARS: data.rates.ARS || 820
-      };
+      console.log('🔄 Exchange rate API response (via server):', data);
 
-      this.lastFetch = new Date();
+      if (data.success && data.rates) {
+        // Update rates with live data
+        this.rates = {
+          USD: data.rates.USD || 1,
+          MXN: data.rates.MXN || 17.5,
+          EUR: data.rates.EUR || 0.92,
+          GBP: data.rates.GBP || 0.79,
+          BRL: data.rates.BRL || 5.1,
+          ARS: data.rates.ARS || 1325.08
+        };
+
+        this.lastFetch = new Date();
+      }
+
       return this.getRates();
     } catch (error) {
       console.error('Error fetching exchange rates:', error);
-      // Return cached/default rates on error
+      // Return cached/default rates on error with updated ARS rate
+      this.rates = {
+        USD: 1,
+        MXN: 17.5,
+        EUR: 0.92,
+        GBP: 0.79,
+        BRL: 5.1,
+        ARS: 1325.08 // Updated fallback rate
+      };
       return this.getRates();
     }
   }
